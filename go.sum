@@ -1,0 +1,4 @@
+github.com/gbin/goncurses v0.0.0-20240205203827-f1026e55db44 h1:jM4j3iMcxAgWiBS+nDFI5XhYJza9NwlLETiplfRfpsI=
+github.com/gbin/goncurses v0.0.0-20240205203827-f1026e55db44/go.mod h1:dmRjyC3ZOQQ4EXWMOIAQi0TLaJPcg61LFsJ9mvhSGRE=
+github.com/stefan-muehlebach/gg v1.2.0 h1:soMJObpO1pn0VF2z5LkcDKKNeWlP9Yxk9PitDjS3k44=
+github.com/stefan-muehlebach/gg v1.2.0/go.mod h1:KTNu2M3u4u8lR4kMMJJ9itblzpMdd2aPcf3lte3DN+I=
