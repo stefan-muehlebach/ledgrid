@@ -34,13 +34,13 @@ func main() {
 	var err error
 	var ledGrid *ledgrid.LedGrid
 	var ledColor ledgrid.LedColor
-	var ctrl *ledgrid.PixelCtrl
+	var ctrl *ledgrid.PixelClient
 	var colorChanged bool
 	var colors []uint8
 	var incr uint8
 
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
-	ctrl = ledgrid.NewPixelCtrl(defHost, defPort)
+	ctrl = ledgrid.NewPixelClient(defHost, defPort)
 
 	stdscr, err = gc.Init()
 	if err != nil {

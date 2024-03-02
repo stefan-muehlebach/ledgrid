@@ -50,6 +50,7 @@ func main() {
 	gc = gg.NewContext(10, 10)
 	gc.SetStrokeWidth(1.5)
 	pixelClient = ledgrid.NewPixelClient(host, port)
+    pixelClient.SetGamma(0, 1.0)
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	prevColor = color.Black
 	uniColor = image.NewUniform(prevColor)
@@ -71,14 +72,14 @@ func main() {
 			gc.DrawCircle(5, 5, radius)
 			gc.Fill()
 			draw.Draw(ledGrid, ledGrid.Bounds(), gc.Image(), image.Point{}, draw.Src)
-			pixelClient.Send(ledGrid)
+			pixelClient.Draw(ledGrid)
 			time.Sleep(60 * time.Millisecond)
 		}
 		prevColor = nextColor
 	}
 
 	draw.Draw(ledGrid, ledGrid.Bounds(), uniColor, image.Point{}, draw.Src)
-	pixelClient.Send(ledGrid)
+	pixelClient.Draw(ledGrid)
 	time.Sleep(5 * time.Millisecond)
 
 	pixelClient.Close()
