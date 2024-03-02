@@ -10,14 +10,14 @@ import (
 // ColorModel, Bounds, At und Set.
 type LedGrid struct {
     // Groesse des LedGrids. Falls dieses LedGrid Teil eines groesseren
-    // Panels sein sollte, dann muss Rect.Min nicht unbegingt {0, 0} sein.
+    // Panels sein sollte, dann muss Rect.Min nicht unbedingt {0, 0} sein.
 	Rect image.Rectangle
     // Enthaelt die Farbwerte red, green, blue (RGB) fuer jede LED, welche
     // das LedGrid ausmachen. Die Reihenfolge entspricht dabei der
-    // technischen Umsetzung, d.h. sie beginnt links oben mit der LED Nr. 0,
+    // Verkabelung, d.h. sie beginnt links oben mit der LED Nr. 0,
     // geht dann nach rechts und auf der zweiten Zeile wieder nach links und
     // so schlangenfoermig weiter.
-	Pix  []uint8
+	Pix []uint8
 }
 
 func NewLedGrid(r image.Rectangle) *LedGrid {
@@ -39,6 +39,11 @@ func (g *LedGrid) At(x, y int) color.Color {
 	return g.LedColorAt(x, y)
 }
 
+func (g *LedGrid) Set(x, y int, c color.Color) {
+	c1 := LedColorModel.Convert(c).(LedColor)
+	g.SetLedColor(x, y, c1)
+}
+
 // Dient dem schnelleren Zugriff auf den Farbwert einer bestimmten Zelle, resp.
 // einer bestimmten LED. Analog zu At(), retourniert den Farbwert jedoch als
 // LedColor-Typ.
@@ -46,14 +51,9 @@ func (g *LedGrid) LedColorAt(x, y int) LedColor {
 	if !(image.Point{x, y}.In(g.Rect)) {
 		return LedColor{}
 	}
-	i := g.PixOffset(x, y)
-	s := g.Pix[i : i+3 : i+3]
-	return LedColor{s[0], s[1], s[2]}
-}
-
-func (g *LedGrid) Set(x, y int, c color.Color) {
-	c1 := LedColorModel.Convert(c).(LedColor)
-	g.SetLedColor(x, y, c1)
+	idx := g.PixOffset(x, y)
+	slc := g.Pix[idx : idx+3 : idx+3]
+	return LedColor{slc[0], slc[1], slc[2]}
 }
 
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.
@@ -61,11 +61,11 @@ func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
 	if !(image.Point{x, y}.In(g.Rect)) {
 		return
 	}
-	i := g.PixOffset(x, y)
-	s := g.Pix[i : i+3 : i+3]
-	s[0] = c.R
-	s[1] = c.G
-	s[2] = c.B
+	idx := g.PixOffset(x, y)
+	slc := g.Pix[idx : idx+3 : idx+3]
+	slc[0] = c.R
+	slc[1] = c.G
+	slc[2] = c.B
 }
 
 // Damit wird der Offset eines bestimmten Farbwerts innerhalb des Slices

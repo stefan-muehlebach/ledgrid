@@ -260,7 +260,7 @@ main:
 
 		if colorChanged {
 			ledGrid.SetLedColor(curCol, curRow, ledColor)
-			ctrl.Send(ledGrid.Pix)
+			ctrl.Send(ledGrid)
 			colorChanged = false
 		}
 	}

@@ -7,9 +7,9 @@ import (
 	"log"
 	"time"
 
-"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg"
+	"github.com/stefan-muehlebach/gg/color"
 	"github.com/stefan-muehlebach/gg/colornames"
-
 	"github.com/stefan-muehlebach/ledgrid"
 )
 
@@ -23,58 +23,67 @@ const (
 )
 
 const (
-	width   = 10
-	height  = 10
-	defHost = "raspi-2"
-	defPort = 5333
+	width    = 10
+	height   = 10
+	defHost  = "raspi-2"
+	defPort  = 5333
+	defGroup = colornames.Greens
 )
 
 func main() {
 	var host string
 	var port uint
+	var colorGroup colornames.ColorGroup = defGroup
 
+	var gc *gg.Context
 	var ledGrid *ledgrid.LedGrid
-	var ctrl *ledgrid.PixelCtrl
-	// var img *image.RGBA
+	var pixelClient *ledgrid.PixelClient
 	var uniColor *image.Uniform
 	var prevColor, nextColor, currColor color.Color
+	var radius float64
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.Var(&colorGroup, "colors", "Color group")
 	flag.Parse()
 
-	ctrl = ledgrid.NewPixelCtrl(host, port)
+	gc = gg.NewContext(10, 10)
+	gc.SetStrokeWidth(1.5)
+	pixelClient = ledgrid.NewPixelClient(host, port)
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
-	// img = image.NewRGBA(image.Rect(0, 0, width, height))
-    prevColor = color.Black
+	prevColor = color.Black
 	uniColor = image.NewUniform(prevColor)
 
-	for _, colorName := range colornames.Names {
-	// for _, colorName := range colornames.Groups[colornames.Greens] {
+	for _, colorName := range colornames.Groups[colorGroup] {
 		log.Printf("[%s]", colorName)
 		nextColor = colornames.Map[colorName]
 		for t := 0.0; t <= 1.0; t += 0.05 {
-			currColor = prevColor.Interpolate(nextColor, t)
-			uniColor.C = currColor
-			draw.Draw(ledGrid, ledGrid.Bounds(), uniColor, image.Point{}, draw.Src)
-			ctrl.Send(ledGrid.Pix)
-			time.Sleep(30 * time.Millisecond)
+			currColor = prevColor.Interpolate(nextColor, f(t))
+			if t <= 0.5 {
+				radius = (f(2*t) * 5)
+			} else {
+				radius = ((1 - f(2*t-1)) * 5)
+			}
+			gc.SetFillColor(color.Black)
+			gc.Clear()
+			gc.SetStrokeColor(currColor)
+			gc.SetFillColor(currColor)
+			gc.DrawCircle(5, 5, radius)
+			gc.Fill()
+			draw.Draw(ledGrid, ledGrid.Bounds(), gc.Image(), image.Point{}, draw.Src)
+			pixelClient.Send(ledGrid)
+			time.Sleep(60 * time.Millisecond)
 		}
-        prevColor = nextColor
-		// for row := 0; row < img.Bounds().Dy(); row++ {
-		// 	for col := 0; col < img.Bounds().Dx(); col++ {
-		// 		x := float64(col) / float64(img.Bounds().Dx()-1)
-		// 		img.Set(col, row, c.Dark(x))
-		// 	}
-		// }
-		// draw.Draw(ledGrid, ledGrid.Bounds(), img, image.Point{}, draw.Src)
-		// ctrl.Send(ledGrid.Pix)
-		// time.Sleep(1000 * time.Millisecond)
+		prevColor = nextColor
 	}
 
 	draw.Draw(ledGrid, ledGrid.Bounds(), uniColor, image.Point{}, draw.Src)
-	ctrl.Send(ledGrid.Pix)
+	pixelClient.Send(ledGrid)
 	time.Sleep(5 * time.Millisecond)
 
-	ctrl.Close()
+	pixelClient.Close()
+}
+
+func f(t float64) float64 {
+	return 3*t*t - 2*t*t*t
 }
