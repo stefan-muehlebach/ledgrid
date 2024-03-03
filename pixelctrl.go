@@ -160,10 +160,12 @@ func (p *PixelServer) Handle() {
 }
 
 // Die folgenden Methoden werden via RPC vom Client aufgerufen.
-//
 func (p *PixelServer) DrawRPC(grid *LedGrid, reply *int) error {
 	var err error
 
+	for i := 0; i < len(grid.Pix); i++ {
+		grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
+	}
 	if p.onRaspi {
 		if err = p.spiConn.Tx(grid.Pix, nil); err != nil {
 			log.Printf("Error during communication via SPI: %v.", err)
@@ -175,13 +177,13 @@ func (p *PixelServer) DrawRPC(grid *LedGrid, reply *int) error {
 }
 
 type GammaArg struct {
-    Color int
-    Value float64
+	Color int
+	Value float64
 }
 
 func (p *PixelServer) SetGammaRPC(arg GammaArg, reply *int) error {
-    p.SetGamma(arg.Color, arg.Value)
-    return nil
+	p.SetGamma(arg.Color, arg.Value)
+	return nil
 }
 
 // Dieser Typ wird client-seitig fuer die Ansteuerung des LedGrid verwendet.
@@ -243,10 +245,10 @@ func (p *PixelClient) Draw(grid *LedGrid) {
 }
 
 func (p *PixelClient) SetGamma(color int, value float64) {
-    var reply int
-    var err error
+	var reply int
+	var err error
 
-    err = p.rpcClient.Call("PixelServer.SetGammaRPC", GammaArg{color, value}, &reply)
+	err = p.rpcClient.Call("PixelServer.SetGammaRPC", GammaArg{color, value}, &reply)
 	if err != nil {
 		log.Fatal("SetGamma error:", err)
 	}
