@@ -103,6 +103,10 @@ func (p *PixelServer) Close() {
 	p.udpConn.Close()
 }
 
+func (p *PixelServer) Gamma(color int) (float64) {
+    return p.gammaValue[color]
+}
+
 func (p *PixelServer) SetGamma(color int, value float64) {
 	p.gammaValue[color] = value
 	for i := 0; i < 256; i++ {
@@ -225,7 +229,7 @@ func (p *PixelClient) Close() {
 }
 
 // Sendet die Daten im Buffer b zum Controller.
-func (p *PixelClient) Send(ledGrid *LedGrid) {
+func (p *PixelClient) Draw(ledGrid *LedGrid) {
 	var err error
 
 	_, err = p.conn.Write(ledGrid.Pix)
@@ -234,15 +238,15 @@ func (p *PixelClient) Send(ledGrid *LedGrid) {
 	}
 }
 
-func (p *PixelClient) Draw(grid *LedGrid) {
-	var reply int
-	var err error
+// func (p *PixelClient) Draw(grid *LedGrid) {
+// 	var reply int
+// 	var err error
 
-	err = p.rpcClient.Call("PixelServer.DrawRPC", grid, &reply)
-	if err != nil {
-		log.Fatal("Draw error:", err)
-	}
-}
+// 	err = p.rpcClient.Call("PixelServer.DrawRPC", grid, &reply)
+// 	if err != nil {
+// 		log.Fatal("Draw error:", err)
+// 	}
+// }
 
 func (p *PixelClient) SetGamma(color int, value float64) {
 	var reply int

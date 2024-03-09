@@ -34,13 +34,14 @@ func main() {
 	var err error
 	var ledGrid *ledgrid.LedGrid
 	var ledColor ledgrid.LedColor
-	var ctrl *ledgrid.PixelClient
+	var pixelClient *ledgrid.PixelClient
 	var colorChanged bool
 	var colors []uint8
 	var incr uint8
+	// var gammaValues []float64 = []float64{1.0, 1.0, 1.0}
 
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
-	ctrl = ledgrid.NewPixelClient(defHost, defPort)
+	pixelClient = ledgrid.NewPixelClient(defHost, defPort)
 
 	stdscr, err = gc.Init()
 	if err != nil {
@@ -58,7 +59,7 @@ func main() {
 	gc.InitPair(3, gc.C_BLUE, gc.C_WHITE)
 
 	rows, cols := stdscr.MaxYX()
-	height, width := 14, 89
+	height, width := 16, 89
 	y, x := (rows-height)/2, (cols-width)/2
 	y, x = 2, 4
 
@@ -67,14 +68,33 @@ func main() {
 		log.Fatalf("Couldn't create window: %v", err)
 	}
 	win.Keypad(true)
+	win.Box(0, 0)
+
+    fields := make([]*gc.Field, 3)
+    fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
+    defer fields[0].Free()
+	fields[0].SetBackground(gc.A_UNDERLINE)
+
+    fields[1], _ = gc.NewField(1, 3, 14, 21, 0, 0)
+    defer fields[1].Free()
+	fields[1].SetBackground(gc.A_UNDERLINE)
+
+    fields[2], _ = gc.NewField(1, 3, 14, 21, 0, 0)
+    defer fields[2].Free()
+	fields[2].SetBackground(gc.A_UNDERLINE)
+
+    form, _ := gc.NewForm(fields)
+    defer form.UnPost()
+    defer form.Free()
+
+    form.SetWindow(win)
+    form.SetSub(win.Derived(1, 11, 14, 16))
+    form.Post()
+
+    win.Refresh()
 
 main:
 	for {
-		win.Erase()
-		win.NoutRefresh()
-		win.MoveWindow(y, x)
-		win.Box(0, 0)
-		win.NoutRefresh()
 		for col := 0; col < ledGrid.Rect.Dx(); col++ {
 			if col == curCol {
 				win.AttrOn(gc.A_BOLD)
@@ -90,12 +110,12 @@ main:
 			win.MovePrintf(3+row, 2, "[%02d]", row)
 			win.AttrOff(gc.A_BOLD)
 		}
-		win.VLine(1, 7, gc.ACS_VLINE, height-2)
+		win.VLine(1, 7, gc.ACS_VLINE, 12)
 		for row := 0; row < ledGrid.Rect.Dy(); row++ {
 			for col := 0; col < ledGrid.Rect.Dx(); col++ {
 				if between(row, curRow, selRow) && between(col, curCol, selCol) {
 					win.AttrOn(gc.A_REVERSE)
-					win.MovePrintf(3+row, 8+(col*8), "        ")
+					// win.MovePrintf(3+row, 8+(col*8), "        ")
 				}
 				ledColor = ledGrid.LedColorAt(col, row)
 				colors = []uint8{ledColor.R, ledColor.G, ledColor.B}
@@ -111,7 +131,10 @@ main:
 				win.AttrOff(gc.A_REVERSE)
 			}
 		}
-		win.NoutRefresh()
+		win.HLine(13, 1, gc.ACS_HLINE, width-2)
+
+		win.MovePrintf(14, 2, "Gamma values:")
+		win.Refresh()
 
 		gc.Update()
 
@@ -121,11 +144,11 @@ main:
 
 		switch ch {
 
-		case 'r':
+		case 'R':
 			curColor = 0
-		case 'g':
+		case 'G':
 			curColor = 1
-		case 'b':
+		case 'B':
 			curColor = 2
 
 		case 'C':
@@ -172,6 +195,10 @@ main:
 
 		case 'q':
 			break main
+
+        case gc.KEY_TAB:
+            form.Driver(gc.REQ_NEXT_FIELD)
+            form.Driver(gc.REQ_END_LINE)
 
 		case gc.KEY_LEFT:
 			if curCol > 0 {
@@ -255,15 +282,15 @@ main:
 			colorChanged = true
 
 		default:
-			fmt.Fprintf(os.Stderr, "Unhandled key: 0x%x\n", ch)
+			fmt.Fprintf(os.Stderr, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
 		}
 
 		if colorChanged {
 			ledGrid.SetLedColor(curCol, curRow, ledColor)
-			ctrl.Send(ledGrid)
+			pixelClient.Draw(ledGrid)
 			colorChanged = false
 		}
 	}
 	win.Delete()
-	ctrl.Close()
+	pixelClient.Close()
 }

@@ -36,6 +36,13 @@ func (c LedColor) Interpolate(d LedColor, t float64) (LedColor) {
     return LedColor{uint8(r), uint8(g), uint8(b)}
 }
 
+func (c LedColor) Mix(d LedColor) (LedColor) {
+    r := max(c.R, d.R)
+    g := max(c.G, d.G)
+    b := max(c.B, d.B)
+    return LedColor{r, g, b}
+}
+
 // Das zum Typ LedColor zugehoerende ColorModel.
 var (
 	LedColorModel color.Model = color.ModelFunc(ledColorModel)
