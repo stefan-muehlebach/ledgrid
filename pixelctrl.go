@@ -127,9 +127,6 @@ func (p *PixelServer) Handle() {
 			}
 			log.Fatal(err)
 		}
-		if len != 300 {
-			log.Printf("Only %d bytes received instead of 300.\n", len)
-		}
 		for i := 0; i < len; i += 3 {
 			p.buffer[i+0] = p.gamma[0][p.buffer[i+0]]
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
