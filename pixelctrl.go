@@ -21,6 +21,8 @@ const (
 	bufferSize = 1024
 )
 
+// Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
+// SPI angeschlossen ist.
 type PixelServer struct {
 	onRaspi     bool
 	udpAddr     *net.UDPAddr
@@ -34,6 +36,10 @@ type PixelServer struct {
 	gamma       [3][256]byte
 }
 
+// Damit wird eine neue Instanz eines PixelServers erzeugt. Mit port wird
+// sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
+// das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
+// des SPI-Interfaces in Baud bezeichnet.
 func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	var err error
 	var addrPort netip.AddrPort
@@ -52,7 +58,7 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	//
 	p.buffer = make([]byte, bufferSize)
 
-	// Anschliessend wird die Tabelle fuer die Farbwertkorrektur erstellt.
+	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur erstellt.
 	//
 	p.SetGamma(0, 1.0)
 	p.SetGamma(1, 1.0)
@@ -161,7 +167,7 @@ func (p *PixelServer) Handle() {
 }
 
 // Die folgenden Methoden werden via RPC vom Client aufgerufen.
-func (p *PixelServer) DrawRPC(grid *LedGrid, reply *int) error {
+func (p *PixelServer) RPCDraw(grid *LedGrid, reply *int) error {
 	var err error
 
 	for i := 0; i < len(grid.Pix); i++ {
@@ -182,7 +188,7 @@ type GammaArg struct {
 	Value float64
 }
 
-func (p *PixelServer) SetGammaRPC(arg GammaArg, reply *int) error {
+func (p *PixelServer) RPCSetGamma(arg GammaArg, reply *int) error {
 	p.SetGamma(arg.Color, arg.Value)
 	return nil
 }
@@ -239,7 +245,7 @@ func (p *PixelClient) Draw(ledGrid *LedGrid) {
 // 	var reply int
 // 	var err error
 
-// 	err = p.rpcClient.Call("PixelServer.DrawRPC", grid, &reply)
+// 	err = p.rpcClient.Call("PixelServer.RPCDraw", grid, &reply)
 // 	if err != nil {
 // 		log.Fatal("Draw error:", err)
 // 	}
@@ -249,7 +255,7 @@ func (p *PixelClient) SetGamma(color int, value float64) {
 	var reply int
 	var err error
 
-	err = p.rpcClient.Call("PixelServer.SetGammaRPC", GammaArg{color, value}, &reply)
+	err = p.rpcClient.Call("PixelServer.RPCSetGamma", GammaArg{color, value}, &reply)
 	if err != nil {
 		log.Fatal("SetGamma error:", err)
 	}
