@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"log"
-	"os"
 
 	gc "github.com/gbin/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -27,7 +25,8 @@ func between(x, a, b int) bool {
 }
 
 func main() {
-	var stdscr, win *gc.Window
+	// var stdscr *gc.Window
+    var winGrid, winHelp *gc.Window
 	var ch gc.Key
 	var curRow, selRow, curCol, selCol int
 	var curColor int
@@ -43,7 +42,7 @@ func main() {
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	pixelClient = ledgrid.NewPixelClient(defHost, defPort)
 
-	stdscr, err = gc.Init()
+	_, err = gc.Init()
 	if err != nil {
 		log.Fatalf("Couldn't Init ncurses: %v", err)
 	}
@@ -58,87 +57,103 @@ func main() {
 	gc.InitPair(2, gc.C_GREEN, gc.C_BLACK)
 	gc.InitPair(3, gc.C_BLUE, gc.C_WHITE)
 
-	rows, cols := stdscr.MaxYX()
-	height, width := 16, 89
-	y, x := (rows-height)/2, (cols-width)/2
-	y, x = 2, 4
+	// rows, cols := stdscr.MaxYX()
 
-	win, err = gc.NewWindow(height, width, y, x)
+	gridHeight, gridWidth := 16, 89
+	y, x := 2, 4
+
+	winGrid, err = gc.NewWindow(gridHeight, gridWidth, y, x)
 	if err != nil {
 		log.Fatalf("Couldn't create window: %v", err)
 	}
-	win.Keypad(true)
-	win.Box(0, 0)
+	winGrid.Keypad(true)
+	winGrid.Box(0, 0)
 
-    fields := make([]*gc.Field, 3)
-    fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
-    defer fields[0].Free()
+	helpHeight, helpWidth := 16, 44
+	y, x = 19, 4
+
+    winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
+	if err != nil {
+		log.Fatalf("Couldn't create window: %v", err)
+	}
+	winHelp.Keypad(true)
+	winHelp.Box(0, 0)
+    winHelp.MovePrint(1, 2, "q: Quit")
+    winHelp.MoveAddChar(2, 2, gc.ACS_LARROW)
+    winHelp.MovePrintf(2, 3, ": move selector to the left")
+    winHelp.MoveAddChar(3, 2, gc.ACS_RARROW)
+    winHelp.MovePrintf(3, 3, ": move selector to the right")
+
+	fields := make([]*gc.Field, 3)
+	fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
+	defer fields[0].Free()
 	fields[0].SetBackground(gc.A_UNDERLINE)
 
-    fields[1], _ = gc.NewField(1, 3, 14, 21, 0, 0)
-    defer fields[1].Free()
+	fields[1], _ = gc.NewField(1, 3, 14, 21, 0, 0)
+	defer fields[1].Free()
 	fields[1].SetBackground(gc.A_UNDERLINE)
 
-    fields[2], _ = gc.NewField(1, 3, 14, 21, 0, 0)
-    defer fields[2].Free()
+	fields[2], _ = gc.NewField(1, 3, 14, 21, 0, 0)
+	defer fields[2].Free()
 	fields[2].SetBackground(gc.A_UNDERLINE)
 
-    form, _ := gc.NewForm(fields)
-    defer form.UnPost()
-    defer form.Free()
+	form, _ := gc.NewForm(fields)
+	defer form.UnPost()
+	defer form.Free()
 
-    form.SetWindow(win)
-    form.SetSub(win.Derived(1, 11, 14, 16))
-    form.Post()
+	form.SetWindow(winGrid)
+	form.SetSub(winGrid.Derived(1, 11, 14, 16))
+	form.Post()
 
-    win.Refresh()
+	winGrid.Refresh()
+    winHelp.Refresh()
 
 main:
 	for {
 		for col := 0; col < ledGrid.Rect.Dx(); col++ {
 			if col == curCol {
-				win.AttrOn(gc.A_BOLD)
+				winGrid.AttrOn(gc.A_BOLD)
 			}
-			win.MovePrintf(1, 10+col*8, "[%02d]", col)
-			win.AttrOff(gc.A_BOLD)
+			winGrid.MovePrintf(1, 10+col*8, "[%02d]", col)
+			winGrid.AttrOff(gc.A_BOLD)
 		}
-		win.HLine(2, 1, gc.ACS_HLINE, width-2)
+		winGrid.HLine(2, 1, gc.ACS_HLINE, gridWidth-2)
 		for row := 0; row < ledGrid.Rect.Dy(); row++ {
 			if row == curRow {
-				win.AttrOn(gc.A_BOLD)
+				winGrid.AttrOn(gc.A_BOLD)
 			}
-			win.MovePrintf(3+row, 2, "[%02d]", row)
-			win.AttrOff(gc.A_BOLD)
+			winGrid.MovePrintf(3+row, 2, "[%02d]", row)
+			winGrid.AttrOff(gc.A_BOLD)
 		}
-		win.VLine(1, 7, gc.ACS_VLINE, 12)
+		winGrid.VLine(1, 7, gc.ACS_VLINE, 12)
 		for row := 0; row < ledGrid.Rect.Dy(); row++ {
 			for col := 0; col < ledGrid.Rect.Dx(); col++ {
 				if between(row, curRow, selRow) && between(col, curCol, selCol) {
-					win.AttrOn(gc.A_REVERSE)
+					winGrid.AttrOn(gc.A_REVERSE)
 					// win.MovePrintf(3+row, 8+(col*8), "        ")
 				}
 				ledColor = ledGrid.LedColorAt(col, row)
 				colors = []uint8{ledColor.R, ledColor.G, ledColor.B}
 				for k := 0; k < 3; k++ {
 					if (row == curRow) && (col == curCol) && (k == curColor) {
-						win.ColorOn(int16(k + 1))
-						win.AttrOn(gc.A_BOLD)
+						winGrid.ColorOn(int16(k + 1))
+						winGrid.AttrOn(gc.A_BOLD)
 					}
-					win.MovePrintf(3+row, 9+(col*8)+(k*2), "%02x", colors[k])
-					win.AttrOff(gc.A_BOLD)
-					win.ColorOff(int16(k + 1))
+					winGrid.MovePrintf(3+row, 9+(col*8)+(k*2), "%02x", colors[k])
+					winGrid.AttrOff(gc.A_BOLD)
+					winGrid.ColorOff(int16(k + 1))
 				}
-				win.AttrOff(gc.A_REVERSE)
+				winGrid.AttrOff(gc.A_REVERSE)
 			}
 		}
-		win.HLine(13, 1, gc.ACS_HLINE, width-2)
+		winGrid.HLine(13, 1, gc.ACS_HLINE, gridWidth-2)
 
-		win.MovePrintf(14, 2, "Gamma values:")
-		win.Refresh()
+		winGrid.MovePrintf(14, 2, "Gamma values:")
+		winGrid.Refresh()
 
 		gc.Update()
 
-		ch = win.GetChar()
+		ch = winGrid.GetChar()
 
 		ledColor = ledGrid.LedColorAt(curCol, curRow)
 
@@ -151,7 +166,7 @@ main:
 		case 'B':
 			curColor = 2
 
-		case 'C':
+		case 'c':
 			for i := range ledGrid.Pix {
 				ledGrid.Pix[i] = 0x00
 			}
@@ -196,9 +211,9 @@ main:
 		case 'q':
 			break main
 
-        case gc.KEY_TAB:
-            form.Driver(gc.REQ_NEXT_FIELD)
-            form.Driver(gc.REQ_END_LINE)
+		case gc.KEY_TAB:
+			form.Driver(gc.REQ_NEXT_FIELD)
+			form.Driver(gc.REQ_END_LINE)
 
 		case gc.KEY_LEFT:
 			if curCol > 0 {
@@ -281,8 +296,8 @@ main:
 			}
 			colorChanged = true
 
-		default:
-			fmt.Fprintf(os.Stderr, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
+			// default:
+			// 	fmt.Fprintf(os.Stderr, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
 		}
 
 		if colorChanged {
@@ -291,6 +306,6 @@ main:
 			colorChanged = false
 		}
 	}
-	win.Delete()
+	winGrid.Delete()
 	pixelClient.Close()
 }

@@ -25,12 +25,12 @@ const (
 )
 
 const (
-	width     = 10
-	height    = 10
-	defHost   = "raspi-2"
-	defPort   = 5333
-	defGroup  = colornames.Reds
-	frameRate = 50 * time.Millisecond
+	width        = 10
+	height       = 10
+	defHost      = "raspi-2"
+	defPort      = 5333
+	defGroup     = colornames.Reds
+	frameRefresh = 30 * time.Millisecond
 )
 
 type Orientation int
@@ -110,43 +110,43 @@ func (b *MovingBar) Draw() {
 }
 
 type TimedObject struct {
-	Obj            *Shape
-	Active         bool
-	SlotStart time.Time
+	Obj          *Shape
+	Active       bool
+	SlotStart    time.Time
 	DurationList []time.Duration
-    StatusList []bool
-    Cycle bool
-    currSlot int
+	StatusList   []bool
+	Cycle        bool
+	currSlot     int
 }
 
 func NewTimedObject(obj *Shape, durations []int) *TimedObject {
 	t := &TimedObject{}
 	t.Obj = obj
 	t.Active = true
-    t.SlotStart = time.Now()
-    t.DurationList = make([]time.Duration, 0)
-    t.StatusList = make([]bool, 0)
-    t.Cycle = false
-    for _, dur := range durations {
-        switch {
-        case dur == 0:
-            t.Cycle = true
-        case dur < 0:
-            t.StatusList = append(t.StatusList, false)
-            t.DurationList = append(t.DurationList, time.Duration(-dur) * time.Millisecond)
-        case dur > 0:
-            t.StatusList = append(t.StatusList, true)
-            t.DurationList = append(t.DurationList, time.Duration(dur) * time.Millisecond)
-        }
-    }
-    t.currSlot = 0
+	t.SlotStart = time.Now()
+	t.DurationList = make([]time.Duration, 0)
+	t.StatusList = make([]bool, 0)
+	t.Cycle = false
+	for _, dur := range durations {
+		switch {
+		case dur == 0:
+			t.Cycle = true
+		case dur < 0:
+			t.StatusList = append(t.StatusList, false)
+			t.DurationList = append(t.DurationList, time.Duration(-dur)*time.Millisecond)
+		case dur > 0:
+			t.StatusList = append(t.StatusList, true)
+			t.DurationList = append(t.DurationList, time.Duration(dur)*time.Millisecond)
+		}
+	}
+	t.currSlot = 0
 	return t
 }
 
 func (t *TimedObject) Reset() {
 	t.Active = true
 	t.SlotStart = time.Now()
-    t.currSlot = 0
+	t.currSlot = 0
 }
 
 func (t *TimedObject) Animate() {
@@ -154,15 +154,15 @@ func (t *TimedObject) Animate() {
 		return
 	}
 	if time.Since(t.SlotStart) >= t.DurationList[t.currSlot] {
-        t.SlotStart = time.Now()
-        t.currSlot++
-        if t.currSlot == len(t.DurationList) {
-            t.currSlot = 0
-            if !t.Cycle {
-                t.Active = false
-            }
-        }
-    }
+		t.SlotStart = time.Now()
+		t.currSlot++
+		if t.currSlot == len(t.DurationList) {
+			t.currSlot = 0
+			if !t.Cycle {
+				t.Active = false
+			}
+		}
+	}
 }
 
 func (t *TimedObject) Draw() {
@@ -200,7 +200,64 @@ func (s *Shape) Draw() {
 	}
 }
 
-//----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+func f1(x, y, t, p1 float64) float64 {
+	return math.Sin(x*p1 + t)
+}
+
+func f2(x, y, t, p1, p2, p3 float64) float64 {
+	return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
+}
+
+func f3(x, y, t, p1, p2 float64) float64 {
+	cx := x + 0.5*math.Sin(t/p1)
+	cy := y + 0.5*math.Cos(t/p2)
+	return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
+}
+
+func plasma(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
+	var col, row int
+	var x, y, dx, dy float64
+	var v1, v2, v3, v float64
+	var t, dt float64
+	var mathWidth, mathHeight float64
+	var pal *ledgrid.Palette
+
+	t = 0.0
+	dt = 0.05
+	// dDarkFactor = 0.01
+	mathWidth = 0.75
+	mathHeight = 0.75
+	dx = mathWidth / float64(grid.Rect.Dx()-1)
+	dy = mathHeight / float64(grid.Rect.Dy()-1)
+	pal = ledgrid.NewPalette()
+	pal.SetColorStops(ledgrid.Nightspell)
+
+	ticker := time.NewTicker(frameRefresh)
+	go func() {
+		for range ticker.C {
+			y = mathHeight / 2.0
+			for row = range grid.Rect.Dy() {
+				x = -mathWidth / 2.0
+				for col = range grid.Rect.Dx() {
+					v1 = f1(x, y, t, 10.0)
+					v2 = f2(x, y, t, 10.0, 2.0, 3.0)
+					v3 = f3(x, y, t, 5.0, 3.0)
+					v = (v1+v2+v3)/6.0 + 0.5
+					grid.SetLedColor(col, row, pal.Color(v))
+					x += dx
+				}
+				y -= dy
+			}
+			t += dt
+			client.Draw(grid)
+			//pal.SetDarkFactor(pal.DarkFactor() + dDarkFactor)
+		}
+	}()
+	fmt.Scanln()
+	ticker.Stop()
+}
 
 func movingBar(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
 	var b1, b2, b3, b4 *MovingBar
@@ -214,15 +271,15 @@ func movingBar(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
 	b4 = NewMovingBar(grid, Vertical, -speed, ledgrid.LedColor{255, 255, 0})
 	b4.Pos = float64(grid.Rect.Max.X - 1)
 
-	ticker := time.NewTicker(frameRate)
+	ticker := time.NewTicker(frameRefresh)
 	go func() {
 		for range ticker.C {
+			grid.Fade()
 			b1.Draw()
 			b2.Draw()
 			b3.Draw()
 			b4.Draw()
 			client.Draw(grid)
-			grid.Fade()
 			b1.Animate()
 			b2.Animate()
 			b3.Animate()
@@ -243,22 +300,22 @@ func blurring(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
 	shape3 = NewShape(grid, image.Point{5, 1}, ledgrid.LedColor{0, 0, 240})
 	shape4 = NewShape(grid, image.Point{7, 1}, ledgrid.LedColor{240, 0, 240})
 
-	obj1 = NewTimedObject(shape1, []int{ 500,  -500, 0})
+	obj1 = NewTimedObject(shape1, []int{500, -500, 0})
 	obj2 = NewTimedObject(shape2, []int{1000, -1000, 0})
 	obj3 = NewTimedObject(shape3, []int{2000, -2000, 0})
 	obj4 = NewTimedObject(shape4, []int{4000, -4000, 0})
 	// obj3 = NewTimedObject(blk3, []int{2000, 300, 2000, 300, 2000, 1000, 300, 300, 300, 0})
 
-	ticker := time.NewTicker(frameRate)
+	ticker := time.NewTicker(frameRefresh)
 	go func() {
 		for range ticker.C {
+			grid.Clear()
+			// grid.Blur()
 			obj1.Draw()
 			obj2.Draw()
 			obj3.Draw()
 			obj4.Draw()
 			client.Draw(grid)
-			// grid.Blur()
-            grid.Clear()
 			obj1.Animate()
 			obj2.Animate()
 			obj3.Animate()
@@ -296,7 +353,8 @@ func main() {
 	uniColor = image.NewUniform(prevColor)
 
 	// movingBar(pixelClient, ledGrid)
-	blurring(pixelClient, ledGrid)
+	// blurring(pixelClient, ledGrid)
+	plasma(pixelClient, ledGrid)
 
 	ledGrid.Clear()
 	pixelClient.Draw(ledGrid)

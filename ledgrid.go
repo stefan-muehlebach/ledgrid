@@ -149,7 +149,7 @@ var (
         		{blurVal, blurVal, blurVal},
         },
         Edge: Constant,
-        Color: LedColor{0, 0, 0},
+        Color: Black,
 	}
 
 	FadeKernel = KernelType{
@@ -159,7 +159,7 @@ var (
 		    {0.0, 0.0, 0.0},
         },
         Edge: Constant,
-        Color: LedColor{0, 0, 0},
+        Color: Black,
 	}
 
     SharpKernel = KernelType{
@@ -169,7 +169,7 @@ var (
             { 0.0, -1.0,  0.0},
         },
         Edge: Constant,
-        Color: LedColor{0, 0, 0},
+        Color: Black,
     }
 
     EdgeKernel = KernelType{
@@ -179,7 +179,7 @@ var (
             {0.0,  1.0, 0.0},
         },
         Edge: Constant,
-        Color: LedColor{0, 0, 0},
+        Color: Black,
     }
 )
 
