@@ -4,7 +4,8 @@ import (
 	"image"
 	"log"
 
-	gc "github.com/gbin/goncurses"
+	// gc "github.com/gbin/goncurses"
+    gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
 )
 
@@ -69,7 +70,7 @@ func main() {
 	winGrid.Keypad(true)
 	winGrid.Box(0, 0)
 
-	helpHeight, helpWidth := 16, 44
+	helpHeight, helpWidth := 16, 55
 	y, x = 19, 4
 
     winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
@@ -78,11 +79,23 @@ func main() {
 	}
 	winHelp.Keypad(true)
 	winHelp.Box(0, 0)
-    winHelp.MovePrint(1, 2, "q: Quit")
-    winHelp.MoveAddChar(2, 2, gc.ACS_LARROW)
-    winHelp.MovePrintf(2, 3, ": move selector to the left")
-    winHelp.MoveAddChar(3, 2, gc.ACS_RARROW)
-    winHelp.MovePrintf(3, 3, ": move selector to the right")
+    winHelp.MoveAddChar(1, 2, gc.ACS_LARROW)
+    winHelp.MovePrintf(1, 3, ": move selector to the left")
+    winHelp.MoveAddChar(2, 2, gc.ACS_RARROW)
+    winHelp.MovePrintf(2, 3, ": move selector to the right")
+    winHelp.MoveAddChar(3, 2, gc.ACS_UARROW)
+    winHelp.MovePrintf(3, 3, ": move selector up")
+    winHelp.MoveAddChar(4, 2, gc.ACS_DARROW)
+    winHelp.MovePrintf(4, 3, ": move selector down")
+    winHelp.MovePrintf(5, 2, "[Ins], [Home], [PgUp] : increase color value")
+    winHelp.MovePrintf(6, 2, "[Del], [End], [PgDown]: decrease color value")
+    winHelp.MovePrintf(7, 2, "c: clear panel")
+    winHelp.MovePrintf(8, 2, "f: interpolate colors")
+
+    winHelp.MovePrint(10, 2, "q: Quit")
+
+
+
 
 	fields := make([]*gc.Field, 3)
 	fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
@@ -149,7 +162,8 @@ main:
 		winGrid.HLine(13, 1, gc.ACS_HLINE, gridWidth-2)
 
 		winGrid.MovePrintf(14, 2, "Gamma values:")
-		winGrid.Refresh()
+		winGrid.NoutRefresh()
+        winHelp.NoutRefresh()
 
 		gc.Update()
 

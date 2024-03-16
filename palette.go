@@ -6,16 +6,10 @@ import (
 
 //----------------------------------------------------------------------------
 
-// Eine etwas 'weichere' Interpolationsfunktion.
-func interpFunc(x float64) float64 {
-	return 3.0*x*x - 2.0*x*x*x
-}
-
-//----------------------------------------------------------------------------
-
 type Palette struct {
 	PosList   []float64
 	ColorList []LedColor
+	Func      InterpolFuncType
 	darkFact  float64
 }
 
@@ -23,6 +17,7 @@ func NewPalette() *Palette {
 	p := &Palette{}
 	p.PosList = []float64{0.0, 1.0}
 	p.ColorList = []LedColor{Black, Black}
+	p.Func = LinearInterpol
 	p.darkFact = 0.0
 	return p
 }
@@ -52,31 +47,31 @@ func (p *Palette) SetColorStop(t float64, c LedColor) {
 	p.ColorList[newIndex] = c
 }
 
-func (p *Palette) SetColorStops(colorList []LedColor) {
-	posStep := 1.0 / (float64(len(colorList) - 1))
-	p.ColorList = make([]LedColor, len(colorList))
-	copy(p.ColorList, colorList)
-	p.PosList = make([]float64, len(colorList))
-	for i := range len(colorList) - 1 {
+func (p *Palette) SetColorStops(cl []LedColor) {
+	posStep := 1.0 / (float64(len(cl) - 1))
+	p.ColorList = make([]LedColor, len(cl))
+	copy(p.ColorList, cl)
+	p.PosList = make([]float64, len(cl))
+	for i := range len(cl) - 1 {
 		p.PosList[i] = float64(i) * posStep
 	}
 	p.PosList[len(p.PosList)-1] = 1.0
 }
 
 func (p *Palette) Color(t float64) (c LedColor) {
-	var lowerIndex int
+	var i int
+    var pos float64
 
 	if t < 0.0 || t > 1.0 {
 		log.Fatalf("Color: parameter t must be in [0, 1] instead of %f", t)
 	}
-	for i, pos := range p.PosList[1:] {
+	for i, pos = range p.PosList[1:] {
 		if pos > t {
-			lowerIndex = i
 			break
 		}
 	}
-	t = (t - p.PosList[lowerIndex]) / (p.PosList[lowerIndex+1] - p.PosList[lowerIndex])
-	c = p.ColorList[lowerIndex].Interpolate(p.ColorList[lowerIndex+1], interpFunc(t))
+	t = (t - p.PosList[i]) / (p.PosList[i+1] - p.PosList[i])
+	c = p.ColorList[i].Interpolate(p.ColorList[i+1], p.Func(0, 1, t))
 	c = c.Interpolate(Black, p.darkFact)
 	return c
 }

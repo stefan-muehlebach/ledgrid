@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ClearColor   = LedColor{0, 0, 0}
-	OutsideColor = LedColor{0, 0, 0}
+	ClearColor   = Black
+	OutsideColor = Black
 )
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.

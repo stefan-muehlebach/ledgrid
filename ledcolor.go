@@ -1,6 +1,10 @@
 package ledgrid
 
-import "image/color"
+import (
+	"fmt"
+	"math"
+	"image/color"
+)
 
 var (
 	Black = LedColor{0x00, 0x00, 0x00}
@@ -9,6 +13,25 @@ var (
 	Green = LedColor{0x00, 0xFF, 0x00}
 	Blue  = LedColor{0x00, 0x00, 0xFF}
 )
+
+type InterpolFuncType func(a, b, t float64) float64
+
+var (
+    ColorInterpol = LinearInterpol
+)
+
+func LinearInterpol(a, b, t float64) float64 {
+    return (1-t)*a + t*b
+}
+
+func PolynomInterpol(a, b, t float64) float64 {
+    t = 3*t*t - 2*t*t*t
+    return LinearInterpol(a, b, t)
+}
+
+func SqrtInterpol(a, b, t float64) float64 {
+    return math.Sqrt((1-t)*a*a + t*b*b)
+}
 
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
 // gesendet werden. Die Daten sind _nicht_ gamma-korrigiert, dies wird erst
@@ -44,17 +67,23 @@ func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
 	if t == 1.0 {
 		return d
 	}
-	r := (1-t)*float64(c.R) + t*float64(d.R)
-	g := (1-t)*float64(c.G) + t*float64(d.G)
-	b := (1-t)*float64(c.B) + t*float64(d.B)
+    r := ColorInterpol(float64(c.R), float64(d.R), t)
+    g := ColorInterpol(float64(c.G), float64(d.G), t)
+    b := ColorInterpol(float64(c.B), float64(d.B), t)
 	return LedColor{uint8(r), uint8(g), uint8(b)}
 }
 
+// Mischt die Farben c und d so, dass jeweils der maximale Farbwert pro
+// R, G, B von c und d beruecksichtigt wird.
 func (c LedColor) Mix(d LedColor) LedColor {
 	r := max(c.R, d.R)
 	g := max(c.G, d.G)
 	b := max(c.B, d.B)
 	return LedColor{r, g, b}
+}
+
+func (c LedColor) String() (string) {
+    return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B)
 }
 
 // Das zum Typ LedColor zugehoerende ColorModel.
