@@ -22,29 +22,35 @@ func NewPalette() *Palette {
 	return p
 }
 
+func NewPaletteWithColors(cl []LedColor) *Palette {
+    p := NewPalette()
+    p.SetColorStops(cl)
+    return p
+}
+
 func (p *Palette) SetColorStop(t float64, c LedColor) {
-	var newIndex int
+	var i int
+    var pos float64
 
 	if t < 0.0 || t > 1.0 {
 		log.Fatalf("SetColor: parameter t must be in [0, 1] instead of %f", t)
 	}
-	for i, pos := range p.PosList {
+	for i, pos = range p.PosList {
 		if pos == t {
 			p.ColorList[i] = c
 			return
 		}
 		if pos > t {
-			newIndex = i
 			break
 		}
 	}
 	p.PosList = append(p.PosList, 0.0)
-	copy(p.PosList[newIndex+1:], p.PosList[newIndex:])
-	p.PosList[newIndex] = t
+	copy(p.PosList[i+1:], p.PosList[i:])
+	p.PosList[i] = t
 
 	p.ColorList = append(p.ColorList, LedColor{})
-	copy(p.ColorList[newIndex+1:], p.ColorList[newIndex:])
-	p.ColorList[newIndex] = c
+	copy(p.ColorList[i+1:], p.ColorList[i:])
+	p.ColorList[i] = c
 }
 
 func (p *Palette) SetColorStops(cl []LedColor) {

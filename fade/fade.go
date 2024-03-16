@@ -48,23 +48,33 @@ type Plasma struct {
 	grid                  *ledgrid.LedGrid
 	width, height, dx, dy float64
 	t, dt                 float64
-	Pal                   *ledgrid.Palette
+	pals                  [2]*ledgrid.Palette
+	ft, dft               float64
 }
 
 func NewPlasma(grid *ledgrid.LedGrid, pal *ledgrid.Palette) *Plasma {
 	p := &Plasma{}
 	p.grid = grid
-	p.width, p.height = 1.0, 1.0
+	p.width, p.height = 0.5, 0.5
 	p.t = 0.0
 	p.dt = 0.05
 	p.dx = p.width / float64(grid.Rect.Dx()-1)
 	p.dy = p.height / float64(grid.Rect.Dy()-1)
-	p.Pal = pal
+	p.pals[0] = pal
+	p.pals[1] = nil
+	p.ft = 0.0
+	p.dft = 0.03
 	return p
 }
 
 func (p *Plasma) Animate() {
 	p.t += p.dt
+	if p.ft > 0.0 {
+		p.ft -= p.dft
+		if p.ft < 0.0 {
+			p.ft = 0.0
+		}
+	}
 }
 
 func (p *Plasma) Draw() {
@@ -75,16 +85,29 @@ func (p *Plasma) Draw() {
 	for row = range p.grid.Rect.Dy() {
 		x = -p.width / 2.0
 		for col = range p.grid.Rect.Dx() {
-			v1 := f1(x, y, p.t, 5.0)
-			v2 := f2(x, y, p.t, 5.0, 1.0, 1.5)
+			v1 := f1(x, y, p.t, 10.0)
+			v2 := f2(x, y, p.t, 10.0, 2.0, 3.0)
 			v3 := f3(x, y, p.t, 5.0, 3.0)
 			v := (v1+v2+v3)/6.0 + 0.5
-            // v := (x / p.width) + 0.5
-			p.grid.SetLedColor(col, row, p.Pal.Color(v))
+			// v := (x / p.width) + 0.5
+			c1 := p.pals[0].Color(v)
+			if p.ft > 0.0 {
+				c2 := p.pals[1].Color(v)
+				c1 = c1.Interpolate(c2, p.ft)
+			}
+			p.grid.SetLedColor(col, row, c1)
 			x += p.dx
 		}
 		y -= p.dy
 	}
+}
+
+func (p *Plasma) FadePalette(pal *ledgrid.Palette) {
+	if p.ft > 0.0 {
+		return
+	}
+	p.pals[0], p.pals[1] = pal, p.pals[0]
+	p.ft = 1.0
 }
 
 func plasma(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
@@ -92,16 +115,17 @@ func plasma(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
 	var plas *Plasma
 	var ch string
 	var doAnim bool = true
-    var paletteIndex int = 0
+	var palIdx int = 0
+	var palName string
 
-	pal = ledgrid.NewPalette()
-	pal.SetColorStops(ledgrid.PaletteList[paletteIndex])
+	palName = ledgrid.PaletteNames[palIdx]
+	pal = ledgrid.PaletteMap[palName]
 	plas = NewPlasma(grid, pal)
 
-    for t:=0.0; t<=1.0; t+=0.1 {
-        c := pal.Color(t)
-        fmt.Printf("%.1f: %v\n", t, c)
-    }
+	for t := 0.0; t <= 1.0; t += 0.05 {
+		c := pal.Color(t)
+		fmt.Printf("%.2f: %v\n", t, c)
+	}
 
 	ticker := time.NewTicker(frameRefresh)
 	go func() {
@@ -135,9 +159,12 @@ mainLoop:
 			doAnim = false
 		case "r":
 			doAnim = true
-        case "n":
-            paletteIndex = (paletteIndex + 1) % len(ledgrid.PaletteList)
-            pal.SetColorStops(ledgrid.PaletteList[paletteIndex])
+		case "n":
+			palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
+			palName = ledgrid.PaletteNames[palIdx]
+			fmt.Printf("New palette: %s\n", palName)
+			pal = ledgrid.PaletteMap[palName]
+			plas.FadePalette(pal)
 		case "1":
 			pal.Func = ledgrid.LinearInterpol
 		case "2":
@@ -146,7 +173,7 @@ mainLoop:
 			ledgrid.ColorInterpol = ledgrid.LinearInterpol
 		case "4":
 			ledgrid.ColorInterpol = ledgrid.SqrtInterpol
-    		case "q":
+		case "q":
 			break mainLoop
 		default:
 			fmt.Printf("command unknown: '%s'\n", ch)
