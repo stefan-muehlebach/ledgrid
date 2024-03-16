@@ -2,35 +2,35 @@ package ledgrid
 
 import (
 	"fmt"
-	"math"
 	"image/color"
+	"math"
 )
 
 var (
-	Black = LedColor{0x00, 0x00, 0x00}
-	White = LedColor{0xFF, 0xFF, 0xFF}
-	Red   = LedColor{0xFF, 0x00, 0x00}
-	Green = LedColor{0x00, 0xFF, 0x00}
-	Blue  = LedColor{0x00, 0x00, 0xFF}
+	Black = LedColor{0x00, 0x00, 0x00, 0xFF}
+	White = LedColor{0xFF, 0xFF, 0xFF, 0xFF}
+	Red   = LedColor{0xFF, 0x00, 0x00, 0xFF}
+	Green = LedColor{0x00, 0xFF, 0x00, 0xFF}
+	Blue  = LedColor{0x00, 0x00, 0xFF, 0xFF}
 )
 
 type InterpolFuncType func(a, b, t float64) float64
 
 var (
-    ColorInterpol = LinearInterpol
+	ColorInterpol = LinearInterpol
 )
 
 func LinearInterpol(a, b, t float64) float64 {
-    return (1-t)*a + t*b
+	return (1-t)*a + t*b
 }
 
 func PolynomInterpol(a, b, t float64) float64 {
-    t = 3*t*t - 2*t*t*t
-    return LinearInterpol(a, b, t)
+	t = 3*t*t - 2*t*t*t
+	return LinearInterpol(a, b, t)
 }
 
 func SqrtInterpol(a, b, t float64) float64 {
-    return math.Sqrt((1-t)*a*a + t*b*b)
+	return math.Sqrt((1-t)*a*a + t*b*b)
 }
 
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
@@ -38,16 +38,22 @@ func SqrtInterpol(a, b, t float64) float64 {
 // auf dem Panel-Empfaenger gemacht (pixelcontroller-slave).
 // LedColor implementiert das color.Color Interface.
 type LedColor struct {
-	R, G, B uint8
+	R, G, B, A uint8
 }
 
 // RGBA ist Teil des color.Color Interfaces.
 func (c LedColor) RGBA() (r, g, b, a uint32) {
-	r, g, b = uint32(c.R), uint32(c.G), uint32(c.B)
+	r, g, b, a = uint32(c.R), uint32(c.G), uint32(c.B), uint32(c.A)
 	r |= r << 8
+	r *= a
+	r /= 0xFF
 	g |= g << 8
+	g *= a
+	g /= 0xFF
 	b |= b << 8
-	a = 65535
+	b *= a
+	b /= 0xFF
+	a |= a << 8
 	return
 }
 
@@ -67,23 +73,25 @@ func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
 	if t == 1.0 {
 		return d
 	}
-    r := ColorInterpol(float64(c.R), float64(d.R), t)
-    g := ColorInterpol(float64(c.G), float64(d.G), t)
-    b := ColorInterpol(float64(c.B), float64(d.B), t)
-	return LedColor{uint8(r), uint8(g), uint8(b)}
+	r := ColorInterpol(float64(c.R), float64(d.R), t)
+	g := ColorInterpol(float64(c.G), float64(d.G), t)
+	b := ColorInterpol(float64(c.B), float64(d.B), t)
+	a := ColorInterpol(float64(c.A), float64(d.A), t)
+	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
 }
 
 // Mischt die Farben c und d so, dass jeweils der maximale Farbwert pro
 // R, G, B von c und d beruecksichtigt wird.
-func (c LedColor) Mix(d LedColor) LedColor {
-	r := max(c.R, d.R)
-	g := max(c.G, d.G)
-	b := max(c.B, d.B)
-	return LedColor{r, g, b}
+func (c LedColor) Mix(bg LedColor) LedColor {
+    a := float64(c.A)/255.0
+	r := LinearInterpol(float64(c.R), float64(bg.R), (1-a))
+	g := LinearInterpol(float64(c.G), float64(bg.G), (1-a))
+	b := LinearInterpol(float64(c.B), float64(bg.B), (1-a))
+	return LedColor{uint8(r), uint8(g), uint8(b), 0xFF}
 }
 
-func (c LedColor) String() (string) {
-    return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B)
+func (c LedColor) String() string {
+	return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B, c.A)
 }
 
 // Das zum Typ LedColor zugehoerende ColorModel.
@@ -96,6 +104,15 @@ func ledColorModel(c color.Color) color.Color {
 	if _, ok := c.(LedColor); ok {
 		return c
 	}
-	r, g, b, _ := c.RGBA()
-	return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8)}
+	r, g, b, a := c.RGBA()
+    if a == 0xFFFF {
+        	return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xFF}
+    }
+    if a == 0 {
+        return LedColor{0, 0, 0, 0}
+    }
+    r = (r * 0xFFFF) / a
+    g = (g * 0xFFFF) / a
+    b = (b * 0xFFFF) / a
+    	return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
 }

@@ -60,7 +60,7 @@ func (g *LedGrid) LedColorAt(x, y int) LedColor {
 	}
 	idx := g.PixOffset(x, y)
 	slc := g.Pix[idx : idx+3 : idx+3]
-	return LedColor{slc[0], slc[1], slc[2]}
+	return LedColor{slc[0], slc[1], slc[2], 0xFF}
 }
 
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.
@@ -238,7 +238,7 @@ func (lg *LedGrid) convolute(op KernelType) {
 					b += float64(c.B) * opVal
 				}
 			}
-			lg.SetLedColor(col, row, LedColor{uint8(r), uint8(g), uint8(b)})
+			lg.SetLedColor(col, row, LedColor{uint8(r), uint8(g), uint8(b), 0xFF})
 		}
 	}
 }
