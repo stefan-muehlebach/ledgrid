@@ -75,10 +75,11 @@ func (p *Plasma) Draw() {
 	for row = range p.grid.Rect.Dy() {
 		x = -p.width / 2.0
 		for col = range p.grid.Rect.Dx() {
-			// v1 := f1(x, y, p.t, 5.0)
-			// v2 := f2(x, y, p.t, 5.0, 1.0, 1.5)
+			v1 := f1(x, y, p.t, 5.0)
+			v2 := f2(x, y, p.t, 5.0, 1.0, 1.5)
 			v3 := f3(x, y, p.t, 5.0, 3.0)
-			v := (v3)/2.0 + 0.5
+			v := (v1+v2+v3)/6.0 + 0.5
+            // v := (x / p.width) + 0.5
 			p.grid.SetLedColor(col, row, p.Pal.Color(v))
 			x += p.dx
 		}
@@ -96,6 +97,11 @@ func plasma(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
 	pal = ledgrid.NewPalette()
 	pal.SetColorStops(ledgrid.PaletteList[paletteIndex])
 	plas = NewPlasma(grid, pal)
+
+    for t:=0.0; t<=1.0; t+=0.1 {
+        c := pal.Color(t)
+        fmt.Printf("%.1f: %v\n", t, c)
+    }
 
 	ticker := time.NewTicker(frameRefresh)
 	go func() {
