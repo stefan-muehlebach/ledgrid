@@ -82,12 +82,16 @@ func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
 
 // Mischt die Farben c und d so, dass jeweils der maximale Farbwert pro
 // R, G, B von c und d beruecksichtigt wird.
-func (c LedColor) Mix(bg LedColor) LedColor {
-    a := float64(c.A)/255.0
-	r := LinearInterpol(float64(c.R), float64(bg.R), (1-a))
-	g := LinearInterpol(float64(c.G), float64(bg.G), (1-a))
-	b := LinearInterpol(float64(c.B), float64(bg.B), (1-a))
-	return LedColor{uint8(r), uint8(g), uint8(b), 0xFF}
+func (c LedColor) Mix(d LedColor) LedColor {
+    ca := float64(c.A)/255.0
+    da := float64(d.A)/255.0
+    a := 1.0 - (1.0 - ca) * (1.0 - da)
+    t1 := ca/a
+    t2 := da*(1.0-ca)/a
+	r := float64(c.R)*t1 + float64(d.R)*t2
+	g := float64(c.G)*t1 + float64(d.G)*t2
+    b := float64(c.B)*t1 + float64(d.B)*t2
+	return LedColor{uint8(r), uint8(g), uint8(b), uint8(255.0 * a)}
 }
 
 func (c LedColor) String() string {
