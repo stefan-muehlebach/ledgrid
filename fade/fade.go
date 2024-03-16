@@ -20,12 +20,13 @@ const (
 	NumColors
 )
 
-const (
-	width        = 10
-	height       = 10
-	defHost      = "raspi-2"
-	defPort      = 5333
-	frameRefresh = 30 * time.Millisecond
+var (
+	width             = 10
+	height            = 10
+	defHost           = "raspi-2"
+	defPort      uint = 5333
+	frameRefresh      = 20 * time.Millisecond
+	gammaValue        = 3.0
 )
 
 //-----------------------------------------------------------------------------
@@ -55,7 +56,7 @@ type Plasma struct {
 func NewPlasma(grid *ledgrid.LedGrid, pal *ledgrid.Palette) *Plasma {
 	p := &Plasma{}
 	p.grid = grid
-	p.width, p.height = 0.5, 0.5
+	p.width, p.height = 0.25, 0.25
 	p.t = 0.0
 	p.dt = 0.05
 	p.dx = p.width / float64(grid.Rect.Dx()-1)
@@ -139,15 +140,11 @@ func plasma(client *ledgrid.PixelClient, grid *ledgrid.LedGrid) {
 	}()
 mainLoop:
 	for {
-		fmt.Printf("Command:\n")
-		fmt.Printf(" s: Stop animation\n")
-		fmt.Printf(" r: Resume animation\n")
-		fmt.Printf(" n: Next palette\n")
-		fmt.Printf(" 1: Linear Interpolation\n")
-		fmt.Printf(" 2: Polynomial interpolation\n")
-		fmt.Printf(" 3: Linear color fade\n")
-		fmt.Printf(" 4: Square root color fade\n")
-		fmt.Printf(" q: Quit\n")
+		fmt.Printf("Current palette: %s\n", palName)
+		fmt.Printf("  q: prev; w: next\n")
+		fmt.Printf("Current gamma value(s) %.4f\n", gammaValue)
+		fmt.Printf("  e: decr; r: incr\n")
+		fmt.Printf("  x: quit\n")
 
 		_, err := fmt.Scanln(&ch)
 		if err != nil {
@@ -195,9 +192,9 @@ func main() {
 	flag.Parse()
 
 	pixelClient = ledgrid.NewPixelClient(host, port)
-	pixelClient.SetGamma(0, 3.0)
-	pixelClient.SetGamma(1, 3.0)
-	pixelClient.SetGamma(2, 3.0)
+	pixelClient.SetGamma(0, gammaValue)
+	pixelClient.SetGamma(1, gammaValue)
+	pixelClient.SetGamma(2, gammaValue)
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 
 	plasma(pixelClient, ledGrid)

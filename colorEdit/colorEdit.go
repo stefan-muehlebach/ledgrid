@@ -5,7 +5,7 @@ import (
 	"log"
 
 	// gc "github.com/gbin/goncurses"
-    gc "github.com/rthornton128/goncurses"
+	gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
 )
 
@@ -26,8 +26,8 @@ func between(x, a, b int) bool {
 }
 
 func main() {
-	// var stdscr *gc.Window
-    var winGrid, winHelp *gc.Window
+	var stdscr *gc.Window
+	var winGrid, winHelp *gc.Window
 	var ch gc.Key
 	var curRow, selRow, curCol, selCol int
 	var curColor int
@@ -43,7 +43,7 @@ func main() {
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	pixelClient = ledgrid.NewPixelClient(defHost, defPort)
 
-	_, err = gc.Init()
+	stdscr, err = gc.Init()
 	if err != nil {
 		log.Fatalf("Couldn't Init ncurses: %v", err)
 	}
@@ -53,6 +53,9 @@ func main() {
 	gc.Echo(false)
 	gc.CBreak(true)
 	gc.Cursor(0)
+	gc.Raw(true)
+
+	stdscr.Keypad(true)
 
 	gc.InitPair(1, gc.C_RED, gc.C_BLACK)
 	gc.InitPair(2, gc.C_GREEN, gc.C_BLACK)
@@ -73,29 +76,26 @@ func main() {
 	helpHeight, helpWidth := 16, 55
 	y, x = 19, 4
 
-    winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
+	winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
 	if err != nil {
 		log.Fatalf("Couldn't create window: %v", err)
 	}
-	winHelp.Keypad(true)
+	// winHelp.Keypad(true)
 	winHelp.Box(0, 0)
-    winHelp.MoveAddChar(1, 2, gc.ACS_LARROW)
-    winHelp.MovePrintf(1, 3, ": move selector to the left")
-    winHelp.MoveAddChar(2, 2, gc.ACS_RARROW)
-    winHelp.MovePrintf(2, 3, ": move selector to the right")
-    winHelp.MoveAddChar(3, 2, gc.ACS_UARROW)
-    winHelp.MovePrintf(3, 3, ": move selector up")
-    winHelp.MoveAddChar(4, 2, gc.ACS_DARROW)
-    winHelp.MovePrintf(4, 3, ": move selector down")
-    winHelp.MovePrintf(5, 2, "[Ins], [Home], [PgUp] : increase color value")
-    winHelp.MovePrintf(6, 2, "[Del], [End], [PgDown]: decrease color value")
-    winHelp.MovePrintf(7, 2, "c: clear panel")
-    winHelp.MovePrintf(8, 2, "f: interpolate colors")
+	winHelp.MoveAddChar(1, 2, gc.ACS_LARROW)
+	winHelp.MovePrintf(1, 3, ": move selector to the left")
+	winHelp.MoveAddChar(2, 2, gc.ACS_RARROW)
+	winHelp.MovePrintf(2, 3, ": move selector to the right")
+	winHelp.MoveAddChar(3, 2, gc.ACS_UARROW)
+	winHelp.MovePrintf(3, 3, ": move selector up")
+	winHelp.MoveAddChar(4, 2, gc.ACS_DARROW)
+	winHelp.MovePrintf(4, 3, ": move selector down")
+	winHelp.MovePrintf(5, 2, "[Ins], [Home], [PgUp] : increase color value")
+	winHelp.MovePrintf(6, 2, "[Del], [End], [PgDown]: decrease color value")
+	winHelp.MovePrintf(7, 2, "c: clear panel")
+	winHelp.MovePrintf(8, 2, "f: interpolate colors")
 
-    winHelp.MovePrint(10, 2, "q: Quit")
-
-
-
+	winHelp.MovePrint(10, 2, "q: Quit")
 
 	fields := make([]*gc.Field, 3)
 	fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
@@ -119,7 +119,7 @@ func main() {
 	form.Post()
 
 	winGrid.Refresh()
-    winHelp.Refresh()
+	winHelp.Refresh()
 
 main:
 	for {
@@ -163,7 +163,7 @@ main:
 
 		winGrid.MovePrintf(14, 2, "Gamma values:")
 		winGrid.NoutRefresh()
-        winHelp.NoutRefresh()
+		winHelp.NoutRefresh()
 
 		gc.Update()
 

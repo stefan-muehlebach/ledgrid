@@ -60,9 +60,7 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur erstellt.
 	//
-	p.SetGamma(0, 1.0)
-	p.SetGamma(1, 1.0)
-	p.SetGamma(2, 1.0)
+	p.SetGamma(1.0, 1.0, 1.0)
 
 	// Dann wird der SPI-Bus initialisiert.
 	//
@@ -109,15 +107,16 @@ func (p *PixelServer) Close() {
 	p.udpConn.Close()
 }
 
-func (p *PixelServer) Gamma(color int) (float64) {
-    return p.gammaValue[color]
+func (p *PixelServer) Gamma() (r, g, b float64) {
+	return p.gammaValue[0], p.gammaValue[1], p.gammaValue[2]
 }
 
-func (p *PixelServer) SetGamma(color int, value float64) {
-	p.gammaValue[color] = value
-	for i := 0; i < 256; i++ {
-		p.gamma[color][i] = byte(255.0 * math.Pow(float64(i)/255.0,
-			p.gammaValue[color]))
+func (p *PixelServer) SetGamma(r, g, b float64) {
+	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = r, g, b
+	for color, val := range p.gammaValue {
+		for i := range 256 {
+			p.gamma[color][i] = byte(255.0 * math.Pow(float64(i)/255.0, val))
+		}
 	}
 }
 
@@ -184,12 +183,11 @@ func (p *PixelServer) RPCDraw(grid *LedGrid, reply *int) error {
 }
 
 type GammaArg struct {
-	Color int
-	Value float64
+	RedVal, GreenVal, BlueVal float64
 }
 
 func (p *PixelServer) RPCSetGamma(arg GammaArg, reply *int) error {
-	p.SetGamma(arg.Color, arg.Value)
+	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
 
@@ -241,21 +239,11 @@ func (p *PixelClient) Draw(ledGrid *LedGrid) {
 	}
 }
 
-// func (p *PixelClient) Draw(grid *LedGrid) {
-// 	var reply int
-// 	var err error
-
-// 	err = p.rpcClient.Call("PixelServer.RPCDraw", grid, &reply)
-// 	if err != nil {
-// 		log.Fatal("Draw error:", err)
-// 	}
-// }
-
-func (p *PixelClient) SetGamma(color int, value float64) {
+func (p *PixelClient) SetGamma(r, g, b float64) {
 	var reply int
 	var err error
 
-	err = p.rpcClient.Call("PixelServer.RPCSetGamma", GammaArg{color, value}, &reply)
+	err = p.rpcClient.Call("PixelServer.RPCSetGamma", GammaArg{r, g, b}, &reply)
 	if err != nil {
 		log.Fatal("SetGamma error:", err)
 	}
