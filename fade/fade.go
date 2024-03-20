@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"math"
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
@@ -25,136 +24,108 @@ var (
 	height               = 10
 	defHost              = "raspi-2"
 	defPort         uint = 5333
+	defGammaValue        = 3.0
 	framesPerSecond      = 50
-	frameDelayMs         = 1000 / framesPerSecond
-	frameDelaySec        = float64(frameDelayMs) / 1000.0
-	gammaValue           = 3.0
+	frameRefreshMs       = 1000 / framesPerSecond
+	frameRefreshSec      = float64(frameRefreshMs) / 1000.0
 )
 
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 
-type AnimFuncType func(x, y, t float64) float64
+// func sphereFunc(x, y, t float64) float64 {
+// 	return math.Sqrt(7.0/9.0 - x*x - y*y)
+// }
 
-func verticalBar(x, y, t float64) float64 {
-    _, f := math.Modf(x/0.25 + 0.5 + t/2)
-    if f > 0.8 {
-        return 1.0
-    } else {
-        return 0.0
-    }
+// func testFunc(x, y, t float64) float64 {
+// 	return x/2.0 + 0.5
+// }
+
+// func verticalBar(x, y, t float64) float64 {
+// 	_, f := math.Modf(x/0.25 + 0.5 + t/2)
+// 	if f > 0.8 {
+// 		return 1.0
+// 	} else {
+// 		return 0.0
+// 	}
+// }
+
+type Counter struct {
+	size  image.Point
+	bits  []bool
+	color ledgrid.LedColor
 }
 
-func horizontalFade(x, y, t float64) float64 {
-    _, f := math.Modf(x/0.25 + 0.5 + t/2)
-    return f
+func NewCounter(size image.Point, color ledgrid.LedColor) *Counter {
+	c := &Counter{}
+	c.size = size
+	c.bits = make([]bool, c.size.X*c.size.Y)
+	c.color = color
+	return c
 }
 
-func plasmaFunc(x, y, t float64) float64 {
-	v1 := f1(x, y, t, 10.0)
-	v2 := f2(x, y, t, 10.0, 2.0, 3.0)
-	v3 := f3(x, y, t, 5.0, 3.0)
-	v := (v1+v2+v3)/6.0 + 0.5
-	return v
-}
-func f1(x, y, t, p1 float64) float64 {
-	return math.Sin(x*p1 + t)
-}
-func f2(x, y, t, p1, p2, p3 float64) float64 {
-	return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
-}
-func f3(x, y, t, p1, p2 float64) float64 {
-	cx := x + 0.5*math.Sin(t/p1)
-	cy := y + 0.5*math.Cos(t/p2)
-	return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
-}
-
-
-type Animator struct {
-	grid                  *ledgrid.LedGrid
-	width, height, dx, dy float64
-    AnimFunc  AnimFuncType
-	pals                  [2]*ledgrid.Palette
-	ft, dft               float64
-}
-
-func NewAnimator(grid *ledgrid.LedGrid, pal *ledgrid.Palette, animFunc AnimFuncType) *Animator {
-	p := &Animator{}
-	p.grid = grid
-	p.width, p.height = 0.25, 0.25
-	p.dx = p.width / float64(grid.Rect.Dx()-1)
-	p.dy = p.height / float64(grid.Rect.Dy()-1)
-    p.AnimFunc = animFunc
-	p.pals[0] = pal
-	p.pals[1] = pal
-	p.ft = 0.0
-	p.dft = 0.03
-	return p
-}
-
-func (p *Animator) Animate(t float64) {
-	var col, row int
-	var x, y float64
-
-	if p.ft > 0.0 {
-		p.ft -= frameDelaySec
-		if p.ft < 0.0 {
-			p.ft = 0.0
+func (c *Counter) Update(t float64) {
+	for i, b := range c.bits {
+		if !b {
+			c.bits[i] = true
+			break
+		} else {
+			c.bits[i] = false
 		}
 	}
-	y = p.height / 2.0
-	for row = range p.grid.Rect.Dy() {
-		x = -p.width / 2.0
-		for col = range p.grid.Rect.Dx() {
-			v := p.AnimFunc(x, y, t)
-			c1 := p.pals[0].Color(v)
-			if p.ft > 0.0 {
-				c2 := p.pals[1].Color(v)
-				c1 = c1.Interpolate(c2, p.ft)
-			}
-			p.grid.SetLedColor(col, row, c1)
-			x += p.dx
+}
+
+func (c *Counter) Draw(grid *ledgrid.LedGrid) {
+	for i, b := range c.bits {
+		if !b {
+			continue
 		}
-		y -= p.dy
+		row := i / c.size.X
+		col := i % c.size.X
+		grid.SetLedColor(col, row, c.color)
 	}
 }
 
-func (p *Animator) SetPalette(pal *ledgrid.Palette) {
-	if p.ft > 0.0 {
-		return
-	}
-	p.pals[0], p.pals[1] = pal, p.pals[0]
-	p.ft = 1.0
-}
+//----------------------------------------------------------------------------
 
 func main() {
 	var host string
 	var port uint
+	var gammaValue float64
 
 	var client *ledgrid.PixelClient
 	var grid *ledgrid.LedGrid
-	var pal *ledgrid.Palette
-	var anim *Animator
+	var pal *ledgrid.PaletteFader
+	var shader *ledgrid.Shader
 	var ch string
 	var palIdx int = 0
 	var palName string
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.Float64Var(&gammaValue, "gamma", defGammaValue, "Gamma value")
 	flag.Parse()
 
 	client = ledgrid.NewPixelClient(host, port)
 	client.SetGamma(gammaValue, gammaValue, gammaValue)
 	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 
-	palName = "FadeRed"
-	pal = ledgrid.PaletteMap[palName]
-	anim = NewAnimator(grid, pal, horizontalFade)
+	pal = ledgrid.NewPaletteFader(ledgrid.PaletteMap["Hipster"])
+	shader = ledgrid.NewShader(grid.Bounds().Size(), pal, ledgrid.PlasmaShader)
 
-	ticker := time.NewTicker(time.Duration(frameDelayMs) * time.Millisecond)
+	// counter := NewCounter(grid.Rect.Size(), ledgrid.Red)
+
+	ticker := time.NewTicker(time.Duration(frameRefreshMs) * time.Millisecond)
 	go func() {
+		t0 := time.Now()
 		for t := range ticker.C {
-			ti := float64(t.UnixMilli()) / 1000.0
-			anim.Animate(ti)
+			t1 := t.Sub(t0).Seconds()
+			pal.Update(t1)
+			shader.Update(t1)
+			// counter.Update(t1)
+			grid.Clear()
+			shader.Draw(grid)
+			// counter.Draw(grid)
+
 			client.Draw(grid)
 		}
 	}()
@@ -174,19 +145,20 @@ mainLoop:
 
 		switch ch {
 		case "q", "w":
-            if ch == "q" {
-                if palIdx > 0 {
-                    palIdx -= 1
-                } else {
-                    break
-                }
-            } else {
-			    palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
-            }
+			if ch == "q" {
+				if palIdx > 0 {
+					palIdx -= 1
+				} else {
+					break
+				}
+			} else {
+				palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
+			}
 			palName = ledgrid.PaletteNames[palIdx]
 			fmt.Printf("New palette: %s\n", palName)
-			pal = ledgrid.PaletteMap[palName]
-			anim.SetPalette(pal)
+			// pal = ledgrid.PaletteMap[palName]
+			pal.Fade(ledgrid.PaletteMap[palName], 2.0)
+			// shader.FadePalette(pal, 2.0)
 		case "e", "r":
 			if ch == "e" {
 				gammaValue -= 0.1

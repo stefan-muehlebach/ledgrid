@@ -1,108 +1,150 @@
 package ledgrid
 
 var (
-	PaletteNames = []string{
-		"AAA",
-		"Adribble",
-		"Brazil",
-		"BW01",
-		"BW02",
-		"BW03",
-		"Cake",
-		"Castle",
-		"CGA",
-		"Civil",
-		"Cold00",
-		"Cold01",
-		"Cold02",
-		"Cold03",
-		"Cold04",
-		"Cold05",
-		"ColorBird",
-		"Corn",
-		"FadeRed",
-		"FadeGreen",
-		"FadeBlue",
-		"FadeAll",
-		"RGB",
-		"Fame575",
-		"Fire",
-		"Hipster",
-		"Lantern",
-		"Lemming",
-		"Sunset",
-		"Warmth",
-		"Wayyou",
-		"Weparted",
-	}
+	// PaletteNames ist ein Slice mit den Namen aller vorhandenen Paletten.
+	// Er wird dynamisch aus den Schluesselwoertern des Maps PaletteMap
+	// aufgebaut (siehe Funktion init ganz am Ende des Files).
+	PaletteNames []string
 
+	// PaletteMap ist die Verbindung zwischen Palettenname und einer Variable
+	// vom Typ Palette.
 	PaletteMap = map[string]*Palette{
-		"AAA":       AAA,
-		"Adribble":  Adribble,
-		"Brazil":    Brazil,
-		"BW01":      BW01,
-		"BW02":      BW02,
-		"BW03":      BW03,
-		"Cake":      Cake,
-		"Castle":    Castle,
-		"CGA":       CGA,
-		"Civil":     Civil,
-		"Cold00":    Cold00,
-		"Cold01":    Cold01,
-		"Cold02":    Cold02,
-		"Cold03":    Cold03,
-		"Cold04":    Cold04,
-		"Cold05":    Cold05,
-		"ColorBird": ColorBird,
-		"Corn":      Corn,
-		"FadeRed":   FadeRed,
-		"FadeGreen": FadeGreen,
-		"FadeBlue":  FadeBlue,
-		"FadeAll":   FadeAll,
-		"RGB":       RGB,
-		"Fame575":   Fame575,
-		"Fire":      Fire,
-		"Hipster":   Hipster,
-		"Lantern":   Lantern,
-		"Lemming":   Lemming,
-		"Sunset":    Sunset,
-		"Warmth":    Warmth,
-		"Wayyou":    Wayyou,
-		"Weparted":  Weparted,
+		"FractalDefault": FractalDefault,
+		"EarthAndSky":    EarthAndSky,
+		"Neon":           Neon,
+		"AAA":            AAA,
+		"Adribble":       Adribble,
+		"Brazil":         Brazil,
+		"BW01":           BW01,
+		"BW02":           BW02,
+		"BW03":           BW03,
+		"Cake":           Cake,
+		"Castle":         Castle,
+		"CGA":            CGA,
+		"Civil":          Civil,
+		"Cold00":         Cold00,
+		"Cold01":         Cold01,
+		"Cold02":         Cold02,
+		"Cold03":         Cold03,
+		"Cold04":         Cold04,
+		"Cold05":         Cold05,
+		"ColorBird":      ColorBird,
+		"Corn":           Corn,
+		"CycleRed":       CycleRed,
+		"FadeAll":        FadeAll,
+		"FadeBlue":       FadeBlue,
+		"FadeGreen":      FadeGreen,
+		"FadeRed":        FadeRed,
+		"Fame575":        Fame575,
+		"Fire":           Fire,
+		"Fizz":           Fizz,
+		"Fold":           Fold,
+		"Hipster":        Hipster,
+		"KittyHC":        KittyHC,
+		"Kitty":          Kitty,
+		"Lantern":        Lantern,
+		"LeBron":         LeBron,
+		"Lemming":        Lemming,
+		"MiamiVice":      MiamiVice,
+		"MIUSA":          MIUSA,
+		"ML581AT":        ML581AT,
+		"NewSeason":      NewSeason,
+		"Nightspell":     Nightspell,
+		"Rainbows":       Rainbows,
+		"Rasta":          Rasta,
+		"RGB":            RGB,
+		"Simpson":        Simpson,
+		"Smurf":          Smurf,
+		"Spring":         Spring,
+		"Sunset":         Sunset,
+		"Violet":         Violet,
+		"Warmth":         Warmth,
+		"Wayyou":         Wayyou,
+		"Weparted":       Weparted,
 	}
 
-	AAA       = NewPaletteWithColors(AAAColors)
-	Adribble  = NewPaletteWithColors(AdribbleColors)
-	Brazil    = NewPaletteWithColors(BrazilColors)
-	BW01      = NewPaletteWithColors(BW01Colors)
-	BW02      = NewPaletteWithColors(BW02Colors)
-	BW03      = NewPaletteWithColors(BW03Colors)
-	Cake      = NewPaletteWithColors(CakeColors)
-	Castle    = NewPaletteWithColors(CastleColors)
-	CGA       = NewPaletteWithColors(CGAColors)
-	Civil     = NewPaletteWithColors(CivilColors)
-	Cold00    = NewPaletteWithColors(Cold00Colors)
-	Cold01    = NewPaletteWithColors(Cold01Colors)
-	Cold02    = NewPaletteWithColors(Cold02Colors)
-	Cold03    = NewPaletteWithColors(Cold03Colors)
-	Cold04    = NewPaletteWithColors(Cold04Colors)
-	Cold05    = NewPaletteWithColors(Cold05Colors)
-	ColorBird = NewPaletteWithColors(ColorBirdColors)
-	Corn      = NewPaletteWithColors(CornColors)
-	FadeRed   = NewPaletteWithColors(FadeRedColors)
-	FadeGreen = NewPaletteWithColors(FadeGreenColors)
-	FadeBlue  = NewPaletteWithColors(FadeBlueColors)
-	FadeAll   = NewPaletteWithColors(FadeAllColors)
-	RGB       = NewPaletteWithColors(RGBColors)
-	Fame575   = NewPaletteWithColors(Fame575Colors)
-	Fire      = NewPaletteWithColors(FireColors)
-	Hipster   = NewPaletteWithColors(HipsterColors)
-	Lantern   = NewPaletteWithColors(LanternColors)
-	Lemming   = NewPaletteWithColors(LemmingColors)
-	Sunset    = NewPaletteWithColors(SunsetColors)
-	Warmth    = NewPaletteWithColors(WarmthColors)
-	Wayyou    = NewPaletteWithColors(WayyouColors)
-	Weparted  = NewPaletteWithColors(WepartedColors)
+	// In diesem Block werden die Paletten konkret erstellt. Im Moment
+	// koennen so nur Paletten mit aequidistanten Farbstuetzstellen
+	// erzeugt werden.
+	FractalDefault = NewPaletteWithColors(FractalDefaultColors)
+	EarthAndSky    = NewPaletteWithColors(EarthAndSkyColors)
+	Neon           = NewPaletteWithColors(NeonColors)
+	AAA            = NewPaletteWithColors(AAAColors)
+	Adribble       = NewPaletteWithColors(AdribbleColors)
+	Brazil         = NewPaletteWithColors(BrazilColors)
+	BW01           = NewPaletteWithColors(BW01Colors)
+	BW02           = NewPaletteWithColors(BW02Colors)
+	BW03           = NewPaletteWithColors(BW03Colors)
+	Cake           = NewPaletteWithColors(CakeColors)
+	Castle         = NewPaletteWithColors(CastleColors)
+	CGA            = NewPaletteWithColors(CGAColors)
+	Civil          = NewPaletteWithColors(CivilColors)
+	Cold00         = NewPaletteWithColors(Cold00Colors)
+	Cold01         = NewPaletteWithColors(Cold01Colors)
+	Cold02         = NewPaletteWithColors(Cold02Colors)
+	Cold03         = NewPaletteWithColors(Cold03Colors)
+	Cold04         = NewPaletteWithColors(Cold04Colors)
+	Cold05         = NewPaletteWithColors(Cold05Colors)
+	ColorBird      = NewPaletteWithColors(ColorBirdColors)
+	Corn           = NewPaletteWithColors(CornColors)
+	CycleRed       = NewPaletteWithColors(CycleRedColors)
+	FadeAll        = NewPaletteWithColors(FadeAllColors)
+	FadeBlue       = NewPaletteWithColors(FadeBlueColors)
+	FadeGreen      = NewPaletteWithColors(FadeGreenColors)
+	FadeRed        = NewPaletteWithColors(FadeRedColors)
+	Fame575        = NewPaletteWithColors(Fame575Colors)
+	Fire           = NewPaletteWithColors(FireColors)
+	Fizz           = NewPaletteWithColors(FizzColors)
+	Fold           = NewPaletteWithColors(FoldColors)
+	Hipster        = NewPaletteWithColors(HipsterColors)
+	KittyHC        = NewPaletteWithColors(KittyHCColors)
+	Kitty          = NewPaletteWithColors(KittyColors)
+	Lantern        = NewPaletteWithColors(LanternColors)
+	LeBron         = NewPaletteWithColors(LeBronColors)
+	Lemming        = NewPaletteWithColors(LemmingColors)
+	MiamiVice      = NewPaletteWithColors(MiamiViceColors)
+	MIUSA          = NewPaletteWithColors(MIUSAColors)
+	ML581AT        = NewPaletteWithColors(ML581ATColors)
+	NewSeason      = NewPaletteWithColors(NewSeasonColors)
+	Nightspell     = NewPaletteWithColors(NightspellColors)
+	Rainbows       = NewPaletteWithColors(RainbowsColors)
+	Rasta          = NewPaletteWithColors(RastaColors)
+	RGB            = NewPaletteWithColors(RGBColors)
+	Simpson        = NewPaletteWithColors(SimpsonColors)
+	Smurf          = NewPaletteWithColors(SmurfColors)
+	Spring         = NewPaletteWithColors(SpringColors)
+	Sunset         = NewPaletteWithColors(SunsetColors)
+	Violet         = NewPaletteWithColors(VioletColors)
+	Warmth         = NewPaletteWithColors(WarmthColors)
+	Wayyou         = NewPaletteWithColors(WayyouColors)
+	Weparted       = NewPaletteWithColors(WepartedColors)
+
+	// Schliesslich folgen die Farblisten, welche fuer die einzelnen Paletten
+	// verwendet werden.
+	FractalDefaultColors = []LedColor{
+		{0x01, 0x06, 0x62, 0xFF},
+		{0xDA, 0xF9, 0xFE, 0xFF},
+		{0xFE, 0xBC, 0x08, 0xFF},
+		{0xDA, 0xF9, 0xFE, 0xFF},
+		{0x01, 0x06, 0x62, 0xFF},
+	}
+
+	EarthAndSkyColors = []LedColor{
+		{0xff, 0xff, 0xff, 0xFF},
+		{0xff, 0xff, 0x00, 0xFF},
+		{0xff, 0x33, 0x00, 0xFF},
+		{0x00, 0x00, 0x99, 0xFF},
+		{0x00, 0x66, 0xff, 0xFF},
+		{0xff, 0xff, 0xff, 0xFF},
+	}
+
+	NeonColors = []LedColor{
+		{0xff, 0xff, 0xff, 0xFF},
+		{0x00, 0x99, 0xcc, 0xFF},
+		{0x00, 0x00, 0x00, 0xFF},
+		{0xff, 0x00, 0x99, 0xFF},
+		{0xff, 0xff, 0xff, 0xFF},
+	}
 
 	AAAColors = []LedColor{
 		{0x00, 0xff, 0xff, 0xFF},
@@ -238,6 +280,11 @@ var (
 		{0x00, 0x00, 0x00, 0xFF},
 		{0x00, 0x00, 0xff, 0xFF},
 	}
+	CycleRedColors = []LedColor{
+		{0x00, 0x00, 0x00, 0xFF},
+		{0xff, 0x00, 0x00, 0xFF},
+		{0x00, 0x00, 0x00, 0xFF},
+	}
 	Fame575Colors = []LedColor{
 		{0x54, 0x0c, 0x0d, 0xFF},
 		{0xfb, 0x74, 0x23, 0xFF},
@@ -287,7 +334,7 @@ var (
 		{0x0D, 0x9A, 0x0D, 0xFF},
 		{0xFF, 0xFF, 0xFF, 0xFF},
 	}
-	// LanternList = []LedColor{
+	// LanternColors = []LedColor{
 	// 	LedColor{0x04, 0x04, 0x02, 0xFF},
 	// 	LedColor{0xBA, 0xE7, 0xAE, 0xFF},
 	// 	LedColor{0xFC, 0xBD, 0x00, 0xFF},
@@ -319,11 +366,6 @@ var (
 		{0x69, 0x96, 0x55, 0xFF},
 		{0xf2, 0x6a, 0x36, 0xFF},
 		{0xff, 0xff, 0xff, 0xFF},
-	}
-	NeonColors = []LedColor{
-		{0x32, 0x32, 0x28, 0xFF},
-		{0x71, 0x71, 0x55, 0xFF},
-		{0xb4, 0xdc, 0x00, 0xFF},
 	}
 	NewSeasonColors = []LedColor{
 		{0x4C, 0x39, 0x33, 0xFF},
@@ -410,3 +452,12 @@ var (
 		{0x57, 0x2E, 0x4F, 0xFF},
 	}
 )
+
+// Die init-Funktion wird aktuell dafuer verwendet, beim Programmstart
+// den Slice PaletteNames aufzubauen.
+func init() {
+	PaletteNames = make([]string, 0)
+	for name, _ := range PaletteMap {
+		PaletteNames = append(PaletteNames, name)
+	}
+}

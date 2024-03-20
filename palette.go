@@ -4,30 +4,51 @@ import (
 	"log"
 )
 
-//----------------------------------------------------------------------------
-
-type Palette struct {
-	PosList   []float64
-	ColorList []LedColor
-	Func      InterpolFuncType
-	darkFact  float64
+type PaletteInterface interface {
+    Color(v float64) LedColor
 }
 
+// Mit Paletten lassen sich anspruchsvolle Farbverlaeufe realisieren. Jeder
+// Palette liegt eine Liste von Farben (die sog. Stuetzstellen) und ihre
+// jeweilige Position auf dem Intervall [0, 1] zugrunde.
+type Palette struct {
+    // Die Liste der Positionen. Dabei muss PosList[0] = 0.0 und
+    // PosList[len(PosList)-1] = 1.0 sein. Ausserdem muessen die Positionen
+    // in aufsteigender Reihenfolge sortiert sein.
+	PosList   []float64
+    // Dies sind die Farbwerte an den jeweiligen Positionen. Es muss gelten
+    // len(PosList) = len(ColorList).
+	ColorList []LedColor
+    // Mit dieser Funktion wird die Interpolation zwischen den gesetzten
+    // Farbwerten realisiert.
+	Func      InterpolFuncType
+}
+
+// Erzeugt eine neue Palette, welche einen Farbverlauf von Schwarz (0.0) nach
+// Weiss (1.0) beinhaltet. Mit der Funktion SetColorStop koennen bestehende
+// Stuetzstellen ersetzt oder neue hinzugefuegt werden.
 func NewPalette() *Palette {
 	p := &Palette{}
 	p.PosList = []float64{0.0, 1.0}
-	p.ColorList = []LedColor{Black, Black}
+	p.ColorList = []LedColor{Black, White}
 	p.Func = LinearInterpol
-	p.darkFact = 0.0
 	return p
 }
 
+// Erzeugt eine neue Palette und verwendet die Farben in cl als Stuetzwerte.
+// In diesem Fall werden die Farben in cl gleichmaessig (aequidistant) auf
+// dem Intervall [0,1] verteilt.
 func NewPaletteWithColors(cl []LedColor) *Palette {
+    if len(cl) < 2 {
+        log.Fatalf("At least two colors are required!")
+    }
     p := NewPalette()
     p.SetColorStops(cl)
     return p
 }
 
+// Setzt die Farbe c als neuen Stuetzwert bei Position t. Existiert bereits
+// eine Farbe mit dieser Position, wird sie ueberschrieben.
 func (p *Palette) SetColorStop(t float64, c LedColor) {
 	var i int
     var pos float64
@@ -53,6 +74,8 @@ func (p *Palette) SetColorStop(t float64, c LedColor) {
 	p.ColorList[i] = c
 }
 
+// Farbwerte in cl werden als Stuetzstellen der Palett verwendet. Die
+// Stuetzstellen sind gleichmaessig ueber das Intervall [0,1] verteilt.
 func (p *Palette) SetColorStops(cl []LedColor) {
 	posStep := 1.0 / (float64(len(cl) - 1))
 	p.ColorList = make([]LedColor, len(cl))
@@ -61,9 +84,13 @@ func (p *Palette) SetColorStops(cl []LedColor) {
 	for i := range len(cl) - 1 {
 		p.PosList[i] = float64(i) * posStep
 	}
+    // Dies muss sein, da durch Rundungsfehler der letzte Positionswert nicht
+    // immer gleich 1.0 ist.
 	p.PosList[len(p.PosList)-1] = 1.0
 }
 
+// Hier nun spielt die Musik: aufgrund des Wertes t (muss im Intervall [0,1]
+// liegen) wird eine neue Farbe interpoliert.
 func (p *Palette) Color(t float64) (c LedColor) {
 	var i int
     var pos float64
@@ -78,15 +105,51 @@ func (p *Palette) Color(t float64) (c LedColor) {
 	}
 	t = (t - p.PosList[i]) / (p.PosList[i+1] - p.PosList[i])
 	c = p.ColorList[i].Interpolate(p.ColorList[i+1], p.Func(0, 1, t))
-	c = c.Interpolate(Black, p.darkFact)
 	return c
 }
 
-func (p *Palette) DarkFactor() float64 {
-	return p.darkFact
+// Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
+// anderen realisiert werden.
+type PaletteFader struct {
+    Pals [2]*Palette
+    FadePos, FadeStep float64
 }
 
-func (p *Palette) SetDarkFactor(f float64) {
-	p.darkFact = max(min(f, 1.0), 0.0)
+func NewPaletteFader(pal *Palette) *PaletteFader {
+    p := &PaletteFader{}
+    p.Pals[0] = pal
+    p.FadePos = 0.0
+    p.FadeStep = 0.0
+    return p
+}
 
+func (p *PaletteFader) Fade(pal *Palette, fadeTimeSec float64) {
+    // Solange noch ein Uebergang am Laufen ist, kann kein neuer gestartet
+    // werden -- oder doch? TO DO!
+    if p.FadePos > 0.0 {
+        return
+    }
+    p.Pals[0], p.Pals[1] = pal, p.Pals[0]
+    if fadeTimeSec > 0.0 {
+        p.FadePos = 1.0
+        p.FadeStep = 1.0 / (fadeTimeSec / frameRefreshSec)
+    }
+}
+
+func (p *PaletteFader) Update(t float64) {
+	if p.FadePos > 0.0 {
+		p.FadePos -= p.FadeStep
+		if p.FadePos < 0.0 {
+			p.FadePos = 0.0
+		}
+	}
+}
+
+func (p *PaletteFader) Color(v float64) (LedColor) {
+    c1 := p.Pals[0].Color(v)
+	if p.FadePos > 0.0 {
+		c2 := p.Pals[1].Color(v)
+		c1 = c1.Interpolate(c2, p.FadePos)
+	}
+    return c1
 }

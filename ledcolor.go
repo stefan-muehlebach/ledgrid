@@ -26,12 +26,19 @@ func LinearInterpol(a, b, t float64) float64 {
 
 func PolynomInterpol(a, b, t float64) float64 {
 	t = 3*t*t - 2*t*t*t
-	return LinearInterpol(a, b, t)
+	return (1-t)*a + t*b
 }
 
 func SqrtInterpol(a, b, t float64) float64 {
 	return math.Sqrt((1-t)*a*a + t*b*b)
 }
+
+type ColorMixType int
+
+const (
+	Blend ColorMixType = iota
+	Add
+)
 
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
 // gesendet werden. Die Daten sind _nicht_ gamma-korrigiert, dies wird erst
@@ -80,18 +87,30 @@ func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
 	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
 }
 
-// Mischt die Farben c und d so, dass jeweils der maximale Farbwert pro
-// R, G, B von c und d beruecksichtigt wird.
-func (c LedColor) Mix(d LedColor) LedColor {
-    ca := float64(c.A)/255.0
-    da := float64(d.A)/255.0
-    a := 1.0 - (1.0 - ca) * (1.0 - da)
-    t1 := ca/a
-    t2 := da*(1.0-ca)/a
-	r := float64(c.R)*t1 + float64(d.R)*t2
-	g := float64(c.G)*t1 + float64(d.G)*t2
-    b := float64(c.B)*t1 + float64(d.B)*t2
-	return LedColor{uint8(r), uint8(g), uint8(b), uint8(255.0 * a)}
+// Mischt die Farben c (Vordergrundfarbe) und d (Hintergrundfarbe) nach einem
+// Verfahren, welches in typ spezifiziert ist. Aktuell stehen 'Blend' (Ueber-
+// blendung von d durch c anhand des Alpha-Wertes von c) und 'Add' (nimm
+// jeweils das Maximum pro Farbwert zwischen c und d) zur Verfuegung.
+func (c LedColor) Mix(d LedColor, typ ColorMixType) LedColor {
+	switch typ {
+	case Blend:
+		ca := float64(c.A) / 255.0
+		da := float64(d.A) / 255.0
+		a := 1.0 - (1.0-ca)*(1.0-da)
+		t1 := ca / a
+		t2 := da * (1.0 - ca) / a
+		r := float64(c.R)*t1 + float64(d.R)*t2
+		g := float64(c.G)*t1 + float64(d.G)*t2
+		b := float64(c.B)*t1 + float64(d.B)*t2
+		return LedColor{uint8(r), uint8(g), uint8(b), uint8(255.0 * a)}
+	case Add:
+		r := max(c.R, d.R)
+		g := max(c.G, d.G)
+		b := max(c.B, d.B)
+		a := max(c.A, d.A)
+		return LedColor{r, g, b, a}
+	}
+    return LedColor{}
 }
 
 func (c LedColor) String() string {
@@ -109,14 +128,14 @@ func ledColorModel(c color.Color) color.Color {
 		return c
 	}
 	r, g, b, a := c.RGBA()
-    if a == 0xFFFF {
-        	return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xFF}
-    }
-    if a == 0 {
-        return LedColor{0, 0, 0, 0}
-    }
-    r = (r * 0xFFFF) / a
-    g = (g * 0xFFFF) / a
-    b = (b * 0xFFFF) / a
-    	return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
+	if a == 0xFFFF {
+		return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xFF}
+	}
+	if a == 0 {
+		return LedColor{0, 0, 0, 0}
+	}
+	r = (r * 0xFFFF) / a
+	g = (g * 0xFFFF) / a
+	b = (b * 0xFFFF) / a
+	return LedColor{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
 }
