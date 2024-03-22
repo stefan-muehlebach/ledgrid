@@ -5,11 +5,6 @@ import (
 	"math"
 )
 
-type VisualEffect interface {
-	Update(t float64)
-	Draw(grid *LedGrid)
-}
-
 // Der Shader verwendet zur Berechnung der darzustellenden Farben
 // math. Funktionen. Dazu wird gedanklich ueber das gesamte LedGrid ein
 // Koordinatensystem gelegt, welches math. korrekt ist, seinen Ursprung in der
@@ -27,10 +22,10 @@ type Shader struct {
 	field              [][]float64
 	dPixel, xMin, yMax float64
 	ShaderFunc         ShaderFuncType
-	pal                PaletteInterface
+	pal                Colorable
 }
 
-func NewShader(size image.Point, pal PaletteInterface, fnc ShaderFuncType) *Shader {
+func NewShader(size image.Point, pal Colorable, fnc ShaderFuncType) *Shader {
 	s := &Shader{}
 	s.field = make([][]float64, size.Y)
 	for i := range size.Y {
@@ -53,7 +48,7 @@ func NewShader(size image.Point, pal PaletteInterface, fnc ShaderFuncType) *Shad
 	return s
 }
 
-func (s *Shader) Update(t float64) {
+func (s *Shader) Update(t float64) bool {
 	var col, row int
 	var x, y float64
 
@@ -66,6 +61,7 @@ func (s *Shader) Update(t float64) {
 		}
 		y -= s.dPixel
 	}
+	return true
 }
 
 func (s *Shader) Draw(grid *LedGrid) {
@@ -75,7 +71,8 @@ func (s *Shader) Draw(grid *LedGrid) {
 	for row = range s.field {
 		for col, v = range s.field[row] {
 			c1 := s.pal.Color(v)
-			grid.SetLedColor(col, row, c1)
+			c2 := grid.LedColorAt(col, row)
+			grid.SetLedColor(col, row, c1.Mix(c2, Replace))
 		}
 	}
 }

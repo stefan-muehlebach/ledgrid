@@ -1,10 +1,17 @@
 package ledgrid
 
 import (
+	"math"
 	"log"
 )
 
-type PaletteInterface interface {
+type Index interface {
+    int | float64
+}
+
+// Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
+// das Colorable Interface.
+type Colorable interface {
     Color(v float64) LedColor
 }
 
@@ -43,6 +50,9 @@ func NewPaletteWithColors(cl []LedColor) *Palette {
         log.Fatalf("At least two colors are required!")
     }
     p := NewPalette()
+    if cl[0] != cl[len(cl)-1] {
+        cl = append(cl, cl[0])
+    }
     p.SetColorStops(cl)
     return p
 }
@@ -96,7 +106,7 @@ func (p *Palette) Color(t float64) (c LedColor) {
     var pos float64
 
 	if t < 0.0 || t > 1.0 {
-		log.Fatalf("Color: parameter t must be in [0, 1] instead of %f", t)
+		log.Fatalf("Color: parameter t must be in [0,1] instead of %f", t)
 	}
 	for i, pos = range p.PosList[1:] {
 		if pos > t {
@@ -108,14 +118,48 @@ func (p *Palette) Color(t float64) (c LedColor) {
 	return c
 }
 
+// Palette mit 256 einzelnen Farbwerten
+type DiscPalette struct {
+    Colors []LedColor
+}
+
+func NewDiscPalette() *DiscPalette {
+    p := &DiscPalette{}
+    p.Colors = make([]LedColor, 256)
+    for idx := range p.Colors {
+        p.Colors[idx] = LedColor{}
+    }
+    return p
+}
+
+func NewDiscPaletteWithColors(cl []LedColor) *DiscPalette {
+    p := NewDiscPalette()
+    for i, c := range cl {
+        p.SetColor(i, c)
+    }
+    return p
+}
+
+func (p *DiscPalette) Color(v float64) LedColor {
+    _, f := math.Modf(v)
+    if f != 0.0 {
+        v = v * 255.0
+    }
+    return p.Colors[int(v)]
+}
+
+func (p *DiscPalette) SetColor(idx int, c LedColor) {
+    p.Colors[idx] = c
+}
+
 // Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
 // anderen realisiert werden.
 type PaletteFader struct {
-    Pals [2]*Palette
+    Pals [2]Colorable
     FadePos, FadeStep float64
 }
 
-func NewPaletteFader(pal *Palette) *PaletteFader {
+func NewPaletteFader(pal Colorable) *PaletteFader {
     p := &PaletteFader{}
     p.Pals[0] = pal
     p.FadePos = 0.0
@@ -123,7 +167,7 @@ func NewPaletteFader(pal *Palette) *PaletteFader {
     return p
 }
 
-func (p *PaletteFader) Fade(pal *Palette, fadeTimeSec float64) {
+func (p *PaletteFader) StartFade(pal Colorable, fadeTimeSec float64) {
     // Solange noch ein Uebergang am Laufen ist, kann kein neuer gestartet
     // werden -- oder doch? TO DO!
     if p.FadePos > 0.0 {
@@ -136,13 +180,14 @@ func (p *PaletteFader) Fade(pal *Palette, fadeTimeSec float64) {
     }
 }
 
-func (p *PaletteFader) Update(t float64) {
+func (p *PaletteFader) Update(t float64) bool {
 	if p.FadePos > 0.0 {
 		p.FadePos -= p.FadeStep
 		if p.FadePos < 0.0 {
 			p.FadePos = 0.0
 		}
 	}
+    return true
 }
 
 func (p *PaletteFader) Color(v float64) (LedColor) {

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/rpc"
+	"time"
 
 	"periph.io/x/conn/v3/physic"
 	"periph.io/x/conn/v3/spi"
@@ -141,6 +142,7 @@ func (p *PixelServer) Handle() {
 			if err = p.spiConn.Tx(p.buffer[:len], nil); err != nil {
 				log.Printf("Error during communication via SPI: %v\n", err)
 			}
+			time.Sleep(20 * time.Microsecond)
 		} else {
 			log.Printf("Received %d bytes", len)
 		}
