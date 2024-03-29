@@ -144,20 +144,10 @@ func (p *PixelServer) Handle() {
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
 		if p.onRaspi {
-			if len <= p.maxTxSize {
-				if err = p.spiConn.Tx(p.buffer[:len], nil); err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				startIdx := 0
-				txSize := 0
-				for len > 0 {
-					txSize = min(len, p.maxTxSize)
-					if err = p.spiConn.Tx(p.buffer[startIdx:startIdx+txSize], nil); err != nil {
-						log.Fatal(err)
-					}
-					len -= txSize
-					startIdx += txSize
+			for idx := 0; idx < len; idx += p.maxTxSize {
+				txSize := min(p.maxTxSize, len-idx)
+				if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
+					log.Fatalf("Couldn't send data: %v", err)
 				}
 			}
 			time.Sleep(20 * time.Microsecond)
