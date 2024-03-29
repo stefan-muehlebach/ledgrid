@@ -39,7 +39,8 @@ type ColorMixType int
 const (
     Replace ColorMixType = iota
 	Blend
-	Add
+	Max
+    Average
 )
 
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
@@ -48,6 +49,13 @@ const (
 // LedColor implementiert das color.Color Interface.
 type LedColor struct {
 	R, G, B, A uint8
+}
+
+func NewLedColor(hex int) LedColor {
+    r := (hex & 0xff0000) >> 16
+    g := (hex & 0x00ff00) >> 8
+    b := (hex & 0x0000ff)
+    return LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 }
 
 // RGBA ist Teil des color.Color Interfaces.
@@ -107,16 +115,26 @@ func (c LedColor) Mix(bg LedColor, typ ColorMixType) LedColor {
 		g := float64(c.G)*t1 + float64(bg.G)*t2
 		b := float64(c.B)*t1 + float64(bg.B)*t2
 		return LedColor{uint8(r), uint8(g), uint8(b), uint8(255.0 * a)}
-	case Add:
+	case Max:
 		r := max(c.R, bg.R)
 		g := max(c.G, bg.G)
 		b := max(c.B, bg.B)
 		a := max(c.A, bg.A)
 		return LedColor{r, g, b, a}
+	case Average:
+		r := c.R/2 + bg.R/2
+		g := c.G/2 + bg.G/2
+		b := c.B/2 + bg.B/2
+		a := c.A/2 + bg.A/2
+		return LedColor{r, g, b, a}
     default:
         log.Fatalf("Unknown mixing function: '%d'", typ)
 	}
     return LedColor{}
+}
+
+func (c LedColor) Alpha(a float64) LedColor {
+    return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
 }
 
 func (c LedColor) String() string {

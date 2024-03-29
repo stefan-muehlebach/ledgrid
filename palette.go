@@ -1,200 +1,163 @@
 package ledgrid
 
 import (
-	"math"
+	"time"
 	"log"
+	"math"
+	"slices"
 )
 
-type Index interface {
-    int | float64
-}
-
-// Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
-// das Colorable Interface.
-type Colorable interface {
-    Color(v float64) LedColor
+type colorStop struct {
+	pos float64
+	col LedColor
 }
 
 // Mit Paletten lassen sich anspruchsvolle Farbverlaeufe realisieren. Jeder
 // Palette liegt eine Liste von Farben (die sog. Stuetzstellen) und ihre
 // jeweilige Position auf dem Intervall [0, 1] zugrunde.
-type Palette struct {
-    // Die Liste der Positionen. Dabei muss PosList[0] = 0.0 und
-    // PosList[len(PosList)-1] = 1.0 sein. Ausserdem muessen die Positionen
-    // in aufsteigender Reihenfolge sortiert sein.
-	PosList   []float64
-    // Dies sind die Farbwerte an den jeweiligen Positionen. Es muss gelten
-    // len(PosList) = len(ColorList).
-	ColorList []LedColor
-    // Mit dieser Funktion wird die Interpolation zwischen den gesetzten
-    // Farbwerten realisiert.
-	Func      InterpolFuncType
-}
-
-// Erzeugt eine neue Palette, welche einen Farbverlauf von Schwarz (0.0) nach
-// Weiss (1.0) beinhaltet. Mit der Funktion SetColorStop koennen bestehende
-// Stuetzstellen ersetzt oder neue hinzugefuegt werden.
-func NewPalette() *Palette {
-	p := &Palette{}
-	p.PosList = []float64{0.0, 1.0}
-	p.ColorList = []LedColor{Black, White}
-	p.Func = LinearInterpol
-	return p
+type GradientPalette struct {
+	stops []colorStop
+	// Mit dieser Funktion wird die Interpolation zwischen den gesetzten
+	// Farbwerten realisiert.
+	Func InterpolFuncType
 }
 
 // Erzeugt eine neue Palette und verwendet die Farben in cl als Stuetzwerte.
 // In diesem Fall werden die Farben in cl gleichmaessig (aequidistant) auf
 // dem Intervall [0,1] verteilt.
-func NewPaletteWithColors(cl []LedColor) *Palette {
-    if len(cl) < 2 {
-        log.Fatalf("At least two colors are required!")
-    }
-    p := NewPalette()
-    if cl[0] != cl[len(cl)-1] {
-        cl = append(cl, cl[0])
-    }
-    p.SetColorStops(cl)
-    return p
+func NewGradientPalette(cl ...LedColor) *GradientPalette {
+	p := &GradientPalette{}
+	if cl == nil {
+		cl = []LedColor{Black, White}
+	}
+	p.SetColorStops(cl)
+	p.Func = PolynomInterpol
+	return p
 }
 
 // Setzt die Farbe c als neuen Stuetzwert bei Position t. Existiert bereits
 // eine Farbe mit dieser Position, wird sie ueberschrieben.
-func (p *Palette) SetColorStop(t float64, c LedColor) {
+func (p *GradientPalette) SetColorStop(t float64, c LedColor) {
 	var i int
-    var pos float64
+	var stop colorStop
 
 	if t < 0.0 || t > 1.0 {
-		log.Fatalf("SetColor: parameter t must be in [0, 1] instead of %f", t)
+		log.Fatalf("Parameter t must be in [0, 1] instead of %f", t)
 	}
-	for i, pos = range p.PosList {
-		if pos == t {
-			p.ColorList[i] = c
+	for i, stop = range p.stops {
+		if stop.pos == t {
+			p.stops[i].col = c
 			return
 		}
-		if pos > t {
+		if stop.pos > t {
 			break
 		}
 	}
-	p.PosList = append(p.PosList, 0.0)
-	copy(p.PosList[i+1:], p.PosList[i:])
-	p.PosList[i] = t
-
-	p.ColorList = append(p.ColorList, LedColor{})
-	copy(p.ColorList[i+1:], p.ColorList[i:])
-	p.ColorList[i] = c
+	p.stops = slices.Insert(p.stops, i, colorStop{t, c})
 }
 
 // Farbwerte in cl werden als Stuetzstellen der Palett verwendet. Die
 // Stuetzstellen sind gleichmaessig ueber das Intervall [0,1] verteilt.
-func (p *Palette) SetColorStops(cl []LedColor) {
-	posStep := 1.0 / (float64(len(cl) - 1))
-	p.ColorList = make([]LedColor, len(cl))
-	copy(p.ColorList, cl)
-	p.PosList = make([]float64, len(cl))
-	for i := range len(cl) - 1 {
-		p.PosList[i] = float64(i) * posStep
+func (p *GradientPalette) SetColorStops(cl []LedColor) {
+	if len(cl) < 2 {
+		log.Fatalf("At least two colors are required!")
 	}
-    // Dies muss sein, da durch Rundungsfehler der letzte Positionswert nicht
-    // immer gleich 1.0 ist.
-	p.PosList[len(p.PosList)-1] = 1.0
+	posStep := 1.0 / (float64(len(cl) - 1))
+	p.stops = make([]colorStop, len(cl))
+	for i, c := range cl {
+		p.stops[i] = colorStop{float64(i) * posStep, c}
+	}
 }
 
 // Hier nun spielt die Musik: aufgrund des Wertes t (muss im Intervall [0,1]
 // liegen) wird eine neue Farbe interpoliert.
-func (p *Palette) Color(t float64) (c LedColor) {
+func (p *GradientPalette) Color(t float64) (c LedColor) {
 	var i int
-    var pos float64
+	var stop colorStop
 
 	if t < 0.0 || t > 1.0 {
 		log.Fatalf("Color: parameter t must be in [0,1] instead of %f", t)
 	}
-	for i, pos = range p.PosList[1:] {
-		if pos > t {
+	for i, stop = range p.stops[1:] {
+		if stop.pos > t {
 			break
 		}
 	}
-	t = (t - p.PosList[i]) / (p.PosList[i+1] - p.PosList[i])
-	c = p.ColorList[i].Interpolate(p.ColorList[i+1], p.Func(0, 1, t))
+	t = (t - p.stops[i].pos) / (p.stops[i+1].pos - p.stops[i].pos)
+	c = p.stops[i].col.Interpolate(p.stops[i+1].col, p.Func(0, 1, t))
 	return c
 }
 
 // Palette mit 256 einzelnen Farbwerten
-type DiscPalette struct {
-    Colors []LedColor
+type SlicePalette struct {
+	Colors []LedColor
 }
 
-func NewDiscPalette() *DiscPalette {
-    p := &DiscPalette{}
-    p.Colors = make([]LedColor, 256)
-    for idx := range p.Colors {
-        p.Colors[idx] = LedColor{}
-    }
-    return p
+func NewSlicePalette(cl ...LedColor) *SlicePalette {
+	p := &SlicePalette{}
+	p.Colors = make([]LedColor, 256)
+	for i, c := range cl {
+		p.Colors[i] = c
+	}
+	return p
 }
 
-func NewDiscPaletteWithColors(cl []LedColor) *DiscPalette {
-    p := NewDiscPalette()
-    for i, c := range cl {
-        p.SetColor(i, c)
-    }
-    return p
+func (p *SlicePalette) Color(v float64) LedColor {
+	_, f := math.Modf(v)
+	if f != 0.0 {
+		v = v * 255.0
+	}
+	return p.Colors[int(v)]
 }
 
-func (p *DiscPalette) Color(v float64) LedColor {
-    _, f := math.Modf(v)
-    if f != 0.0 {
-        v = v * 255.0
-    }
-    return p.Colors[int(v)]
-}
-
-func (p *DiscPalette) SetColor(idx int, c LedColor) {
-    p.Colors[idx] = c
+func (p *SlicePalette) SetColor(idx int, c LedColor) {
+	p.Colors[idx] = c
 }
 
 // Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
 // anderen realisiert werden.
 type PaletteFader struct {
-    Pals [2]Colorable
-    FadePos, FadeStep float64
+    AnimatableEmbed
+	Pals              [2]Colorable
+	FadePos, FadeStep float64
 }
 
 func NewPaletteFader(pal Colorable) *PaletteFader {
-    p := &PaletteFader{}
-    p.Pals[0] = pal
-    p.FadePos = 0.0
-    p.FadeStep = 0.0
-    return p
+	p := &PaletteFader{}
+    p.AnimatableEmbed.Init()
+	p.Pals[0] = pal
+	p.FadePos = 0.0
+	p.FadeStep = 0.0
+	return p
 }
 
-func (p *PaletteFader) StartFade(pal Colorable, fadeTimeSec float64) {
-    // Solange noch ein Uebergang am Laufen ist, kann kein neuer gestartet
-    // werden -- oder doch? TO DO!
-    if p.FadePos > 0.0 {
-        return
-    }
-    p.Pals[0], p.Pals[1] = pal, p.Pals[0]
-    if fadeTimeSec > 0.0 {
-        p.FadePos = 1.0
-        p.FadeStep = 1.0 / (fadeTimeSec / frameRefreshSec)
-    }
+func (p *PaletteFader) StartFade(nextPal Colorable, fadeTimeSec float64) bool {
+	if p.FadePos > 0.0 {
+		return false
+	}
+	p.Pals[0], p.Pals[1] = nextPal, p.Pals[0]
+	if fadeTimeSec > 0.0 {
+		p.FadePos = 1.0
+		p.FadeStep = 1.0 / (fadeTimeSec / frameRefreshSec)
+	}
+    return true
 }
 
-func (p *PaletteFader) Update(t float64) bool {
+func (p *PaletteFader) Update(dt time.Duration) bool {
 	if p.FadePos > 0.0 {
 		p.FadePos -= p.FadeStep
 		if p.FadePos < 0.0 {
 			p.FadePos = 0.0
 		}
 	}
-    return true
+	return true
 }
 
-func (p *PaletteFader) Color(v float64) (LedColor) {
-    c1 := p.Pals[0].Color(v)
+func (p *PaletteFader) Color(v float64) LedColor {
+	c1 := p.Pals[0].Color(v)
 	if p.FadePos > 0.0 {
 		c2 := p.Pals[1].Color(v)
 		c1 = c1.Interpolate(c2, p.FadePos)
 	}
-    return c1
+	return c1
 }

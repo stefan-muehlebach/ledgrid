@@ -1,92 +1,142 @@
 package main
 
 import (
-	"encoding/xml"
 	"flag"
-	"fmt"
 	"image"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
+
+	"golang.org/x/image/math/fixed"
 
 	gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
 )
 
-type BoundedInt struct {
-	Val    int
-	Lb, Ub int
-	Cycle  bool
+const (
+	KEY_SDOWN     = 0x150
+	KEY_SUP       = 0x151
+	KEY_SPAGEUP   = 0x18e
+	KEY_SPAGEDOWN = 0x18c
+)
+
+func fixr(r image.Rectangle) fixed.Rectangle26_6 {
+	return fixed.R(r.Min.X, r.Min.Y, r.Max.X, r.Max.Y)
 }
 
-func NewBoundedInt(val, lb, ub int) *BoundedInt {
-	i := &BoundedInt{}
-	i.Val = val
-	i.Lb = lb
-	i.Ub = ub
-	i.Cycle = false
-	return i
+func fixp(x, y float64) fixed.Point26_6 {
+	return fixed.Point26_6{X: float2fix(x), Y: float2fix(y)}
 }
 
-func (i *BoundedInt) Incr(s int) {
-	i.Val += s
-	if i.Val > i.Ub {
-		if i.Cycle {
-			i.Val = i.Lb
+func float2fix(x float64) fixed.Int26_6 {
+	return fixed.Int26_6(math.Round(x * 64))
+}
+
+func fix2float(x fixed.Int26_6) float64 {
+	return float64(x) / 64.0
+}
+
+//----------------------------------------------------------------------------
+
+type Polygon struct {
+	lg                        *ledgrid.LedGrid
+	p0, p1, p2, dp0, dp1, dp2 fixed.Point26_6
+	col                       ledgrid.LedColor
+}
+
+func NewPolygon(lg *ledgrid.LedGrid, p0, p1, p2 image.Point, col ledgrid.LedColor) *Polygon {
+	p := &Polygon{}
+	p.lg = lg
+	p.p0 = fixed.P(p0.X, p0.Y)
+	p.p1 = fixed.P(p1.X, p1.Y)
+	p.p2 = fixed.P(p2.X, p2.Y)
+	p.dp0 = fixp(+0.01, +0.02)
+	p.dp1 = fixp(+0.02, -0.01)
+	p.dp2 = fixp(-0.01, -0.02)
+	p.col = col
+	return p
+}
+
+func (p *Polygon) Update(t float64) bool {
+	r := fixr(p.lg.Bounds())
+
+	p.p0 = p.p0.Add(p.dp0)
+	p.p1 = p.p1.Add(p.dp1)
+	p.p2 = p.p2.Add(p.dp2)
+	if !p.p0.In(r) {
+		if p.p0.X < r.Min.X || p.p0.X >= r.Max.X {
+			p.dp0.X = -p.dp0.X
 		} else {
-			i.Val = i.Ub
+			p.dp0.Y = -p.dp0.Y
 		}
 	}
-}
-
-func (i *BoundedInt) Decr(s int) {
-	i.Val -= s
-	if i.Val < i.Lb {
-		if i.Cycle {
-			i.Val = i.Ub
+	if !p.p1.In(r) {
+		if p.p1.X < r.Min.X || p.p1.X >= r.Max.X {
+			p.dp1.X = -p.dp1.X
 		} else {
-			i.Val = i.Lb
+			p.dp1.Y = -p.dp1.Y
 		}
 	}
-}
-
-type BoundedFloat struct {
-	Val    float64
-	Lb, Ub float64
-	Cycle  bool
-}
-
-func NewBoundedFloat(val, lb, ub float64) *BoundedFloat {
-	i := &BoundedFloat{}
-	i.Val = val
-	i.Lb = lb
-	i.Ub = ub
-	i.Cycle = false
-	return i
-}
-
-func (i *BoundedFloat) Incr(s float64) {
-	i.Val += s
-	if i.Val > i.Ub {
-		if i.Cycle {
-			i.Val = i.Lb
+	if !p.p2.In(r) {
+		if p.p2.X < r.Min.X || p.p2.X >= r.Max.X {
+			p.dp2.X = -p.dp2.X
 		} else {
-			i.Val = i.Ub
+			p.dp2.Y = -p.dp2.Y
 		}
 	}
+	return true
 }
 
-func (i *BoundedFloat) Decr(s float64) {
-	i.Val -= s
-	if i.Val < i.Lb {
-		if i.Cycle {
-			i.Val = i.Ub
+func (p *Polygon) Draw() {
+	DrawLine(p.lg, p.p0, p.p1, p.col)
+	DrawLine(p.lg, p.p1, p.p2, p.col)
+	DrawLine(p.lg, p.p2, p.p0, p.col)
+}
+
+type Line struct {
+	lg               *ledgrid.LedGrid
+	p0, p1, dp0, dp1 fixed.Point26_6
+	col              ledgrid.LedColor
+}
+
+func NewLine(lg *ledgrid.LedGrid, p0, p1 image.Point, col ledgrid.LedColor) *Line {
+	l := &Line{}
+	l.lg = lg
+	l.p0 = fixed.P(p0.X, p0.Y)
+	l.p1 = fixed.P(p1.X, p1.Y)
+	l.dp0 = fixp(+0.05, 0.0)
+	l.dp1 = fixp(-0.05, 0.0)
+	l.col = col
+	return l
+}
+
+func (l *Line) Update(t float64) bool {
+	r := fixr(l.lg.Bounds())
+
+	l.p0 = l.p0.Add(l.dp0)
+	l.p1 = l.p1.Add(l.dp1)
+	if !l.p0.In(r) {
+		if l.p0.X < r.Min.X || l.p0.X >= r.Max.X {
+			l.dp0.X = -l.dp0.X
 		} else {
-			i.Val = i.Lb
+			l.dp0.Y = -l.dp0.Y
 		}
 	}
+	if !l.p1.In(r) {
+		if l.p1.X < r.Min.X || l.p1.X >= r.Max.X {
+			l.dp1.X = -l.dp1.X
+		} else {
+			l.dp1.Y = -l.dp1.Y
+		}
+	}
+	return true
 }
+
+func (l *Line) Draw() {
+	DrawLine(l.lg, l.p0, l.p1, l.col)
+}
+
+//----------------------------------------------------------------------------
 
 type ColorType int
 
@@ -98,233 +148,45 @@ const (
 )
 
 var (
-	width                = 10
-	height               = 10
-	defHost              = "raspi-2"
-	defPort         uint = 5333
-	defGammaValue        = 3.0
-	framesPerSecond      = 50
-	frameRefreshMs       = 1000 / framesPerSecond
-	frameRefreshSec      = float64(frameRefreshMs) / 1000.0
+	width              = 10
+	height             = 10
+	defHost            = "raspi-2"
+	defPort       uint = 5333
+	defGammaValue      = 3.0
 )
-
-//----------------------------------------------------------------------------
-
-type Counter struct {
-	size  image.Point
-	bits  []bool
-	color ledgrid.LedColor
-}
-
-func NewCounter(size image.Point, color ledgrid.LedColor) *Counter {
-	c := &Counter{}
-	c.size = size
-	c.bits = make([]bool, c.size.X*c.size.Y)
-	c.color = color
-	return c
-}
-
-func (c *Counter) Update(t float64) {
-	for i, b := range c.bits {
-		if !b {
-			c.bits[i] = true
-			break
-		} else {
-			c.bits[i] = false
-		}
-	}
-}
-
-func (c *Counter) Draw(grid *ledgrid.LedGrid) {
-	for i, b := range c.bits {
-		if !b {
-			continue
-		}
-		row := i / c.size.X
-		col := i % c.size.X
-		grid.SetLedColor(col, row, c.color)
-	}
-}
-
-//----------------------------------------------------------------------------
-
-type Image struct {
-	size image.Point
-	pal  ledgrid.Colorable
-	img  []int
-}
-
-func NewImage(size image.Point, pal ledgrid.Colorable) *Image {
-	i := &Image{}
-	i.size = size
-	i.pal = pal
-	i.img = make([]int, i.size.X*i.size.Y)
-	return i
-}
-
-func (i *Image) Draw(grid *ledgrid.LedGrid) {
-	for idx, v := range i.img {
-		row := idx / i.size.X
-		col := idx % i.size.X
-		fg := i.pal.Color(float64(v))
-		bg := grid.LedColorAt(col, row)
-		grid.SetLedColor(col, row, fg.Mix(bg, ledgrid.Blend))
-	}
-}
-
-func (i *Image) SetPixels(pix [][]byte) {
-	for row, data := range pix {
-		for col, v := range data {
-			i.img[row*i.size.X+col] = int(v)
-		}
-	}
-}
-
-//----------------------------------------------------------------------------
-
-type ImageAnimation struct {
-	imageList []*Image
-	timeList  []float64
-	Idx       int
-	Cycle     bool
-}
-
-func NewImageAnimation() *ImageAnimation {
-	i := &ImageAnimation{}
-	i.imageList = make([]*Image, 0)
-	i.timeList = make([]float64, 0)
-	i.Idx = 0
-	i.Cycle = true
-	return i
-}
-
-func (i *ImageAnimation) AddImage(img *Image, dur float64) {
-	i.imageList = append(i.imageList, img)
-	if len(i.timeList) > 0 {
-		dur += i.timeList[len(i.timeList)-1]
-	}
-	i.timeList = append(i.timeList, dur)
-}
-
-func (i *ImageAnimation) Update(t float64) bool {
-	t = math.Mod(t, i.timeList[len(i.timeList)-1])
-	for idx, v := range i.timeList {
-		if t < v {
-			i.Idx = idx
-			return true
-		}
-	}
-	return true
-}
-
-func (i *ImageAnimation) Draw(grid *ledgrid.LedGrid) {
-	i.imageList[i.Idx].Draw(grid)
-}
-
-//----------------------------------------------------------------------------
-
-type BlinkenFile struct {
-	XMLName xml.Name       `xml:"blm"`
-	Width   int            `xml:"width,attr"`
-	Height  int            `xml:"height,attr"`
-	Bits    int            `xml:"bits,attr"`
-	Header  BlinkenHeader  `xml:"header"`
-	Frames  []BlinkenFrame `xml:"frame"`
-}
-
-type BlinkenHeader struct {
-	XMLName  xml.Name `xml:"header"`
-	Title    string   `xml:"title"`
-	Author   string   `xml:"author"`
-	Email    string   `xml:"email"`
-	Duration int      `xml:"duration"`
-}
-
-type BlinkenFrame struct {
-	XMLName  xml.Name `xml:"frame"`
-	Duration int      `xml:"duration,attr"`
-	Rows     [][]byte `xml:"row"`
-}
-
-func ReadBlinkenFile(fileName string) *BlinkenFile {
-	b := &BlinkenFile{}
-
-	xmlFile, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer xmlFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(xmlFile)
-	xml.Unmarshal(byteValue, b)
-
-	for i, frame := range b.Frames {
-		for j, row := range frame.Rows {
-			for k, val := range row {
-				if val >= '0' && val <= '9' {
-					val = val - '0'
-				} else {
-					val = val - 'a' + 10
-				}
-				b.Frames[i].Rows[j][k] = val
-			}
-		}
-	}
-	return b
-}
-
-func (b *BlinkenFile) MakeImageAnimation(size image.Point, pal ledgrid.Colorable) *ImageAnimation {
-	i := NewImageAnimation()
-
-	for _, frame := range b.Frames {
-		img := NewImage(size, pal)
-		img.SetPixels(frame.Rows)
-		i.AddImage(img, float64(frame.Duration)/1000.0)
-	}
-
-	return i
-}
-
-//----------------------------------------------------------------------------
-
-func Main() {
-	var blinkenFile *BlinkenFile
-	var pal *ledgrid.DiscPalette
-
-	blinkenFile = ReadBlinkenFile("alien.bml")
-
-	frame := blinkenFile.Frames[20]
-	fmt.Printf("%v\n", frame)
-
-	pal = ledgrid.NewDiscPalette()
-	i := NewImage(image.Point{10, 10}, pal)
-	i.SetPixels(frame.Rows)
-}
 
 func main() {
 	var host string
 	var port uint
-	var gammaValue *BoundedFloat
+	var gammaValue *ledgrid.Bounded[float64]
 
 	var client *ledgrid.PixelClient
 	var grid *ledgrid.LedGrid
 	var pal *ledgrid.PaletteFader
-	// var discrPal *ledgrid.DiscPalette
-	var shader *ledgrid.Shader
 	var ch gc.Key
-	var palIdx *BoundedInt
+	var palIdx *ledgrid.Bounded[int]
 	var palName string
-	var palFadeTime *BoundedFloat
-	var gridSize image.Point = image.Point{width, height}
-	// var imgAnim *ImageAnimation
-	// var blinkenFile *BlinkenFile
+	var palFadeTime *ledgrid.Bounded[float64]
+	// var gridSize image.Point = image.Point{width, height}
 	var anim *ledgrid.Animator
+	var paramIdx *ledgrid.Bounded[int]
+	var params []*ledgrid.Bounded[float64]
+	// var speedup *ledgrid.Bounded[float64]
+	var shaders []*ledgrid.Shader
+	var shader *ledgrid.Shader
 
-	gammaValue = NewBoundedFloat(defGammaValue, 1.0, 5.0)
+	log.SetOutput(os.Stderr)
+
+	// traceFile := fmt.Sprintf("%s.trace", path.Base(os.Args[0]))
+	// fhTrace, err := os.Create(traceFile)
+	// if err != nil {
+	// 	log.Fatal("couldn't create tracefile: ", err)
+	// }
+	// trace.Start(fhTrace)
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
-	flag.Float64Var(&gammaValue.Val, "gamma", defGammaValue, "Gamma value")
+	// flag.Float64Var(&gammaValue.Val(), "gamma", defGammaValue, "Gamma value")
 	flag.Parse()
 
 	win, err := gc.Init()
@@ -334,44 +196,99 @@ func main() {
 	defer gc.End()
 
 	gc.Echo(false)
-	gc.CBreak(false)
+	gc.CBreak(true)
 	gc.Raw(true)
+	gc.Cursor(0)
+	win.Keypad(true)
 
 	client = ledgrid.NewPixelClient(host, port)
-	client.SetGamma(gammaValue.Val, gammaValue.Val, gammaValue.Val)
 	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 
-	palIdx = NewBoundedInt(0, 0, len(ledgrid.PaletteNames)-1)
-	palFadeTime = NewBoundedFloat(1.5, 0.0, 5.0)
-	palName = ledgrid.PaletteNames[palIdx.Val]
+	gammaValue = ledgrid.NewBounded(defGammaValue, 1.0, 5.0, 0.1)
+	gammaValue.SetCallback(func(oldVal, newVal float64) {
+		client.SetGamma(newVal, newVal, newVal)
+	})
+
+	palIdx = ledgrid.NewBounded(0, 0, len(ledgrid.PaletteNames)-1, 1)
+	palIdx.Cycle = true
+	palFadeTime = ledgrid.NewBounded(1.5, 0.0, 5.0, 0.1)
+	palName = ledgrid.PaletteNames[palIdx.Val()]
 	pal = ledgrid.NewPaletteFader(ledgrid.PaletteMap[palName])
-	shader = ledgrid.NewShader(gridSize, pal, ledgrid.KaroShader)
 
-	// discrPal = ledgrid.NewDiscPaletteWithColors([]ledgrid.LedColor{
-	// 	{0x00, 0x00, 0x00, 0x00},
-	// 	{0x00, 0x00, 0x00, 0xff},
-	// 	{0xff, 0x00, 0x00, 0xff},
-	// 	{0x00, 0xff, 0x00, 0xff},
-	// 	{0x00, 0x00, 0xff, 0xff},
-	// })
+	shaderCtrl := ledgrid.NewShaderController(grid)
 
-	// blinkenFile = ReadBlinkenFile("alien.bml")
-	// imgAnim = blinkenFile.MakeImageAnimation(gridSize, discrPal)
+	shaders = make([]*ledgrid.Shader, 5)
+	shaders[0] = shaderCtrl.AddShader(ledgrid.PlasmaShader, pal)
+	shaders[0].Disable()
+	shaders[1] = shaderCtrl.AddShader(ledgrid.CircleShader, ledgrid.FadeBlue)
+	shaders[1].Disable()
+	shaders[2] = shaderCtrl.AddShader(ledgrid.CircleShader, ledgrid.FadeGreen)
+	shaders[2].Disable()
+	shaders[3] = shaderCtrl.AddShader(ledgrid.KaroShader, ledgrid.FadeGreen)
+	shaders[3].Disable()
+	shaders[4] = shaderCtrl.AddShader(ledgrid.FadeShader, ledgrid.FadeRed)
+	shaders[4].Disable()
+
+	shaderIdx := ledgrid.NewBounded(0, 0, 4, 1)
+	shaderIdx.Cycle = true
+	shaderIdx.SetCallback(func(oldVal, newVal int) {
+		shader = shaders[newVal]
+		params = make([]*ledgrid.Bounded[float64], len(shader.Params))
+		for i, p := range shader.Params {
+			params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
+			params[i].BindVar(&shader.Params[i].Val)
+			params[i].Name = p.Name
+		}
+		paramIdx = ledgrid.NewBounded(0, 0, len(params)-1, 1)
+		paramIdx.Cycle = true
+	})
+
+	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
+	// line := NewLine(grid, image.Point{0, 1}, image.Point{9, 8}, ledgrid.Blue)
+	// poly := NewPolygon(grid, image.Point{0, 4}, image.Point{0, 9}, image.Point{9, 9}, ledgrid.Green)
+	// speedup = ledgrid.NewBounded(1.0, 0.1, 10.0, 0.1)
 
 	anim = ledgrid.NewAnimator(grid, client)
-	anim.AddObject(pal)
-	anim.AddObject(shader)
-	// anim.AddObject(imgAnim)
+	// speedup.BindVar(&anim.Speedup)
+	anim.AddObjects(pal, shaderCtrl, txt)
+	// anim.AddObject(shader)
+	// anim.AddObject(txt)
+	// anim.AddObject(line)
+	// anim.AddObject(poly)
 
 mainLoop:
 	for {
 		win.Clear()
 		win.Printf("Current palette: %s\n", palName)
 		win.Printf("  q: next; a: prev\n")
-		win.Printf("Fade time      : %.1f\n", palFadeTime.Val)
+		win.Printf("Fade time      : %.1f\n", palFadeTime.Val())
 		win.Printf("  w: incr; s: decr\n")
-		win.Printf("Gamma value(s) : %.3f\n", gammaValue.Val)
+		win.Printf("Gamma value(s) : %.3f\n", gammaValue.Val())
 		win.Printf("  e: incr; d: decr\n")
+		win.Printf("Shaders:\n")
+		win.Printf("  PgUp: next; PgDn: prev:\n")
+		win.Printf("  Speedup: r: incr; f: decr\n\n")
+		win.Printf("  id | Name       |   V   |   A   | Spd\n")
+		win.Printf("-----+------------+-------+-------+-----\n")
+		for i, s := range shaders {
+			if i == shaderIdx.Val() {
+				win.Printf("> ")
+			} else {
+				win.Printf("  ")
+			}
+			win.Printf("%2d | %-10s | %-5v | %-5v | %.1f\n", i, s.Name, s.Visible(), s.Alive(), s.Speedup().Val())
+		}
+		win.Printf("-----+------------+-------+-------+-----\n\n")
+		win.Printf(" shader parameters:\n")
+		for i := range params {
+			if i == paramIdx.Val() {
+				win.Printf("> ")
+			} else {
+				win.Printf("  ")
+			}
+			win.Printf("%-5s: %5.2f\n", params[i].Name, params[i].Val())
+		}
+		win.Printf("\n  r: reset parameter\n")
 		win.Printf("\n")
 		win.Printf("  z/x: stop/continue animation\n")
 		win.Printf("  ESC: quit\n")
@@ -380,35 +297,53 @@ mainLoop:
 		ch = win.GetChar()
 
 		switch ch {
-		case 'q', 'a':
-			if ch == 'q' {
-				palIdx.Incr(1)
-			} else {
-				palIdx.Decr(1)
-			}
-			palName = ledgrid.PaletteNames[palIdx.Val]
-			pal.StartFade(ledgrid.PaletteMap[palName], palFadeTime.Val)
-		case 'w', 's':
-			if ch == 'w' {
-				palFadeTime.Incr(0.1)
-			} else {
-				palFadeTime.Decr(0.1)
-			}
-		case 'e', 'd':
-			if ch == 'e' {
-				gammaValue.Incr(0.1)
-			} else {
-				gammaValue.Decr(0.1)
-			}
-			client.SetGamma(gammaValue.Val, gammaValue.Val, gammaValue.Val)
+		case gc.KEY_PAGEUP:
+			palIdx.Inc()
+			palName = ledgrid.PaletteNames[palIdx.Val()]
+			pal.StartFade(ledgrid.PaletteMap[palName], palFadeTime.Val())
+		case gc.KEY_PAGEDOWN:
+			palIdx.Dec()
+			palName = ledgrid.PaletteNames[palIdx.Val()]
+			pal.StartFade(ledgrid.PaletteMap[palName], palFadeTime.Val())
+		case KEY_SPAGEUP:
+			palFadeTime.Inc()
+		case KEY_SPAGEDOWN:
+			palFadeTime.Dec()
+		case gc.KEY_HOME:
+			gammaValue.Inc()
+		case gc.KEY_END:
+			gammaValue.Dec()
 		case 'z':
 			anim.Stop()
 		case 'x':
 			anim.Reset()
+		case 'R':
+			for _, p := range params {
+				p.Reset()
+			}
+		case gc.KEY_UP:
+			shaderIdx.Dec()
+		case gc.KEY_DOWN:
+			shaderIdx.Inc()
+		case ' ':
+			shader.SetAlive(!shader.Alive())
+			shader.SetVisible(!shader.Visible())
+		case gc.KEY_IC:
+			shader.Speedup().Inc()
+		case gc.KEY_DC:
+			shader.Speedup().Dec()
+		case KEY_SUP:
+			paramIdx.Dec()
+		case KEY_SDOWN:
+			paramIdx.Inc()
+		case '+':
+			params[paramIdx.Val()].Inc()
+		case '-':
+			params[paramIdx.Val()].Dec()
 		case gc.KEY_ESC:
 			break mainLoop
 		default:
-			fmt.Printf("command unknown: '%s'\n", ch)
+			log.Printf("command unknown: [0x%x] '%s'\n", ch, ch)
 		}
 
 	}
@@ -418,4 +353,6 @@ mainLoop:
 	client.Draw(grid)
 
 	client.Close()
+	// trace.Stop()
+	// fhTrace.Close()
 }

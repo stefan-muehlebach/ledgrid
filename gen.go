@@ -4,6 +4,8 @@
 package main
 
 import (
+	"strings"
+	"slices"
 	"bufio"
 	"fmt"
 	"log"
@@ -13,30 +15,40 @@ import (
 )
 
 var (
-	reColorListName = regexp.MustCompile(`^[[:space:]]*(([[:alpha:]]*)Colors)`)
+	reGradientListName = regexp.MustCompile(`^[[:space:]]*(([[:alpha:]]*)Gradient)`)
 
 	namesTempl = `
-// ACHTUNG: dieses File wird automatisch erzeugt
+//----------------------------------------------------------------------------
+//
+//   ACHTUNG: dieses File wird automatisch durch das Tool 'gen' in diesem
+//   Verzeichnis erzeugt! Manuelle Anpassungen koennen verloren gehen.
+//
+//----------------------------------------------------------------------------
 
 package ledgrid
 
 var (
     // PaletteNames ist ein Slice mit den Namen aller vorhandenen Paletten.
     PaletteNames = []string{
-{{range $i, $row := .}}        "{{(index $row 1)}}",
-{{end}}    }
+{{- range $i, $row := .}}
+        {{printf "\"%s\"" (index $row 0)}},
+{{- end}}
+    }
 
     // PaletteMap ist die Verbindung zwischen Palettenname und einer Variable
     // vom Typ Palette.
-    PaletteMap = map[string]*Palette{
-{{range $i, $row := .}}        "{{(index $row 1)}}": {{(index $row 1)}},
-{{end}}    }
+    PaletteMap = map[string]Colorable{
+{{- range $i, $row := .}}
+        {{printf "\"%[1]s\": %[1]s" (index $row 0)}},
+{{- end}}
+    }
 
     // In diesem Block werden die Paletten konkret erstellt. Im Moment
     // koennen so nur Paletten mit aequidistanten Farbstuetzstellen
     // erzeugt werden.
-{{range $i, $row := .}}    {{(index $row 1)}} = NewPaletteWithColors({{(index $row 0)}})
-{{end}}
+{{- range $i, $row := .}}
+    {{printf "%-20s = NewGradientPalette(%s...)" (index $row 0) (index $row 1)}}
+{{- end}}
 )
 `
 )
@@ -46,33 +58,36 @@ func main() {
 
 	fh, err := os.Open("paletteColors.go")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("opening file: %v", err)
 	}
 
 	nameList = make([][]string, 0)
 	scanner := bufio.NewScanner(fh)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if reColorListName.MatchString(line) {
-			matches := reColorListName.FindStringSubmatch(line)
+		if reGradientListName.MatchString(line) {
+			matches := reGradientListName.FindStringSubmatch(line)
 			colorListName := matches[1]
 			paletteName := fmt.Sprintf("%c%s", matches[2][0]-('a'-'A'), matches[2][1:])
-			// listName := fmt.Sprintf("%c%s", matches[1][0], matches[1][1:])
-			// listName[0] = strings.ToUpper(listName[0])
-			// fmt.Printf(">> %s, %s <<\n", colorListName, paletteName)
-			nameList = append(nameList, []string{colorListName, paletteName})
+			nameList = append(nameList, []string{paletteName, colorListName})
 		}
 	}
-    fh.Close()
+	fh.Close()
 
-    fh, err = os.Create("paletteNames.go")
+    slices.SortFunc(nameList, func(a []string, b []string) int {
+        return strings.Compare(a[0], b[0])
+    })
+
+	fh, err = os.Create("paletteNames.go")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("creating file: %v", err)
 	}
 	t := template.Must(template.New("names").Parse(namesTempl))
 	err = t.Execute(fh, nameList)
 	if err != nil {
 		log.Fatalf("executing template: %v", err)
 	}
-    fh.Close()
+	fh.Close()
+
+    fmt.Printf(">>> \u2502 <<<\n")
 }

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	bufferSize = 1024
+	bufferSize = 320 * 240 * 3
 )
 
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
