@@ -145,13 +145,17 @@ func (p *PixelServer) Handle() {
 		}
 		if p.onRaspi {
 			if len <= p.maxTxSize {
-				p.spiConn.Tx(p.buffer, nil)
+				if err = p.spiConn.Tx(p.buffer, nil); err != nil {
+					log.Fatal(err)
+				}
 			} else {
 				startIdx := 0
 				txSize := 0
 				for len > 0 {
 					txSize = min(len, p.maxTxSize)
-					p.spiConn.Tx(p.buffer[startIdx:startIdx+txSize], nil)
+					if err = p.spiConn.Tx(p.buffer[startIdx:startIdx+txSize], nil); err != nil {
+						log.Fatal(err)
+					}
 					len -= txSize
 					startIdx += txSize
 				}
