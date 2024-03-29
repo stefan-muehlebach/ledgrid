@@ -151,7 +151,7 @@ func (p *PixelServer) Handle() {
 				txSize := 0
 				for len > 0 {
 					txSize = min(len, p.maxTxSize)
-					if err = p.spiConn.Tx(p.buffer[startIdx:txSize], nil); err != nil {
+					if err = p.spiConn.Tx(p.buffer[startIdx : startIdx+txSize], nil); err != nil {
 						log.Printf("Error during communication via SPI: %v\n", err)
 					}
 					len -= txSize
