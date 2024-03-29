@@ -16,6 +16,7 @@ import (
 	"periph.io/x/conn/v3/spi/spireg"
 	"periph.io/x/host/v3"
 	"periph.io/x/host/v3/rpi"
+	"periph.io/x/host/v3/sysfs"
 )
 
 const (
@@ -33,6 +34,7 @@ type PixelServer struct {
 	spiPort     spi.PortCloser
 	spiConn     spi.Conn
 	buffer      []byte
+	maxTxSize   int
 	gammaValue  [3]float64
 	gamma       [3][256]byte
 }
@@ -55,9 +57,12 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	}
 
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
-	// Daten. 1kB sollten aktuell reichen (entspricht rund 340 RGB-Werten).
+	// Daten.
 	//
 	p.buffer = make([]byte, bufferSize)
+	spiFs, _ := sysfs.NewSPI(0, 0)
+	p.maxTxSize = spiFs.MaxTxSize()
+	spiFs.Close()
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur erstellt.
 	//
@@ -139,8 +144,19 @@ func (p *PixelServer) Handle() {
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
 		if p.onRaspi {
-			if err = p.spiConn.Tx(p.buffer[:len], nil); err != nil {
-				log.Printf("Error during communication via SPI: %v\n", err)
+			if len <= p.maxTxSize {
+				p.spiConn.Tx(p.buffer, nil)
+			} else {
+				startIdx := 0
+				txSize := 0
+				for len > 0 {
+					txSize = min(len, p.maxTxSize)
+					if err = p.spiConn.Tx(p.buffer[startIdx:txSize], nil); err != nil {
+						log.Printf("Error during communication via SPI: %v\n", err)
+					}
+					len -= txSize
+					startIdx += txSize
+				}
 			}
 			time.Sleep(20 * time.Microsecond)
 		} else {
