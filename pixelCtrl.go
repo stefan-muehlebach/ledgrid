@@ -145,7 +145,7 @@ func (p *PixelServer) Handle() {
 		}
 		if p.onRaspi {
 			if len <= p.maxTxSize {
-				if err = p.spiConn.Tx(p.buffer, nil); err != nil {
+				if err = p.spiConn.Tx(p.buffer[:len], nil); err != nil {
 					log.Fatal(err)
 				}
 			} else {
