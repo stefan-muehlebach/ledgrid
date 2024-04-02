@@ -3,8 +3,9 @@ package ledgrid
 import (
 	"log"
 	"fmt"
-	"image/color"
 	"math"
+    gocol "image/color"
+    "github.com/stefan-muehlebach/gg/color"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 type InterpolFuncType func(a, b, t float64) float64
 
 var (
-	ColorInterpol = LinearInterpol
+	ColorInterpol = PolynomInterpol
 )
 
 func LinearInterpol(a, b, t float64) float64 {
@@ -82,7 +83,7 @@ func (c LedColor) RGB() (r, g, b uint8) {
 // Berechnet eine RGB-Farbe, welche 'zwischen' den Farben c und d liegt, so
 // dass bei t=0 der Farbwert c und bei t=1 der Farbwert d retourniert wird.
 // t wird vorgaengig auf das Interval [0,1] eingeschraenkt.
-func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
+func (c LedColor) Interpolate(d color.Color, t float64) color.Color {
 	t = max(min(t, 1.0), 0.0)
 	if t == 0.0 {
 		return c
@@ -90,10 +91,11 @@ func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
 	if t == 1.0 {
 		return d
 	}
-	r := ColorInterpol(float64(c.R), float64(d.R), t)
-	g := ColorInterpol(float64(c.G), float64(d.G), t)
-	b := ColorInterpol(float64(c.B), float64(d.B), t)
-	a := ColorInterpol(float64(c.A), float64(d.A), t)
+    dr, dg, db, da := d.RGBA()
+	r := ColorInterpol(float64(c.R), float64(dr), t)
+	g := ColorInterpol(float64(c.G), float64(dg), t)
+	b := ColorInterpol(float64(c.B), float64(db), t)
+	a := ColorInterpol(float64(c.A), float64(da), t)
 	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
 }
 
@@ -101,8 +103,8 @@ func (c LedColor) Interpolate(d LedColor, t float64) LedColor {
 // Verfahren, welches in typ spezifiziert ist. Aktuell stehen 'Blend' (Ueber-
 // blendung von d durch c anhand des Alpha-Wertes von c) und 'Add' (nimm
 // jeweils das Maximum pro Farbwert zwischen c und d) zur Verfuegung.
-func (c LedColor) Mix(bg LedColor, typ ColorMixType) LedColor {
-	switch typ {
+func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
+	switch mix {
     case Replace:
         return c
 	case Blend:
@@ -128,13 +130,21 @@ func (c LedColor) Mix(bg LedColor, typ ColorMixType) LedColor {
 		a := c.A/2 + bg.A/2
 		return LedColor{r, g, b, a}
     default:
-        log.Fatalf("Unknown mixing function: '%d'", typ)
+        log.Fatalf("Unknown mixing function: '%d'", mix)
 	}
     return LedColor{}
 }
 
-func (c LedColor) Alpha(a float64) LedColor {
+func (c LedColor) Alpha(a float64) color.Color {
     return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
+}
+
+func (c LedColor) Bright(t float64) color.Color {
+    return c
+}
+
+func (c LedColor) Dark(t float64) color.Color {
+    return c
 }
 
 func (c LedColor) String() string {
@@ -143,11 +153,11 @@ func (c LedColor) String() string {
 
 // Das zum Typ LedColor zugehoerende ColorModel.
 var (
-	LedColorModel color.Model = color.ModelFunc(ledColorModel)
+	LedColorModel gocol.Model = gocol.ModelFunc(ledColorModel)
 )
 
 // Wandelt einen beliebigen Farbwert c in einen LedColor-Typ um.
-func ledColorModel(c color.Color) color.Color {
+func ledColorModel(c gocol.Color) gocol.Color {
 	if _, ok := c.(LedColor); ok {
 		return c
 	}

@@ -12,14 +12,10 @@ var (
 // Animator. Es ist sichergestellt, dass nur ein (1) Objekt von diesem Typ
 // existiert.
 type Animator struct {
-	ticker       *time.Ticker
-	t0, stopTime time.Time
-	// t1           time.Duration
-	// Speedup      float64
 	lg           *LedGrid
 	client       *PixelClient
-	// animList     []Animatable
-	// drawList     []Drawable
+	ticker       *time.Ticker
+	t0, stopTime time.Time
     objList      []any
 }
 
@@ -32,26 +28,20 @@ func NewAnimator(lg *LedGrid, client *PixelClient) *Animator {
 	a := &Animator{}
 	a.lg = lg
 	a.client = client
-	// a.animList = make([]Animatable, 0)
-	// a.drawList = make([]Drawable, 0)
     a.objList = make([]any, 0)
 
-	// a.Speedup = 1.0
 	a.ticker = time.NewTicker(frameRefresh)
+	a.t0 = time.Now()
+    a.stopTime = time.Time{}
 	go func() {
-		a.t0 = time.Now()
-		// a.t1 = time.Duration(0)
 		for _ = range a.ticker.C {
 			dt := frameRefresh
-			// dt := time.Duration(float64(frameRefresh) * a.Speedup)
-			// a.t1 += dt
 			for _, val := range a.objList {
                 if obj, ok := val.(Animatable); ok {
                     if obj.Alive() {
 				        obj.Update(dt)
                     }
                 }
-				// obj.Update(a.t1.Seconds(), dt.Seconds())
 			}
 			a.lg.Clear(Black)
 			for _, val := range a.objList {
@@ -91,6 +81,12 @@ func (a *Animator) Stop() {
 	}
 	a.ticker.Stop()
 	a.stopTime = time.Now()
+}
+
+// Gibt den Status der Animation zurueck. true bedeutet, dass die Animation
+// laeuft; false bedeutet, dass die Animation gestoppt ist.
+func (a *Animator) IsRunning() (bool) {
+    return a.stopTime.IsZero()
 }
 
 // Setzt die Animation wieder fort.

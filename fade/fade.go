@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"time"
 
 	"golang.org/x/image/math/fixed"
 
@@ -166,6 +167,7 @@ func main() {
 	var ch gc.Key
 	var palIdx *ledgrid.Bounded[int]
 	var palName string
+	var palNext ledgrid.Colorable
 	var palFadeTime *ledgrid.Bounded[float64]
 	// var gridSize image.Point = image.Point{width, height}
 	var anim *ledgrid.Animator
@@ -174,6 +176,13 @@ func main() {
 	// var speedup *ledgrid.Bounded[float64]
 	var shaders []*ledgrid.Shader
 	var shader *ledgrid.Shader
+	var shaderList = []ledgrid.ShaderRecord{
+		ledgrid.PlasmaShader,
+		ledgrid.CircleShader,
+		ledgrid.KaroShader,
+		ledgrid.LinearShader,
+		ledgrid.LinearShader,
+	}
 
 	log.SetOutput(os.Stderr)
 
@@ -212,63 +221,92 @@ func main() {
 	palIdx = ledgrid.NewBounded(0, 0, len(ledgrid.PaletteNames)-1, 1)
 	palIdx.Cycle = true
 	palFadeTime = ledgrid.NewBounded(1.5, 0.0, 5.0, 0.1)
-	palName = ledgrid.PaletteNames[palIdx.Val()]
-	pal = ledgrid.NewPaletteFader(ledgrid.PaletteMap[palName])
 
 	shaderCtrl := ledgrid.NewShaderController(grid)
+	shaderCtrl.SetActive(true)
 
-	shaders = make([]*ledgrid.Shader, 5)
-	shaders[0] = shaderCtrl.AddShader(ledgrid.PlasmaShader, pal)
-	shaders[0].Disable()
-	shaders[1] = shaderCtrl.AddShader(ledgrid.CircleShader, ledgrid.FadeBlue)
-	shaders[1].Disable()
-	shaders[2] = shaderCtrl.AddShader(ledgrid.CircleShader, ledgrid.FadeGreen)
-	shaders[2].Disable()
-	shaders[3] = shaderCtrl.AddShader(ledgrid.KaroShader, ledgrid.FadeGreen)
-	shaders[3].Disable()
-	shaders[4] = shaderCtrl.AddShader(ledgrid.FadeShader, ledgrid.FadeRed)
-	shaders[4].Disable()
+	shaders = make([]*ledgrid.Shader, len(shaderList))
+	for i := range shaders {
+		pal = ledgrid.NewPaletteFader(ledgrid.Default)
+		pal.SetAlive(true)
+		shaders[i] = shaderCtrl.AddShader(shaderList[i], pal)
+	}
 
-	shaderIdx := ledgrid.NewBounded(0, 0, 4, 1)
+	shaderIdx := ledgrid.NewBounded(0, 0, len(shaders)-1, 1)
 	shaderIdx.Cycle = true
 	shaderIdx.SetCallback(func(oldVal, newVal int) {
 		shader = shaders[newVal]
+		pal = shader.Pal.(*ledgrid.PaletteFader)
 		params = make([]*ledgrid.Bounded[float64], len(shader.Params))
 		for i, p := range shader.Params {
 			params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
 			params[i].BindVar(&shader.Params[i].Val)
+			params[i].SetCallback(func(oldVar, newVar float64) {
+				shader.Update(0)
+			})
 			params[i].Name = p.Name
 		}
 		paramIdx = ledgrid.NewBounded(0, 0, len(params)-1, 1)
 		paramIdx.Cycle = true
 	})
 
-	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
+	// txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
 	// line := NewLine(grid, image.Point{0, 1}, image.Point{9, 8}, ledgrid.Blue)
 	// poly := NewPolygon(grid, image.Point{0, 4}, image.Point{0, 9}, image.Point{9, 9}, ledgrid.Green)
 	// speedup = ledgrid.NewBounded(1.0, 0.1, 10.0, 0.1)
 
+	// blinken := ledgrid.OpenBlinkenFile("colors.bml")
+	// blinken.Write("colors-copy.bml")
+	// imgPal := ledgrid.NewSlicePalette(ledgrid.Pico08Colors...)
+	// imgAnim := blinken.MakeImageAnimation(grid, imgPal)
+	// imgAnim.SetActive(true)
+
 	anim = ledgrid.NewAnimator(grid, client)
 	// speedup.BindVar(&anim.Speedup)
-	anim.AddObjects(pal, shaderCtrl, txt)
+	anim.AddObjects(shaderCtrl)
+	for _, shader := range shaders {
+		anim.AddObjects(shader.Pal)
+	}
 	// anim.AddObject(shader)
 	// anim.AddObject(txt)
 	// anim.AddObject(line)
 	// anim.AddObject(poly)
+	// anim.AddObjects(imgAnim)
 
 mainLoop:
 	for {
 		win.Clear()
-		win.Printf("Current palette: %s\n", palName)
-		win.Printf("  q: next; a: prev\n")
-		win.Printf("Fade time      : %.1f\n", palFadeTime.Val())
-		win.Printf("  w: incr; s: decr\n")
-		win.Printf("Gamma value(s) : %.3f\n", gammaValue.Val())
-		win.Printf("  e: incr; d: decr\n")
-		win.Printf("Shaders:\n")
-		win.Printf("  PgUp: next; PgDn: prev:\n")
-		win.Printf("  Speedup: r: incr; f: decr\n\n")
-		win.Printf("  id | Name       |   V   |   A   | Spd\n")
+		win.Printf("+---------------------------------------------------+\n")
+		win.Printf("|                      Welcome                      |\n")
+		win.Printf("|                        to                         |\n")
+		win.Printf("|                      LedGrid                      |\n")
+		win.Printf("+---------------------------------------------------+\n")
+		win.Printf("\nGlobal Keys:\n")
+		win.Printf("  [Enter]: stop/continue animation\n")
+		win.Printf("  [q]    : quit\n")
+		win.Printf("\nGamma value(s)   : ")
+		win.AttrOn(gc.A_STANDOUT)
+		win.Printf(" %.3f ", gammaValue.Val())
+		win.AttrOff(gc.A_STANDOUT)
+		win.Printf("\n  [Home]/[End]: incr/decr value for all colors\n")
+		palName = ledgrid.PaletteNames[palIdx.Val()]
+		win.Printf("\nPalette to set   : ")
+		win.AttrOn(gc.A_STANDOUT)
+		win.Printf(" %s ", palName)
+		win.AttrOff(gc.A_STANDOUT)
+		win.Printf("\n  [PgUp]/[PgDown]: select next/prev palette\n")
+		win.Printf("  [Tab]          : start fade\n")
+		win.Printf("\nPalette fade time: ")
+		win.AttrOn(gc.A_STANDOUT)
+		win.Printf(" %.1f sec ", palFadeTime.Val())
+		win.AttrOff(gc.A_STANDOUT)
+		win.Printf("\n  [Shift-PgUp]/[Shift-PgDown]: incr/decr fade time\n")
+		win.Printf("\nShaders:\n")
+		win.Printf("  Cursor keys to navigate\n")
+		win.Printf("  v: toggle visibility\n")
+		win.Printf("  a: toggle animatable\n")
+		win.Printf("  [Insert]/[Delete]: incr/decr the speedup factor\n")
+		win.Printf("\n  id | Name       |   V   |   A   | Spd\n")
 		win.Printf("-----+------------+-------+-------+-----\n")
 		for i, s := range shaders {
 			if i == shaderIdx.Val() {
@@ -278,8 +316,11 @@ mainLoop:
 			}
 			win.Printf("%2d | %-10s | %-5v | %-5v | %.1f\n", i, s.Name, s.Visible(), s.Alive(), s.Speedup().Val())
 		}
-		win.Printf("-----+------------+-------+-------+-----\n\n")
-		win.Printf(" shader parameters:\n")
+		win.Printf("-----+------------+-------+-------+-----\n")
+		win.Printf("\nShader parameters:\n")
+		win.Printf("  Shift-Cursor to navigate\n")
+		win.Printf("  [+]/[-]: incr/decr parameter value\n")
+		win.Printf("  r: reset parameter to default value\n\n")
 		for i := range params {
 			if i == paramIdx.Val() {
 				win.Printf("> ")
@@ -288,10 +329,6 @@ mainLoop:
 			}
 			win.Printf("%-5s: %5.2f\n", params[i].Name, params[i].Val())
 		}
-		win.Printf("\n  r: reset parameter\n")
-		win.Printf("\n")
-		win.Printf("  z/x: stop/continue animation\n")
-		win.Printf("  ESC: quit\n")
 		gc.Update()
 
 		ch = win.GetChar()
@@ -299,12 +336,8 @@ mainLoop:
 		switch ch {
 		case gc.KEY_PAGEUP:
 			palIdx.Inc()
-			palName = ledgrid.PaletteNames[palIdx.Val()]
-			pal.StartFade(ledgrid.PaletteMap[palName], palFadeTime.Val())
 		case gc.KEY_PAGEDOWN:
 			palIdx.Dec()
-			palName = ledgrid.PaletteNames[palIdx.Val()]
-			pal.StartFade(ledgrid.PaletteMap[palName], palFadeTime.Val())
 		case KEY_SPAGEUP:
 			palFadeTime.Inc()
 		case KEY_SPAGEDOWN:
@@ -313,11 +346,17 @@ mainLoop:
 			gammaValue.Inc()
 		case gc.KEY_END:
 			gammaValue.Dec()
-		case 'z':
-			anim.Stop()
-		case 'x':
-			anim.Reset()
-		case 'R':
+		case gc.KEY_TAB:
+			log.Printf("Change palette\n")
+			palNext = ledgrid.PaletteMap[palName]
+			pal.StartFade(palNext, time.Duration(palFadeTime.Val()*float64(time.Second)))
+		case gc.KEY_ENTER, gc.KEY_RETURN:
+			if anim.IsRunning() {
+				anim.Stop()
+			} else {
+				anim.Reset()
+			}
+		case 'r':
 			for _, p := range params {
 				p.Reset()
 			}
@@ -326,7 +365,10 @@ mainLoop:
 		case gc.KEY_DOWN:
 			shaderIdx.Inc()
 		case ' ':
+			shader.SetActive(!shader.Active())
+		case 'a':
 			shader.SetAlive(!shader.Alive())
+		case 'v':
 			shader.SetVisible(!shader.Visible())
 		case gc.KEY_IC:
 			shader.Speedup().Inc()
@@ -340,7 +382,7 @@ mainLoop:
 			params[paramIdx.Val()].Inc()
 		case '-':
 			params[paramIdx.Val()].Dec()
-		case gc.KEY_ESC:
+		case 'q':
 			break mainLoop
 		default:
 			log.Printf("command unknown: [0x%x] '%s'\n", ch, ch)

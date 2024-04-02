@@ -65,6 +65,9 @@ func (b *Bounded[T]) BindVar(ptr *T) {
 	b.setVal(b.val)
 }
 
+// Mit SetCallback kann eine Funktion hinterlegt werden, die bei einer
+// Aenderung der Variable aufgerufen werden soll. Als Parameter werden der
+// Funktion der alte und der neue Wert der Variable uebergeben.
 func (b *Bounded[T]) SetCallback(callback func(oldVal, newVal T)) {
     b.callback = callback
     b.callback(b.val, b.val)

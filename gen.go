@@ -47,7 +47,7 @@ var (
     // koennen so nur Paletten mit aequidistanten Farbstuetzstellen
     // erzeugt werden.
 {{- range $i, $row := .}}
-    {{printf "%-20s = NewGradientPalette(%s...)" (index $row 0) (index $row 1)}}
+    {{printf "%-20s = NewGradientPalette(true, %s...)" (index $row 0) (index $row 1)}}
 {{- end}}
 )
 `
@@ -88,6 +88,4 @@ func main() {
 		log.Fatalf("executing template: %v", err)
 	}
 	fh.Close()
-
-    fmt.Printf(">>> \u2502 <<<\n")
 }

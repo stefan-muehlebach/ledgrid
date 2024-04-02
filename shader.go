@@ -37,9 +37,6 @@ func (c *ShaderController) AddShader(shd ShaderRecord, pal Colorable) *Shader {
 func (c *ShaderController) Update(dt time.Duration) bool {
     dt = c.AnimatableEmbed.Update(dt)
 	for _, s := range c.shaders {
-		if !s.Alive() {
-			continue
-		}
 		s.Update(dt)
 	}
 	return true
@@ -56,7 +53,7 @@ func (c *ShaderController) Draw() {
 				if !s.Visible() {
 					continue
 				}
-				shaderColor := s.pal.Color(s.field[row][col])
+				shaderColor := s.Pal.Color(s.field[row][col])
 				c.lg.MixLedColor(col, row, shaderColor, Max)
 			}
 		}
@@ -89,7 +86,7 @@ type Shader struct {
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
 	Params             []ShaderParam
-	pal                Colorable
+	Pal                Colorable
 }
 
 func newShader(size image.Point, shr ShaderRecord, pal Colorable) *Shader {
@@ -111,8 +108,9 @@ func newShader(size image.Point, shr ShaderRecord, pal Colorable) *Shader {
 		s.xMin = -1.0
 		s.yMax = 1.0
 	}
-	s.pal = pal
+	s.Pal = pal
     s.SetShaderData(shr)
+    s.Update(0)
 	return s
 }
 
@@ -120,6 +118,24 @@ func (s *Shader) SetShaderData(shr ShaderRecord) {
     s.Name = shr.n
     s.fnc = shr.f
     s.Params = slices.Clone(shr.p)
+}
+
+func (s *Shader) Param(name string) float64 {
+    for _, param := range s.Params {
+        if param.Name == name {
+            return param.Val
+        }
+    }
+    return 0.0
+}
+
+func (s *Shader) SetParam(name string, val float64) {
+    for _, param := range s.Params {
+        if param.Name == name {
+            param.Val = val
+            return
+        }
+    }
 }
 
 func (s *Shader) Update(dt time.Duration) bool {
@@ -163,8 +179,8 @@ var (
 		"Circle",
 		CircleShaderFunc,
 		[]ShaderParam{
-			{Name: "x", Val: 1.0, LowerBound: 1.0, UpperBound: 2.0, Step: 0.1},
-			{Name: "y", Val: 1.0, LowerBound: 1.0, UpperBound: 2.0, Step: 0.1},
+			{Name: "x", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
+			{Name: "y", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
 			{Name: "dir", Val: 1.0, LowerBound: -1.0, UpperBound: 1.0, Step: 2.0},
 		},
 	}
@@ -172,17 +188,17 @@ var (
 		"Karo",
 		KaroShaderFunc,
 		[]ShaderParam{
-			{Name: "x", Val: 1.0, LowerBound: 1.0, UpperBound: 2.0, Step: 0.1},
-			{Name: "y", Val: 1.0, LowerBound: 1.0, UpperBound: 2.0, Step: 0.1},
+			{Name: "x", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
+			{Name: "y", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
 			{Name: "dir", Val: 1.0, LowerBound: -1.0, UpperBound: 1.0, Step: 2.0},
 		},
 	}
-	FadeShader = ShaderRecord{
+	LinearShader = ShaderRecord{
 		"Linear",
-		FadeShaderFunc,
+		LinearShaderFunc,
 		[]ShaderParam{
-			{Name: "x", Val: 0.5, LowerBound: 0.0, UpperBound: 1.0, Step: 0.1},
-			{Name: "y", Val: 0.5, LowerBound: 0.0, UpperBound: 1.0, Step: 0.1},
+			{Name: "x", Val: 1.0, LowerBound: 0.0, UpperBound: 2.0, Step: 0.1},
+			{Name: "y", Val: 0.0, LowerBound: 0.0, UpperBound: 2.0, Step: 0.1},
 			{Name: "dir", Val: 1.0, LowerBound: -1.0, UpperBound: 1.0, Step: 2.0},
 		},
 	}
@@ -247,14 +263,14 @@ func KaroShaderFunc(x, y, t float64, p []ShaderParam) float64 {
 // Allgemeine Funktion fuer einen animierten Farbverlauf. Mit p1 steuert man
 // die Geschwindigkeit der Animation und mit p2/p3 kann festgelegt werden,
 // in welche Richtung (x oder y) der Verlauf erfolgen soll.
-func FadeShaderFunc(x, y, t float64, p []ShaderParam) float64 {
-	x = p[0].Val * (x + 1.0) / 2.0
-	y = p[1].Val * (y + 1.0) / 2.0
-	t *= p[2].Val
+func LinearShaderFunc(x, y, t float64, p []ShaderParam) float64 {
+	x = p[0].Val * (x + 1.0) / 4.0
+	y = p[1].Val * (y + 1.0) / 4.0
+	t *= p[2].Val/4.0
 	return math.Abs(math.Mod(x+y-t, 1.0))
 }
 
-// func FadeShaderFunc(x, y, t float64, p []float64) float64 {
+// func LinearShaderFunc(x, y, t float64, p []float64) float64 {
 // 	_, f := math.Modf(p[1]*x + p[2]*y + p[0]*t)
 // 	if f < 0.0 {
 // 		f += 1.0

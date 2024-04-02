@@ -1,10 +1,9 @@
 package ledgrid
 
 import (
-	"time"
 	"log"
-	"math"
 	"slices"
+	"time"
 )
 
 type colorStop struct {
@@ -25,11 +24,14 @@ type GradientPalette struct {
 // Erzeugt eine neue Palette und verwendet die Farben in cl als Stuetzwerte.
 // In diesem Fall werden die Farben in cl gleichmaessig (aequidistant) auf
 // dem Intervall [0,1] verteilt.
-func NewGradientPalette(cl ...LedColor) *GradientPalette {
+func NewGradientPalette(cycle bool, cl ...LedColor) *GradientPalette {
 	p := &GradientPalette{}
 	if cl == nil {
 		cl = []LedColor{Black, White}
 	}
+    if cycle {
+        cl = append(cl, cl[0])
+    }
 	p.SetColorStops(cl)
 	p.Func = PolynomInterpol
 	return p
@@ -62,11 +64,11 @@ func (p *GradientPalette) SetColorStops(cl []LedColor) {
 	if len(cl) < 2 {
 		log.Fatalf("At least two colors are required!")
 	}
-	posStep := 1.0 / (float64(len(cl) - 1))
+	posStep := 1.0 / (float64(len(cl)-1))
 	p.stops = make([]colorStop, len(cl))
 	for i, c := range cl {
 		p.stops[i] = colorStop{float64(i) * posStep, c}
-	}
+    }
 }
 
 // Hier nun spielt die Musik: aufgrund des Wertes t (muss im Intervall [0,1]
@@ -84,11 +86,12 @@ func (p *GradientPalette) Color(t float64) (c LedColor) {
 		}
 	}
 	t = (t - p.stops[i].pos) / (p.stops[i+1].pos - p.stops[i].pos)
-	c = p.stops[i].col.Interpolate(p.stops[i+1].col, p.Func(0, 1, t))
+	c = p.stops[i].col.Interpolate(p.stops[i+1].col, p.Func(0, 1, t)).(LedColor)
 	return c
 }
 
-// Palette mit 256 einzelnen Farbwerten
+// Palette mit 256 einzelnen dedizierten Farbwerten - kein Fading oder
+// sonstige Uebergaenge.
 type SlicePalette struct {
 	Colors []LedColor
 }
@@ -103,10 +106,6 @@ func NewSlicePalette(cl ...LedColor) *SlicePalette {
 }
 
 func (p *SlicePalette) Color(v float64) LedColor {
-	_, f := math.Modf(v)
-	if f != 0.0 {
-		v = v * 255.0
-	}
 	return p.Colors[int(v)]
 }
 
@@ -117,37 +116,38 @@ func (p *SlicePalette) SetColor(idx int, c LedColor) {
 // Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
 // anderen realisiert werden.
 type PaletteFader struct {
-    AnimatableEmbed
-	Pals              [2]Colorable
-	FadePos, FadeStep float64
+	AnimatableEmbed
+	Pals                 [2]Colorable
+	FadeTime, RemainTime time.Duration
 }
 
 func NewPaletteFader(pal Colorable) *PaletteFader {
 	p := &PaletteFader{}
-    p.AnimatableEmbed.Init()
+	p.AnimatableEmbed.Init()
 	p.Pals[0] = pal
-	p.FadePos = 0.0
-	p.FadeStep = 0.0
+	p.FadeTime = 0
+	p.RemainTime = 0
 	return p
 }
 
-func (p *PaletteFader) StartFade(nextPal Colorable, fadeTimeSec float64) bool {
-	if p.FadePos > 0.0 {
+func (p *PaletteFader) StartFade(nextPal Colorable, fadeTime time.Duration) bool {
+	if p.RemainTime > 0 {
 		return false
 	}
 	p.Pals[0], p.Pals[1] = nextPal, p.Pals[0]
-	if fadeTimeSec > 0.0 {
-		p.FadePos = 1.0
-		p.FadeStep = 1.0 / (fadeTimeSec / frameRefreshSec)
+	if fadeTime > 0 {
+		p.FadeTime = fadeTime
+		p.RemainTime = fadeTime
 	}
-    return true
+	return true
 }
 
 func (p *PaletteFader) Update(dt time.Duration) bool {
-	if p.FadePos > 0.0 {
-		p.FadePos -= p.FadeStep
-		if p.FadePos < 0.0 {
-			p.FadePos = 0.0
+	dt = p.AnimatableEmbed.Update(dt)
+	if p.RemainTime > 0 && dt > 0 {
+		p.RemainTime -= dt
+		if p.RemainTime < 0 {
+			p.RemainTime = 0
 		}
 	}
 	return true
@@ -155,9 +155,10 @@ func (p *PaletteFader) Update(dt time.Duration) bool {
 
 func (p *PaletteFader) Color(v float64) LedColor {
 	c1 := p.Pals[0].Color(v)
-	if p.FadePos > 0.0 {
+	if p.RemainTime > 0 {
+		t := p.RemainTime.Seconds() / p.FadeTime.Seconds()
 		c2 := p.Pals[1].Color(v)
-		c1 = c1.Interpolate(c2, p.FadePos)
+		c1 = c1.Interpolate(c2, t).(LedColor)
 	}
 	return c1
 }

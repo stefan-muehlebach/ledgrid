@@ -32,20 +32,24 @@ func init() {
 // Alles, was sich auf dem LedGrid darstellen (d.h. zeichnen laesst),
 // implementiert das Interface Drawable.
 type Drawable interface {
+    // Mit diesen Methoden kann ermittelt, resp. festgelegt werden, ob das
+    // Objekt dargestellt (d.h. gezeichnet) werden soll.
+	Visible() bool
+	SetVisible(v bool)
 	// Zeichnet das Objekt auf dem LedGrid.
 	// TO DO: die Art, wie die bestehenden mit den neuen Farben gemischt
 	// werden sollen, ist aktuell nicht bestimmbar.
 	Draw()
-	Visible() bool
-	SetVisible(v bool)
 }
 
+// Dieses Embedable kann fuer eine Default-Implementation des Drawable-
+// Interfaces genutzt werden.
 type DrawableEmbed struct {
     visible bool
 }
 
 func (d *DrawableEmbed) Init() {
-    d.visible = true
+    d.visible = false
 }
 
 func (d *DrawableEmbed) Visible() bool {
@@ -84,12 +88,15 @@ type AnimatableEmbed struct {
 }
 
 func (a *AnimatableEmbed) Init() {
-    a.alive = true
+    a.alive = false
     a.t0 = time.Duration(0)
     a.speedup = NewBounded(1.0, 0.1, 2.0, 0.1)
 }
 
 func (a *AnimatableEmbed) Update(dt time.Duration) time.Duration {
+    if !a.alive {
+        return 0
+    }
     dt = time.Duration(float64(dt) * a.speedup.val)
     a.t0 += dt
     return dt
@@ -107,14 +114,19 @@ func (a *AnimatableEmbed) Speedup() *Bounded[float64] {
     return a.speedup
 }
 
-// Kombi-Interface
+// Dieses Interface wird von allen Objekten implementiert, die sowohl animiert,
+// als auch dargestellt werden koennen.
 type Visualizable interface {
     Drawable
     Animatable
-    Enable()
-    Disable()
+    // Mit diesen Methoden werden beide Eigenschaften (sichtbar und animierbar
+    // zusammen aktiviert, resp. abgefragt.
+    Active() bool
+    SetActive(active bool)
 }
 
+// Dieses Embedable kann fuer eine Default-Implementation des Visualizable-
+// Interfaces genutzt werden.
 type VisualizableEmbed struct {
     DrawableEmbed
     AnimatableEmbed
@@ -125,14 +137,13 @@ func (v *VisualizableEmbed) Init() {
     v.AnimatableEmbed.Init()
 }
 
-func (v *VisualizableEmbed) Enable() {
-    v.DrawableEmbed.SetVisible(true)
-    v.AnimatableEmbed.SetAlive(true)
+func (v *VisualizableEmbed) Active() (bool) {
+    return v.Visible() && v.Alive()
 }
 
-func (v *VisualizableEmbed) Disable() {
-    v.DrawableEmbed.SetVisible(false)
-    v.AnimatableEmbed.SetAlive(false)
+func (v *VisualizableEmbed) SetActive(active bool) {
+    v.SetVisible(active)
+    v.SetAlive(active)
 }
 
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert

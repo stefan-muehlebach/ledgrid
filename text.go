@@ -38,8 +38,8 @@ func NewText(lg *LedGrid, txt string, col LedColor) *Text {
 	t.txt = txt
 	rect, _ := font.BoundString(face, t.txt)
 	t.size = fixed.Point26_6{rect.Max.X - rect.Min.X, rect.Max.Y - rect.Min.Y}
-	t.pos = fixp(0.0, 9.0)
-	t.dp = fixp(0.1, 0.0)
+	t.pos = coord2fix(0.0, 9.0)
+	t.dp = coord2fix(0.1, 0.0)
 	t.pattern = image.NewUniform(col)
 	t.drawer = font.Drawer{
 		Dst:  lg,
@@ -67,11 +67,14 @@ func (t *Text) Draw() {
 	t.drawer.DrawString(t.txt)
 }
 
-func fixr(r image.Rectangle) fixed.Rectangle26_6 {
+// Es folgen Hilfsfunktionen fuer die schnelle Umrechnung zwischen Fliess-
+// und Fixkommazahlen sowie den geometrischen Typen, die auf Fixkommazahlen
+// aufgebaut sind.
+func rect2fix(r image.Rectangle) fixed.Rectangle26_6 {
 	return fixed.R(r.Min.X, r.Min.Y, r.Max.X, r.Max.Y)
 }
 
-func fixp(x, y float64) fixed.Point26_6 {
+func coord2fix(x, y float64) fixed.Point26_6 {
 	return fixed.Point26_6{X: float2fix(x), Y: float2fix(y)}
 }
 
