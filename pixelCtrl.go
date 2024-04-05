@@ -175,7 +175,10 @@ func (p *PixelServer) Handle() {
 	}
 }
 
-// Die folgenden Methoden werden via RPC vom Client aufgerufen.
+// Die folgenden Methoden koennen via RPC vom Client aufgerufen werden.
+// Die Methode RPCDraw ist nur der Vollstaendigkeit halber vorhanden. In
+// der Praxis hat sich das Senden der Bilddaten via RPC als zu langsam
+// erwiesen und wurde auf UDP umgestellt.
 func (p *PixelServer) RPCDraw(grid *LedGrid, reply *int) error {
 	var err error
 
@@ -199,6 +202,11 @@ type GammaArg struct {
 func (p *PixelServer) RPCSetGamma(arg GammaArg, reply *int) error {
 	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
+}
+
+func (p *PixelServer) RPCGamma(arg int, reply *GammaArg) error {
+    reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
+    return nil
 }
 
 // Dieser Typ wird client-seitig fuer die Ansteuerung des LedGrid verwendet.
@@ -247,6 +255,17 @@ func (p *PixelClient) Draw(ledGrid *LedGrid) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (p *PixelClient) Gamma() (r, g, b float64) {
+	var reply GammaArg
+	var err error
+
+	err = p.rpcClient.Call("PixelServer.RPCGamma", 0, &reply)
+	if err != nil {
+		log.Fatal("Gamma error:", err)
+	}
+    return reply.RedVal, reply.GreenVal, reply.BlueVal
 }
 
 func (p *PixelClient) SetGamma(r, g, b float64) {

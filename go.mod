@@ -5,7 +5,6 @@ go 1.22.1
 replace github.com/stefan-muehlebach/gg => ../gg
 
 require (
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/rthornton128/goncurses v0.0.0-20231014161942-82671379df88
 	github.com/stefan-muehlebach/gg v0.0.0-00010101000000-000000000000
 	golang.org/x/image v0.15.0

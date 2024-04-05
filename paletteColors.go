@@ -7,6 +7,10 @@ var (
 	// Farblisten werden NICHT exportiert (d.h. beginnen mit Kleinbuchstaben),
 	// muessen aber mit 'Colors' enden.
 
+    blackGradient = []LedColor{
+        NewLedColor(0x000000),
+    }
+
 	// Paletten aus der Mandelbrot-Kueche
 	defaultGradient = []LedColor{
 		{0xFE, 0xBC, 0x08, 0xFF},

@@ -39,103 +39,103 @@ func fix2float(x fixed.Int26_6) float64 {
 
 //----------------------------------------------------------------------------
 
-type Polygon struct {
-	lg                        *ledgrid.LedGrid
-	p0, p1, p2, dp0, dp1, dp2 fixed.Point26_6
-	col                       ledgrid.LedColor
-}
+// type Polygon struct {
+// 	lg                        *ledgrid.LedGrid
+// 	p0, p1, p2, dp0, dp1, dp2 fixed.Point26_6
+// 	col                       ledgrid.LedColor
+// }
 
-func NewPolygon(lg *ledgrid.LedGrid, p0, p1, p2 image.Point, col ledgrid.LedColor) *Polygon {
-	p := &Polygon{}
-	p.lg = lg
-	p.p0 = fixed.P(p0.X, p0.Y)
-	p.p1 = fixed.P(p1.X, p1.Y)
-	p.p2 = fixed.P(p2.X, p2.Y)
-	p.dp0 = fixp(+0.01, +0.02)
-	p.dp1 = fixp(+0.02, -0.01)
-	p.dp2 = fixp(-0.01, -0.02)
-	p.col = col
-	return p
-}
+// func NewPolygon(lg *ledgrid.LedGrid, p0, p1, p2 image.Point, col ledgrid.LedColor) *Polygon {
+// 	p := &Polygon{}
+// 	p.lg = lg
+// 	p.p0 = fixed.P(p0.X, p0.Y)
+// 	p.p1 = fixed.P(p1.X, p1.Y)
+// 	p.p2 = fixed.P(p2.X, p2.Y)
+// 	p.dp0 = fixp(+0.01, +0.02)
+// 	p.dp1 = fixp(+0.02, -0.01)
+// 	p.dp2 = fixp(-0.01, -0.02)
+// 	p.col = col
+// 	return p
+// }
 
-func (p *Polygon) Update(t float64) bool {
-	r := fixr(p.lg.Bounds())
+// func (p *Polygon) Update(t float64) bool {
+// 	r := fixr(p.lg.Bounds())
 
-	p.p0 = p.p0.Add(p.dp0)
-	p.p1 = p.p1.Add(p.dp1)
-	p.p2 = p.p2.Add(p.dp2)
-	if !p.p0.In(r) {
-		if p.p0.X < r.Min.X || p.p0.X >= r.Max.X {
-			p.dp0.X = -p.dp0.X
-		} else {
-			p.dp0.Y = -p.dp0.Y
-		}
-	}
-	if !p.p1.In(r) {
-		if p.p1.X < r.Min.X || p.p1.X >= r.Max.X {
-			p.dp1.X = -p.dp1.X
-		} else {
-			p.dp1.Y = -p.dp1.Y
-		}
-	}
-	if !p.p2.In(r) {
-		if p.p2.X < r.Min.X || p.p2.X >= r.Max.X {
-			p.dp2.X = -p.dp2.X
-		} else {
-			p.dp2.Y = -p.dp2.Y
-		}
-	}
-	return true
-}
+// 	p.p0 = p.p0.Add(p.dp0)
+// 	p.p1 = p.p1.Add(p.dp1)
+// 	p.p2 = p.p2.Add(p.dp2)
+// 	if !p.p0.In(r) {
+// 		if p.p0.X < r.Min.X || p.p0.X >= r.Max.X {
+// 			p.dp0.X = -p.dp0.X
+// 		} else {
+// 			p.dp0.Y = -p.dp0.Y
+// 		}
+// 	}
+// 	if !p.p1.In(r) {
+// 		if p.p1.X < r.Min.X || p.p1.X >= r.Max.X {
+// 			p.dp1.X = -p.dp1.X
+// 		} else {
+// 			p.dp1.Y = -p.dp1.Y
+// 		}
+// 	}
+// 	if !p.p2.In(r) {
+// 		if p.p2.X < r.Min.X || p.p2.X >= r.Max.X {
+// 			p.dp2.X = -p.dp2.X
+// 		} else {
+// 			p.dp2.Y = -p.dp2.Y
+// 		}
+// 	}
+// 	return true
+// }
 
-func (p *Polygon) Draw() {
-	DrawLine(p.lg, p.p0, p.p1, p.col)
-	DrawLine(p.lg, p.p1, p.p2, p.col)
-	DrawLine(p.lg, p.p2, p.p0, p.col)
-}
+// func (p *Polygon) Draw() {
+// 	DrawLine(p.lg, p.p0, p.p1, p.col)
+// 	DrawLine(p.lg, p.p1, p.p2, p.col)
+// 	DrawLine(p.lg, p.p2, p.p0, p.col)
+// }
 
-type Line struct {
-	lg               *ledgrid.LedGrid
-	p0, p1, dp0, dp1 fixed.Point26_6
-	col              ledgrid.LedColor
-}
+// type Line struct {
+// 	lg               *ledgrid.LedGrid
+// 	p0, p1, dp0, dp1 fixed.Point26_6
+// 	col              ledgrid.LedColor
+// }
 
-func NewLine(lg *ledgrid.LedGrid, p0, p1 image.Point, col ledgrid.LedColor) *Line {
-	l := &Line{}
-	l.lg = lg
-	l.p0 = fixed.P(p0.X, p0.Y)
-	l.p1 = fixed.P(p1.X, p1.Y)
-	l.dp0 = fixp(+0.05, 0.0)
-	l.dp1 = fixp(-0.05, 0.0)
-	l.col = col
-	return l
-}
+// func NewLine(lg *ledgrid.LedGrid, p0, p1 image.Point, col ledgrid.LedColor) *Line {
+// 	l := &Line{}
+// 	l.lg = lg
+// 	l.p0 = fixed.P(p0.X, p0.Y)
+// 	l.p1 = fixed.P(p1.X, p1.Y)
+// 	l.dp0 = fixp(+0.05, 0.0)
+// 	l.dp1 = fixp(-0.05, 0.0)
+// 	l.col = col
+// 	return l
+// }
 
-func (l *Line) Update(t float64) bool {
-	r := fixr(l.lg.Bounds())
+// func (l *Line) Update(t float64) bool {
+// 	r := fixr(l.lg.Bounds())
 
-	l.p0 = l.p0.Add(l.dp0)
-	l.p1 = l.p1.Add(l.dp1)
-	if !l.p0.In(r) {
-		if l.p0.X < r.Min.X || l.p0.X >= r.Max.X {
-			l.dp0.X = -l.dp0.X
-		} else {
-			l.dp0.Y = -l.dp0.Y
-		}
-	}
-	if !l.p1.In(r) {
-		if l.p1.X < r.Min.X || l.p1.X >= r.Max.X {
-			l.dp1.X = -l.dp1.X
-		} else {
-			l.dp1.Y = -l.dp1.Y
-		}
-	}
-	return true
-}
+// 	l.p0 = l.p0.Add(l.dp0)
+// 	l.p1 = l.p1.Add(l.dp1)
+// 	if !l.p0.In(r) {
+// 		if l.p0.X < r.Min.X || l.p0.X >= r.Max.X {
+// 			l.dp0.X = -l.dp0.X
+// 		} else {
+// 			l.dp0.Y = -l.dp0.Y
+// 		}
+// 	}
+// 	if !l.p1.In(r) {
+// 		if l.p1.X < r.Min.X || l.p1.X >= r.Max.X {
+// 			l.dp1.X = -l.dp1.X
+// 		} else {
+// 			l.dp1.Y = -l.dp1.Y
+// 		}
+// 	}
+// 	return true
+// }
 
-func (l *Line) Draw() {
-	DrawLine(l.lg, l.p0, l.p1, l.col)
-}
+// func (l *Line) Draw() {
+// 	DrawLine(l.lg, l.p0, l.p1, l.col)
+// }
 
 //----------------------------------------------------------------------------
 
@@ -222,14 +222,14 @@ func main() {
 	palIdx.Cycle = true
 	palFadeTime = ledgrid.NewBounded(1.5, 0.0, 5.0, 0.1)
 
-	shaderCtrl := ledgrid.NewShaderController(grid)
-	shaderCtrl.SetActive(true)
+	// shaderCtrl := ledgrid.NewShaderController(grid)
+	// shaderCtrl.SetActive(true)
 
 	shaders = make([]*ledgrid.Shader, len(shaderList))
 	for i := range shaders {
 		pal = ledgrid.NewPaletteFader(ledgrid.Default)
 		pal.SetAlive(true)
-		shaders[i] = shaderCtrl.AddShader(shaderList[i], pal)
+		shaders[i] = ledgrid.NewShader(grid, shaderList[i], pal)
 	}
 
 	shaderIdx := ledgrid.NewBounded(0, 0, len(shaders)-1, 1)
@@ -250,27 +250,26 @@ func main() {
 		paramIdx.Cycle = true
 	})
 
-	// txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
+	txt := ledgrid.NewText(grid, "Restaurant Lochbach Bad", ledgrid.White)
+    txt.SetActive(true)
 	// line := NewLine(grid, image.Point{0, 1}, image.Point{9, 8}, ledgrid.Blue)
 	// poly := NewPolygon(grid, image.Point{0, 4}, image.Point{0, 9}, image.Point{9, 9}, ledgrid.Green)
 	// speedup = ledgrid.NewBounded(1.0, 0.1, 10.0, 0.1)
 
-	// blinken := ledgrid.OpenBlinkenFile("colors.bml")
+	// blinken := ledgrid.OpenBlinkenFile("icons.bml")
 	// blinken.Write("colors-copy.bml")
 	// imgPal := ledgrid.NewSlicePalette(ledgrid.Pico08Colors...)
 	// imgAnim := blinken.MakeImageAnimation(grid, imgPal)
 	// imgAnim.SetActive(true)
 
 	anim = ledgrid.NewAnimator(grid, client)
-	// speedup.BindVar(&anim.Speedup)
-	anim.AddObjects(shaderCtrl)
 	for _, shader := range shaders {
-		anim.AddObjects(shader.Pal)
+		anim.AddObjects(shader, shader.Pal)
 	}
-	// anim.AddObject(shader)
-	// anim.AddObject(txt)
-	// anim.AddObject(line)
-	// anim.AddObject(poly)
+	// anim.AddObjects(shader)
+	anim.AddObjects(txt)
+	// anim.AddObjects(line)
+	// anim.AddObjects(poly)
 	// anim.AddObjects(imgAnim)
 
 mainLoop:
@@ -391,7 +390,7 @@ mainLoop:
 	}
 	anim.Stop()
 
-	grid.Clear(ledgrid.Black)
+	grid.Clear(ledgrid.BlackColor)
 	client.Draw(grid)
 
 	client.Close()

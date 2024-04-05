@@ -8,7 +8,7 @@ import (
 
 // Fuer das gesamte Package gueltige Variablen, resp. Konstanten.
 var (
-	OutsideColor = Black
+	OutsideColor = BlackColor
 )
 
 const (

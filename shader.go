@@ -1,86 +1,49 @@
 package ledgrid
 
 import (
-	"time"
-	"image"
 	"math"
 	"slices"
+	"time"
 )
 
-// Mit dem ShaderController koennen mehrere Shaders auf ein LedGrid angewandt
-// werden. Ueber den Controller werden die einzelnen Shaders aktualisiert
-// (Methode Update()) aber auch gezeichnet (Methode Draw()).
-type ShaderController struct {
-	VisualizableEmbed
-	lg      *LedGrid
-	shaders []*Shader
-}
-
-// Erstellt einen neuen Controller, der auf das LedGrid lg operiert.
-func NewShaderController(lg *LedGrid) *ShaderController {
-	c := &ShaderController{}
-    c.VisualizableEmbed.Init()
-	c.lg = lg
-	c.shaders = make([]*Shader, 0)
-	return c
-}
-
-// Fuegt einen neuen Shader hinzu und verwendet pal als Palette fuer
-// den Shader.
-func (c *ShaderController) AddShader(shd ShaderRecord, pal Colorable) *Shader {
-	s := newShader(c.lg.Bounds().Size(), shd, pal)
-	c.shaders = append(c.shaders, s)
-	return s
-}
-
-// Aktualisiert alle Shader, die diesem Controller angehaengt sind.
-func (c *ShaderController) Update(dt time.Duration) bool {
-    dt = c.AnimatableEmbed.Update(dt)
-	for _, s := range c.shaders {
-		s.Update(dt)
-	}
-	return true
-}
-
-// Zeichnet das Resultat aller Shader in das LedGrid. Als Methode fuer das
-// Mischen der Farben wird die Strategie 'Max' verwendet.
-func (c *ShaderController) Draw() {
-	var col, row int
-
-	for row = range c.lg.Bounds().Dy() {
-		for col = range c.lg.Bounds().Dx() {
-			for _, s := range c.shaders {
-				if !s.Visible() {
-					continue
-				}
-				shaderColor := s.Pal.Color(s.field[row][col])
-				c.lg.MixLedColor(col, row, shaderColor, Max)
-			}
-		}
-	}
-}
 
 // Der Shader verwendet zur Berechnung der darzustellenden Farben
 // math. Funktionen. Dazu wird gedanklich ueber das gesamte LedGrid ein
 // Koordinatensystem gelegt, welches math. korrekt ist, seinen Ursprung in der
 // Mitte des LedGrid hat und so dimensioniert ist, dass der Betrag der
 // groessten Koordinaten immer 1.0 ist. Mit Hilfe einer Funktion des Typs
-// AnimFuncType werden dann die Farben berechnet. Die Parameter x und y sind
+// ShaderFuncType werden dann die Farben berechnet. Die Parameter x und y sind
 // Koordinaten im erwaehnten math. Koordinatensystem und mit t wird ein
 // Zeitwert (in Sekunden und Bruchteilen davon) an die Funktion uebergeben.
 // Der Rueckgabewert ist eine Fliesskommazahl in [0,1] und wird verwendet,
 // um aus einer Palette einen Farbwert zu erhalten.
 
+// Jeder Shader basiert auf einer Funktion mit diesem Profil. x und y sind
+// Koordinaten des darzustellenden Punktes (siehe Text oben für die
+// Dimensionierung des Koord.system), t ist ein fortlaufender Zeitparameter
+// und p ist ein Slice von Parametern, die für diesen Shader verwendet werden
+// (siehe dazu auch den Typ ShaderParam).
 type ShaderFuncType func(x, y, t float64, p []ShaderParam) float64
 
+// Jeder Shader kann über mehrere Parameter gesteuert werden. Ein Parameter
+// ist ein Record vom Typ ShaderParam.
 type ShaderParam struct {
+    // Jeder Parameter hat einen Namen, der beispielsweise in einem GUI oder
+    // TUI angezeigt werden kann.
 	Name                         string
+    // Val ist der aktuelle Wert des Parameters. Im Moment gibt es nur
+    // Parameter mit Fliesskommawerten (TO DO: ev. generischen Typ erstellen,
+    // der auch andere Werte aufnehmen kann).
 	Val                          float64
+    // LowerBound und UpperBound sind die Grenzen, in denen der Parameter
+    // verändert werden kann und Step ist die Schrittweite, falls das GUI/TUI
+    // eine schrittweise Veränderung des Wertes zulässt.
 	LowerBound, UpperBound, Step float64
 }
 
 type Shader struct {
 	VisualizableEmbed
+	lg                 *LedGrid
 	Name               string
 	field              [][]float64
 	dPixel, xMin, yMax float64
@@ -89,9 +52,11 @@ type Shader struct {
 	Pal                Colorable
 }
 
-func newShader(size image.Point, shr ShaderRecord, pal Colorable) *Shader {
+func NewShader(lg *LedGrid, shr ShaderRecord, pal Colorable) *Shader {
 	s := &Shader{}
-    s.VisualizableEmbed.Init()
+	s.VisualizableEmbed.Init()
+	s.lg = lg
+	size := lg.Rect.Size()
 	s.field = make([][]float64, size.Y)
 	for i := range size.Y {
 		s.field[i] = make([]float64, size.X)
@@ -109,40 +74,40 @@ func newShader(size image.Point, shr ShaderRecord, pal Colorable) *Shader {
 		s.yMax = 1.0
 	}
 	s.Pal = pal
-    s.SetShaderData(shr)
-    s.Update(0)
+	s.SetShaderData(shr)
+	s.Update(0)
 	return s
 }
 
 func (s *Shader) SetShaderData(shr ShaderRecord) {
-    s.Name = shr.n
-    s.fnc = shr.f
-    s.Params = slices.Clone(shr.p)
+	s.Name = shr.n
+	s.fnc = shr.f
+	s.Params = slices.Clone(shr.p)
 }
 
 func (s *Shader) Param(name string) float64 {
-    for _, param := range s.Params {
-        if param.Name == name {
-            return param.Val
-        }
-    }
-    return 0.0
+	for _, param := range s.Params {
+		if param.Name == name {
+			return param.Val
+		}
+	}
+	return 0.0
 }
 
 func (s *Shader) SetParam(name string, val float64) {
-    for _, param := range s.Params {
-        if param.Name == name {
-            param.Val = val
-            return
-        }
-    }
+	for _, param := range s.Params {
+		if param.Name == name {
+			param.Val = val
+			return
+		}
+	}
 }
 
 func (s *Shader) Update(dt time.Duration) bool {
 	var col, row int
 	var x, y float64
 
-    dt = s.AnimatableEmbed.Update(dt)
+	dt = s.AnimatableEmbed.Update(dt)
 	y = s.yMax
 	for row = range s.field {
 		x = s.xMin
@@ -154,6 +119,18 @@ func (s *Shader) Update(dt time.Duration) bool {
 	}
 	return true
 }
+
+func (s *Shader) Draw() {
+	var col, row int
+
+	for row = range s.lg.Bounds().Dy() {
+		for col = range s.lg.Bounds().Dx() {
+			shaderColor := s.Pal.Color(s.field[row][col])
+			s.lg.MixLedColor(col, row, shaderColor, Max)
+		}
+	}
+}
+
 
 // Im folgenden Abschnitt sind ein paar vordefinierte Shader zusammengestellt.
 type ShaderRecord struct {
@@ -229,10 +206,10 @@ func f3(x, y, t, p1, p2 float64) float64 {
 // Zeichnet verschachtelte Kreisflaechen. Mit p1 kann die Geschw. und die
 // Richtung der Anim. beeinflusst werden.
 func CircleShaderFunc(x, y, t float64, p []ShaderParam) float64 {
-	x /= p[0].Val
-	y /= p[1].Val
-	t *= p[2].Val
-	return math.Abs(math.Mod(math.Sqrt(x*x+y*y)/(2.0*math.Sqrt2)-t, 1.0))
+	x = p[0].Val * x / 4.0
+	y = p[1].Val * y / 4.0
+	t *= p[2].Val / 4.0
+	return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
 }
 
 // func CircleShaderFunc(x, y, t float64, p []float64) float64 {
@@ -246,10 +223,10 @@ func CircleShaderFunc(x, y, t float64, p []ShaderParam) float64 {
 // Zeichnet verschachtelte Karomuster. Mit p1 kann die Geschw. und die
 // Richtung der Anim. beeinflusst werden.
 func KaroShaderFunc(x, y, t float64, p []ShaderParam) float64 {
-	x /= p[0].Val
-	y /= p[1].Val
-	t *= p[2].Val
-	return math.Abs(math.Mod((math.Abs(x)+math.Abs(y))/2.0-t, 1.0))
+	x = p[0].Val * x / 4.0
+	y = p[1].Val * y / 4.0
+	t *= p[2].Val / 4.0
+	return math.Abs(math.Mod(math.Abs(x)+math.Abs(y)-t, 1.0))
 }
 
 // func KaroShaderFunc(x, y, t float64, p []float64) float64 {
@@ -266,7 +243,7 @@ func KaroShaderFunc(x, y, t float64, p []ShaderParam) float64 {
 func LinearShaderFunc(x, y, t float64, p []ShaderParam) float64 {
 	x = p[0].Val * (x + 1.0) / 4.0
 	y = p[1].Val * (y + 1.0) / 4.0
-	t *= p[2].Val/4.0
+	t *= p[2].Val / 4.0
 	return math.Abs(math.Mod(x+y-t, 1.0))
 }
 

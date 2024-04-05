@@ -27,7 +27,7 @@ type GradientPalette struct {
 func NewGradientPalette(cycle bool, cl ...LedColor) *GradientPalette {
 	p := &GradientPalette{}
 	if cl == nil {
-		cl = []LedColor{Black, White}
+		cl = []LedColor{BlackColor, White}
 	}
     if cycle {
         cl = append(cl, cl[0])

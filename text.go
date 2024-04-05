@@ -16,6 +16,7 @@ var (
 	textFont = fonts.GoMonoBold
 	// textFont = fonts.LucidaConsole
 	// textFont = fonts.LucidaSansTypewriterBold
+    // textFont = fonts.LucidaBright
 )
 
 //----------------------------------------------------------------------------

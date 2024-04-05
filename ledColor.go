@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Black = LedColor{0x00, 0x00, 0x00, 0xFF}
+	BlackColor = LedColor{0x00, 0x00, 0x00, 0xFF}
 	White = LedColor{0xFF, 0xFF, 0xFF, 0xFF}
 	Red   = LedColor{0xFF, 0x00, 0x00, 0xFF}
 	Green = LedColor{0x00, 0xFF, 0x00, 0xFF}
@@ -83,20 +83,23 @@ func (c LedColor) RGB() (r, g, b uint8) {
 // Berechnet eine RGB-Farbe, welche 'zwischen' den Farben c und d liegt, so
 // dass bei t=0 der Farbwert c und bei t=1 der Farbwert d retourniert wird.
 // t wird vorgaengig auf das Interval [0,1] eingeschraenkt.
-func (c LedColor) Interpolate(d color.Color, t float64) color.Color {
+func (c1 LedColor) Interpolate(c2 color.Color, t float64) color.Color {
 	t = max(min(t, 1.0), 0.0)
 	if t == 0.0 {
-		return c
+		return c1
 	}
 	if t == 1.0 {
-		return d
+		return c2
 	}
-    dr, dg, db, da := d.RGBA()
-	r := ColorInterpol(float64(c.R), float64(dr), t)
-	g := ColorInterpol(float64(c.G), float64(dg), t)
-	b := ColorInterpol(float64(c.B), float64(db), t)
-	a := ColorInterpol(float64(c.A), float64(da), t)
-	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+    if c3, ok := c2.(LedColor); ok {
+        	r := ColorInterpol(float64(c1.R), float64(c3.R), t)
+        	g := ColorInterpol(float64(c1.G), float64(c3.G), t)
+        	b := ColorInterpol(float64(c1.B), float64(c3.B), t)
+        	a := ColorInterpol(float64(c1.A), float64(c3.A), t)
+        	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+    } else {
+        return LedColor{}
+    }
 }
 
 // Mischt die Farben c (Vordergrundfarbe) und d (Hintergrundfarbe) nach einem

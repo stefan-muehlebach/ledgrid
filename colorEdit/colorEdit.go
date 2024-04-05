@@ -3,19 +3,25 @@ package main
 import (
 	"image"
 	"log"
+	"strconv"
 
-	// gc "github.com/gbin/goncurses"
 	gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
 )
 
 const (
-	width     = 10
-	height    = 10
-	defHost   = "raspi-2"
-	defPort   = 5333
-	KEY_SUP   = 0x151 /* Shifted up arrow */
-	KEY_SDOWN = 0x150 /* Shifted down arrow */
+	width      = 10
+	height     = 10
+	defHost    = "raspi-2"
+	defPort    = 5333
+	termWidth  = 97
+	termHeight = 37
+	KEY_SUP    = 0x151 /* Shifted up arrow */
+	KEY_SDOWN  = 0x150 /* Shifted down arrow */
+	KEY_CLEFT  = 0x222 /* Ctrl-left arrow */
+	KEY_CRIGHT = 0x231 /* Ctrl-right arrow */
+	KEY_CUP    = 0x237 /* Ctrl-up arrow */
+	KEY_CDOWN  = 0x20e /* Ctrl-down arrow */
 )
 
 func between(x, a, b int) bool {
@@ -38,16 +44,23 @@ func main() {
 	var colorChanged bool
 	var colors []uint8
 	var incr uint8
-	// var gammaValues []float64 = []float64{1.0, 1.0, 1.0}
+	var newColorValue uint8
+	var gammaValues [3]float64
 
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	pixelClient = ledgrid.NewPixelClient(defHost, defPort)
+    gammaValues[0], gammaValues[1], gammaValues[2] = pixelClient.Gamma()
 
 	stdscr, err = gc.Init()
 	if err != nil {
 		log.Fatalf("Couldn't Init ncurses: %v", err)
 	}
 	defer gc.End()
+
+	err = gc.ResizeTerm(termHeight, termWidth)
+	if err != nil {
+		log.Fatalf("Couldn't resize terminal: %v", err)
+	}
 
 	gc.StartColor()
 	gc.Echo(false)
@@ -63,7 +76,7 @@ func main() {
 
 	// rows, cols := stdscr.MaxYX()
 
-	gridHeight, gridWidth := 16, 89
+	gridHeight, gridWidth := 17, 89
 	y, x := 2, 4
 
 	winGrid, err = gc.NewWindow(gridHeight, gridWidth, y, x)
@@ -82,6 +95,7 @@ func main() {
 	}
 	// winHelp.Keypad(true)
 	winHelp.Box(0, 0)
+
 	winHelp.MoveAddChar(1, 2, gc.ACS_LARROW)
 	winHelp.MovePrintf(1, 3, ": move selector to the left")
 	winHelp.MoveAddChar(2, 2, gc.ACS_RARROW)
@@ -90,12 +104,15 @@ func main() {
 	winHelp.MovePrintf(3, 3, ": move selector up")
 	winHelp.MoveAddChar(4, 2, gc.ACS_DARROW)
 	winHelp.MovePrintf(4, 3, ": move selector down")
-	winHelp.MovePrintf(5, 2, "[Ins], [Home], [PgUp] : increase color value")
-	winHelp.MovePrintf(6, 2, "[Del], [End], [PgDown]: decrease color value")
-	winHelp.MovePrintf(7, 2, "c: clear panel")
-	winHelp.MovePrintf(8, 2, "f: interpolate colors")
-
-	winHelp.MovePrint(10, 2, "q: Quit")
+	winHelp.MovePrintf(5, 2, "  R   |    G   |    B   |")
+	winHelp.MovePrintf(6, 2, "------+--------+--------+")
+	winHelp.MovePrintf(7, 2, "[Ins] | [Home] | [PgUp] | increase color value")
+	winHelp.MovePrintf(8, 2, "[Del] | [End]  | [PgDn] | decrease color value")
+	winHelp.MovePrintf(9, 2, "C: clear panel")
+	winHelp.MovePrintf(10, 2, "F: interpolate colors")
+	winHelp.MovePrintf(11, 2, "0-9a-f: enter new hex value for selected color")
+	winHelp.MovePrintf(12, 2, "g/G: decrease/increase gamma values by 0.1")
+	winHelp.MovePrintf(14, 2, "q: Quit")
 
 	fields := make([]*gc.Field, 3)
 	fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
@@ -120,6 +137,8 @@ func main() {
 
 	winGrid.Refresh()
 	winHelp.Refresh()
+
+	pixelClient.Draw(ledGrid)
 
 main:
 	for {
@@ -161,7 +180,9 @@ main:
 		}
 		winGrid.HLine(13, 1, gc.ACS_HLINE, gridWidth-2)
 
-		winGrid.MovePrintf(14, 2, "Gamma values:")
+		winGrid.MovePrintf(14, 2, "New hex value for this color: %02x", newColorValue)
+		winGrid.MovePrintf(15, 2, "Current gamma values        : %.2f, %.2f, %.2f",
+			gammaValues[0], gammaValues[1], gammaValues[2])
 		winGrid.NoutRefresh()
 		winHelp.NoutRefresh()
 
@@ -171,32 +192,33 @@ main:
 
 		ledColor = ledGrid.LedColorAt(curCol, curRow)
 
+		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') {
+			val, err := strconv.ParseUint(string(ch), 16, 8)
+			if err != nil {
+				log.Fatalf("Couldn't convert value: %v", err)
+			}
+			newColorValue = (newColorValue << 4) | uint8(val)
+			continue
+		}
+
 		switch ch {
 
-		case 'R':
-			curColor = 0
-		case 'G':
-			curColor = 1
-		case 'B':
-			curColor = 2
-
-		case 'c':
+		case 'C':
 			for i := range ledGrid.Pix {
 				ledGrid.Pix[i] = 0x00
 			}
 			ledColor = ledGrid.LedColorAt(curCol, curRow)
 			colorChanged = true
 
-		case 'f':
-			r := image.Rect(min(selCol, curCol), min(selRow, curRow),
-				max(selCol, curCol), max(selRow, curRow))
+		case 'F':
+			r := image.Rect(selCol, selRow, curCol, curRow)
 			if r.Dy() >= 2 {
 				col := r.Min.X
 				color0 := ledGrid.LedColorAt(col, r.Min.Y)
 				color1 := ledGrid.LedColorAt(col, r.Max.Y)
 				for row := r.Min.Y; row <= r.Max.Y; row++ {
 					t := float64(row-r.Min.Y) / float64(r.Dy())
-					color := color0.Interpolate(color1, t)
+					color := color0.Interpolate(color1, t).(ledgrid.LedColor)
 					ledGrid.SetLedColor(col, row, color)
 				}
 				col = r.Max.X
@@ -204,7 +226,7 @@ main:
 				color1 = ledGrid.LedColorAt(col, r.Max.Y)
 				for row := r.Min.Y; row <= r.Max.Y; row++ {
 					t := float64(row-r.Min.Y) / float64(r.Dy())
-					color := color0.Interpolate(color1, t)
+					color := color0.Interpolate(color1, t).(ledgrid.LedColor)
 					ledGrid.SetLedColor(col, row, color)
 				}
 			}
@@ -214,13 +236,27 @@ main:
 					color1 := ledGrid.LedColorAt(r.Max.X, row)
 					for col := r.Min.X; col <= r.Max.X; col++ {
 						t := float64(col-r.Min.X) / float64(r.Dx())
-						color := color0.Interpolate(color1, t)
+						color := color0.Interpolate(color1, t).(ledgrid.LedColor)
 						ledGrid.SetLedColor(col, row, color)
 					}
 				}
 			}
 			ledColor = ledGrid.LedColorAt(curCol, curRow)
 			colorChanged = true
+
+		case 'g':
+			gammaValues[0] -= 0.1
+			gammaValues[1] -= 0.1
+			gammaValues[2] -= 0.1
+			pixelClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
+			pixelClient.Draw(ledGrid)
+
+		case 'G':
+			gammaValues[0] += 0.1
+			gammaValues[1] += 0.1
+			gammaValues[2] += 0.1
+			pixelClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
+			pixelClient.Draw(ledGrid)
 
 		case 'q':
 			break main
@@ -270,6 +306,25 @@ main:
 			if selRow < ledGrid.Rect.Dy()-1 {
 				selRow += 1
 			}
+
+		case KEY_CLEFT:
+			if curColor > 0 {
+				curColor--
+			}
+		case KEY_CRIGHT:
+			if curColor < 2 {
+				curColor++
+			}
+		case gc.KEY_RETURN:
+			switch curColor {
+			case 0:
+				ledColor.R = newColorValue
+			case 1:
+				ledColor.G = newColorValue
+			case 2:
+				ledColor.B = newColorValue
+			}
+			colorChanged = true
 
 		case gc.KEY_IC, gc.KEY_SIC, gc.KEY_DC, gc.KEY_SDC:
 			curColor = 0

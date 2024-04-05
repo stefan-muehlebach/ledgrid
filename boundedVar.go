@@ -13,16 +13,16 @@ type Boundable interface {
 // Inkrementieren (Incr) und Dekrementieren (Decr) beruecksichtigen die
 // Intervallgrenzen.
 type Bounded[T Boundable] struct {
-	val, init, lb, ub, step T
-	ptr                    *T
-    callback func(oldVal, newVal T)
-	// Mit Cycle kann festgelegt werden, ob beim Erreichen, resp. Ueber- oder
-	// Unterschreiten der Intervallgrenzen der Wert fix bleibt (false) oder
-	// auf der anderen Seite des Intervalls beginnt (true).
-	Cycle bool
 	// Wird dieser Parameter ueber ein GUI oder TUI angezeigt, kann diese
 	// Zeichenkette als Name verwendet werden.
 	Name string
+	// Mit Cycle kann festgelegt werden, ob beim Erreichen, resp. Ueber- oder
+	// Unterschreiten der Intervallgrenzen der Wert fix bleibt (false) oder
+	// auf der anderen Seite des Intervalls beginnt (true).
+	Cycle                   bool
+	val, init, lb, ub, step T
+	valPtr                  *T
+	callback                func(oldVal, newVal T)
 }
 
 // Erstellt einen neuen eingeschraenkten Wert. Mit init, lb und ub kann
@@ -32,15 +32,15 @@ func NewBounded[T Boundable](init, lb, ub, inc T) *Bounded[T] {
 		log.Fatalf("lower bound must be less than upper bound")
 	}
 	b := &Bounded[T]{}
+	b.Name = ""
+	b.Cycle = false
 	b.init = init
 	b.lb = lb
 	b.ub = ub
-    b.step = inc
+	b.step = inc
 	b.SetVal(init)
-	b.ptr = nil
-    b.callback = nil
-	b.Cycle = false
-	b.Name = ""
+	b.valPtr = nil
+	b.callback = nil
 	return b
 }
 
@@ -61,7 +61,7 @@ func (b *Bounded[T]) SetVal(v T) {
 // werden. Jede Aenderung an der Bounded-Variable wirkt sich autom. auf die
 // externe Variable aus - nicht aber umgekehrt!
 func (b *Bounded[T]) BindVar(ptr *T) {
-	b.ptr = ptr
+	b.valPtr = ptr
 	b.setVal(b.val)
 }
 
@@ -69,8 +69,8 @@ func (b *Bounded[T]) BindVar(ptr *T) {
 // Aenderung der Variable aufgerufen werden soll. Als Parameter werden der
 // Funktion der alte und der neue Wert der Variable uebergeben.
 func (b *Bounded[T]) SetCallback(callback func(oldVal, newVal T)) {
-    b.callback = callback
-    b.callback(b.val, b.val)
+	b.callback = callback
+	b.callback(b.val, b.val)
 }
 
 // Mit Reset kann der Wert der Variable auf einen festgelegten Default
@@ -85,31 +85,40 @@ func (b *Bounded[T]) Incr(v T) {
 	b.add(v)
 }
 
+// Inkrementiert der Wert der Variable um den vordefinierten Wert incr.
 func (b *Bounded[T]) Inc() {
-    b.add(b.step)
+	b.add(b.step)
 }
 
-// Dekrementiert den Wert der Variable um die Groesse i. Dabei werden die
+// Dekrementiert den Wert der Variable um die Groesse v. Dabei werden die
 // Grenzen (lb und ub) sowie die Einstellung Cycle beruecksichtigt.
 func (b *Bounded[T]) Decr(v T) {
 	b.add(-v)
 }
 
+// Dekrementiert der Wert der Variable um den vordefinierten Wert incr.
 func (b *Bounded[T]) Dec() {
-    b.add(-b.step)
+	b.add(-b.step)
 }
 
+// Diese interne Funktion setzt der Wert der Variable auf den Wert v.
+// Allfällige Checks (ob v in [lb,up] liegt) müssen vorgängig gemacht werden!
+// Über diese Methode wird auch die externe Variable aktualisiert und eine
+// hinterlegte Callback-Methode aufgerufen.
 func (b *Bounded[T]) setVal(v T) {
-    oldVal := b.val
+	oldVal := b.val
 	b.val = v
-	if b.ptr != nil {
-		*b.ptr = b.val
+	if b.valPtr != nil {
+		*b.valPtr = b.val
 	}
-    if b.callback != nil {
-        b.callback(oldVal, b.val)
-    }
+	if b.callback != nil {
+		b.callback(oldVal, b.val)
+	}
 }
 
+// Addiert zum aktuellen Wert der Variable den Wert v. Prüft dabei, ob die
+// vordefinierten Grenzen (lb, ub) eingehalten werden, korrigiert ggf. den
+// Wert und führt ggf. ein 'cycling' des Wertes durch.
 func (b *Bounded[T]) add(v T) {
 	if v > 0 && b.ub-v < b.val {
 		if b.Cycle {

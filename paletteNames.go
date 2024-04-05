@@ -11,6 +11,7 @@ package ledgrid
 var (
     // PaletteNames ist ein Slice mit den Namen aller vorhandenen Paletten.
     PaletteNames = []string{
+        "Black",
         "Dark",
         "DarkJungle",
         "Darker",
@@ -31,6 +32,7 @@ var (
     // PaletteMap ist die Verbindung zwischen Palettenname und einer Variable
     // vom Typ Palette.
     PaletteMap = map[string]Colorable{
+        "Black": Black,
         "Dark": Dark,
         "DarkJungle": DarkJungle,
         "Darker": Darker,
@@ -51,6 +53,7 @@ var (
     // In diesem Block werden die Paletten konkret erstellt. Im Moment
     // koennen so nur Paletten mit aequidistanten Farbstuetzstellen
     // erzeugt werden.
+    Black                = NewGradientPalette(true, blackGradient...)
     Dark                 = NewGradientPalette(true, darkGradient...)
     DarkJungle           = NewGradientPalette(true, darkJungleGradient...)
     Darker               = NewGradientPalette(true, darkerGradient...)

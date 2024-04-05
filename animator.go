@@ -43,7 +43,7 @@ func NewAnimator(lg *LedGrid, client *PixelClient) *Animator {
                     }
                 }
 			}
-			a.lg.Clear(Black)
+			a.lg.Clear(BlackColor)
 			for _, val := range a.objList {
                 if obj, ok := val.(Drawable); ok {
                     if obj.Visible() {
