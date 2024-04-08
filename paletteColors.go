@@ -162,22 +162,22 @@ var (
 
 	Pico08Colors = []LedColor{
 		// 16 Farben der Default-Palette
-		LedColor{0x00, 0x00, 0x00, 0x00}, // black / transparent
-		NewLedColor(0x1d2b53),            // dark blue
-		NewLedColor(0x7e2553),            // dark purple
-		NewLedColor(0x008751),            // dark green
-		NewLedColor(0xab5236),            // brown
-		NewLedColor(0x5f574f),            // dark gray
-		NewLedColor(0xc2c3c7),            // light gray
-		NewLedColor(0xfff1e8),            // white
-		NewLedColor(0xff004d),            // red
-		NewLedColor(0xffa300),            // orange
-		NewLedColor(0xffff27),            // yellow
-		NewLedColor(0x00e756),            // green
-		NewLedColor(0x29adff),            // blue
-		NewLedColor(0x83769c),            // indigo
-		NewLedColor(0xff77a8),            // pink
-		NewLedColor(0xffccaa),            // peach
+		NewLedColor(0x000000), // black / transparent
+		NewLedColor(0x1d2b53), // dark blue
+		NewLedColor(0x7e2553), // dark purple
+		NewLedColor(0x008751), // dark green
+		NewLedColor(0xab5236), // brown
+		NewLedColor(0x5f574f), // dark gray
+		NewLedColor(0xc2c3c7), // light gray
+		NewLedColor(0xfff1e8), // white
+		NewLedColor(0xff004d), // red
+		NewLedColor(0xffa300), // orange
+		NewLedColor(0xffff27), // yellow
+		NewLedColor(0x00e756), // green
+		NewLedColor(0x29adff), // blue
+		NewLedColor(0x83769c), // indigo
+		NewLedColor(0xff77a8), // pink
+		NewLedColor(0xffccaa), // peach
 		// 16 Farben der Hidden-Palette
 		NewLedColor(0x291814), // onyx
 		NewLedColor(0x111d35), // midnight
