@@ -8,17 +8,17 @@ var (
 	// Erstellung des Files paletteNames.go verwendet. Die Namen der
 	// Farblisten werden NICHT exportiert (d.h. beginnen mit Kleinbuchstaben),
 	// muessen aber mit 'Gradient' enden, damit daraus Paletten erstellt
-    // werden sollen. Endet der Name mit 'GradientNoCycle', dann wird eine
-    // Palette ohne 'cycle'-Flag erstellt.
+	// werden sollen. Endet der Name mit 'GradientNoCycle', dann wird eine
+	// Palette ohne 'cycle'-Flag erstellt.
 
-    blackGradient = []LedColor{
-        NewLedColor(0x000000),
-    }
+	blackGradient = []LedColor{
+		NewLedColor(0x000000),
+	}
 
-    blackWhiteGradientNoCycle = []LedColor{
-        NewLedColor(0x000000),
-        NewLedColor(0xFFFFFF),
-    }
+	blackWhiteGradientNoCycle = []LedColor{
+		NewLedColor(0x000000),
+		NewLedColor(0xFFFFFF),
+	}
 
 	// Paletten aus der Mandelbrot-Kueche
 	defaultGradient = []LedColor{
@@ -89,113 +89,112 @@ var (
 		{0xff, 0x00, 0x99, 0xFF},
 	}
 
-    fadeRedGradient = []LedColor{
+	fadeRedGradient = []LedColor{
 		NewLedColor(0x000000),
 		NewLedColor(0xff0000),
-    }
-
-    fadeGreenGradient = []LedColor{
-		NewLedColor(0x00ff00),
-		NewLedColor(0x000000),
-    }
-
-    fadeBlueGradient = []LedColor{
-		NewLedColor(0x0000ff),
-		NewLedColor(0x000000),
-    }
-
-	hipsterGradient = []LedColor{
-	    {0x8D, 0x0E, 0x6B, 0xFF},
-	    {0x05, 0x34, 0x34, 0xFF},
-	    {0x00, 0x80, 0x80, 0xFF},
-	    {0x4D, 0x42, 0x08, 0xFF},
-	    {0xCD, 0xAD, 0x0A, 0xFF},
 	}
 
-    hotFireGradient = []LedColor{
-        NewLedColor(0xbe1013),
-        NewLedColor(0xd23008),
-        NewLedColor(0xe45323),
-        NewLedColor(0xee771c),
-        NewLedColor(0xf6960e),
-        NewLedColor(0xffcd06),
-        NewLedColor(0xf6960e),
-        NewLedColor(0xee771c),
-        NewLedColor(0xe45323),
-        NewLedColor(0xd23008),
-    }
+	fadeGreenGradient = []LedColor{
+		NewLedColor(0x00ff00),
+		NewLedColor(0x000000),
+	}
 
-    fireGradientNoCycle = []LedColor{
-        NewLedColor(0x000000),
-        NewLedColor(0x5f0809),
-        NewLedColor(0xbe1013),
-        NewLedColor(0xd23008),
-        NewLedColor(0xe45323),
-        NewLedColor(0xee771c),
-        NewLedColor(0xf6960e),
-        NewLedColor(0xffcd06),
-    }
+	fadeBlueGradient = []LedColor{
+		NewLedColor(0x0000ff),
+		NewLedColor(0x000000),
+	}
 
-    darkJungleGradient = []LedColor{
-        NewLedColor(0x184918),
-        NewLedColor(0x406a3a),
-        NewLedColor(0xb1a658),
-        NewLedColor(0xa28d33),
-        NewLedColor(0x6a6232),
-        NewLedColor(0xa28d33),
-        NewLedColor(0xb1a658),
-        NewLedColor(0x406a3a),
-    }
+	hipsterGradient = []LedColor{
+		{0x8D, 0x0E, 0x6B, 0xFF},
+		{0x05, 0x34, 0x34, 0xFF},
+		{0x00, 0x80, 0x80, 0xFF},
+		{0x4D, 0x42, 0x08, 0xFF},
+		{0xCD, 0xAD, 0x0A, 0xFF},
+	}
 
-    richDeepavaliGradient = []LedColor{
-        NewLedColor(0xECAC3B),
-        NewLedColor(0xF65A00),
-        NewLedColor(0xD02626),
-        NewLedColor(0x213C79),
-        NewLedColor(0xD03979),
-        NewLedColor(0x76C8BA),
-        NewLedColor(0xD03979),
-        NewLedColor(0x213C79),
-        NewLedColor(0xD02626),
-        NewLedColor(0xF65A00),
-    }
+	hotFireGradient = []LedColor{
+		NewLedColor(0xbe1013),
+		NewLedColor(0xd23008),
+		NewLedColor(0xe45323),
+		NewLedColor(0xee771c),
+		NewLedColor(0xf6960e),
+		NewLedColor(0xffcd06),
+		NewLedColor(0xf6960e),
+		NewLedColor(0xee771c),
+		NewLedColor(0xe45323),
+		NewLedColor(0xd23008),
+	}
+
+	fireGradientNoCycle = []LedColor{
+		NewLedColor(0x000000),
+		NewLedColor(0x5f0809),
+		NewLedColor(0xbe1013),
+		NewLedColor(0xd23008),
+		NewLedColor(0xe45323),
+		NewLedColor(0xee771c),
+		NewLedColor(0xf6960e),
+		NewLedColor(0xffcd06),
+	}
+
+	darkJungleGradient = []LedColor{
+		NewLedColor(0x184918),
+		NewLedColor(0x406a3a),
+		NewLedColor(0xb1a658),
+		NewLedColor(0xa28d33),
+		NewLedColor(0x6a6232),
+		NewLedColor(0xa28d33),
+		NewLedColor(0xb1a658),
+		NewLedColor(0x406a3a),
+	}
+
+	richDeepavaliGradient = []LedColor{
+		NewLedColor(0xECAC3B),
+		NewLedColor(0xF65A00),
+		NewLedColor(0xD02626),
+		NewLedColor(0x213C79),
+		NewLedColor(0xD03979),
+		NewLedColor(0x76C8BA),
+		NewLedColor(0xD03979),
+		NewLedColor(0x213C79),
+		NewLedColor(0xD02626),
+		NewLedColor(0xF65A00),
+	}
 
 	Pico08Colors = []LedColor{
-        // 16 Farben der Default-Palette
-		NewLedColor(0x000000),    // black
-		NewLedColor(0x1d2b53),    // dark blue
-		NewLedColor(0x7e2553),    // dark purple
-		NewLedColor(0x008751),    // dark green
-		NewLedColor(0xab5236),    // brown
-		NewLedColor(0x5f574f),    // dark gray
-		NewLedColor(0xc2c3c7),    // light gray
-		NewLedColor(0xfff1e8),    // white
-		NewLedColor(0xff004d),    // red
-		NewLedColor(0xffa300),    // orange
-		NewLedColor(0xffff27),    // yellow
-		NewLedColor(0x00e756),    // green
-		NewLedColor(0x29adff),    // blue
-		NewLedColor(0x83769c),    // indigo
-		NewLedColor(0xff77a8),    // pink
-		NewLedColor(0xffccaa),    // peach
-        // 16 Farben der Hidden-Palette
-        NewLedColor(0x291814),    // onyx
-        NewLedColor(0x111d35),    // midnight
-        NewLedColor(0x422136),    // plum
-        NewLedColor(0x125359),    // forest
-        NewLedColor(0x742f29),    // chocolate
-        NewLedColor(0x49333b),    // eggplant
-        NewLedColor(0xa28879),    // beige
-        NewLedColor(0xf3ef7d),    // lemon
-        NewLedColor(0xbe1250),    // burgundy
-        NewLedColor(0xff6c24),    // pumpkin
-        NewLedColor(0xa8e72e),    // lime
-        NewLedColor(0x00b543),    // jade
-        NewLedColor(0x065ab5),    // royal
-        NewLedColor(0x754665),    // mauve
-        NewLedColor(0xff6e59),    // coral
-        NewLedColor(0xff9d81),    // salmon
-
+		// 16 Farben der Default-Palette
+		LedColor{0x00, 0x00, 0x00, 0x00}, // black / transparent
+		NewLedColor(0x1d2b53),            // dark blue
+		NewLedColor(0x7e2553),            // dark purple
+		NewLedColor(0x008751),            // dark green
+		NewLedColor(0xab5236),            // brown
+		NewLedColor(0x5f574f),            // dark gray
+		NewLedColor(0xc2c3c7),            // light gray
+		NewLedColor(0xfff1e8),            // white
+		NewLedColor(0xff004d),            // red
+		NewLedColor(0xffa300),            // orange
+		NewLedColor(0xffff27),            // yellow
+		NewLedColor(0x00e756),            // green
+		NewLedColor(0x29adff),            // blue
+		NewLedColor(0x83769c),            // indigo
+		NewLedColor(0xff77a8),            // pink
+		NewLedColor(0xffccaa),            // peach
+		// 16 Farben der Hidden-Palette
+		NewLedColor(0x291814), // onyx
+		NewLedColor(0x111d35), // midnight
+		NewLedColor(0x422136), // plum
+		NewLedColor(0x125359), // forest
+		NewLedColor(0x742f29), // chocolate
+		NewLedColor(0x49333b), // eggplant
+		NewLedColor(0xa28879), // beige
+		NewLedColor(0xf3ef7d), // lemon
+		NewLedColor(0xbe1250), // burgundy
+		NewLedColor(0xff6c24), // pumpkin
+		NewLedColor(0xa8e72e), // lime
+		NewLedColor(0x00b543), // jade
+		NewLedColor(0x065ab5), // royal
+		NewLedColor(0x754665), // mauve
+		NewLedColor(0xff6e59), // coral
+		NewLedColor(0xff9d81), // salmon
 	}
 
 	// Kopierte Paletten aus PixelController

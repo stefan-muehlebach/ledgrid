@@ -224,7 +224,6 @@ func main() {
 	palIdx.Cycle = true
 	palFadeTime = ledgrid.NewBounded("fade time", 1.5, 0.0, 5.0, 0.1)
 
-	// shaders = make([]*ledgrid.Shader, len(shaderList))
 	for _, shaderData := range shaderList {
 		pal := ledgrid.NewPaletteFader(ledgrid.DefaultPalette)
 		pal.SetAlive(true)
@@ -232,16 +231,21 @@ func main() {
 		anim.AddObjects(shader, pal)
 	}
 
-	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
-	txt.SetActive(true)
+	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.BlackColor)
 
 	fire := ledgrid.NewFire(grid)
 
 	pict := ledgrid.NewPicture(grid, "testbild.png")
 
 	cam := ledgrid.NewCamera(grid)
-	cam.SetActive(true)
-	anim.AddObjects(cam, pict, fire, txt)
+
+	blinken := ledgrid.OpenBlinkenFile("icons.bml")
+	pixPal := ledgrid.NewSlicePalette("Pico08", ledgrid.Pico08Colors...)
+	pixAnim := blinken.MakePixelAnimation(grid, pixPal)
+
+    img := ledgrid.NewGeomImage(grid)
+
+	anim.AddObjects(cam, pict, fire, pixAnim, txt, img)
 
 	objectIdx := ledgrid.NewBounded("obj idx", 0, 0, len(anim.Objects())-1, 1)
 	objectIdx.Cycle = true
@@ -250,30 +254,12 @@ func main() {
 		if shader, ok := object.(*ledgrid.Shader); ok {
 			pal = shader.Pal.(*ledgrid.PaletteFader)
 			params = shader.ParamList()
-			// for i, p := range shader.ParamList() {
-			//     	params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
-			//     	params[i].BindVar(&shader.ParamList()[i].Val)
-			//     	params[i].SetCallback(func(oldVar, newVar float64) {
-			//     		shader.Update(0)
-			//     	})
-			//     	params[i].Name = p.Name
-			// }
 			paramIdx = ledgrid.NewBounded("param idx", 0, 0, len(params)-1, 1)
 			paramIdx.Cycle = true
 		} else {
 			params = nil
 		}
 	})
-
-	// line := NewLine(grid, image.Point{0, 1}, image.Point{9, 8}, ledgrid.Blue)
-	// poly := NewPolygon(grid, image.Point{0, 4}, image.Point{0, 9}, image.Point{9, 9}, ledgrid.Green)
-	// speedup = ledgrid.NewBounded(1.0, 0.1, 10.0, 0.1)
-
-	// blinken := ledgrid.OpenBlinkenFile("icons.bml")
-	// blinken.Write("colors-copy.bml")
-	// imgPal := ledgrid.NewSlicePalette(ledgrid.Pico08Colors...)
-	// imgAnim := blinken.MakeImageAnimation(grid, imgPal)
-	// imgAnim.SetActive(true)
 
 	anim.Start()
 

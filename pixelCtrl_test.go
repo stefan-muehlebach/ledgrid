@@ -23,6 +23,7 @@ func init() {
 }
 
 func randomizeBuffer() {
+    rand.Seed(123_456_789)
 	for i := range buffer {
 		buffer[i] = byte(rand.Intn(256))
 	}

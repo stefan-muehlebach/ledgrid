@@ -1,7 +1,6 @@
 package ledgrid
 
 import (
-	"golang.org/x/image/draw"
 	"image/png"
 	"encoding/xml"
 	"image"
@@ -11,7 +10,54 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"golang.org/x/image/draw"
+    	"github.com/stefan-muehlebach/gg"
+    "github.com/stefan-muehlebach/gg/color"
 )
+
+//----------------------------------------------------------------------------
+
+type GeomImage struct {
+    VisualizableEmbed
+    lg *LedGrid
+    img draw.Image
+    gc *gg.Context
+    scaler draw.Scaler
+    pt, dpt float64
+}
+
+func NewGeomImage(lg *LedGrid) *GeomImage {
+    i := &GeomImage{}
+    i.VisualizableEmbed.Init("GeomImage")
+    i.lg = lg
+    i.img = image.NewRGBA(image.Rect(0, 0, 512, 512))
+    i.gc = gg.NewContextForRGBA(i.img.(*image.RGBA))
+    i.gc.SetFillColor(color.Transparent)
+    i.gc.SetStrokeColor(color.White)
+    i.gc.SetStrokeWidth(2.5)
+    i.gc.Clear()
+    i.scaler = draw.CatmullRom.NewScaler(10, 10, 512, 512)
+    i.pt = 0.0
+    i.dpt = 0.5
+    return i
+}
+
+func (i *GeomImage) Update(dt time.Duration) bool {
+    dt = i.VisualizableEmbed.Update(dt)
+    i.gc.Clear()
+    i.gc.DrawLine(0, i.pt, 512, 512-i.pt)
+    i.gc.Stroke()
+    i.pt += i.dpt
+    if i.pt < 0.0 || i.pt >= 512.0 {
+        i.dpt = -i.dpt
+        i.pt += i.dpt
+    }
+    return true
+}
+
+func (i *GeomImage) Draw() {
+    i.scaler.Scale(i.lg, i.lg.Bounds(), i.img, i.img.Bounds(), draw.Src, nil)
+}
 
 //----------------------------------------------------------------------------
 
@@ -44,15 +90,15 @@ func (p *Picture) Draw() {
 
 //----------------------------------------------------------------------------
 
-type Image struct {
+type PixelImage struct {
 	DrawableEmbed
 	lg  *LedGrid
 	pal Colorable
 	img []uint8
 }
 
-func NewImage(lg *LedGrid, pal Colorable) *Image {
-	i := &Image{}
+func NewPixelImage(lg *LedGrid, pal Colorable) *PixelImage {
+	i := &PixelImage{}
 	i.DrawableEmbed.Init()
 	i.lg = lg
 	i.pal = pal
@@ -60,7 +106,7 @@ func NewImage(lg *LedGrid, pal Colorable) *Image {
 	return i
 }
 
-func (i *Image) Draw() {
+func (i *PixelImage) Draw() {
 	for idx, v := range i.img {
 		row := idx / i.lg.Rect.Dx()
 		col := idx % i.lg.Rect.Dx()
@@ -70,7 +116,7 @@ func (i *Image) Draw() {
 	}
 }
 
-func (i *Image) SetPixels(pix [][]uint8) {
+func (i *PixelImage) SetPixels(pix [][]uint8) {
 	for row, data := range pix {
 		for col, v := range data {
 			i.img[row*i.lg.Rect.Dx()+col] = v
@@ -80,27 +126,27 @@ func (i *Image) SetPixels(pix [][]uint8) {
 
 //----------------------------------------------------------------------------
 
-type ImageAnimation struct {
+type PixelAnimation struct {
 	VisualizableEmbed
 	lg        *LedGrid
-	imageList []*Image
+	imageList []*PixelImage
 	timeList  []time.Duration
 	Idx       int
 	Cycle     bool
 }
 
-func NewImageAnimation(lg *LedGrid) *ImageAnimation {
-	i := &ImageAnimation{}
-	i.VisualizableEmbed.Init("ImageAnimation")
+func NewPixelAnimation(lg *LedGrid) *PixelAnimation {
+	i := &PixelAnimation{}
+	i.VisualizableEmbed.Init("PixAnim")
 	i.lg = lg
-	i.imageList = make([]*Image, 0)
+	i.imageList = make([]*PixelImage, 0)
 	i.timeList = make([]time.Duration, 0)
 	i.Idx = 0
 	i.Cycle = true
 	return i
 }
 
-func (i *ImageAnimation) AddImage(img *Image, dur time.Duration) {
+func (i *PixelAnimation) AddImage(img *PixelImage, dur time.Duration) {
 	i.imageList = append(i.imageList, img)
 	if len(i.timeList) > 0 {
 		dur += i.timeList[len(i.timeList)-1]
@@ -108,7 +154,7 @@ func (i *ImageAnimation) AddImage(img *Image, dur time.Duration) {
 	i.timeList = append(i.timeList, dur)
 }
 
-func (i *ImageAnimation) Update(dt time.Duration) bool {
+func (i *PixelAnimation) Update(dt time.Duration) bool {
 	i.AnimatableEmbed.Update(dt)
 	t := i.t0 % i.timeList[len(i.timeList)-1]
 	for idx, v := range i.timeList {
@@ -120,7 +166,7 @@ func (i *ImageAnimation) Update(dt time.Duration) bool {
 	return true
 }
 
-func (i *ImageAnimation) Draw() {
+func (i *PixelAnimation) Draw() {
 	i.imageList[i.Idx].Draw()
 }
 
@@ -215,11 +261,11 @@ func (b *BlinkenFile) Write(fileName string) {
 	}
 }
 
-func (b *BlinkenFile) MakeImageAnimation(lg *LedGrid, pal Colorable) *ImageAnimation {
-	i := NewImageAnimation(lg)
+func (b *BlinkenFile) MakePixelAnimation(lg *LedGrid, pal Colorable) *PixelAnimation {
+	i := NewPixelAnimation(lg)
 
 	for _, frame := range b.Frames {
-		img := NewImage(lg, pal)
+		img := NewPixelImage(lg, pal)
 		img.SetPixels(frame.Values)
 		i.AddImage(img, time.Duration(frame.Duration)*time.Millisecond)
 	}
