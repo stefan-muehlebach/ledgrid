@@ -151,12 +151,14 @@ const (
 var (
 	width              = 10
 	height             = 10
+    defLocal = false
 	defHost            = "raspi-2"
 	defPort       uint = 5333
 	defGammaValue      = 3.0
 )
 
 func main() {
+    var local bool
 	var host string
 	var port uint
 	var gammaValue *ledgrid.Bounded[float64]
@@ -194,9 +196,9 @@ func main() {
 	// }
 	// trace.Start(fhTrace)
 
+    flag.BoolVar(&local, "local", defLocal, "Local PixelController")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
-	// flag.Float64Var(&gammaValue.Val(), "gamma", defGammaValue, "Gamma value")
 	flag.Parse()
 
 	win, err := gc.Init()
@@ -211,7 +213,11 @@ func main() {
 	gc.Cursor(0)
 	win.Keypad(true)
 
-	client = ledgrid.NewNetPixelClient(host, port)
+    if local {
+        client = ledgrid.NewPixelServer(5333, "/dev/spidev0.0", 2_000_000)
+    } else {
+	    client = ledgrid.NewNetPixelClient(host, port)
+    }
 	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	anim = ledgrid.NewAnimator(grid, client)
 
