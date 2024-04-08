@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid
 
-go 1.22.1
+go 1.22.2
 
 require (
 	github.com/llgcode/draw2d v0.0.0-20240322162412-ee6987bd01dc
