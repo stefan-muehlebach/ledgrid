@@ -174,15 +174,15 @@ func main() {
 	var paramIdx *ledgrid.Bounded[int]
 	var params []*ledgrid.Bounded[float64]
 	// var speedup *ledgrid.Bounded[float64]
-	var shaders []*ledgrid.Shader
+	// var shaders []*ledgrid.Shader
 	// var shader *ledgrid.Shader
-    var object ledgrid.Visualizable
+	var object ledgrid.Visualizable
 	var shaderList = []ledgrid.ShaderRecord{
 		ledgrid.PlasmaShader,
-		// ledgrid.CircleShader,
-		// ledgrid.KaroShader,
-		// ledgrid.LinearShader,
-		// ledgrid.LinearShader,
+		ledgrid.CircleShader,
+		ledgrid.KaroShader,
+		ledgrid.LinearShader,
+		ledgrid.LinearShader,
 	}
 
 	log.SetOutput(os.Stderr)
@@ -215,54 +215,54 @@ func main() {
 	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	anim = ledgrid.NewAnimator(grid, client)
 
-	gammaValue = ledgrid.NewBounded(defGammaValue, 1.0, 5.0, 0.1)
+	gammaValue = ledgrid.NewBounded("gamma", defGammaValue, 1.0, 5.0, 0.1)
 	gammaValue.SetCallback(func(oldVal, newVal float64) {
 		client.SetGamma(newVal, newVal, newVal)
 	})
 
-	palIdx = ledgrid.NewBounded(0, 0, len(ledgrid.PaletteList)-1, 1)
+	palIdx = ledgrid.NewBounded("pal idx", 0, 0, len(ledgrid.PaletteList)-1, 1)
 	palIdx.Cycle = true
-	palFadeTime = ledgrid.NewBounded(1.5, 0.0, 5.0, 0.1)
+	palFadeTime = ledgrid.NewBounded("fade time", 1.5, 0.0, 5.0, 0.1)
 
-	shaders = make([]*ledgrid.Shader, len(shaderList))
-	for i := range shaders {
-		pal = ledgrid.NewPaletteFader(ledgrid.DefaultPalette)
+	// shaders = make([]*ledgrid.Shader, len(shaderList))
+	for _, shaderData := range shaderList {
+		pal := ledgrid.NewPaletteFader(ledgrid.DefaultPalette)
 		pal.SetAlive(true)
-		shaders[i] = ledgrid.NewShader(grid, shaderList[i], pal)
-        anim.AddObjects(shaders[i], pal)
+		shader := ledgrid.NewShader(grid, shaderData, pal)
+		anim.AddObjects(shader, pal)
 	}
 
 	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
-    txt.SetActive(true)
+	txt.SetActive(true)
 
-    fire := ledgrid.NewFire(grid)
+	fire := ledgrid.NewFire(grid)
 
-    pict := ledgrid.NewPicture(grid, "testbild.png")
+	pict := ledgrid.NewPicture(grid, "testbild.png")
 
-    cam := ledgrid.NewCamera(grid)
-    cam.SetActive(true)
-    anim.AddObjects(cam, pict, fire, txt)
+	cam := ledgrid.NewCamera(grid)
+	cam.SetActive(true)
+	anim.AddObjects(cam, pict, fire, txt)
 
-	objectIdx := ledgrid.NewBounded(0, 0, len(anim.Objects())-1, 1)
+	objectIdx := ledgrid.NewBounded("obj idx", 0, 0, len(anim.Objects())-1, 1)
 	objectIdx.Cycle = true
 	objectIdx.SetCallback(func(oldVal, newVal int) {
 		object = anim.Objects()[newVal]
-        if shader, ok := object.(*ledgrid.Shader); ok {
-		    pal = shader.Pal.(*ledgrid.PaletteFader)
-		    params = shader.ParamList()
-		    // for i, p := range shader.ParamList() {
-		    //     	params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
-		    //     	params[i].BindVar(&shader.ParamList()[i].Val)
-		    //     	params[i].SetCallback(func(oldVar, newVar float64) {
-		    //     		shader.Update(0)
-		    //     	})
-		    //     	params[i].Name = p.Name
-		    // }
-		    paramIdx = ledgrid.NewBounded(0, 0, len(params)-1, 1)
-        		paramIdx.Cycle = true
-        } else {
-            params = nil
-        }
+		if shader, ok := object.(*ledgrid.Shader); ok {
+			pal = shader.Pal.(*ledgrid.PaletteFader)
+			params = shader.ParamList()
+			// for i, p := range shader.ParamList() {
+			//     	params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
+			//     	params[i].BindVar(&shader.ParamList()[i].Val)
+			//     	params[i].SetCallback(func(oldVar, newVar float64) {
+			//     		shader.Update(0)
+			//     	})
+			//     	params[i].Name = p.Name
+			// }
+			paramIdx = ledgrid.NewBounded("param idx", 0, 0, len(params)-1, 1)
+			paramIdx.Cycle = true
+		} else {
+			params = nil
+		}
 	})
 
 	// line := NewLine(grid, image.Point{0, 1}, image.Point{9, 8}, ledgrid.Blue)
@@ -275,7 +275,7 @@ func main() {
 	// imgAnim := blinken.MakeImageAnimation(grid, imgPal)
 	// imgAnim.SetActive(true)
 
-    anim.Start()
+	anim.Start()
 
 mainLoop:
 	for {
@@ -313,19 +313,19 @@ mainLoop:
 		win.Printf("\n  id | Name       |   V   |   A   | Spd\n")
 		win.Printf("-----+------------+-------+-------+-----\n")
 		for i, o := range anim.Objects() {
-    			if i == objectIdx.Val() {
-    				win.Printf("> ")
-    			} else {
-    				win.Printf("  ")
-    			}
-            switch obj := o.(type) {
-            case ledgrid.Visualizable:
-        			win.Printf("%2d | %-10s | %-5v | %-5v | %.1f\n", i, obj.Name(), obj.Visible(), obj.Alive(), obj.Speedup().Val())
-            case ledgrid.Drawable:
-        			win.Printf("%2d | %-10T | %-5v |       | \n", i, obj, obj.Visible())
-            case ledgrid.Animatable:
-        			win.Printf("%2d | %-10T |       | %-5v | %.1f\n", i, obj, obj.Alive(), obj.Speedup().Val())
-            }
+			if i == objectIdx.Val() {
+				win.Printf("> ")
+			} else {
+				win.Printf("  ")
+			}
+			switch obj := o.(type) {
+			case ledgrid.Visualizable:
+				win.Printf("%2d | %-10s | %-5v | %-5v | %.1f\n", i, obj.Name(), obj.Visible(), obj.Alive(), obj.Speedup().Val())
+			case ledgrid.Drawable:
+				win.Printf("%2d | %-10T | %-5v |       | \n", i, obj, obj.Visible())
+			case ledgrid.Animatable:
+				win.Printf("%2d | %-10T |       | %-5v | %.1f\n", i, obj, obj.Alive(), obj.Speedup().Val())
+			}
 		}
 		win.Printf("-----+------------+-------+-------+-----\n")
 		win.Printf("\nShader parameters:\n")
@@ -338,7 +338,7 @@ mainLoop:
 			} else {
 				win.Printf("  ")
 			}
-			win.Printf("%-5s: %5.2f\n", params[i].Name, params[i].Val())
+			win.Printf("%-5s: %5.2f\n", params[i].Name(), params[i].Val())
 		}
 		gc.Update()
 

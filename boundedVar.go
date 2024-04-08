@@ -15,7 +15,7 @@ type Boundable interface {
 type Bounded[T Boundable] struct {
 	// Wird dieser Parameter ueber ein GUI oder TUI angezeigt, kann diese
 	// Zeichenkette als Name verwendet werden.
-	Name string
+	name string
 	// Mit Cycle kann festgelegt werden, ob beim Erreichen, resp. Ueber- oder
 	// Unterschreiten der Intervallgrenzen der Wert fix bleibt (false) oder
 	// auf der anderen Seite des Intervalls beginnt (true).
@@ -27,12 +27,12 @@ type Bounded[T Boundable] struct {
 
 // Erstellt einen neuen eingeschraenkten Wert. Mit init, lb und ub kann
 // der initiale Wert sowie die untere, resp. obere Schranke festgelegt werden.
-func NewBounded[T Boundable](init, lb, ub, inc T) *Bounded[T] {
+func NewBounded[T Boundable](name string, init, lb, ub, inc T) *Bounded[T] {
 	if lb >= ub {
 		log.Fatalf("lower bound must be less than upper bound")
 	}
 	b := &Bounded[T]{}
-	b.Name = ""
+	b.name = name
 	b.Cycle = false
 	b.init = init
 	b.lb = lb
@@ -42,6 +42,10 @@ func NewBounded[T Boundable](init, lb, ub, inc T) *Bounded[T] {
 	b.valPtr = nil
 	b.callback = nil
 	return b
+}
+
+func (b *Bounded[T]) Name() string {
+    return b.name
 }
 
 // Da der Zugriff auf den Wert einer Bounded-Variable immer geprueft werden

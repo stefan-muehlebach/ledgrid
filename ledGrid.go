@@ -96,7 +96,7 @@ type AnimatableEmbed struct {
 func (a *AnimatableEmbed) Init() {
     a.alive = false
     a.t0 = time.Duration(0)
-    a.speedup = NewBounded(1.0, 0.1, 2.0, 0.1)
+    a.speedup = NewBounded("speedup", 1.0, 0.1, 2.0, 0.1)
 }
 
 func (a *AnimatableEmbed) Update(dt time.Duration) time.Duration {

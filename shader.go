@@ -47,7 +47,6 @@ type Shader struct {
 	field              [][]float64
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
-	// params             []ShaderParam
     params            []*Bounded[float64]
 	Pal                Colorable
 }
@@ -91,7 +90,7 @@ func (s *Shader) ParamList() ([]*Bounded[float64]) {
 
 func (s *Shader) Param(name string) (*Bounded[float64]) {
 	for _, param := range s.params {
-		if param.Name == name {
+		if param.Name() == name {
 			return param
 		}
 	}
@@ -146,53 +145,41 @@ var (
 		"Plasma",
 		PlasmaShaderFunc,
 		[]*Bounded[float64]{
-			{Name: "p1", val: 1.2, init: 1.2, lb: 0.0, ub: 10.0, step: 0.1},
-			{Name: "p2", val: 1.6, init: 1.6, lb: 0.0, ub: 10.0, step: 0.1},
-			{Name: "p3", val: 3.0, init: 3.0, lb: 0.0, ub: 10.0, step: 0.1},
-			{Name: "p4", val: 1.5, init: 1.5, lb: 0.0, ub: 10.0, step: 0.1},
-			{Name: "p5", val: 5.0, init: 5.0, lb: 0.0, ub: 10.0, step: 0.1},
-			{Name: "p6", val: 3.0, init: 5.0, lb: 0.0, ub: 10.0, step: 0.1},
+            NewBounded("p1", 1.2, 0.0, 10.0, 0.1),
+            NewBounded("p2", 1.6, 0.0, 10.0, 0.1),
+            NewBounded("p3", 3.0, 0.0, 10.0, 0.1),
+            NewBounded("p4", 1.5, 0.0, 10.0, 0.1),
+            NewBounded("p5", 5.0, 0.0, 10.0, 0.1),
+            NewBounded("p6", 5.0, 0.0, 10.0, 0.1),
 		},
 	}
-	// PlasmaShader = ShaderRecord{
-	// 	"Plasma",
-	// 	PlasmaShaderFunc,
-	// 	[]ShaderParam{
-	// 		{Name: "p1", Val: 1.2, LowerBound: 0.0, UpperBound: 10.0, Step: 0.1},
-	// 		{Name: "p2", Val: 1.6, LowerBound: 0.0, UpperBound: 10.0, Step: 0.1},
-	// 		{Name: "p3", Val: 3.0, LowerBound: 0.0, UpperBound: 10.0, Step: 0.1},
-	// 		{Name: "p4", Val: 1.5, LowerBound: 0.0, UpperBound: 10.0, Step: 0.1},
-	// 		{Name: "p5", Val: 5.0, LowerBound: 0.0, UpperBound: 10.0, Step: 0.1},
-	// 		{Name: "p6", Val: 3.0, LowerBound: 0.0, UpperBound: 10.0, Step: 0.1},
-	// 	},
-	// }
-	// CircleShader = ShaderRecord{
-	// 	"Circle",
-	// 	CircleShaderFunc,
-	// 	[]ShaderParam{
-	// 		{Name: "x", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
-	// 		{Name: "y", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
-	// 		{Name: "dir", Val: 1.0, LowerBound: -1.0, UpperBound: 1.0, Step: 2.0},
-	// 	},
-	// }
-	// KaroShader = ShaderRecord{
-	// 	"Karo",
-	// 	KaroShaderFunc,
-	// 	[]ShaderParam{
-	// 		{Name: "x", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
-	// 		{Name: "y", Val: 1.0, LowerBound: 0.5, UpperBound: 2.0, Step: 0.1},
-	// 		{Name: "dir", Val: 1.0, LowerBound: -1.0, UpperBound: 1.0, Step: 2.0},
-	// 	},
-	// }
-	// LinearShader = ShaderRecord{
-	// 	"Linear",
-	// 	LinearShaderFunc,
-	// 	[]ShaderParam{
-	// 		{Name: "x", Val: 1.0, LowerBound: 0.0, UpperBound: 2.0, Step: 0.1},
-	// 		{Name: "y", Val: 0.0, LowerBound: 0.0, UpperBound: 2.0, Step: 0.1},
-	// 		{Name: "dir", Val: 1.0, LowerBound: -1.0, UpperBound: 1.0, Step: 2.0},
-	// 	},
-	// }
+	CircleShader = ShaderRecord{
+		"Circle",
+		CircleShaderFunc,
+		[]*Bounded[float64]{
+            NewBounded("x", 1.0, 0.5, 2.0, 0.1),
+            NewBounded("y", 1.0, 0.5, 2.0, 0.1),
+            NewBounded("dir", 1.0, -1.0, 1.0, 2.0),
+		},
+	}
+	KaroShader = ShaderRecord{
+		"Karo",
+		KaroShaderFunc,
+		[]*Bounded[float64]{
+            NewBounded("x", 1.0, 0.5, 2.0, 0.1),
+            NewBounded("y", 1.0, 0.5, 2.0, 0.1),
+            NewBounded("dir", 1.0, -1.0, 1.0, 2.0),
+		},
+	}
+	LinearShader = ShaderRecord{
+		"Linear",
+		LinearShaderFunc,
+		[]*Bounded[float64]{
+            NewBounded("x", 1.0, 0.0, 2.0, 0.1),
+            NewBounded("y", 0.0, 0.0, 2.0, 0.1),
+            NewBounded("dir", 1.0, -1.0, 1.0, 2.0),
+		},
+	}
 )
 
 // Die beruehmt/beruechtigte Plasma-Animation. Die Parameter p1 - p6 sind eher
