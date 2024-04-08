@@ -13,7 +13,7 @@ var (
 // existiert.
 type Animator struct {
 	lg           *LedGrid
-	client       *PixelClient
+	client       PixelClient
 	ticker       *time.Ticker
 	t0, stopTime time.Time
 	objList      []any
@@ -23,7 +23,7 @@ type Animator struct {
 
 // Erstellt einen neuen Animator, welcher fuer die Animation und die
 // Darstellung aller Objekte auf dem LedGrid zustaendig ist.
-func NewAnimator(lg *LedGrid, client *PixelClient) *Animator {
+func NewAnimator(lg *LedGrid, client PixelClient) *Animator {
 	if theAnimator != nil {
 		return theAnimator
 	}

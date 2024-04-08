@@ -126,33 +126,56 @@ func (p *PixelServer) SetGamma(r, g, b float64) {
 	}
 }
 
+func (p *PixelServer) Draw(lg *LedGrid) {
+	var bufferSize int
+	var err error
+
+    bufferSize = len(lg.Pix)
+    for i := 0; i < bufferSize; i += 3 {
+        p.buffer[i+0] = p.gamma[0][lg.Pix[i+0]]
+        p.buffer[i+1] = p.gamma[1][lg.Pix[i+1]]
+        p.buffer[i+2] = p.gamma[2][lg.Pix[i+2]]
+    }
+	if p.onRaspi {
+		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
+			txSize := min(p.maxTxSize, bufferSize-idx)
+			if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
+				log.Fatalf("Couldn't send data: %v", err)
+			}
+		}
+		time.Sleep(20 * time.Microsecond)
+	} else {
+		log.Printf("Received %d bytes", bufferSize)
+	}
+}
+
 func (p *PixelServer) Handle() {
-	var len int
+	var bufferSize int
 	var err error
 
 	for {
-		len, err = p.udpConn.Read(p.buffer)
+		bufferSize, err = p.udpConn.Read(p.buffer)
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				break
 			}
 			log.Fatal(err)
 		}
-		for i := 0; i < len; i += 3 {
+		for i := 0; i < bufferSize; i += 3 {
 			p.buffer[i+0] = p.gamma[0][p.buffer[i+0]]
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
 		if p.onRaspi {
-			for idx := 0; idx < len; idx += p.maxTxSize {
-				txSize := min(p.maxTxSize, len-idx)
+			for idx := 0; idx < bufferSize; idx += p.maxTxSize {
+				txSize := min(p.maxTxSize, bufferSize-idx)
 				if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
 					log.Fatalf("Couldn't send data: %v", err)
 				}
 			}
 			time.Sleep(20 * time.Microsecond)
 		} else {
-			log.Printf("Received %d bytes", len)
+			log.Printf("Received %d bytes", bufferSize)
 		}
 	}
 
@@ -209,9 +232,21 @@ func (p *PixelServer) RPCGamma(arg int, reply *GammaArg) error {
     return nil
 }
 
+// Um den clientseitigen Code so generisch wie moeglich zu halten, ist der
+// PixelClient als Interface definiert. Zwei konkrete Implementationen
+// stehen zur Verfuegung:
+// - LocalPixelClient
+// - NetPixelClient
+type PixelClient interface {
+    Close()
+    Draw(lg *LedGrid)
+    Gamma() (r, g, b float64)
+    SetGamma(r, g, b float64)
+}
+
 // Dieser Typ wird client-seitig fuer die Ansteuerung des LedGrid verwendet.
 // Im Wesentlichen ist dies eine Abstraktion der Ansteuerung via UDP.
-type PixelClient struct {
+type NetPixelClient struct {
 	addr      *net.UDPAddr
 	conn      *net.UDPConn
 	rpcClient *rpc.Client
@@ -219,11 +254,11 @@ type PixelClient struct {
 
 // Erzeugt ein neues Controller-Objekt, welches das LedGrid ueber die Adresse
 // in Host und den UDP-Port in Port anspricht.
-func NewPixelClient(host string, port uint) *PixelClient {
+func NewNetPixelClient(host string, port uint) *NetPixelClient {
 	var hostPort string
 	var err error
 
-	p := &PixelClient{}
+	p := &NetPixelClient{}
 	hostPort = fmt.Sprintf("%s:%d", host, port)
 	p.addr, err = net.ResolveUDPAddr("udp", hostPort)
 	if err != nil {
@@ -243,21 +278,21 @@ func NewPixelClient(host string, port uint) *PixelClient {
 }
 
 // Schliesst die Verbindung zum Controller.
-func (p *PixelClient) Close() {
+func (p *NetPixelClient) Close() {
 	p.conn.Close()
 }
 
 // Sendet die Daten im Buffer b zum Controller.
-func (p *PixelClient) Draw(ledGrid *LedGrid) {
+func (p *NetPixelClient) Draw(lg *LedGrid) {
 	var err error
 
-	_, err = p.conn.Write(ledGrid.Pix)
+	_, err = p.conn.Write(lg.Pix)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (p *PixelClient) Gamma() (r, g, b float64) {
+func (p *NetPixelClient) Gamma() (r, g, b float64) {
 	var reply GammaArg
 	var err error
 
@@ -268,7 +303,7 @@ func (p *PixelClient) Gamma() (r, g, b float64) {
     return reply.RedVal, reply.GreenVal, reply.BlueVal
 }
 
-func (p *PixelClient) SetGamma(r, g, b float64) {
+func (p *NetPixelClient) SetGamma(r, g, b float64) {
 	var reply int
 	var err error
 

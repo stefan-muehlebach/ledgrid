@@ -161,7 +161,7 @@ func main() {
 	var port uint
 	var gammaValue *ledgrid.Bounded[float64]
 
-	var client *ledgrid.PixelClient
+	var client ledgrid.PixelClient
 	var grid *ledgrid.LedGrid
 	var pal *ledgrid.PaletteFader
 	var ch gc.Key
@@ -211,7 +211,7 @@ func main() {
 	gc.Cursor(0)
 	win.Keypad(true)
 
-	client = ledgrid.NewPixelClient(host, port)
+	client = ledgrid.NewNetPixelClient(host, port)
 	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	anim = ledgrid.NewAnimator(grid, client)
 
