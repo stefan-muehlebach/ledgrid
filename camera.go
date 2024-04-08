@@ -57,6 +57,19 @@ func NewCamera(lg *LedGrid) *Camera {
 	c.scaler = draw.BiLinear.NewScaler(10, 10, camHeight, camHeight)
 
     c.params = make([]*Bounded[float64], 3)
+    for i, id := range []v4l2.CtrlID{v4l2.CtrlBrightness, v4l2.CtrlContrast, v4l2.CtrlSaturation} {
+        ctrl, err := c.dev.GetControl(id)
+        if err != nil {
+            log.Fatalf("couldn't get control: %v", err)
+        }
+        c.params[i] = NewBounded[float64](ctrl.Name, float64(ctrl.Default),
+            float64(ctrl.Minimum), float64(ctrl.Maximum), float64(ctrl.Step))
+        c.params[i].SetCallback(func (oldVal, newVal float64) {
+            c.dev.SetControlValue(id, int32(newVal))
+        })
+    }
+
+/*
     c.params[0] = NewBounded[float64]("Brightness", 128, 0, 255, 1)
     c.params[0].SetCallback(func (oldVal, newVal float64) {
         c.dev.SetControlBrightness(int32(newVal))
@@ -69,7 +82,7 @@ func NewCamera(lg *LedGrid) *Camera {
     c.params[2].SetCallback(func (oldVal, newVal float64) {
         c.dev.SetControlSaturation(int32(newVal))
     })
-
+*/
 /*
     camCtrl, err := c.dev.GetControl(camZoomCtrlID)
     if err != nil {
