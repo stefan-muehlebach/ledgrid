@@ -18,15 +18,21 @@ const (
 var (
 	framesPerSecond int
 	frameRefresh    time.Duration
-	frameRefreshMs  int
+	frameRefreshMs  int64
 	frameRefreshSec float64
 )
 
 func init() {
 	framesPerSecond = defFramesPerSec
 	frameRefresh = time.Second / time.Duration(framesPerSecond)
-	frameRefreshMs = 1000 / framesPerSecond
-	frameRefreshSec = float64(frameRefreshMs) / 1000.0
+	frameRefreshMs = frameRefresh.Microseconds()
+    // frameRefreshMs = 1000 / framesPerSecond
+    frameRefreshSec = frameRefresh.Seconds()
+	// frameRefreshSec = float64(frameRefreshMs) / 1000.0
+}
+
+type Nameable interface {
+    Name() string
 }
 
 // Alles, was sich auf dem LedGrid darstellen (d.h. zeichnen laesst),
@@ -119,6 +125,9 @@ func (a *AnimatableEmbed) Speedup() *Bounded[float64] {
 type Visualizable interface {
     Drawable
     Animatable
+    // Objekte dieser Stufe muessen einen Namen haben.
+    Name() string
+    SetName(name string)
     // Mit diesen Methoden werden beide Eigenschaften (sichtbar und animierbar
     // zusammen aktiviert, resp. abgefragt.
     Active() bool
@@ -130,11 +139,21 @@ type Visualizable interface {
 type VisualizableEmbed struct {
     DrawableEmbed
     AnimatableEmbed
+    name string
 }
 
-func (v *VisualizableEmbed) Init() {
+func (v *VisualizableEmbed) Init(name string) {
     v.DrawableEmbed.Init()
     v.AnimatableEmbed.Init()
+    v.name = name
+}
+
+func (v *VisualizableEmbed) Name() (string) {
+    return v.name
+}
+
+func (v *VisualizableEmbed) SetName(name string) {
+    v.name = name
 }
 
 func (v *VisualizableEmbed) Active() (bool) {
@@ -146,9 +165,18 @@ func (v *VisualizableEmbed) SetActive(active bool) {
     v.SetAlive(active)
 }
 
+// Einige der Objekte (wie beispielsweise Shader) koennen zusaetzlich mit
+// Parametern gesteuert werden. Damit diese Steuerung so generisch wie
+// moeglich ist, haben alle parametrisierbaren Typen dieses Interface zu
+// implementieren.
+type Parametrizable interface {
+    ParamList() ([]*Bounded[float64])
+}
+
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
 // das Colorable Interface.
 type Colorable interface {
+    Nameable
 	// Liefert in Abhaengigkeit des Parameters v eine Farbe aus der Palette
 	// zurueck. v kann vielfaeltig verwendet werden, bsp. als Parameter im
 	// Intervall [0,1] oder als Index (natuerliche Zahl) einer Farbenliste.
@@ -254,8 +282,3 @@ func (g *LedGrid) Clear(c LedColor) {
 		slc[2] = c.B
 	}
 }
-
-// func (g *LedGrid) DrawLine(p0 image.Point, p1 image.Point, col LedColor) {
-// 	g.SetLedColor(p0.X, p0.Y, col)
-// 	g.SetLedColor(p1.X, p1.Y, col)
-// }

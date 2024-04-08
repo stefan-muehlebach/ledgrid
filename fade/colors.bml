@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="utf-8"?>
+<blm width="10" height="10" bits="4" channels="1">
+	<header>
+		<title>Colors</title>
+		<description>All the 32 Pico08 colors</description>
+		<author>Stefan Muehlebach</author>
+		<email>stefan.muehlebach@gmx.net</email>
+		<loop>yes</loop>
+	</header>
+    <frame duration="200">
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+    </frame>
+    <frame duration="200">
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+    </frame>
+    <frame duration="200">
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+    </frame>
+    <frame duration="200">
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+    </frame>
+    <frame duration="200">
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+    </frame>
+    <frame duration="200">
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+    </frame>
+    <frame duration="200">
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+    </frame>
+    <frame duration="200">
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+    </frame>
+    <frame duration="200">
+        <row>89abcdefgh</row>
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+    </frame>
+    <frame duration="200">
+        <row>9abcdefghi</row>
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+    </frame>
+    <frame duration="200">
+        <row>abcdefghij</row>
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+    </frame>
+    <frame duration="200">
+        <row>bcdefghijk</row>
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+    </frame>
+    <frame duration="200">
+        <row>cdefghijkl</row>
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+    </frame>
+    <frame duration="200">
+        <row>defghijklm</row>
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+    </frame>
+    <frame duration="200">
+        <row>efghijklmn</row>
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+    </frame>
+    <frame duration="200">
+        <row>fghijklmno</row>
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+    </frame>
+    <frame duration="200">
+        <row>ghijklmnop</row>
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+    </frame>
+    <frame duration="200">
+        <row>hijklmnopq</row>
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+    </frame>
+    <frame duration="200">
+        <row>ijklmnopqr</row>
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+    </frame>
+    <frame duration="200">
+        <row>jklmnopqrs</row>
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+    </frame>
+    <frame duration="200">
+        <row>klmnopqrst</row>
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+    </frame>
+    <frame duration="200">
+        <row>lmnopqrstu</row>
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+    </frame>
+    <frame duration="200">
+        <row>mnopqrstuv</row>
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+    </frame>
+    <frame duration="200">
+        <row>nopqrstuv0</row>
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+    </frame>
+    <frame duration="200">
+        <row>opqrstuv01</row>
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+    </frame>
+    <frame duration="200">
+        <row>pqrstuv012</row>
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+    </frame>
+    <frame duration="200">
+        <row>qrstuv0123</row>
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+    </frame>
+    <frame duration="200">
+        <row>rstuv01234</row>
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+    </frame>
+    <frame duration="200">
+        <row>stuv012345</row>
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+    </frame>
+    <frame duration="200">
+        <row>tuv0123456</row>
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+    </frame>
+    <frame duration="200">
+        <row>uv01234567</row>
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+    </frame>
+    <frame duration="200">
+        <row>v012345678</row>
+        <row>0123456789</row>
+        <row>123456789a</row>
+        <row>23456789ab</row>
+        <row>3456789abc</row>
+        <row>456789abcd</row>
+        <row>56789abcde</row>
+        <row>6789abcdef</row>
+        <row>789abcdefg</row>
+        <row>89abcdefgh</row>
+    </frame>
+
+</blm>

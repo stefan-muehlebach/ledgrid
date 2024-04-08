@@ -10,18 +10,26 @@ import (
 )
 
 const (
-	width      = 10
-	height     = 10
-	defHost    = "raspi-2"
-	defPort    = 5333
-	termWidth  = 97
-	termHeight = 37
-	KEY_SUP    = 0x151 /* Shifted up arrow */
-	KEY_SDOWN  = 0x150 /* Shifted down arrow */
-	KEY_CLEFT  = 0x222 /* Ctrl-left arrow */
-	KEY_CRIGHT = 0x231 /* Ctrl-right arrow */
-	KEY_CUP    = 0x237 /* Ctrl-up arrow */
-	KEY_CDOWN  = 0x20e /* Ctrl-down arrow */
+	width         = 10
+	height        = 10
+	defHost       = "raspi-2"
+	defPort       = 5333
+	termWidth     = 97
+	termHeight    = 37
+	KEY_SUP       = 0x151 /* Shifted up arrow */
+	KEY_SDOWN     = 0x150 /* Shifted down arrow */
+	KEY_CLEFT     = 0x222 /* Ctrl-left arrow */
+	KEY_CRIGHT    = 0x231 /* Ctrl-right arrow */
+	KEY_CUP       = 0x237 /* Ctrl-up arrow */
+	KEY_CDOWN     = 0x20e /* Ctrl-down arrow */
+	KEY_ALEFT     = 0x220 /* Alt-left arrow */
+	KEY_ARIGHT    = 0x22f /* Alt-right arrow */
+	KEY_AINS      = 0x21b /* Alt-Insert */
+	KEY_ADEL      = 0x206 /* Alt-Delete */
+	KEY_AHOME     = 0x216 /* Alt-Home */
+	KEY_AEND      = 0x211 /* Alt-End */
+	KEY_APAGEUP   = 0x22a /* Alt-PageUp */
+	KEY_APAGEDOWN = 0x225 /* Alt-PageDown */
 )
 
 func between(x, a, b int) bool {
@@ -49,7 +57,7 @@ func main() {
 
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	pixelClient = ledgrid.NewPixelClient(defHost, defPort)
-    gammaValues[0], gammaValues[1], gammaValues[2] = pixelClient.Gamma()
+	gammaValues[0], gammaValues[1], gammaValues[2] = pixelClient.Gamma()
 
 	stdscr, err = gc.Init()
 	if err != nil {
@@ -86,7 +94,7 @@ func main() {
 	winGrid.Keypad(true)
 	winGrid.Box(0, 0)
 
-	helpHeight, helpWidth := 16, 55
+	helpHeight, helpWidth := 18, 55
 	y, x = 19, 4
 
 	winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
@@ -96,44 +104,38 @@ func main() {
 	// winHelp.Keypad(true)
 	winHelp.Box(0, 0)
 
-	winHelp.MoveAddChar(1, 2, gc.ACS_LARROW)
-	winHelp.MovePrintf(1, 3, ": move selector to the left")
-	winHelp.MoveAddChar(2, 2, gc.ACS_RARROW)
-	winHelp.MovePrintf(2, 3, ": move selector to the right")
-	winHelp.MoveAddChar(3, 2, gc.ACS_UARROW)
-	winHelp.MovePrintf(3, 3, ": move selector up")
-	winHelp.MoveAddChar(4, 2, gc.ACS_DARROW)
-	winHelp.MovePrintf(4, 3, ": move selector down")
-	winHelp.MovePrintf(5, 2, "  R   |    G   |    B   |")
-	winHelp.MovePrintf(6, 2, "------+--------+--------+")
-	winHelp.MovePrintf(7, 2, "[Ins] | [Home] | [PgUp] | increase color value")
-	winHelp.MovePrintf(8, 2, "[Del] | [End]  | [PgDn] | decrease color value")
-	winHelp.MovePrintf(9, 2, "C: clear panel")
-	winHelp.MovePrintf(10, 2, "F: interpolate colors")
-	winHelp.MovePrintf(11, 2, "0-9a-f: enter new hex value for selected color")
-	winHelp.MovePrintf(12, 2, "g/G: decrease/increase gamma values by 0.1")
-	winHelp.MovePrintf(14, 2, "q: Quit")
+	winHelp.MovePrintf(1, 2, "[Cursor]: Move selector")
+	winHelp.MovePrintf(2, 2, "[Shift]-[Cursor]: Select range")
+	winHelp.MovePrintf(6, 2, "  R   |    G   |    B   |")
+	winHelp.MovePrintf(7, 2, "------+--------+--------+")
+	winHelp.MovePrintf(8, 2, "[Ins] | [Home] | [PgUp] | increase color value")
+	winHelp.MovePrintf(9, 2, "[Del] | [End]  | [PgDn] | decrease color value")
+	winHelp.MovePrintf(11, 2, "C: clear panel")
+	winHelp.MovePrintf(12, 2, "F: interpolate colors")
+	winHelp.MovePrintf(13, 2, "0-9a-f: enter new hex value for selected color")
+	winHelp.MovePrintf(14, 2, "g/G: decrease/increase gamma values by 0.1")
+	winHelp.MovePrintf(16, 2, "q: Quit")
 
-	fields := make([]*gc.Field, 3)
-	fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
-	defer fields[0].Free()
-	fields[0].SetBackground(gc.A_UNDERLINE)
+	// fields := make([]*gc.Field, 3)
+	// fields[0], _ = gc.NewField(1, 3, 14, 16, 0, 0)
+	// defer fields[0].Free()
+	// fields[0].SetBackground(gc.A_UNDERLINE)
 
-	fields[1], _ = gc.NewField(1, 3, 14, 21, 0, 0)
-	defer fields[1].Free()
-	fields[1].SetBackground(gc.A_UNDERLINE)
+	// fields[1], _ = gc.NewField(1, 3, 14, 21, 0, 0)
+	// defer fields[1].Free()
+	// fields[1].SetBackground(gc.A_UNDERLINE)
 
-	fields[2], _ = gc.NewField(1, 3, 14, 21, 0, 0)
-	defer fields[2].Free()
-	fields[2].SetBackground(gc.A_UNDERLINE)
+	// fields[2], _ = gc.NewField(1, 3, 14, 21, 0, 0)
+	// defer fields[2].Free()
+	// fields[2].SetBackground(gc.A_UNDERLINE)
 
-	form, _ := gc.NewForm(fields)
-	defer form.UnPost()
-	defer form.Free()
+	// form, _ := gc.NewForm(fields)
+	// defer form.UnPost()
+	// defer form.Free()
 
-	form.SetWindow(winGrid)
-	form.SetSub(winGrid.Derived(1, 11, 14, 16))
-	form.Post()
+	// form.SetWindow(winGrid)
+	// form.SetSub(winGrid.Derived(1, 11, 14, 16))
+	// form.Post()
 
 	winGrid.Refresh()
 	winHelp.Refresh()
@@ -242,6 +244,8 @@ main:
 				}
 			}
 			ledColor = ledGrid.LedColorAt(curCol, curRow)
+			selCol = curCol
+			selRow = curRow
 			colorChanged = true
 
 		case 'g':
@@ -261,9 +265,9 @@ main:
 		case 'q':
 			break main
 
-		case gc.KEY_TAB:
-			form.Driver(gc.REQ_NEXT_FIELD)
-			form.Driver(gc.REQ_END_LINE)
+		// case gc.KEY_TAB:
+		// 	form.Driver(gc.REQ_NEXT_FIELD)
+		// 	form.Driver(gc.REQ_END_LINE)
 
 		case gc.KEY_LEFT:
 			if curCol > 0 {
@@ -307,11 +311,11 @@ main:
 				selRow += 1
 			}
 
-		case KEY_CLEFT:
+		case KEY_ALEFT:
 			if curColor > 0 {
 				curColor--
 			}
-		case KEY_CRIGHT:
+		case KEY_ARIGHT:
 			if curColor < 2 {
 				curColor++
 			}
@@ -326,39 +330,42 @@ main:
 			}
 			colorChanged = true
 
-		case gc.KEY_IC, gc.KEY_SIC, gc.KEY_DC, gc.KEY_SDC:
+		case gc.KEY_IC, gc.KEY_DC, KEY_AINS, KEY_ADEL:
 			curColor = 0
-			incr = 1
-			if ch == gc.KEY_SIC || ch == gc.KEY_SDC {
+			if ch == gc.KEY_IC || ch == gc.KEY_DC {
+				incr = 1
+			} else {
 				incr = 16
 			}
-			if ch == gc.KEY_IC || ch == gc.KEY_SIC {
+			if ch == gc.KEY_IC || ch == KEY_AINS {
 				ledColor.R += incr
 			} else {
 				ledColor.R -= incr
 			}
 			colorChanged = true
 
-		case gc.KEY_HOME, gc.KEY_SHOME, gc.KEY_END, gc.KEY_SEND:
+		case gc.KEY_HOME, gc.KEY_END, KEY_AHOME, KEY_AEND:
 			curColor = 1
-			incr = 1
-			if ch == gc.KEY_SHOME || ch == gc.KEY_SEND {
+			if ch == gc.KEY_HOME || ch == gc.KEY_END {
+				incr = 1
+			} else {
 				incr = 16
 			}
-			if ch == gc.KEY_HOME || ch == gc.KEY_SHOME {
+			if ch == gc.KEY_HOME || ch == KEY_AHOME {
 				ledColor.G += incr
 			} else {
 				ledColor.G -= incr
 			}
 			colorChanged = true
 
-		case gc.KEY_PAGEUP, gc.KEY_SPREVIOUS, gc.KEY_PAGEDOWN, gc.KEY_SNEXT:
+		case gc.KEY_PAGEUP, gc.KEY_PAGEDOWN, KEY_APAGEUP, KEY_APAGEDOWN:
 			curColor = 2
-			incr = 1
-			if ch == gc.KEY_SNEXT || ch == gc.KEY_SPREVIOUS {
+			if ch == gc.KEY_PAGEUP || ch == gc.KEY_PAGEDOWN {
+				incr = 1
+			} else {
 				incr = 16
 			}
-			if ch == gc.KEY_PAGEUP || ch == gc.KEY_SPREVIOUS {
+			if ch == gc.KEY_PAGEUP || ch == KEY_APAGEUP {
 				ledColor.B += incr
 			} else {
 				ledColor.B -= incr

@@ -15,17 +15,19 @@ type colorStop struct {
 // Palette liegt eine Liste von Farben (die sog. Stuetzstellen) und ihre
 // jeweilige Position auf dem Intervall [0, 1] zugrunde.
 type GradientPalette struct {
+    name string
 	stops []colorStop
 	// Mit dieser Funktion wird die Interpolation zwischen den gesetzten
 	// Farbwerten realisiert.
-	Func InterpolFuncType
+	fnc InterpolFuncType
 }
 
 // Erzeugt eine neue Palette und verwendet die Farben in cl als Stuetzwerte.
 // In diesem Fall werden die Farben in cl gleichmaessig (aequidistant) auf
 // dem Intervall [0,1] verteilt.
-func NewGradientPalette(cycle bool, cl ...LedColor) *GradientPalette {
+func NewGradientPalette(name string, cycle bool, cl ...LedColor) *GradientPalette {
 	p := &GradientPalette{}
+    p.name = name
 	if cl == nil {
 		cl = []LedColor{BlackColor, White}
 	}
@@ -33,8 +35,12 @@ func NewGradientPalette(cycle bool, cl ...LedColor) *GradientPalette {
         cl = append(cl, cl[0])
     }
 	p.SetColorStops(cl)
-	p.Func = PolynomInterpol
+	p.fnc = PolynomInterpol
 	return p
+}
+
+func (p *GradientPalette) Name() string {
+    return p.name
 }
 
 // Setzt die Farbe c als neuen Stuetzwert bei Position t. Existiert bereits
@@ -86,23 +92,29 @@ func (p *GradientPalette) Color(t float64) (c LedColor) {
 		}
 	}
 	t = (t - p.stops[i].pos) / (p.stops[i+1].pos - p.stops[i].pos)
-	c = p.stops[i].col.Interpolate(p.stops[i+1].col, p.Func(0, 1, t)).(LedColor)
+	c = p.stops[i].col.Interpolate(p.stops[i+1].col, p.fnc(0, 1, t)).(LedColor)
 	return c
 }
 
 // Palette mit 256 einzelnen dedizierten Farbwerten - kein Fading oder
 // sonstige Uebergaenge.
 type SlicePalette struct {
+    name string
 	Colors []LedColor
 }
 
-func NewSlicePalette(cl ...LedColor) *SlicePalette {
+func NewSlicePalette(name string, cl ...LedColor) *SlicePalette {
 	p := &SlicePalette{}
+    p.name = name
 	p.Colors = make([]LedColor, 256)
 	for i, c := range cl {
 		p.Colors[i] = c
 	}
 	return p
+}
+
+func (p *SlicePalette) Name() string {
+    return p.name
 }
 
 func (p *SlicePalette) Color(v float64) LedColor {
@@ -128,6 +140,10 @@ func NewPaletteFader(pal Colorable) *PaletteFader {
 	p.FadeTime = 0
 	p.RemainTime = 0
 	return p
+}
+
+func (p *PaletteFader) Name() string {
+    return p.Pals[0].Name()
 }
 
 func (p *PaletteFader) StartFade(nextPal Colorable, fadeTime time.Duration) bool {

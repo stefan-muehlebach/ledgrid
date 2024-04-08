@@ -16,7 +16,9 @@ type Animator struct {
 	client       *PixelClient
 	ticker       *time.Ticker
 	t0, stopTime time.Time
-    objList      []any
+	objList      []any
+	animList     []Animatable
+	drawList     []Drawable
 }
 
 // Erstellt einen neuen Animator, welcher fuer die Animation und die
@@ -28,28 +30,27 @@ func NewAnimator(lg *LedGrid, client *PixelClient) *Animator {
 	a := &Animator{}
 	a.lg = lg
 	a.client = client
-    a.objList = make([]any, 0)
+	a.objList = make([]any, 0)
+	a.animList = make([]Animatable, 0)
+	a.drawList = make([]Drawable, 0)
 
 	a.ticker = time.NewTicker(frameRefresh)
 	a.t0 = time.Now()
-    a.stopTime = time.Time{}
+	a.stopTime = time.Time{}
+	a.Stop()
 	go func() {
 		for _ = range a.ticker.C {
 			dt := frameRefresh
-			for _, val := range a.objList {
-                if obj, ok := val.(Animatable); ok {
-                    if obj.Alive() {
-				        obj.Update(dt)
-                    }
-                }
+			for _, obj := range a.animList {
+				if obj.Alive() {
+					obj.Update(dt)
+				}
 			}
 			a.lg.Clear(BlackColor)
-			for _, val := range a.objList {
-                if obj, ok := val.(Drawable); ok {
-                    if obj.Visible() {
-				        obj.Draw()
-                    }
-                }
+			for _, obj := range a.drawList {
+				if obj.Visible() {
+					obj.Draw()
+				}
 			}
 			a.client.Draw(a.lg)
 		}
@@ -63,15 +64,23 @@ func NewAnimator(lg *LedGrid, client *PixelClient) *Animator {
 // animiert oder auch gezeichnet werden kann, wird es in eine der zentralen
 // Listen am Ende angehaengt.
 func (a *Animator) AddObjects(objs ...any) {
-    a.objList = append(a.objList, objs...)
-	// for _, obj := range objs {
-	// 	if v, ok := obj.(Animatable); ok {
-	// 		a.animList = append(a.animList, v)
-	// 	}
-	// 	if v, ok := obj.(Drawable); ok {
-	// 		a.drawList = append(a.drawList, v)
-	// 	}
-	// }
+	for _, obj := range objs {
+		if o, ok := obj.(Animatable); ok {
+			a.animList = append(a.animList, o)
+		}
+		if o, ok := obj.(Drawable); ok {
+			a.drawList = append(a.drawList, o)
+		}
+	}
+}
+
+func (a *Animator) Objects() (l []Visualizable) {
+    for _, o := range a.drawList {
+        if obj, ok := o.(Visualizable); ok {
+            l = append(l, obj)
+        }
+    }
+	return l
 }
 
 // Unterbricht die Animation.
@@ -85,12 +94,12 @@ func (a *Animator) Stop() {
 
 // Gibt den Status der Animation zurueck. true bedeutet, dass die Animation
 // laeuft; false bedeutet, dass die Animation gestoppt ist.
-func (a *Animator) IsRunning() (bool) {
-    return a.stopTime.IsZero()
+func (a *Animator) IsRunning() bool {
+	return a.stopTime.IsZero()
 }
 
 // Setzt die Animation wieder fort.
-func (a *Animator) Reset() {
+func (a *Animator) Start() {
 	if a.stopTime.IsZero() {
 		return
 	}

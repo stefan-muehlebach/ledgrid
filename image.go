@@ -1,14 +1,46 @@
 package ledgrid
 
 import (
-	"strings"
+	"golang.org/x/image/draw"
+	"image/png"
 	"encoding/xml"
+	"image"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
+
+//----------------------------------------------------------------------------
+
+type Picture struct {
+	DrawableEmbed
+	lg  *LedGrid
+	img image.Image
+    scaler draw.Scaler
+}
+
+func NewPicture(lg *LedGrid, fileName string) *Picture {
+	p := &Picture{}
+	p.lg = lg
+	fh, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't open file: %v", err)
+	}
+	p.img, err = png.Decode(fh)
+	if err != nil {
+		log.Fatalf("Couldn't decode file: %v", err)
+	}
+    p.scaler = draw.BiLinear.NewScaler(10, 10, p.img.Bounds().Dx(),
+        p.img.Bounds().Dy())
+	return p
+}
+
+func (p *Picture) Draw() {
+    p.scaler.Scale(p.lg, p.lg.Bounds(), p.img, p.img.Bounds(), draw.Src, nil)
+}
 
 //----------------------------------------------------------------------------
 
@@ -59,7 +91,7 @@ type ImageAnimation struct {
 
 func NewImageAnimation(lg *LedGrid) *ImageAnimation {
 	i := &ImageAnimation{}
-	i.VisualizableEmbed.Init()
+	i.VisualizableEmbed.Init("ImageAnimation")
 	i.lg = lg
 	i.imageList = make([]*Image, 0)
 	i.timeList = make([]time.Duration, 0)
@@ -154,7 +186,7 @@ func OpenBlinkenFile(fileName string) *BlinkenFile {
 }
 
 func (b *BlinkenFile) Write(fileName string) {
-    var strBuild strings.Builder
+	var strBuild strings.Builder
 
 	xmlFile, err := os.Create(fileName)
 	if err != nil {
@@ -162,15 +194,15 @@ func (b *BlinkenFile) Write(fileName string) {
 	}
 	defer xmlFile.Close()
 
-    for i, frame := range b.Frames {
-        for j, row := range frame.Values {
-            strBuild.Reset()
-            for _, v := range row {
-                strBuild.WriteString(strconv.FormatUint(uint64(v), 32))
-            }
-            b.Frames[i].Rows[j] = []byte(strBuild.String())
-        }
-    }
+	for i, frame := range b.Frames {
+		for j, row := range frame.Values {
+			strBuild.Reset()
+			for _, v := range row {
+				strBuild.WriteString(strconv.FormatUint(uint64(v), 32))
+			}
+			b.Frames[i].Rows[j] = []byte(strBuild.String())
+		}
+	}
 
 	byteValue, err := xml.MarshalIndent(b, "", "    ")
 	if err != nil {

@@ -1,3 +1,5 @@
+//go:generate go run gen.go
+
 package ledgrid
 
 var (
@@ -5,10 +7,17 @@ var (
 	// werden. Diese Namen werden vom Programm 'gen' gelesen und zur
 	// Erstellung des Files paletteNames.go verwendet. Die Namen der
 	// Farblisten werden NICHT exportiert (d.h. beginnen mit Kleinbuchstaben),
-	// muessen aber mit 'Colors' enden.
+	// muessen aber mit 'Gradient' enden, damit daraus Paletten erstellt
+    // werden sollen. Endet der Name mit 'GradientNoCycle', dann wird eine
+    // Palette ohne 'cycle'-Flag erstellt.
 
     blackGradient = []LedColor{
         NewLedColor(0x000000),
+    }
+
+    blackWhiteGradientNoCycle = []LedColor{
+        NewLedColor(0x000000),
+        NewLedColor(0xFFFFFF),
     }
 
 	// Paletten aus der Mandelbrot-Kueche
@@ -114,6 +123,17 @@ var (
         NewLedColor(0xee771c),
         NewLedColor(0xe45323),
         NewLedColor(0xd23008),
+    }
+
+    fireGradientNoCycle = []LedColor{
+        NewLedColor(0x000000),
+        NewLedColor(0x5f0809),
+        NewLedColor(0xbe1013),
+        NewLedColor(0xd23008),
+        NewLedColor(0xe45323),
+        NewLedColor(0xee771c),
+        NewLedColor(0xf6960e),
+        NewLedColor(0xffcd06),
     }
 
     darkJungleGradient = []LedColor{

@@ -175,13 +175,14 @@ func main() {
 	var params []*ledgrid.Bounded[float64]
 	// var speedup *ledgrid.Bounded[float64]
 	var shaders []*ledgrid.Shader
-	var shader *ledgrid.Shader
+	// var shader *ledgrid.Shader
+    var object ledgrid.Visualizable
 	var shaderList = []ledgrid.ShaderRecord{
 		ledgrid.PlasmaShader,
-		ledgrid.CircleShader,
-		ledgrid.KaroShader,
-		ledgrid.LinearShader,
-		ledgrid.LinearShader,
+		// ledgrid.CircleShader,
+		// ledgrid.KaroShader,
+		// ledgrid.LinearShader,
+		// ledgrid.LinearShader,
 	}
 
 	log.SetOutput(os.Stderr)
@@ -212,46 +213,58 @@ func main() {
 
 	client = ledgrid.NewPixelClient(host, port)
 	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
+	anim = ledgrid.NewAnimator(grid, client)
 
 	gammaValue = ledgrid.NewBounded(defGammaValue, 1.0, 5.0, 0.1)
 	gammaValue.SetCallback(func(oldVal, newVal float64) {
 		client.SetGamma(newVal, newVal, newVal)
 	})
 
-	palIdx = ledgrid.NewBounded(0, 0, len(ledgrid.PaletteNames)-1, 1)
+	palIdx = ledgrid.NewBounded(0, 0, len(ledgrid.PaletteList)-1, 1)
 	palIdx.Cycle = true
 	palFadeTime = ledgrid.NewBounded(1.5, 0.0, 5.0, 0.1)
 
-	// shaderCtrl := ledgrid.NewShaderController(grid)
-	// shaderCtrl.SetActive(true)
-
 	shaders = make([]*ledgrid.Shader, len(shaderList))
 	for i := range shaders {
-		pal = ledgrid.NewPaletteFader(ledgrid.Default)
+		pal = ledgrid.NewPaletteFader(ledgrid.DefaultPalette)
 		pal.SetAlive(true)
 		shaders[i] = ledgrid.NewShader(grid, shaderList[i], pal)
+        anim.AddObjects(shaders[i], pal)
 	}
 
-	shaderIdx := ledgrid.NewBounded(0, 0, len(shaders)-1, 1)
-	shaderIdx.Cycle = true
-	shaderIdx.SetCallback(func(oldVal, newVal int) {
-		shader = shaders[newVal]
-		pal = shader.Pal.(*ledgrid.PaletteFader)
-		params = make([]*ledgrid.Bounded[float64], len(shader.Params))
-		for i, p := range shader.Params {
-			params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
-			params[i].BindVar(&shader.Params[i].Val)
-			params[i].SetCallback(func(oldVar, newVar float64) {
-				shader.Update(0)
-			})
-			params[i].Name = p.Name
-		}
-		paramIdx = ledgrid.NewBounded(0, 0, len(params)-1, 1)
-		paramIdx.Cycle = true
+	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
+    txt.SetActive(true)
+
+    fire := ledgrid.NewFire(grid)
+
+    pict := ledgrid.NewPicture(grid, "testbild.png")
+
+    cam := ledgrid.NewCamera(grid)
+    cam.SetActive(true)
+    anim.AddObjects(cam, pict, fire, txt)
+
+	objectIdx := ledgrid.NewBounded(0, 0, len(anim.Objects())-1, 1)
+	objectIdx.Cycle = true
+	objectIdx.SetCallback(func(oldVal, newVal int) {
+		object = anim.Objects()[newVal]
+        if shader, ok := object.(*ledgrid.Shader); ok {
+		    pal = shader.Pal.(*ledgrid.PaletteFader)
+		    params = shader.ParamList()
+		    // for i, p := range shader.ParamList() {
+		    //     	params[i] = ledgrid.NewBounded(p.Val, p.LowerBound, p.UpperBound, p.Step)
+		    //     	params[i].BindVar(&shader.ParamList()[i].Val)
+		    //     	params[i].SetCallback(func(oldVar, newVar float64) {
+		    //     		shader.Update(0)
+		    //     	})
+		    //     	params[i].Name = p.Name
+		    // }
+		    paramIdx = ledgrid.NewBounded(0, 0, len(params)-1, 1)
+        		paramIdx.Cycle = true
+        } else {
+            params = nil
+        }
 	})
 
-	txt := ledgrid.NewText(grid, "Restaurant Lochbach Bad", ledgrid.White)
-    txt.SetActive(true)
 	// line := NewLine(grid, image.Point{0, 1}, image.Point{9, 8}, ledgrid.Blue)
 	// poly := NewPolygon(grid, image.Point{0, 4}, image.Point{0, 9}, image.Point{9, 9}, ledgrid.Green)
 	// speedup = ledgrid.NewBounded(1.0, 0.1, 10.0, 0.1)
@@ -262,15 +275,7 @@ func main() {
 	// imgAnim := blinken.MakeImageAnimation(grid, imgPal)
 	// imgAnim.SetActive(true)
 
-	anim = ledgrid.NewAnimator(grid, client)
-	for _, shader := range shaders {
-		anim.AddObjects(shader, shader.Pal)
-	}
-	// anim.AddObjects(shader)
-	anim.AddObjects(txt)
-	// anim.AddObjects(line)
-	// anim.AddObjects(poly)
-	// anim.AddObjects(imgAnim)
+    anim.Start()
 
 mainLoop:
 	for {
@@ -288,7 +293,7 @@ mainLoop:
 		win.Printf(" %.3f ", gammaValue.Val())
 		win.AttrOff(gc.A_STANDOUT)
 		win.Printf("\n  [Home]/[End]: incr/decr value for all colors\n")
-		palName = ledgrid.PaletteNames[palIdx.Val()]
+		palName = ledgrid.PaletteList[palIdx.Val()].Name()
 		win.Printf("\nPalette to set   : ")
 		win.AttrOn(gc.A_STANDOUT)
 		win.Printf(" %s ", palName)
@@ -300,20 +305,27 @@ mainLoop:
 		win.Printf(" %.1f sec ", palFadeTime.Val())
 		win.AttrOff(gc.A_STANDOUT)
 		win.Printf("\n  [Shift-PgUp]/[Shift-PgDown]: incr/decr fade time\n")
-		win.Printf("\nShaders:\n")
+		win.Printf("\nObjects:\n")
 		win.Printf("  Cursor keys to navigate\n")
 		win.Printf("  v: toggle visibility\n")
 		win.Printf("  a: toggle animatable\n")
 		win.Printf("  [Insert]/[Delete]: incr/decr the speedup factor\n")
 		win.Printf("\n  id | Name       |   V   |   A   | Spd\n")
 		win.Printf("-----+------------+-------+-------+-----\n")
-		for i, s := range shaders {
-			if i == shaderIdx.Val() {
-				win.Printf("> ")
-			} else {
-				win.Printf("  ")
-			}
-			win.Printf("%2d | %-10s | %-5v | %-5v | %.1f\n", i, s.Name, s.Visible(), s.Alive(), s.Speedup().Val())
+		for i, o := range anim.Objects() {
+    			if i == objectIdx.Val() {
+    				win.Printf("> ")
+    			} else {
+    				win.Printf("  ")
+    			}
+            switch obj := o.(type) {
+            case ledgrid.Visualizable:
+        			win.Printf("%2d | %-10s | %-5v | %-5v | %.1f\n", i, obj.Name(), obj.Visible(), obj.Alive(), obj.Speedup().Val())
+            case ledgrid.Drawable:
+        			win.Printf("%2d | %-10T | %-5v |       | \n", i, obj, obj.Visible())
+            case ledgrid.Animatable:
+        			win.Printf("%2d | %-10T |       | %-5v | %.1f\n", i, obj, obj.Alive(), obj.Speedup().Val())
+            }
 		}
 		win.Printf("-----+------------+-------+-------+-----\n")
 		win.Printf("\nShader parameters:\n")
@@ -353,26 +365,26 @@ mainLoop:
 			if anim.IsRunning() {
 				anim.Stop()
 			} else {
-				anim.Reset()
+				anim.Start()
 			}
 		case 'r':
 			for _, p := range params {
 				p.Reset()
 			}
 		case gc.KEY_UP:
-			shaderIdx.Dec()
+			objectIdx.Dec()
 		case gc.KEY_DOWN:
-			shaderIdx.Inc()
+			objectIdx.Inc()
 		case ' ':
-			shader.SetActive(!shader.Active())
+			object.SetActive(!object.Active())
 		case 'a':
-			shader.SetAlive(!shader.Alive())
+			object.SetAlive(!object.Alive())
 		case 'v':
-			shader.SetVisible(!shader.Visible())
+			object.SetVisible(!object.Visible())
 		case gc.KEY_IC:
-			shader.Speedup().Inc()
+			object.Speedup().Inc()
 		case gc.KEY_DC:
-			shader.Speedup().Dec()
+			object.Speedup().Dec()
 		case KEY_SUP:
 			paramIdx.Dec()
 		case KEY_SDOWN:

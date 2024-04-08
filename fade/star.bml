@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<blm width="10" height="10" bits="4" channels="1">
+	<header>
+		<title>Star</title>
+		<description>Twinkling Star</description>
+		<author>Stefan Muehlebach</author>
+		<email>stefan.muehlebach@gmx.net</email>
+		<loop>yes</loop>
+	</header>
+	<frame duration="1000">
+		<row>0000500000</row>
+		<row>0000400000</row>
+		<row>0005350000</row>
+		<row>0054245000</row>
+		<row>5432123450</row>
+		<row>0054245000</row>
+		<row>0005350000</row>
+		<row>0000400000</row>
+		<row>0000500000</row>
+		<row>0000000000</row>
+	</frame>
+	<frame duration="1000">
+		<row>0000000000</row>
+		<row>0500000500</row>
+		<row>0040604000</row>
+		<row>0004340000</row>
+		<row>0063236000</row>
+		<row>0004340000</row>
+		<row>0040604000</row>
+		<row>0500000500</row>
+		<row>0000000000</row>
+		<row>0000000000</row>
+	</frame>
+</blm>

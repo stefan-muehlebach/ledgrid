@@ -34,13 +34,13 @@ type Text struct {
 func NewText(lg *LedGrid, txt string, col LedColor) *Text {
 	face := fonts.NewFace(textFont, 10.0)
 	t := &Text{}
-	t.VisualizableEmbed.Init()
+	t.VisualizableEmbed.Init("Text")
 	t.lg = lg
 	t.txt = txt
 	rect, _ := font.BoundString(face, t.txt)
 	t.size = fixed.Point26_6{rect.Max.X - rect.Min.X, rect.Max.Y - rect.Min.Y}
-	t.pos = coord2fix(0.0, 9.0)
-	t.dp = coord2fix(0.1, 0.0)
+	t.pos = coord2fix(10.0, 9.0)
+	t.dp = coord2fix(-0.1, 0.0)
 	t.pattern = image.NewUniform(col)
 	t.drawer = font.Drawer{
 		Dst:  lg,
@@ -51,6 +51,7 @@ func NewText(lg *LedGrid, txt string, col LedColor) *Text {
 }
 
 func (o *Text) Update(dt time.Duration) bool {
+    dt = o.VisualizableEmbed.Update(dt)
 	o.pos = o.pos.Add(o.dp)
 	if o.pos.X+o.size.X < 0 ||
 		o.pos.X > fixed.I(o.lg.Bounds().Dx()) {

@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	reGradientListName = regexp.MustCompile(`^[[:space:]]*(([[:alpha:]]*)Gradient)`)
+	reGradientListName = regexp.MustCompile(`^[[:space:]]*(([[:alpha:]]*)Gradient([[:alpha:]]*))`)
 
 	namesTempl = `
 //----------------------------------------------------------------------------
@@ -29,9 +29,9 @@ package ledgrid
 
 var (
     // PaletteNames ist ein Slice mit den Namen aller vorhandenen Paletten.
-    PaletteNames = []string{
+    PaletteList = []Colorable{
 {{- range $i, $row := .}}
-        {{printf "\"%s\"" (index $row 0)}},
+        {{printf "%sPalette" (index $row 0)}},
 {{- end}}
     }
 
@@ -39,7 +39,7 @@ var (
     // vom Typ Palette.
     PaletteMap = map[string]Colorable{
 {{- range $i, $row := .}}
-        {{printf "\"%[1]s\": %[1]s" (index $row 0)}},
+        {{printf "\"%[1]s\": %[1]sPalette" (index $row 0)}},
 {{- end}}
     }
 
@@ -47,14 +47,16 @@ var (
     // koennen so nur Paletten mit aequidistanten Farbstuetzstellen
     // erzeugt werden.
 {{- range $i, $row := .}}
-    {{printf "%-20s = NewGradientPalette(true, %s...)" (index $row 0) (index $row 1)}}
+    {{printf "%sPalette = NewGradientPalette(\"%[1]s\", %s, %s...)" (index $row 0) (index $row 2) (index $row 1)}}
 {{- end}}
 )
 `
+	templ = template.Must(template.New("names").Parse(namesTempl))
 )
 
 func main() {
 	var nameList [][]string
+    var colorListName, paletteName, cycleFlag string
 
 	fh, err := os.Open("paletteColors.go")
 	if err != nil {
@@ -67,9 +69,14 @@ func main() {
 		line := scanner.Text()
 		if reGradientListName.MatchString(line) {
 			matches := reGradientListName.FindStringSubmatch(line)
-			colorListName := matches[1]
-			paletteName := fmt.Sprintf("%c%s", matches[2][0]-('a'-'A'), matches[2][1:])
-			nameList = append(nameList, []string{paletteName, colorListName})
+			colorListName = matches[1]
+			paletteName = fmt.Sprintf("%c%s", matches[2][0]-('a'-'A'), matches[2][1:])
+            if matches[3] == "NoCycle" {
+                cycleFlag = "false"
+            } else {
+                cycleFlag = "true"
+            }
+			nameList = append(nameList, []string{paletteName, colorListName, cycleFlag})
 		}
 	}
 	fh.Close()
@@ -82,8 +89,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("creating file: %v", err)
 	}
-	t := template.Must(template.New("names").Parse(namesTempl))
-	err = t.Execute(fh, nameList)
+	err = templ.Execute(fh, nameList)
 	if err != nil {
 		log.Fatalf("executing template: %v", err)
 	}
