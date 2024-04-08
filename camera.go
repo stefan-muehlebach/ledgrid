@@ -21,6 +21,7 @@ const (
 	camHeight     = 240
 	camFrameRate  = 30
 	camBufferSize = 4
+    camZoomCtrlID = 10094861
 )
 
 type Camera struct {
@@ -30,6 +31,7 @@ type Camera struct {
     imgRect image.Rectangle
 	scaler draw.Scaler
 	dev    *device.Device
+    params []*Bounded[float64]
 }
 
 func NewCamera(lg *LedGrid) *Camera {
@@ -53,7 +55,40 @@ func NewCamera(lg *LedGrid) *Camera {
 	}
     c.imgRect = image.Rect(40, 0, 280, 240)
 	c.scaler = draw.BiLinear.NewScaler(10, 10, camHeight, camHeight)
+
+    c.params = make([]*Bounded[float64], 3)
+    c.params[0] = NewBounded[float64]("Brightness", 128, 0, 255, 1)
+    c.params[0].SetCallback(func (oldVal, newVal float64) {
+        c.dev.SetControlBrightness(int32(newVal))
+    })
+    c.params[1] = NewBounded[float64]("Contrast", 128, 0, 255, 1)
+    c.params[1].SetCallback(func (oldVal, newVal float64) {
+        c.dev.SetControlContrast(int32(newVal))
+    })
+    c.params[2] = NewBounded[float64]("Saturation", 128, 0, 255, 1)
+    c.params[2].SetCallback(func (oldVal, newVal float64) {
+        c.dev.SetControlSaturation(int32(newVal))
+    })
+
+/*
+    camCtrl, err := c.dev.GetControl(camZoomCtrlID)
+    if err != nil {
+        log.Fatalf("couldn't get zoom control: %v", err)
+    }
+    c.params[3] = NewBounded[float64](camCtrl.Name, float64(camCtrl.Default),
+        float64(camCtrl.Minimum), float64(camCtrl.Maximum),
+        float64(camCtrl.Step))
+    c.params[3].SetCallback(func (oldVal, newVal float64) {
+        c.dev.SetControlValue(camZoomCtrlID, int32(newVal))
+    })
+    log.Printf("name: %s", camCtrl.Name)
+*/
+
 	return c
+}
+
+func (c *Camera) ParamList() ([]*Bounded[float64]) {
+    return c.params
 }
 
 func (c *Camera) Update(dt time.Duration) bool {

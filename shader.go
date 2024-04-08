@@ -47,7 +47,7 @@ type Shader struct {
 	field              [][]float64
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
-    params            []*Bounded[float64]
+    params             []*Bounded[float64]
 	Pal                Colorable
 }
 

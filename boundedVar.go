@@ -5,7 +5,7 @@ import "log"
 // Auf alle Typen des Boundable-Interfaces koennen gebundene Variablen
 // erstellt werden.
 type Boundable interface {
-	~int | ~float64 | ~float32
+	~int | ~int32 | ~int64 | ~float64 | ~float32
 }
 
 // Mit diesem Typ lassen sich Integer- und Float-Variablen erstellen, die auf
