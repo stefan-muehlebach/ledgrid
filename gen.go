@@ -35,14 +35,6 @@ var (
 {{- end}}
     }
 
-    // PaletteMap ist die Verbindung zwischen Palettenname und einer Variable
-    // vom Typ Palette.
-    PaletteMap = map[string]Colorable{
-{{- range $i, $row := .}}
-        {{printf "\"%[1]s\": %[1]sPalette" (index $row 0)}},
-{{- end}}
-    }
-
     // In diesem Block werden die Paletten konkret erstellt. Im Moment
     // koennen so nur Paletten mit aequidistanten Farbstuetzstellen
     // erzeugt werden.

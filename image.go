@@ -1,71 +1,70 @@
 package ledgrid
 
 import (
-	"image/png"
 	"encoding/xml"
 	"image"
+	"image/png"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
 	"golang.org/x/image/draw"
-    	"github.com/stefan-muehlebach/gg"
-    "github.com/stefan-muehlebach/gg/color"
 )
 
 //----------------------------------------------------------------------------
 
-type GeomImage struct {
-    VisualizableEmbed
-    lg *LedGrid
-    img draw.Image
-    gc *gg.Context
-    scaler draw.Scaler
-    pt, dpt float64
-}
+// type GeomImage struct {
+//     VisualizableEmbed
+//     lg *LedGrid
+//     img draw.Image
+//     gc *gg.Context
+//     scaler draw.Scaler
+//     pt, dpt float64
+// }
 
-func NewGeomImage(lg *LedGrid) *GeomImage {
-    i := &GeomImage{}
-    i.VisualizableEmbed.Init("GeomImage")
-    i.lg = lg
-    i.img = image.NewRGBA(image.Rect(0, 0, 512, 512))
-    i.gc = gg.NewContextForRGBA(i.img.(*image.RGBA))
-    i.gc.SetFillColor(color.Transparent)
-    i.gc.SetStrokeColor(color.White)
-    i.gc.SetStrokeWidth(2.5)
-    i.gc.Clear()
-    i.scaler = draw.CatmullRom.NewScaler(10, 10, 512, 512)
-    i.pt = 0.0
-    i.dpt = 0.5
-    return i
-}
+// func NewGeomImage(lg *LedGrid) *GeomImage {
+//     i := &GeomImage{}
+//     i.VisualizableEmbed.Init("GeomImage")
+//     i.lg = lg
+//     i.img = image.NewRGBA(image.Rect(0, 0, 512, 512))
+//     i.gc = gg.NewContextForRGBA(i.img.(*image.RGBA))
+//     i.gc.SetFillColor(color.Transparent)
+//     i.gc.SetStrokeColor(color.White)
+//     i.gc.SetStrokeWidth(2.5)
+//     i.gc.Clear()
+//     i.scaler = draw.CatmullRom.NewScaler(10, 10, 512, 512)
+//     i.pt = 0.0
+//     i.dpt = 0.5
+//     return i
+// }
 
-func (i *GeomImage) Update(dt time.Duration) bool {
-    dt = i.VisualizableEmbed.Update(dt)
-    i.gc.Clear()
-    i.gc.DrawLine(0, i.pt, 512, 512-i.pt)
-    i.gc.Stroke()
-    i.pt += i.dpt
-    if i.pt < 0.0 || i.pt >= 512.0 {
-        i.dpt = -i.dpt
-        i.pt += i.dpt
-    }
-    return true
-}
+// func (i *GeomImage) Update(dt time.Duration) bool {
+//     dt = i.VisualizableEmbed.Update(dt)
+//     i.gc.Clear()
+//     i.gc.DrawLine(0, i.pt, 512, 512-i.pt)
+//     i.gc.Stroke()
+//     i.pt += i.dpt
+//     if i.pt < 0.0 || i.pt >= 512.0 {
+//         i.dpt = -i.dpt
+//         i.pt += i.dpt
+//     }
+//     return true
+// }
 
-func (i *GeomImage) Draw() {
-    i.scaler.Scale(i.lg, i.lg.Bounds(), i.img, i.img.Bounds(), draw.Src, nil)
-}
+// func (i *GeomImage) Draw() {
+//     i.scaler.Scale(i.lg, i.lg.Bounds(), i.img, i.img.Bounds(), draw.Src, nil)
+// }
 
 //----------------------------------------------------------------------------
 
 type Picture struct {
 	DrawableEmbed
-	lg  *LedGrid
-	img image.Image
-    scaler draw.Scaler
+	lg     *LedGrid
+	img    image.Image
+	scaler draw.Scaler
 }
 
 func NewPicture(lg *LedGrid, fileName string) *Picture {
@@ -79,13 +78,13 @@ func NewPicture(lg *LedGrid, fileName string) *Picture {
 	if err != nil {
 		log.Fatalf("Couldn't decode file: %v", err)
 	}
-    p.scaler = draw.BiLinear.NewScaler(10, 10, p.img.Bounds().Dx(),
-        p.img.Bounds().Dy())
+	p.scaler = draw.BiLinear.NewScaler(10, 10, p.img.Bounds().Dx(),
+		p.img.Bounds().Dy())
 	return p
 }
 
 func (p *Picture) Draw() {
-    p.scaler.Scale(p.lg, p.lg.Bounds(), p.img, p.img.Bounds(), draw.Src, nil)
+	p.scaler.Scale(p.lg, p.lg.Bounds(), p.img, p.img.Bounds(), draw.Src, nil)
 }
 
 //----------------------------------------------------------------------------

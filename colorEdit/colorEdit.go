@@ -48,7 +48,7 @@ func main() {
 	var err error
 	var ledGrid *ledgrid.LedGrid
 	var ledColor ledgrid.LedColor
-	var pixelClient *ledgrid.PixelClient
+	var pixelClient ledgrid.PixelClient
 	var colorChanged bool
 	var colors []uint8
 	var incr uint8
@@ -56,7 +56,7 @@ func main() {
 	var gammaValues [3]float64
 
 	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
-	pixelClient = ledgrid.NewPixelClient(defHost, defPort)
+	pixelClient = ledgrid.NewNetPixelClient(defHost, defPort)
 	gammaValues[0], gammaValues[1], gammaValues[2] = pixelClient.Gamma()
 
 	stdscr, err = gc.Init()

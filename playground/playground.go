@@ -185,8 +185,8 @@ func main() {
 		ledgrid.PlasmaShader,
 		ledgrid.CircleShader,
 		ledgrid.KaroShader,
-		ledgrid.LinearShader,
-		ledgrid.LinearShader,
+		ledgrid.HorizontalShader,
+		ledgrid.VerticalShader,
 	}
 
 	log.SetOutput(os.Stderr)
@@ -239,7 +239,7 @@ func main() {
 		anim.AddObjects(shader, pal)
 	}
 
-	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.BlackColor)
+	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
 
 	fire := ledgrid.NewFire(grid)
 
@@ -251,9 +251,7 @@ func main() {
 	pixPal := ledgrid.NewSlicePalette("Pico08", ledgrid.Pico08Colors...)
 	pixAnim := blinken.MakePixelAnimation(grid, pixPal)
 
-	img := ledgrid.NewGeomImage(grid)
-
-	anim.AddObjects(cam, pict, fire, pixAnim, txt, img)
+	anim.AddObjects(cam, pict, fire, pixAnim, txt)
 
 	objectIdx := ledgrid.NewBounded("obj idx", 0, 0, len(anim.Objects())-1, 1)
 	objectIdx.Cycle = true
@@ -357,8 +355,7 @@ mainLoop:
 		case gc.KEY_END:
 			gammaValue.Dec()
 		case gc.KEY_TAB:
-			log.Printf("Change palette\n")
-			palNext = ledgrid.PaletteMap[palName]
+			palNext = ledgrid.PaletteList[palIdx.Val()]
 			pal.StartFade(palNext, time.Duration(palFadeTime.Val()*float64(time.Second)))
 		case gc.KEY_ENTER, gc.KEY_RETURN:
 			if anim.IsRunning() {

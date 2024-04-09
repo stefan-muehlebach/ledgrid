@@ -157,27 +157,32 @@ var (
 		"Circle",
 		CircleShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 1.0, 0.5, 2.0, 0.1),
-            NewBounded("y", 1.0, 0.5, 2.0, 0.1),
-            NewBounded("dir", 1.0, -1.0, 1.0, 2.0),
+            NewBounded("x", 1.0, -2.0, 2.0, 0.1),
+            NewBounded("y", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 	KaroShader = ShaderRecord{
 		"Karo",
 		KaroShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 1.0, 0.5, 2.0, 0.1),
-            NewBounded("y", 1.0, 0.5, 2.0, 0.1),
-            NewBounded("dir", 1.0, -1.0, 1.0, 2.0),
+            NewBounded("x", 1.0, -2.0, 2.0, 0.1),
+            NewBounded("y", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
-	LinearShader = ShaderRecord{
-		"Linear",
+	HorizontalShader = ShaderRecord{
+		"Horizontal",
 		LinearShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 1.0, 0.0, 2.0, 0.1),
-            NewBounded("y", 0.0, 0.0, 2.0, 0.1),
-            NewBounded("dir", 1.0, -1.0, 1.0, 2.0),
+            NewBounded("x", 1.0, -2.0, 2.0, 0.1),
+            NewBounded("y", 0.0, -2.0, 2.0, 0.1),
+		},
+	}
+	VerticalShader = ShaderRecord{
+		"Vertical",
+		LinearShaderFunc,
+		[]*Bounded[float64]{
+            NewBounded("x", 0.0, -2.0, 2.0, 0.1),
+            NewBounded("y", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 )
@@ -207,51 +212,28 @@ func f3(x, y, t, p1, p2 float64) float64 {
 // Zeichnet verschachtelte Kreisflaechen. Mit p1 kann die Geschw. und die
 // Richtung der Anim. beeinflusst werden.
 func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	x = p[0].Val() * x / 4.0
-	y = p[1].Val() * y / 4.0
-	t *= p[2].Val() / 4.0
+	x = p[0].Val() * x / 10.0
+	y = p[1].Val() * y / 10.0
+	t /= 15.0
 	return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
 }
-
-// func CircleShaderFunc(x, y, t float64, p []float64) float64 {
-// 	_, f := math.Modf(math.Sqrt(x*x+y*y)/(2.0*math.Sqrt2) + t)
-// 	if f < 0.0 {
-// 		f += 1.0
-// 	}
-// 	return f
-// }
 
 // Zeichnet verschachtelte Karomuster. Mit p1 kann die Geschw. und die
 // Richtung der Anim. beeinflusst werden.
 func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	x = p[0].Val() * x / 4.0
-	y = p[1].Val() * y / 4.0
-	t *= p[2].Val() / 4.0
+	x = p[0].Val() * x / 10.0
+	y = p[1].Val() * y / 10.0
+	t /= 15.0
 	return math.Abs(math.Mod(math.Abs(x)+math.Abs(y)-t, 1.0))
 }
-
-// func KaroShaderFunc(x, y, t float64, p []float64) float64 {
-// 	_, f := math.Modf((math.Abs(x)+math.Abs(y))/2.0 + t)
-// 	if f < 0.0 {
-// 		f += 1.0
-// 	}
-// 	return f
-// }
 
 // Allgemeine Funktion fuer einen animierten Farbverlauf. Mit p1 steuert man
 // die Geschwindigkeit der Animation und mit p2/p3 kann festgelegt werden,
 // in welche Richtung (x oder y) der Verlauf erfolgen soll.
 func LinearShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	x = p[0].Val() * (x + 1.0) / 4.0
-	y = p[1].Val() * (y + 1.0) / 4.0
-	t *= p[2].Val() / 4.0
+	x = p[0].Val() * x / 10.0
+	y = p[1].Val() * y / 10.0
+	t /= 15.0
 	return math.Abs(math.Mod(x+y-t, 1.0))
 }
 
-// func LinearShaderFunc(x, y, t float64, p []float64) float64 {
-// 	_, f := math.Modf(p[1]*x + p[2]*y + p[0]*t)
-// 	if f < 0.0 {
-// 		f += 1.0
-// 	}
-// 	return f
-// }

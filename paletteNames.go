@@ -13,10 +13,12 @@ var (
     PaletteList = []Colorable{
         BlackPalette,
         BlackWhitePalette,
+        BrownishPalette,
         DarkPalette,
         DarkJunglePalette,
         DarkerPalette,
         DefaultPalette,
+        DusterPalette,
         EarthAndSkyPalette,
         FadeBluePalette,
         FadeGreenPalette,
@@ -25,33 +27,11 @@ var (
         HipsterPalette,
         HotAndColdPalette,
         HotFirePalette,
+        IcecreamPalette,
         NeonPalette,
         PastellPalette,
         RichDeepavaliPalette,
         SeashorePalette,
-    }
-
-    // PaletteMap ist die Verbindung zwischen Palettenname und einer Variable
-    // vom Typ Palette.
-    PaletteMap = map[string]Colorable{
-        "Black": BlackPalette,
-        "BlackWhite": BlackWhitePalette,
-        "Dark": DarkPalette,
-        "DarkJungle": DarkJunglePalette,
-        "Darker": DarkerPalette,
-        "Default": DefaultPalette,
-        "EarthAndSky": EarthAndSkyPalette,
-        "FadeBlue": FadeBluePalette,
-        "FadeGreen": FadeGreenPalette,
-        "FadeRed": FadeRedPalette,
-        "Fire": FirePalette,
-        "Hipster": HipsterPalette,
-        "HotAndCold": HotAndColdPalette,
-        "HotFire": HotFirePalette,
-        "Neon": NeonPalette,
-        "Pastell": PastellPalette,
-        "RichDeepavali": RichDeepavaliPalette,
-        "Seashore": SeashorePalette,
     }
 
     // In diesem Block werden die Paletten konkret erstellt. Im Moment
@@ -59,10 +39,12 @@ var (
     // erzeugt werden.
     BlackPalette = NewGradientPalette("Black", true, blackGradient...)
     BlackWhitePalette = NewGradientPalette("BlackWhite", false, blackWhiteGradientNoCycle...)
+    BrownishPalette = NewGradientPalette("Brownish", true, brownishGradient...)
     DarkPalette = NewGradientPalette("Dark", true, darkGradient...)
     DarkJunglePalette = NewGradientPalette("DarkJungle", true, darkJungleGradient...)
     DarkerPalette = NewGradientPalette("Darker", true, darkerGradient...)
     DefaultPalette = NewGradientPalette("Default", true, defaultGradient...)
+    DusterPalette = NewGradientPalette("Duster", true, dusterGradient...)
     EarthAndSkyPalette = NewGradientPalette("EarthAndSky", true, earthAndSkyGradient...)
     FadeBluePalette = NewGradientPalette("FadeBlue", true, fadeBlueGradient...)
     FadeGreenPalette = NewGradientPalette("FadeGreen", true, fadeGreenGradient...)
@@ -71,6 +53,7 @@ var (
     HipsterPalette = NewGradientPalette("Hipster", true, hipsterGradient...)
     HotAndColdPalette = NewGradientPalette("HotAndCold", true, hotAndColdGradient...)
     HotFirePalette = NewGradientPalette("HotFire", true, hotFireGradient...)
+    IcecreamPalette = NewGradientPalette("Icecream", true, icecreamGradient...)
     NeonPalette = NewGradientPalette("Neon", true, neonGradient...)
     PastellPalette = NewGradientPalette("Pastell", true, pastellGradient...)
     RichDeepavaliPalette = NewGradientPalette("RichDeepavali", true, richDeepavaliGradient...)
