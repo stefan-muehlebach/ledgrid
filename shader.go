@@ -25,22 +25,6 @@ import (
 // (siehe dazu auch den Typ ShaderParam).
 type ShaderFuncType func(x, y, t float64, p []*Bounded[float64]) float64
 
-// Jeder Shader kann über mehrere Parameter gesteuert werden. Ein Parameter
-// ist ein Record vom Typ ShaderParam.
-// type ShaderParam struct {
-//     // Jeder Parameter hat einen Namen, der beispielsweise in einem GUI oder
-//     // TUI angezeigt werden kann.
-// 	Name                         string
-//     // Val ist der aktuelle Wert des Parameters. Im Moment gibt es nur
-//     // Parameter mit Fliesskommawerten (TO DO: ev. generischen Typ erstellen,
-//     // der auch andere Werte aufnehmen kann).
-// 	Val                          float64
-//     // LowerBound und UpperBound sind die Grenzen, in denen der Parameter
-//     // verändert werden kann und Step ist die Schrittweite, falls das GUI/TUI
-//     // eine schrittweise Veränderung des Wertes zulässt.
-// 	LowerBound, UpperBound, Step float64
-// }
-
 type Shader struct {
 	VisualizableEmbed
 	lg                 *LedGrid
@@ -214,7 +198,7 @@ func f3(x, y, t, p1, p2 float64) float64 {
 func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	x = p[0].Val() * x / 10.0
 	y = p[1].Val() * y / 10.0
-	t /= 15.0
+	t /= 10.0
 	return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
 }
 
@@ -223,7 +207,7 @@ func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	x = p[0].Val() * x / 10.0
 	y = p[1].Val() * y / 10.0
-	t /= 15.0
+	t /= 10.0
 	return math.Abs(math.Mod(math.Abs(x)+math.Abs(y)-t, 1.0))
 }
 
@@ -233,7 +217,7 @@ func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 func LinearShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	x = p[0].Val() * x / 10.0
 	y = p[1].Val() * y / 10.0
-	t /= 15.0
+	t /= 10.0
 	return math.Abs(math.Mod(x+y-t, 1.0))
 }
 

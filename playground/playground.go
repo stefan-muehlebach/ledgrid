@@ -239,7 +239,7 @@ func main() {
 		anim.AddObjects(shader, pal)
 	}
 
-	txt := ledgrid.NewText(grid, "Stefan Mühlebach", ledgrid.White)
+	txt := ledgrid.NewText(grid, "Müngg", ledgrid.White)
 
 	fire := ledgrid.NewFire(grid)
 
@@ -263,7 +263,7 @@ func main() {
 			params = obj.ParamList()
 			paramIdx = ledgrid.NewBounded("param idx", 0, 0, len(params)-1, 1)
 			paramIdx.Cycle = true
-        case *ledgrid.Camera:
+		case ledgrid.Parametrizable:
 			params = obj.ParamList()
 			paramIdx = ledgrid.NewBounded("param idx", 0, 0, len(params)-1, 1)
 			paramIdx.Cycle = true
@@ -277,11 +277,9 @@ func main() {
 mainLoop:
 	for {
 		win.Clear()
-		win.Printf("+---------------------------------------------------+\n")
-		win.Printf("|                      Welcome                      |\n")
-		win.Printf("|                        to                         |\n")
-		win.Printf("|                      LedGrid                      |\n")
-		win.Printf("+---------------------------------------------------+\n")
+		win.Printf("+----------------------------------------------------------------------------+\n")
+		win.Printf("|                               Welcome  to  LedGrid                         |\n")
+		win.Printf("+----------------------------------------------------------------------------+\n")
 		win.Printf("\nGlobal Keys:\n")
 		win.Printf("  [Enter]: stop/continue animation\n")
 		win.Printf("  [q]    : quit\n")
@@ -295,13 +293,13 @@ mainLoop:
 		win.AttrOn(gc.A_STANDOUT)
 		win.Printf(" %s ", palName)
 		win.AttrOff(gc.A_STANDOUT)
-		win.Printf("\n  [PgUp]/[PgDown]: select next/prev palette\n")
-		win.Printf("  [Tab]          : start fade\n")
-		win.Printf("\nPalette fade time: ")
+		win.Printf(" in ")
 		win.AttrOn(gc.A_STANDOUT)
 		win.Printf(" %.1f sec ", palFadeTime.Val())
 		win.AttrOff(gc.A_STANDOUT)
-		win.Printf("\n  [Shift-PgUp]/[Shift-PgDown]: incr/decr fade time\n")
+		win.Printf("\n  [PgUp]/[PgDown]      : select next/prev palette\n")
+		win.Printf("  [Tab]                : start fade\n")
+		win.Printf("  [Shift-PgUp]/[-PgDown]: incr/decr fade time\n")
 		win.Printf("\nObjects:\n")
 		win.Printf("  Cursor keys to navigate\n")
 		win.Printf("  v: toggle visibility\n")
@@ -325,17 +323,18 @@ mainLoop:
 			}
 		}
 		win.Printf("-----+------------+-------+-------+-----\n")
-		win.Printf("\nShader parameters:\n")
+		win.Printf("\nObject parameters:\n")
 		win.Printf("  Shift-Cursor to navigate\n")
 		win.Printf("  [+]/[-]: incr/decr parameter value\n")
 		win.Printf("  r: reset parameter to default value\n\n")
-		for i := range params {
+		for i, p := range params {
 			if i == paramIdx.Val() {
 				win.Printf("> ")
 			} else {
 				win.Printf("  ")
 			}
-			win.Printf("%-5s: %5.2f\n", params[i].Name(), params[i].Val())
+			win.Printf("%-30s: %7.2f  [%.2f - %.2f]\n",
+				p.Name(), p.Val(), p.Min(), p.Max())
 		}
 		gc.Update()
 

@@ -28,8 +28,8 @@ type Bounded[T Boundable] struct {
 // Erstellt einen neuen eingeschraenkten Wert. Mit init, lb und ub kann
 // der initiale Wert sowie die untere, resp. obere Schranke festgelegt werden.
 func NewBounded[T Boundable](name string, init, lb, ub, inc T) *Bounded[T] {
-	if lb >= ub {
-		log.Fatalf("lower bound must be less than upper bound")
+	if lb > ub {
+		log.Fatalf("lower bound must not be greater than upper bound (are '%v' and '%v' now)", lb, ub)
 	}
 	b := &Bounded[T]{}
 	b.name = name
@@ -59,6 +59,18 @@ func (b *Bounded[T]) SetVal(v T) {
 		log.Fatalf("value must be between lower and upper bound")
 	}
 	b.setVal(v)
+}
+
+func (b *Bounded[T]) Min() T {
+    return b.lb
+}
+
+func (b *Bounded[T]) Max() T {
+    return b.ub
+}
+
+func (b *Bounded[T]) Step() T {
+    return b.step
 }
 
 // Mit BindVar kann eine Verbindung zu einer externen Variable hergestellt

@@ -59,6 +59,14 @@ func NewLedColor(hex int) LedColor {
     return LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 }
 
+func NewLedColorAlpha(hex int) LedColor {
+    r := (hex & 0xff000000) >> 24
+    g := (hex & 0x00ff0000) >> 16
+    b := (hex & 0x0000ff00) >> 8
+    a := (hex & 0x000000ff)
+    return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+}
+
 // RGBA ist Teil des color.Color Interfaces.
 func (c LedColor) RGBA() (r, g, b, a uint32) {
 	r, g, b, a = uint32(c.R), uint32(c.G), uint32(c.B), uint32(c.A)

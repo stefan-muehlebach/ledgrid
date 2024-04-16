@@ -31,8 +31,28 @@ func init() {
 	// frameRefreshSec = float64(frameRefreshMs) / 1000.0
 }
 
+// Verschiedene Objekte sollten Namen haben koennen, die man beispielsweise in
+// GUIs oder TUIs anzeigen kann. Dieses Interface implementieren also alle
+// benennbaren Objekte.
 type Nameable interface {
     Name() string
+    SetName(name string)
+}
+
+type NameableEmbed struct {
+    name string
+}
+
+func (n *NameableEmbed) Init(name string) {
+    n.SetName(name)
+}
+
+func (n *NameableEmbed) Name() string {
+    return n.name
+}
+
+func (n *NameableEmbed) SetName(name string) {
+    n.name = name
 }
 
 // Alles, was sich auf dem LedGrid darstellen (d.h. zeichnen laesst),
@@ -44,7 +64,8 @@ type Drawable interface {
 	SetVisible(v bool)
 	// Zeichnet das Objekt auf dem LedGrid.
 	// TO DO: die Art, wie die bestehenden mit den neuen Farben gemischt
-	// werden sollen, ist aktuell nicht bestimmbar.
+	// werden sollen, ist aktuell nicht bestimmbar. Ev. sollte dies als
+    // als Parameter hinterlegbar sein
 	Draw()
 }
 
@@ -120,14 +141,14 @@ func (a *AnimatableEmbed) Speedup() *Bounded[float64] {
     return a.speedup
 }
 
+
+
 // Dieses Interface wird von allen Objekten implementiert, die sowohl animiert,
 // als auch dargestellt werden koennen.
 type Visualizable interface {
     Drawable
     Animatable
-    // Objekte dieser Stufe muessen einen Namen haben.
-    Name() string
-    SetName(name string)
+    Nameable
     // Mit diesen Methoden werden beide Eigenschaften (sichtbar und animierbar
     // zusammen aktiviert, resp. abgefragt.
     Active() bool
@@ -139,21 +160,13 @@ type Visualizable interface {
 type VisualizableEmbed struct {
     DrawableEmbed
     AnimatableEmbed
-    name string
+    NameableEmbed
 }
 
 func (v *VisualizableEmbed) Init(name string) {
     v.DrawableEmbed.Init()
     v.AnimatableEmbed.Init()
-    v.name = name
-}
-
-func (v *VisualizableEmbed) Name() (string) {
-    return v.name
-}
-
-func (v *VisualizableEmbed) SetName(name string) {
-    v.name = name
+    v.NameableEmbed.Init(name)
 }
 
 func (v *VisualizableEmbed) Active() (bool) {

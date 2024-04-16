@@ -13,7 +13,8 @@ import (
 //----------------------------------------------------------------------------
 
 var (
-	textFont = fonts.GoMonoBold
+	textFont = fonts.GoBold
+    textFontSize = 11.0
 	// textFont = fonts.LucidaConsole
 	// textFont = fonts.LucidaSansTypewriterBold
     // textFont = fonts.LucidaBright
@@ -29,10 +30,12 @@ type Text struct {
 	pos, dp fixed.Point26_6
 	pattern image.Image
 	drawer  font.Drawer
+    	params  []*Bounded[float64]
+
 }
 
 func NewText(lg *LedGrid, txt string, col LedColor) *Text {
-	face := fonts.NewFace(textFont, 10.0)
+	face := fonts.NewFace(textFont, textFontSize)
 	t := &Text{}
 	t.VisualizableEmbed.Init("Text")
 	t.lg = lg
@@ -47,7 +50,23 @@ func NewText(lg *LedGrid, txt string, col LedColor) *Text {
 		Src:  t.pattern,
 		Face: face,
 	}
+    t.params = make([]*Bounded[float64], 2)
+    t.params[0] = NewBounded("Font Size", 10.0, 5.0, 15.0, 0.2)
+    t.params[0].SetCallback(func(oldVal, newVal float64) {
+        face := fonts.NewFace(textFont, newVal)
+        rect, _ := font.BoundString(face, t.txt)
+        t.size = fixed.Point26_6{rect.Max.X-rect.Min.X, rect.Max.Y-rect.Min.Y}
+        t.drawer.Face = face
+    })
+    t.params[1] = NewBounded("Y-Coordinate of the Baseline", 9.0, 0.0, 20.0, 0.5)
+    t.params[1].SetCallback(func(oldVal, newVal float64) {
+        t.pos.Y = float2fix(newVal)
+    })
 	return t
+}
+
+func (t *Text) ParamList() []*Bounded[float64] {
+	return t.params
 }
 
 func (o *Text) Update(dt time.Duration) bool {
