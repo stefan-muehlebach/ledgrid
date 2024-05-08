@@ -1,3 +1,5 @@
+//go:build ignore
+
 package ledgrid
 
 import (
@@ -17,7 +19,6 @@ import (
 //----------------------------------------------------------------------------
 
 type Picture struct {
-	DrawableEmbed
 	lg     *LedGrid
 	img    image.Image
 	scaler draw.Scaler
@@ -34,8 +35,8 @@ func NewPicture(lg *LedGrid, fileName string) *Picture {
 	if err != nil {
 		log.Fatalf("Couldn't decode file: %v", err)
 	}
-	p.scaler = draw.BiLinear.NewScaler(10, 10, p.img.Bounds().Dx(),
-		p.img.Bounds().Dy())
+	p.scaler = draw.BiLinear.NewScaler(lg.Bounds().Dx(), lg.Bounds().Dy(),
+		p.img.Bounds().Dx(), p.img.Bounds().Dy())
 	return p
 }
 
@@ -45,14 +46,60 @@ func (p *Picture) Draw() {
 
 //----------------------------------------------------------------------------
 
+type PictureAnimation struct {
+	VisualEmbed
+	lg       *LedGrid
+	pictList []*Picture
+	timeList []time.Duration
+	Idx      int
+	Cycle    bool
+}
+
+func NewPictureAnimation(lg *LedGrid) *PictureAnimation {
+	i := &PictureAnimation{}
+	i.VisualEmbed.Init("PictAnim")
+	i.lg = lg
+	i.pictList = make([]*Picture, 0)
+	i.timeList = make([]time.Duration, 0)
+	i.Idx = 0
+	i.Cycle = true
+	return i
+}
+
+func (i *PictureAnimation) AddPicture(pict *Picture, dur time.Duration) {
+	i.pictList = append(i.pictList, pict)
+	if len(i.timeList) > 0 {
+		dur += i.timeList[len(i.timeList)-1]
+	}
+	i.timeList = append(i.timeList, dur)
+}
+
+func (i *PictureAnimation) Update(dt time.Duration) bool {
+	// i.AnimatableEmbed.Update(dt)
+	t := i.t0 % i.timeList[len(i.timeList)-1]
+	for idx, v := range i.timeList {
+		if t < v {
+			i.Idx = idx
+			return true
+		}
+	}
+	return true
+}
+
+func (i *PictureAnimation) Draw() {
+	i.pictList[i.Idx].Draw()
+}
+
+//----------------------------------------------------------------------------
+
 type PixelImage struct {
-	DrawableEmbed
+	VisualEmbed
 	lg  *LedGrid
-	pal Colorable
+	pal ColorSource
 	img []uint8
 }
 
-func NewPixelImage(lg *LedGrid, pal Colorable) *PixelImage {
+func NewPixelImage(lg *LedGrid, pal ColorSource) *PixelImage {
 	i := &PixelImage{}
 	i.DrawableEmbed.Init()
 	i.lg = lg
@@ -216,7 +263,7 @@ func (b *BlinkenFile) Write(fileName string) {
 	}
 }
 
-func (b *BlinkenFile) MakePixelAnimation(lg *LedGrid, pal Colorable) *ImageAnimation {
+func (b *BlinkenFile) MakePixelAnimation(lg *LedGrid, pal ColorSource) *ImageAnimation {
 	i := NewImageAnimation(lg)
 
 	for _, frame := range b.Frames {

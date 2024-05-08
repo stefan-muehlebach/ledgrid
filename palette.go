@@ -4,6 +4,8 @@ import (
 	"log"
 	"slices"
 	"time"
+
+	"github.com/stefan-muehlebach/gg/color"
 )
 
 // Dieser (interne) Typ wird verwendet, um einen bestimmten Wert im Interval
@@ -17,7 +19,7 @@ type ColorStop struct {
 // Palette liegt eine Liste von Farben (die sog. Stuetzstellen) und ihre
 // jeweilige Position auf dem Intervall [0, 1] zugrunde.
 type GradientPalette struct {
-    NameableEmbed
+	NameableEmbed
 	stops []ColorStop
 	// Mit dieser Funktion wird die Interpolation zwischen den gesetzten
 	// Farbwerten realisiert.
@@ -25,33 +27,33 @@ type GradientPalette struct {
 }
 
 func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
-    p := &GradientPalette{}
-    p.NameableEmbed.Init(name)
-    p.stops = []ColorStop{
-        {0.0, NewLedColor(0x000000)},
-        {1.0, NewLedColor(0xFFFFFF)},
-    }
-    for _, cs := range cl {
-        p.SetColorStop(cs)
-    }
-    p.fnc = LinearInterpol
-    return p
+	p := &GradientPalette{}
+	p.NameableEmbed.Init(name)
+	p.stops = []ColorStop{
+		{0.0, NewLedColor(0x000000)},
+		{1.0, NewLedColor(0xFFFFFF)},
+	}
+	for _, cs := range cl {
+		p.SetColorStop(cs)
+	}
+	p.fnc = LinearInterpol
+	return p
 }
 
 func NewGradientPaletteByList(name string, cycle bool, cl ...LedColor) *GradientPalette {
-    p := NewGradientPalette(name)
-    if cycle {
-        cl = append(cl, cl[0])
-    }
-    p.SetColorList(cl)
-    return p
+	p := NewGradientPalette(name)
+	if cycle {
+		cl = append(cl, cl[0])
+	}
+	p.SetColorList(cl)
+	return p
 }
 
 // Setzt in der Palette einen neuen Stuetzwert. Existiert bereits eine Farbe
 // an dieser Position, wird sie ueberschrieben.
 func (p *GradientPalette) SetColorStop(colStop ColorStop) {
 	var i int
-    var stop ColorStop
+	var stop ColorStop
 
 	if colStop.Pos < 0.0 || colStop.Pos > 1.0 {
 		log.Fatalf("Positino must be in [0,1]; is: %f", colStop.Pos)
@@ -72,18 +74,18 @@ func (p *GradientPalette) SetColorStop(colStop ColorStop) {
 func (p *GradientPalette) SetColorStops(cl []ColorStop) {
 	for _, c := range cl {
 		p.SetColorStop(c)
-    }
+	}
 }
 
 func (p *GradientPalette) SetColorList(cl []LedColor) {
 	if len(cl) < 2 {
 		log.Fatalf("At least two colors are required!")
 	}
-	posStep := 1.0 / (float64(len(cl)-1))
+	posStep := 1.0 / (float64(len(cl) - 1))
 	for i, c := range cl[:len(cl)-1] {
-        p.SetColorStop(ColorStop{float64(i) * posStep, c})
-    }
-    p.SetColorStop(ColorStop{1.0, cl[len(cl)-1]})
+		p.SetColorStop(ColorStop{float64(i) * posStep, c})
+	}
+	p.SetColorStop(ColorStop{1.0, cl[len(cl)-1]})
 
 }
 
@@ -109,26 +111,18 @@ func (p *GradientPalette) Color(t float64) (c LedColor) {
 // Palette mit 256 einzelnen dedizierten Farbwerten - kein Fading oder
 // sonstige Uebergaenge.
 type SlicePalette struct {
-    name string
+	NameableEmbed
 	Colors []LedColor
 }
 
 func NewSlicePalette(name string, cl ...LedColor) *SlicePalette {
 	p := &SlicePalette{}
-    p.name = name
+	p.NameableEmbed.Init(name)
 	p.Colors = make([]LedColor, 256)
 	for i, c := range cl {
 		p.Colors[i] = c
 	}
 	return p
-}
-
-func (p *SlicePalette) Name() string {
-    return p.name
-}
-
-func (p *SlicePalette) SetName(name string) {
-    p.name = name
 }
 
 func (p *SlicePalette) Color(v float64) LedColor {
@@ -139,61 +133,67 @@ func (p *SlicePalette) SetColor(idx int, c LedColor) {
 	p.Colors[idx] = c
 }
 
-// Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
-// anderen realisiert werden.
-type PaletteFader struct {
-	AnimatableEmbed
-	Pals                 [2]Colorable
-	FadeTime, RemainTime time.Duration
+// Pseudo-Palette: liefert immer den gleichen Farbwert zurueck.
+type UniformPalette struct {
+	NameableEmbed
+	Col LedColor
 }
 
-func NewPaletteFader(pal Colorable) *PaletteFader {
-	p := &PaletteFader{}
-	p.AnimatableEmbed.Init()
-	p.Pals[0] = pal
-	p.FadeTime = 0
-	p.RemainTime = 0
+func NewUniformPalette(name string, color color.Color) *UniformPalette {
+	p := &UniformPalette{}
+	p.NameableEmbed.Init(name)
+	p.Col = LedColorModel.Convert(color).(LedColor)
 	return p
 }
 
+func (p *UniformPalette) Color(v float64) LedColor {
+	return p.Col
+}
+
+// Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
+// anderen realisiert werden.
+type PaletteFader struct {
+	Pals [2]ColorSource
+	t    float64
+}
+
+func NewPaletteFader(pal ColorSource) *PaletteFader {
+	p := &PaletteFader{}
+	p.Pals[0] = pal
+	return p
+}
+
+// Der PaletteFader implementiert das Nameable-Interface nur zur Haelfte: man
+// kann den Namen der aktuell verwendeten Palette abfragen, setzen jedoch
+// nicht - der PaletteFader verwendet ja bloss bestehende Paletten.
 func (p *PaletteFader) Name() string {
-    return p.Pals[0].Name()
+	return p.Pals[0].Name()
 }
 
-func (p *PaletteFader) SetName(name string) {
+func (p *PaletteFader) SetName(name string) {}
 
-}
-
-
-func (p *PaletteFader) StartFade(nextPal Colorable, fadeTime time.Duration) bool {
-	if p.RemainTime > 0 {
-		return false
-	}
-	p.Pals[0], p.Pals[1] = nextPal, p.Pals[0]
-	if fadeTime > 0 {
-		p.FadeTime = fadeTime
-		p.RemainTime = fadeTime
-	}
+func (p *PaletteFader) StartFade(nextPal ColorSource, fadeTime time.Duration) bool {
+	p.Pals[1] = nextPal
+	anim := NewNormAnimation(fadeTime, p.Update)
+	anim.Start()
+	theAnimator.AddAnimations(anim)
 	return true
 }
 
-func (p *PaletteFader) Update(dt time.Duration) bool {
-	dt = p.AnimatableEmbed.Update(dt)
-	if p.RemainTime > 0 && dt > 0 {
-		p.RemainTime -= dt
-		if p.RemainTime < 0 {
-			p.RemainTime = 0
-		}
+func (p *PaletteFader) Update(t float64) {
+	if t == 1.0 {
+		p.Pals[0], p.Pals[1] = p.Pals[1], nil
+		p.t = 0.0
+	} else {
+		p.t = t
 	}
-	return true
 }
 
 func (p *PaletteFader) Color(v float64) LedColor {
 	c1 := p.Pals[0].Color(v)
-	if p.RemainTime > 0 {
-		t := p.RemainTime.Seconds() / p.FadeTime.Seconds()
+	if p.t > 0 {
 		c2 := p.Pals[1].Color(v)
-		c1 = c1.Interpolate(c2, t).(LedColor)
+		c1 = c1.Interpolate(c2, p.t).(LedColor)
 	}
 	return c1
 }

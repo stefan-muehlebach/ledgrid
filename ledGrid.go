@@ -26,174 +26,7 @@ func init() {
 	framesPerSecond = defFramesPerSec
 	frameRefresh = time.Second / time.Duration(framesPerSecond)
 	frameRefreshMs = frameRefresh.Microseconds()
-    // frameRefreshMs = 1000 / framesPerSecond
-    frameRefreshSec = frameRefresh.Seconds()
-	// frameRefreshSec = float64(frameRefreshMs) / 1000.0
-}
-
-// Verschiedene Objekte sollten Namen haben koennen, die man beispielsweise in
-// GUIs oder TUIs anzeigen kann. Dieses Interface implementieren also alle
-// benennbaren Objekte.
-type Nameable interface {
-    Name() string
-    SetName(name string)
-}
-
-type NameableEmbed struct {
-    name string
-}
-
-func (n *NameableEmbed) Init(name string) {
-    n.SetName(name)
-}
-
-func (n *NameableEmbed) Name() string {
-    return n.name
-}
-
-func (n *NameableEmbed) SetName(name string) {
-    n.name = name
-}
-
-// Alles, was sich auf dem LedGrid darstellen (d.h. zeichnen laesst),
-// implementiert das Interface Drawable.
-type Drawable interface {
-    // Mit diesen Methoden kann ermittelt, resp. festgelegt werden, ob das
-    // Objekt dargestellt (d.h. gezeichnet) werden soll.
-	Visible() bool
-	SetVisible(v bool)
-	// Zeichnet das Objekt auf dem LedGrid.
-	// TO DO: die Art, wie die bestehenden mit den neuen Farben gemischt
-	// werden sollen, ist aktuell nicht bestimmbar. Ev. sollte dies als
-    // als Parameter hinterlegbar sein
-	Draw()
-}
-
-// Dieses Embedable kann fuer eine Default-Implementation des Drawable-
-// Interfaces genutzt werden.
-type DrawableEmbed struct {
-    visible bool
-}
-
-func (d *DrawableEmbed) Init() {
-    d.visible = false
-}
-
-func (d *DrawableEmbed) Visible() bool {
-    return d.visible
-}
-
-func (d *DrawableEmbed) SetVisible(visible bool) {
-    d.visible = visible
-}
-
-// Alles, was sich irgendwie animieren laesst, muss das Interface Animatable
-// implementieren.
-type Animatable interface {
-	// Animiert das Objekt, wobei t ein Point-in-Time in Sekunden und
-	// Bruchteilen ist und dt die Zeit in Sekunden seit dem letzten Aufruf.
-	// Falls Update false retourniert, ist das Objekt mit der Animation
-	// fertig, darf nicht mehr gezeichnet werden und kann vom aufrufenden
-	// Programm geloescht werden.
-	Update(dt time.Duration) bool
-	// Ueber diese beiden Methoden kann festgelegt werden, ob das Objekt
-	// animiert werden kann, d.h. auf Update() reagieren soll.
-	Alive() bool
-	SetAlive(alive bool)
-    // Der Speedup-Faktor bestimmt, wie stark sich die Animation auf das
-    // Objekt auswirken soll. Es ist ein Faktor, der mit den Werten
-    // t und dt der Methode Update() multipliziert wird.
-    Speedup() *Bounded[float64]
-}
-
-// Dieses Embedable kann fuer eine Default-Implementation des Animatable-
-// Interfaces genutzt werden.
-type AnimatableEmbed struct {
-    alive bool
-    t0 time.Duration
-    speedup *Bounded[float64]
-}
-
-func (a *AnimatableEmbed) Init() {
-    a.alive = false
-    a.t0 = time.Duration(0)
-    a.speedup = NewBounded("speedup", 1.0, 0.1, 2.0, 0.1)
-}
-
-func (a *AnimatableEmbed) Update(dt time.Duration) time.Duration {
-    if !a.alive {
-        return 0
-    }
-    dt = time.Duration(float64(dt) * a.speedup.val)
-    a.t0 += dt
-    return dt
-}
-
-func (a *AnimatableEmbed) Alive() bool {
-    return a.alive
-}
-
-func (a *AnimatableEmbed) SetAlive(alive bool) {
-    a.alive = alive
-}
-
-func (a *AnimatableEmbed) Speedup() *Bounded[float64] {
-    return a.speedup
-}
-
-
-
-// Dieses Interface wird von allen Objekten implementiert, die sowohl animiert,
-// als auch dargestellt werden koennen.
-type Visualizable interface {
-    Drawable
-    Animatable
-    Nameable
-    // Mit diesen Methoden werden beide Eigenschaften (sichtbar und animierbar
-    // zusammen aktiviert, resp. abgefragt.
-    Active() bool
-    SetActive(active bool)
-}
-
-// Dieses Embedable kann fuer eine Default-Implementation des Visualizable-
-// Interfaces genutzt werden.
-type VisualizableEmbed struct {
-    DrawableEmbed
-    AnimatableEmbed
-    NameableEmbed
-}
-
-func (v *VisualizableEmbed) Init(name string) {
-    v.DrawableEmbed.Init()
-    v.AnimatableEmbed.Init()
-    v.NameableEmbed.Init(name)
-}
-
-func (v *VisualizableEmbed) Active() (bool) {
-    return v.Visible() && v.Alive()
-}
-
-func (v *VisualizableEmbed) SetActive(active bool) {
-    v.SetVisible(active)
-    v.SetAlive(active)
-}
-
-// Einige der Objekte (wie beispielsweise Shader) koennen zusaetzlich mit
-// Parametern gesteuert werden. Damit diese Steuerung so generisch wie
-// moeglich ist, haben alle parametrisierbaren Typen dieses Interface zu
-// implementieren.
-type Parametrizable interface {
-    ParamList() ([]*Bounded[float64])
-}
-
-// Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
-// das Colorable Interface.
-type Colorable interface {
-    Nameable
-	// Liefert in Abhaengigkeit des Parameters v eine Farbe aus der Palette
-	// zurueck. v kann vielfaeltig verwendet werden, bsp. als Parameter im
-	// Intervall [0,1] oder als Index (natuerliche Zahl) einer Farbenliste.
-	Color(v float64) LedColor
+	frameRefreshSec = frameRefresh.Seconds()
 }
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.
@@ -240,7 +73,6 @@ func (g *LedGrid) Set(x, y int, c color.Color) {
 // LedColor-Typ.
 func (g *LedGrid) LedColorAt(x, y int) LedColor {
 	if !(image.Point{x, y}.In(g.Rect)) {
-		// log.Printf("LedColorAt(): point outside LedGrid: %d, %d\n", x, y)
 		return LedColor{}
 	}
 	idx := g.PixOffset(x, y)
@@ -251,7 +83,6 @@ func (g *LedGrid) LedColorAt(x, y int) LedColor {
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.
 func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
 	if !(image.Point{x, y}.In(g.Rect)) {
-		// log.Printf("SetLedColor(): point outside LedGrid: %d, %d\n", x, y)
 		return
 	}
 	idx := g.PixOffset(x, y)
@@ -263,7 +94,6 @@ func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
 
 func (g *LedGrid) MixLedColor(x, y int, c LedColor, mixType ColorMixType) {
 	if !(image.Point{x, y}.In(g.Rect)) {
-		// log.Printf("SetLedColor(): point outside LedGrid: %d, %d\n", x, y)
 		return
 	}
 	bgCol := g.LedColorAt(x, y)

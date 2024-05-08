@@ -1,6 +1,10 @@
 //go:build ignore
 // +build ignore
 
+// Dieses Programm dient dem automatischen Aufbau der Farbpaletten aufgrund
+// der in paletteColors.go definierten Farblisten. Mehr Info dazu: siehe
+// Kommentare in paletteColors.go.
+
 package main
 
 import (
@@ -12,6 +16,8 @@ import (
 	"os"
 	"regexp"
 	"text/template"
+
+    "github.com/stefan-muehlebach/gg/colornames"
 )
 
 var (
@@ -23,19 +29,23 @@ var (
 
 package ledgrid
 
+import (
+    "github.com/stefan-muehlebach/gg/colornames"
+)
+
 var (
-    // PaletteNames ist ein Slice mit den Namen aller vorhandenen Paletten.
+    // PaletteList ist ein Slice mit den Namen aller vorhandenen Paletten.
     PaletteList = []Colorable{
 {{- range $i, $row := .}}
         {{printf "%sPalette" $row.PaletteName}},
 {{- end}}
     }
+)
 
-    // In diesem Block werden die Paletten konkret erstellt. Im Moment
-    // koennen so nur Paletten mit aequidistanten Farbstuetzstellen
-    // erzeugt werden.
+var (
+    // In diesem Block werden die Paletten konkret erstellt.
 {{- range $i, $row := .}}
-    {{- if $row.GradientType}}
+    {{- if $row.IsGradient}}
     {{printf "%sPalette = NewGradientPalette(\"%[1]s\", %s...)" $row.PaletteName $row.ColorListName}}
     {{- else}}
     {{printf "%sPalette = NewGradientPaletteByList(\"%[1]s\", %v, %s...)" $row.PaletteName $row.Cycle $row.ColorListName}}
@@ -43,13 +53,31 @@ var (
 {{- end}}
 )
 `
-	templ = template.Must(template.New("paletteNames").Parse(paletteNamesTemplate))
+	paletteTempl = template.Must(template.New("paletteNames").Parse(paletteNamesTemplate))
+
+    colorNamesTemplate = `
+var (
+    ColorList = []Colorable{
+{{- range $i, $row := .}}
+        {{printf "%sColor" $row}},
+{{- end}}
+    }
+)
+
+var (
+    // In diesem Block werden die uniformen Paletten erstellt.
+{{- range $i, $row := .}}
+    {{printf "%sColor = NewUniformPalette(\"%[1]s\", colornames.%[1]s)" $row}}
+{{- end}}
+)
+`
+    colorTempl = template.Must(template.New("colorNames").Parse(colorNamesTemplate))
 )
 
 type Record struct {
     PaletteName string
     ColorListName string
-    GradientType bool
+    IsGradient bool
     Cycle bool
 }
 
@@ -71,9 +99,9 @@ func main() {
 			record.ColorListName = matches[1]
 			record.PaletteName = fmt.Sprintf("%c%s", matches[2][0]-('a'-'A'), matches[2][1:])
             if matches[3] == "Gradient" {
-                record.GradientType = true
+                record.IsGradient = true
             } else {
-                record.GradientType = false
+                record.IsGradient = false
             }
             if matches[4] == "NonCyc" {
                 record.Cycle = false
@@ -93,9 +121,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("creating file: %v", err)
 	}
-	err = templ.Execute(fh, nameList)
+    defer fh.Close()
+	err = paletteTempl.Execute(fh, nameList)
 	if err != nil {
 		log.Fatalf("executing template: %v", err)
 	}
-	fh.Close()
+    err = colorTempl.Execute(fh, colornames.Names)
+	if err != nil {
+		log.Fatalf("executing template: %v", err)
+	}
 }

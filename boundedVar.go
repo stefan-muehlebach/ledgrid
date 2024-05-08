@@ -13,26 +13,34 @@ type Boundable interface {
 // Inkrementieren (Incr) und Dekrementieren (Decr) beruecksichtigen die
 // Intervallgrenzen.
 type Bounded[T Boundable] struct {
-	// Wird dieser Parameter ueber ein GUI oder TUI angezeigt, kann diese
-	// Zeichenkette als Name verwendet werden.
-	name string
+	NameableEmbed
 	// Mit Cycle kann festgelegt werden, ob beim Erreichen, resp. Ueber- oder
 	// Unterschreiten der Intervallgrenzen der Wert fix bleibt (false) oder
 	// auf der anderen Seite des Intervalls beginnt (true).
-	Cycle                   bool
+	Cycle bool
+	// Das sind die Variablen fuer den aktuellen Wert (val), den initialen
+	// Wert (init), die untere und obere Schranke (lb und ub) sowie die
+	// Schrittweite der Methoden Inc() und Dec().
 	val, init, lb, ub, step T
-	valPtr                  *T
-	callback                func(oldVal, newVal T)
+	// Ist die Variable mit einer externen Variable verbunden, ist dies der
+	// Pointer auf die externe Variable.
+	valPtr *T
+	// Dies ist der Pointer auf eine Funktion, welche bei Aenderung der
+	// Variable aufgerufen wird. oldVal und newVal sind die Werte der Variable
+	// vor, resp. nach der Aenderung.
+	callback func(oldVal, newVal T)
 }
 
-// Erstellt einen neuen eingeschraenkten Wert. Mit init, lb und ub kann
-// der initiale Wert sowie die untere, resp. obere Schranke festgelegt werden.
+// Erstellt einen neuen eingeschraenkten Wert. Mit name kann der Variable
+// einen Namen verliehen werden. Mit init, lb und ub kann der initiale Wert
+// sowie die untere, resp. obere Schranke festgelegt werden und mit inc wird
+// die Schrittweite der Methoden Inc() und Dec() spezifiziert.
 func NewBounded[T Boundable](name string, init, lb, ub, inc T) *Bounded[T] {
 	if lb > ub {
 		log.Fatalf("lower bound must not be greater than upper bound (are '%v' and '%v' now)", lb, ub)
 	}
 	b := &Bounded[T]{}
-	b.name = name
+	b.NameableEmbed.Init(name)
 	b.Cycle = false
 	b.init = init
 	b.lb = lb
@@ -42,10 +50,6 @@ func NewBounded[T Boundable](name string, init, lb, ub, inc T) *Bounded[T] {
 	b.valPtr = nil
 	b.callback = nil
 	return b
-}
-
-func (b *Bounded[T]) Name() string {
-    return b.name
 }
 
 // Da der Zugriff auf den Wert einer Bounded-Variable immer geprueft werden
@@ -61,16 +65,18 @@ func (b *Bounded[T]) SetVal(v T) {
 	b.setVal(v)
 }
 
+// Min, Max und Step retournieren die untere, resp. obere Schranke sowie die
+// Schrittweite.
 func (b *Bounded[T]) Min() T {
-    return b.lb
+	return b.lb
 }
 
 func (b *Bounded[T]) Max() T {
-    return b.ub
+	return b.ub
 }
 
 func (b *Bounded[T]) Step() T {
-    return b.step
+	return b.step
 }
 
 // Mit BindVar kann eine Verbindung zu einer externen Variable hergestellt

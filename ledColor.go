@@ -1,70 +1,77 @@
 package ledgrid
 
 import (
-	"log"
 	"fmt"
+	gocol "image/color"
+	"log"
 	"math"
-    gocol "image/color"
-    "github.com/stefan-muehlebach/gg/color"
+
+	"github.com/stefan-muehlebach/gg/color"
 )
 
 var (
-	BlackColor = LedColor{0x00, 0x00, 0x00, 0xFF}
+	Black = LedColor{0x00, 0x00, 0x00, 0xFF}
 	White = LedColor{0xFF, 0xFF, 0xFF, 0xFF}
 	Red   = LedColor{0xFF, 0x00, 0x00, 0xFF}
 	Green = LedColor{0x00, 0xFF, 0x00, 0xFF}
 	Blue  = LedColor{0x00, 0x00, 0xFF, 0xFF}
 )
 
+// Damit verschiedene Interpolationsfunktionen verwendet werden koennen,
+// ist das Profil als Typ definiert. Jede Interp.funktion realisiert eine
+// (wie auch immer geartete) Interpolation zwischen den Werten a und b in
+// Abhaengigkeit von t, wobei t in [0, 1] ist. Es muss gelten:
+//
+//   - f(a, b, 0.0) = a
+//   - f(a, b, 1.0) = b
+//
+// TO DO: aktuell wird keine Fehlererkennung gemacht. Wenn beispielsweise
+// t nicht in [0, 1] liegt, erzeugen die Funktionen ggf. unsinnige Werte.
 type InterpolFuncType func(a, b, t float64) float64
 
 var (
 	ColorInterpol = PolynomInterpol
 )
 
+// Realisiert die klassische lineare Interpolation zwischen den Werten a und b.
 func LinearInterpol(a, b, t float64) float64 {
 	return (1-t)*a + t*b
 }
 
+// Realisiert eine kubische Interpolation.
 func PolynomInterpol(a, b, t float64) float64 {
 	t = 3*t*t - 2*t*t*t
-	return (1-t)*a + t*b
+	return LinearInterpol(a, b, t)
 }
 
+// Woher diese Interpolation stammt, kann ich auch nicht mehr mit Bestimmtheit
+// sagen. Sicher ist, dass sie nicht mehr funktioniert, wenn a oder b negativ
+// sind: dann gelten die oben genannte Bedingungen nicht mehr.
 func SqrtInterpol(a, b, t float64) float64 {
 	return math.Sqrt((1-t)*a*a + t*b*b)
 }
 
-type ColorMixType int
-
-const (
-    Replace ColorMixType = iota
-	Blend
-	Max
-    Average
-)
-
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
 // gesendet werden. Die Daten sind _nicht_ gamma-korrigiert, dies wird erst
-// auf dem Panel-Empfaenger gemacht (pixelcontroller-slave).
-// LedColor implementiert das color.Color Interface.
+// auf dem Panel-Empfaenger gemacht (pixelcontroller-slave). LedColor
+// implementiert das color.Color Interface.
 type LedColor struct {
 	R, G, B, A uint8
 }
 
 func NewLedColor(hex int) LedColor {
-    r := (hex & 0xff0000) >> 16
-    g := (hex & 0x00ff00) >> 8
-    b := (hex & 0x0000ff)
-    return LedColor{uint8(r), uint8(g), uint8(b), 0xff}
+	r := (hex & 0xff0000) >> 16
+	g := (hex & 0x00ff00) >> 8
+	b := (hex & 0x0000ff)
+	return LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 }
 
 func NewLedColorAlpha(hex int) LedColor {
-    r := (hex & 0xff000000) >> 24
-    g := (hex & 0x00ff0000) >> 16
-    b := (hex & 0x0000ff00) >> 8
-    a := (hex & 0x000000ff)
-    return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+	r := (hex & 0xff000000) >> 24
+	g := (hex & 0x00ff0000) >> 16
+	b := (hex & 0x0000ff00) >> 8
+	a := (hex & 0x000000ff)
+	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
 }
 
 // RGBA ist Teil des color.Color Interfaces.
@@ -88,9 +95,9 @@ func (c LedColor) RGB() (r, g, b uint8) {
 	return c.R, c.G, c.B
 }
 
-// Berechnet eine RGB-Farbe, welche 'zwischen' den Farben c und d liegt, so
-// dass bei t=0 der Farbwert c und bei t=1 der Farbwert d retourniert wird.
-// t wird vorgaengig auf das Interval [0,1] eingeschraenkt.
+// Berechnet eine RGB-Farbe, welche 'zwischen' den Farben c1 und c2 liegt,
+// so dass bei t=0 der Farbwert c1 und bei t=1 der Farbwert c2 retourniert
+// wird. t wird vorgaengig auf das Interval [0,1] eingeschraenkt.
 func (c1 LedColor) Interpolate(c2 color.Color, t float64) color.Color {
 	t = max(min(t, 1.0), 0.0)
 	if t == 0.0 {
@@ -99,25 +106,44 @@ func (c1 LedColor) Interpolate(c2 color.Color, t float64) color.Color {
 	if t == 1.0 {
 		return c2
 	}
-    if c3, ok := c2.(LedColor); ok {
-        	r := ColorInterpol(float64(c1.R), float64(c3.R), t)
-        	g := ColorInterpol(float64(c1.G), float64(c3.G), t)
-        	b := ColorInterpol(float64(c1.B), float64(c3.B), t)
-        	a := ColorInterpol(float64(c1.A), float64(c3.A), t)
-        	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
-    } else {
-        return LedColor{}
-    }
+	if c3, ok := c2.(LedColor); ok {
+		r := ColorInterpol(float64(c1.R), float64(c3.R), t)
+		g := ColorInterpol(float64(c1.G), float64(c3.G), t)
+		b := ColorInterpol(float64(c1.B), float64(c3.B), t)
+		a := ColorInterpol(float64(c1.A), float64(c3.A), t)
+		return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+	} else {
+		return LedColor{}
+	}
 }
 
-// Mischt die Farben c (Vordergrundfarbe) und d (Hintergrundfarbe) nach einem
+// Mit folgenden Konstanten kann das Verfahren bestimmt werden, welches beim
+// Mischen von Farben verwendet werden soll (siehe auch Methode Mix).
+type ColorMixType int
+
+const (
+	// Ersetzt die Hintergundfarbe durch die Vordergrundfarbe.
+	Replace ColorMixType = iota
+	// Ueberblendet die Hintergrundfarbe mit der Vordergrundfarbe anhand
+	// des Alpha-Wertes.
+	Blend
+	// Bestimmt die neue Farbe durch das Maximum von RGB zwischen Hinter- und
+	// Vordergrundfarbe.
+	Max
+	// Analog zu Max, nimmt jedoch den Mittelwert von jeweils R, G und B.
+	Average
+	// Analog zu Max, nimmt jedoch das Minimum von jeweils R, G und B.
+	Min
+)
+
+// Mischt die Farben c (Vordergrundfarbe) und bg (Hintergrundfarbe) nach einem
 // Verfahren, welches in typ spezifiziert ist. Aktuell stehen 'Blend' (Ueber-
-// blendung von d durch c anhand des Alpha-Wertes von c) und 'Add' (nimm
-// jeweils das Maximum pro Farbwert zwischen c und d) zur Verfuegung.
+// blendung von bg durch c anhand des Alpha-Wertes von c) und 'Add' (nimm
+// jeweils das Maximum pro Farbwert von c und bg) zur Verfuegung.
 func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 	switch mix {
-    case Replace:
-        return c
+	case Replace:
+		return c
 	case Blend:
 		ca := float64(c.A) / 255.0
 		da := float64(bg.A) / 255.0
@@ -140,22 +166,28 @@ func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 		b := c.B/2 + bg.B/2
 		a := c.A/2 + bg.A/2
 		return LedColor{r, g, b, a}
-    default:
-        log.Fatalf("Unknown mixing function: '%d'", mix)
+	case Min:
+		r := min(c.R, bg.R)
+		g := min(c.G, bg.G)
+		b := min(c.B, bg.B)
+		a := min(c.A, bg.A)
+		return LedColor{r, g, b, a}
+	default:
+		log.Fatalf("Unknown mixing function: '%d'", mix)
 	}
-    return LedColor{}
+	return LedColor{}
 }
 
 func (c LedColor) Alpha(a float64) color.Color {
-    return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
+	return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
 }
 
 func (c LedColor) Bright(t float64) color.Color {
-    return c
+	return c
 }
 
 func (c LedColor) Dark(t float64) color.Color {
-    return c
+	return c
 }
 
 func (c LedColor) String() string {

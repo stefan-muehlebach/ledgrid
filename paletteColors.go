@@ -6,10 +6,17 @@ var (
 	// Dies sind die Farblisten, welche fuer die einzelnen Paletten verwendet
 	// werden. Diese Namen werden vom Programm 'gen' gelesen und zur
 	// Erstellung des Files paletteNames.go verwendet. Die Namen der
-	// Farblisten werden NICHT exportiert (d.h. beginnen mit Kleinbuchstaben),
-	// muessen aber mit 'Gradient' enden, damit daraus Paletten erstellt
-	// werden sollen. Endet der Name mit 'GradientNoCycle', dann wird eine
-	// Palette ohne 'cycle'-Flag erstellt.
+	// Farblisten werden NICHT exportiert (d.h. beginnen mit Kleinbuchstaben).
+    //
+    // Farblisten, deren Name mit 'Gradient' enden, haben als Elemente sog.
+    // 'ColorStop'. Diese verbinden einen Fliesskommawert in [0,1] mit einem
+    // konkreten Farbwert.
+    //
+    // Farblisten, deren Namen mit 'ColorList' enden, enthalten nur Farbwerte
+    // und verteilen die spezifizierten Farben aequidistant ueber dem
+    // Intervall [0,1], wobei die erste Farbe in der Liste automatisch auch
+    // als letzte Farbe der Palette verwendet wird.
+    // Endet der Name ausserdem mit 'NoCycle', so wird dies nicht gemacht.
 
 	blackAndWhiteGradient = []ColorStop{
 		{0.0, NewLedColor(0x000000)},
@@ -80,6 +87,18 @@ var (
 		{1.00, NewLedColor(0xFFFFFF)},
 	}
 
+	fireGradient = []ColorStop{
+		{0.00, NewLedColorAlpha(0x00000000)},
+		{0.10, NewLedColorAlpha(0x5f080900)},
+		{0.14, NewLedColorAlpha(0x5f0809e5)},
+		{0.29, NewLedColor(0xbe1013)},
+		{0.43, NewLedColor(0xd23008)},
+		{0.57, NewLedColor(0xe45323)},
+		{0.71, NewLedColor(0xee771c)},
+		{0.86, NewLedColor(0xf6960e)},
+		{1.00, NewLedColor(0xffcd06)},
+	}
+
 	neonColorList = []LedColor{
 		NewLedColor(0xffffff),
 		NewLedColor(0x0099cc),
@@ -137,17 +156,6 @@ var (
 		NewLedColor(0xd23008),
 	}
 
-	fireGradient = []ColorStop{
-		{0.00, NewLedColor(0x000000)},
-		{0.14, NewLedColor(0x5f0809)},
-		{0.29, NewLedColor(0xbe1013)},
-		{0.43, NewLedColor(0xd23008)},
-		{0.57, NewLedColor(0xe45323)},
-		{0.71, NewLedColor(0xee771c)},
-		{0.86, NewLedColor(0xf6960e)},
-		{1.00, NewLedColor(0xffcd06)},
-	}
-
 	darkJungleColorList = []LedColor{
 		NewLedColor(0x184918),
 		NewLedColor(0x406a3a),
@@ -158,6 +166,56 @@ var (
 		NewLedColor(0xb1a658),
 		NewLedColor(0x406a3a),
 	}
+
+	kittyColorList = []LedColor{
+	    NewLedColor(0x9f456b),
+	    NewLedColor(0x4f7a9a),
+	    NewLedColor(0xe6c84c),
+	}
+
+	lanternColorList = []LedColor{
+	    NewLedColor(0x000000),
+	    NewLedColor(0x0D9A0D),
+	    NewLedColor(0xFFFFFF),
+	}
+
+	lemmingColorList = []LedColor{
+	    NewLedColor(0x000000),
+	    NewLedColor(0x0000ff),
+	    NewLedColor(0x00ff00),
+	    NewLedColor(0xffffff),
+	}
+
+	miamiViceColorList = []LedColor{
+	    NewLedColor(0x1be3ff),
+	    NewLedColor(0xff82dc),
+	    NewLedColor(0xffffff),
+	}
+
+	nightspellColorList = []LedColor{
+	    NewLedColor(0xEDEEBA),
+	    NewLedColor(0xFEA81C),
+	    NewLedColor(0xB20152),
+	    NewLedColor(0x4B0B44),
+	    NewLedColor(0x240F37),
+	}
+
+	wayyouColorList = []LedColor{
+	    NewLedColor(0x1C2130),
+	    NewLedColor(0x028F76),
+	    NewLedColor(0xB3E099),
+	    NewLedColor(0xFFEAAD),
+	    NewLedColor(0xD14334),
+	}
+
+	wepartedColorList = []LedColor{
+	    NewLedColor(0x027B7F),
+	    NewLedColor(0xFFA588),
+	    NewLedColor(0xD62957),
+	    NewLedColor(0xBF1E62),
+	    NewLedColor(0x572E4F),
+	}
+
 
 	Pico08Colors = []LedColor{
 		// 16 Farben der Default-Palette
@@ -380,30 +438,9 @@ var (
 	//     NewLedColor(0xe0dd00),
 	//     NewLedColor(0xc9cdd0),
 	// }
-	// kittyColorList = []LedColor{
-	//     NewLedColor(0x9f456b),
-	//     NewLedColor(0x4f7a9a),
-	//     NewLedColor(0xe6c84c),
-	// }
-	// lanternColorList = []LedColor{
-	//     NewLedColor(0x000000),
-	//     NewLedColor(0x0D9A0D),
-	//     NewLedColor(0xFFFFFF),
-	// }
 	// leBronColorList = []LedColor{
 	//     NewLedColor(0x3e3e3e),
 	//     NewLedColor(0xd4b600),
-	//     NewLedColor(0xffffff),
-	// }
-	// lemmingColorList = []LedColor{
-	//     NewLedColor(0x000000),
-	//     NewLedColor(0x0000ff),
-	//     NewLedColor(0x00ff00),
-	//     NewLedColor(0xffffff),
-	// }
-	// miamiViceColorList = []LedColor{
-	//     NewLedColor(0x1be3ff),
-	//     NewLedColor(0xff82dc),
 	//     NewLedColor(0xffffff),
 	// }
 	// mIUSAColorList = []LedColor{
@@ -422,13 +459,6 @@ var (
 	//     NewLedColor(0xFE5502),
 	//     NewLedColor(0xFEBF51),
 	//     NewLedColor(0xF8EAB2),
-	// }
-	// nightspellColorList = []LedColor{
-	//     NewLedColor(0xEDEEBA),
-	//     NewLedColor(0xFEA81C),
-	//     NewLedColor(0xB20152),
-	//     NewLedColor(0x4B0B44),
-	//     NewLedColor(0x240F37),
 	// }
 	// violetColorList = []LedColor{
 	//     NewLedColor(0x4B0B44),
@@ -485,19 +515,5 @@ var (
 	//     NewLedColor(0xF07818),
 	//     NewLedColor(0x78C0A8),
 	//     NewLedColor(0xF0A830),
-	// }
-	// wayyouColorList = []LedColor{
-	//     NewLedColor(0x1C2130),
-	//     NewLedColor(0x028F76),
-	//     NewLedColor(0xB3E099),
-	//     NewLedColor(0xFFEAAD),
-	//     NewLedColor(0xD14334),
-	// }
-	// wepartedColorList = []LedColor{
-	//     NewLedColor(0x027B7F),
-	//     NewLedColor(0xFFA588),
-	//     NewLedColor(0xD62957),
-	//     NewLedColor(0xBF1E62),
-	//     NewLedColor(0x572E4F),
 	// }
 )

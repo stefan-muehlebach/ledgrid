@@ -3,9 +3,7 @@ package ledgrid
 import (
 	"math"
 	"slices"
-	"time"
 )
-
 
 // Der Shader verwendet zur Berechnung der darzustellenden Farben
 // math. Funktionen. Dazu wird gedanklich ueber das gesamte LedGrid ein
@@ -26,18 +24,19 @@ import (
 type ShaderFuncType func(x, y, t float64, p []*Bounded[float64]) float64
 
 type Shader struct {
-	VisualizableEmbed
+	VisualEmbed
 	lg                 *LedGrid
 	field              [][]float64
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
-    params             []*Bounded[float64]
-	Pal                Colorable
+	params             []*Bounded[float64]
+	pal                ColorSource
+	anim               *InfAnimation
 }
 
-func NewShader(lg *LedGrid, shr ShaderRecord, pal Colorable) *Shader {
+func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 	s := &Shader{}
-	s.VisualizableEmbed.Init("Shader")
+	s.VisualEmbed.Init("Shader")
 	s.lg = lg
 	size := lg.Rect.Size()
 	s.field = make([][]float64, size.Y)
@@ -56,9 +55,11 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal Colorable) *Shader {
 		s.xMin = -1.0
 		s.yMax = 1.0
 	}
-	s.Pal = pal
+	s.pal = pal
 	s.SetShaderData(shr)
-	s.Update(0)
+	s.anim = NewInfAnimation(s.Update)
+	s.anim.Start()
+	theAnimator.AddAnimations(s.anim)
 	return s
 }
 
@@ -68,11 +69,11 @@ func (s *Shader) SetShaderData(shr ShaderRecord) {
 	s.params = slices.Clone(shr.p)
 }
 
-func (s *Shader) ParamList() ([]*Bounded[float64]) {
-    return s.params
+func (s *Shader) ParamList() []*Bounded[float64] {
+	return s.params
 }
 
-func (s *Shader) Param(name string) (*Bounded[float64]) {
+func (s *Shader) Param(name string) *Bounded[float64] {
 	for _, param := range s.params {
 		if param.Name() == name {
 			return param
@@ -81,21 +82,23 @@ func (s *Shader) Param(name string) (*Bounded[float64]) {
 	return nil
 }
 
-func (s *Shader) Update(dt time.Duration) bool {
+func (s *Shader) Palette() ColorSource {
+	return s.pal
+}
+
+func (s *Shader) Update(t float64) {
 	var col, row int
 	var x, y float64
 
-	dt = s.AnimatableEmbed.Update(dt)
 	y = s.yMax
 	for row = range s.field {
 		x = s.xMin
 		for col = range s.field[row] {
-			s.field[row][col] = s.fnc(x, y, s.t0.Seconds(), s.params)
+			s.field[row][col] = s.fnc(x, y, t, s.params)
 			x += s.dPixel
 		}
 		y -= s.dPixel
 	}
-	return true
 }
 
 func (s *Shader) Draw() {
@@ -103,19 +106,13 @@ func (s *Shader) Draw() {
 
 	for row = range s.lg.Bounds().Dy() {
 		for col = range s.lg.Bounds().Dx() {
-			shaderColor := s.Pal.Color(s.field[row][col])
+			shaderColor := s.pal.Color(s.field[row][col])
 			s.lg.MixLedColor(col, row, shaderColor, Max)
 		}
 	}
 }
 
-
 // Im folgenden Abschnitt sind ein paar vordefinierte Shader zusammengestellt.
-// type ShaderRecord struct {
-// 	n string
-// 	f ShaderFuncType
-// 	p []ShaderParam
-// }
 
 type ShaderRecord struct {
 	n string
@@ -123,50 +120,49 @@ type ShaderRecord struct {
 	p []*Bounded[float64]
 }
 
-
 var (
 	PlasmaShader = ShaderRecord{
 		"Plasma",
 		PlasmaShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("p1", 1.2, 0.0, 10.0, 0.1),
-            NewBounded("p2", 1.6, 0.0, 10.0, 0.1),
-            NewBounded("p3", 3.0, 0.0, 10.0, 0.1),
-            NewBounded("p4", 1.5, 0.0, 10.0, 0.1),
-            NewBounded("p5", 5.0, 0.0, 10.0, 0.1),
-            NewBounded("p6", 5.0, 0.0, 10.0, 0.1),
+			NewBounded("p1", 1.2, 0.0, 10.0, 0.1),
+			NewBounded("p2", 1.6, 0.0, 10.0, 0.1),
+			NewBounded("p3", 3.0, 0.0, 10.0, 0.1),
+			NewBounded("p4", 1.5, 0.0, 10.0, 0.1),
+			NewBounded("p5", 5.0, 0.0, 10.0, 0.1),
+			NewBounded("p6", 5.0, 0.0, 10.0, 0.1),
 		},
 	}
 	CircleShader = ShaderRecord{
 		"Circle",
 		CircleShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 1.0, -2.0, 2.0, 0.1),
-            NewBounded("y", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("x", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("y", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 	KaroShader = ShaderRecord{
 		"Karo",
 		KaroShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 1.0, -2.0, 2.0, 0.1),
-            NewBounded("y", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("x", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("y", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 	HorizontalShader = ShaderRecord{
 		"Horizontal",
 		LinearShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 1.0, -2.0, 2.0, 0.1),
-            NewBounded("y", 0.0, -2.0, 2.0, 0.1),
+			NewBounded("x", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("y", 0.0, -2.0, 2.0, 0.1),
 		},
 	}
 	VerticalShader = ShaderRecord{
 		"Vertical",
 		LinearShaderFunc,
 		[]*Bounded[float64]{
-            NewBounded("x", 0.0, -2.0, 2.0, 0.1),
-            NewBounded("y", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("x", 0.0, -2.0, 2.0, 0.1),
+			NewBounded("y", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 )
@@ -198,8 +194,9 @@ func f3(x, y, t, p1, p2 float64) float64 {
 func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	x = p[0].Val() * x / 10.0
 	y = p[1].Val() * y / 10.0
-	t /= 10.0
+	t /= 5.0
 	return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
+	// return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
 }
 
 // Zeichnet verschachtelte Karomuster. Mit p1 kann die Geschw. und die
@@ -207,7 +204,7 @@ func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	x = p[0].Val() * x / 10.0
 	y = p[1].Val() * y / 10.0
-	t /= 10.0
+	t /= 5.0
 	return math.Abs(math.Mod(math.Abs(x)+math.Abs(y)-t, 1.0))
 }
 
@@ -217,7 +214,6 @@ func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 func LinearShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	x = p[0].Val() * x / 10.0
 	y = p[1].Val() * y / 10.0
-	t /= 10.0
+	t /= 5.0
 	return math.Abs(math.Mod(x+y-t, 1.0))
 }
-
