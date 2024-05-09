@@ -1,6 +1,10 @@
 package ledgrid
 
-import "log"
+import (
+	"log"
+
+	"fyne.io/fyne/v2/data/binding"
+)
 
 // Auf alle Typen des Boundable-Interfaces koennen gebundene Variablen
 // erstellt werden.
@@ -29,6 +33,8 @@ type Bounded[T Boundable] struct {
 	// Variable aufgerufen wird. oldVal und newVal sind die Werte der Variable
 	// vor, resp. nach der Aenderung.
 	callback func(oldVal, newVal T)
+
+	listeners []binding.DataListener
 }
 
 // Erstellt einen neuen eingeschraenkten Wert. Mit name kann der Variable
@@ -49,7 +55,37 @@ func NewBounded[T Boundable](name string, init, lb, ub, inc T) *Bounded[T] {
 	b.SetVal(init)
 	b.valPtr = nil
 	b.callback = nil
+	b.listeners = make([]binding.DataListener, 0)
 	return b
+}
+
+// Die folgenden vier Methoden wurden implementiert, um das DataItem-
+// Interface aus dem binding-Package von fyne.io zu implementieren.
+func (b *Bounded[T]) Get() (T, error) {
+	return b.Val(), nil
+}
+
+func (b *Bounded[T]) Set(v T) error {
+	b.SetVal(v)
+	return nil
+}
+
+func (b *Bounded[T]) AddListener(l binding.DataListener) {
+	// log.Printf("AddListener(%T)", l)
+	b.listeners = append(b.listeners, l)
+}
+
+func (b *Bounded[T]) RemoveListener(l binding.DataListener) {
+	var idx int
+	var lsnr binding.DataListener
+
+	// log.Printf("RemoveListener(%T)", l)
+	for idx, lsnr = range b.listeners {
+		if l == lsnr {
+			break
+		}
+	}
+	b.listeners = append(b.listeners[:idx], b.listeners[idx+1:]...)
 }
 
 // Da der Zugriff auf den Wert einer Bounded-Variable immer geprueft werden
@@ -135,6 +171,11 @@ func (b *Bounded[T]) setVal(v T) {
 	}
 	if b.callback != nil {
 		b.callback(oldVal, b.val)
+	}
+	for _, lsnr := range b.listeners {
+		if lsnr != nil {
+			lsnr.DataChanged()
+		}
 	}
 }
 

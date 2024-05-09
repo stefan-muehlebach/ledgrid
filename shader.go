@@ -122,47 +122,39 @@ type ShaderRecord struct {
 
 var (
 	PlasmaShader = ShaderRecord{
-		"Plasma",
+		"Plasma (Shader)",
 		PlasmaShaderFunc,
 		[]*Bounded[float64]{
-			NewBounded("p1", 1.2, 0.0, 10.0, 0.1),
-			NewBounded("p2", 1.6, 0.0, 10.0, 0.1),
-			NewBounded("p3", 3.0, 0.0, 10.0, 0.1),
-			NewBounded("p4", 1.5, 0.0, 10.0, 0.1),
-			NewBounded("p5", 5.0, 0.0, 10.0, 0.1),
-			NewBounded("p6", 5.0, 0.0, 10.0, 0.1),
+			NewBounded("P1.1", 1.2, 0.0, 10.0, 0.1),
+			NewBounded("P2.1", 1.6, 0.0, 10.0, 0.1),
+			NewBounded("P2.2", 3.0, 0.0, 10.0, 0.1),
+			NewBounded("P2.3", 1.5, 0.0, 10.0, 0.1),
+			NewBounded("P3.1", 5.0, 0.0, 10.0, 0.1),
+			NewBounded("P3.2", 5.0, 0.0, 10.0, 0.1),
 		},
 	}
 	CircleShader = ShaderRecord{
-		"Circle",
+		"Circle (Shader)",
 		CircleShaderFunc,
 		[]*Bounded[float64]{
-			NewBounded("x", 1.0, -2.0, 2.0, 0.1),
-			NewBounded("y", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("X-Scale", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("Y-Scale", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 	KaroShader = ShaderRecord{
-		"Karo",
+		"Karo (Shader)",
 		KaroShaderFunc,
 		[]*Bounded[float64]{
-			NewBounded("x", 1.0, -2.0, 2.0, 0.1),
-			NewBounded("y", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("X-Scale", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("Y-Scale", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
-	HorizontalShader = ShaderRecord{
-		"Horizontal",
+	LinearShader = ShaderRecord{
+		"Linear (Shader)",
 		LinearShaderFunc,
 		[]*Bounded[float64]{
-			NewBounded("x", 1.0, -2.0, 2.0, 0.1),
-			NewBounded("y", 0.0, -2.0, 2.0, 0.1),
-		},
-	}
-	VerticalShader = ShaderRecord{
-		"Vertical",
-		LinearShaderFunc,
-		[]*Bounded[float64]{
-			NewBounded("x", 0.0, -2.0, 2.0, 0.1),
-			NewBounded("y", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("X-Speed", 1.0, -2.0, 2.0, 0.1),
+			NewBounded("Y-Speed", 0.0, -2.0, 2.0, 0.1),
 		},
 	}
 )

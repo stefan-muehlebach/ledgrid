@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blm width="10" height="10" bits="4" channels="3">
+	<header>
+		<creator>Blimp (version 1.5.0)</creator>
+	</header>
+
+	<frame duration="100">
+		<row>F00F00F00F00F00F00F00F00F00F00</row>
+		<row>FF0FF0FF0FF0FF0FF0FF0FF0FF0FF0</row>
+		<row>0F00F00F00F00F00F00F00F00F00F0</row>
+		<row>0FF0FF0FF0FF0FF0FF0FF0FF0FF0FF</row>
+		<row>00F00F00F00F00F00F00F00F00F00F</row>
+		<row>F0FF0FF0FF0FF0FF0FF0FF0FF0FF0F</row>
+		<row>000000000000000000000000000000</row>
+		<row>000000000000000000000000000000</row>
+		<row>000000000000000000000000000000</row>
+		<row>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF</row>
+	</frame>
+</blm>

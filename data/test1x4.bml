@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blm width="10" height="10" bits="4" channels="1">
+	<header>
+		<creator>Blimp (version 1.5.0)</creator>
+	</header>
+
+	<frame duration="100">
+		<row>5555555555</row>
+		<row>AAAAAAAAAA</row>
+		<row>5555555555</row>
+		<row>AAAAAAAAAA</row>
+		<row>5555555555</row>
+		<row>AAAAAAAAAA</row>
+		<row>0000000000</row>
+		<row>0000000000</row>
+		<row>0000000000</row>
+		<row>FFFFFFFFFF</row>
+	</frame>
+</blm>

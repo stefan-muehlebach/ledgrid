@@ -3,48 +3,13 @@
 package ledgrid
 
 import (
-	"encoding/xml"
 	"image"
 	"image/png"
-	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 	"time"
-
-	"golang.org/x/image/draw"
 )
 
-//----------------------------------------------------------------------------
-
-type Picture struct {
-	lg     *LedGrid
-	img    image.Image
-	scaler draw.Scaler
-}
-
-func NewPicture(lg *LedGrid, fileName string) *Picture {
-	p := &Picture{}
-	p.lg = lg
-	fh, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't open file: %v", err)
-	}
-	p.img, err = png.Decode(fh)
-	if err != nil {
-		log.Fatalf("Couldn't decode file: %v", err)
-	}
-	p.scaler = draw.BiLinear.NewScaler(lg.Bounds().Dx(), lg.Bounds().Dy(),
-		p.img.Bounds().Dx(), p.img.Bounds().Dy())
-	return p
-}
-
-func (p *Picture) Draw() {
-	p.scaler.Scale(p.lg, p.lg.Bounds(), p.img, p.img.Bounds(), draw.Src, nil)
-}
-
-//----------------------------------------------------------------------------
 
 type PictureAnimation struct {
 	VisualEmbed
@@ -171,121 +136,3 @@ func (i *ImageAnimation) Update(dt time.Duration) bool {
 func (i *ImageAnimation) Draw() {
 	i.imageList[i.Idx].Draw()
 }
-
-//----------------------------------------------------------------------------
-
-type BlinkenFile struct {
-	XMLName xml.Name       `xml:"blm"`
-	Width   int            `xml:"width,attr"`
-	Height  int            `xml:"height,attr"`
-	Bits    int            `xml:"bits,attr"`
-	Header  BlinkenHeader  `xml:"header"`
-	Frames  []BlinkenFrame `xml:"frame"`
-}
-
-type BlinkenHeader struct {
-	XMLName  xml.Name `xml:"header"`
-	Title    string   `xml:"title"`
-	Author   string   `xml:"author"`
-	Email    string   `xml:"email"`
-	Duration int      `xml:"duration,omitempty"`
-}
-
-type BlinkenFrame struct {
-	XMLName  xml.Name  `xml:"frame"`
-	Duration int       `xml:"duration,attr"`
-	Rows     [][]byte  `xml:"row"`
-	Values   [][]uint8 `xml:"-"`
-}
-
-func OpenBlinkenFile(fileName string) *BlinkenFile {
-	b := &BlinkenFile{}
-
-	xmlFile, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer xmlFile.Close()
-
-	byteValue, err := ioutil.ReadAll(xmlFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = xml.Unmarshal(byteValue, b)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for i, frame := range b.Frames {
-		b.Frames[i].Values = make([][]uint8, b.Height)
-		for j, row := range frame.Rows {
-			b.Frames[i].Values[j] = make([]uint8, b.Width)
-			for k, val := range row {
-				v, err := strconv.ParseUint(string(val), 32, 8)
-				if err != nil {
-					log.Fatalf("'%s' not parseable: %v", string(val), err)
-				}
-				b.Frames[i].Values[j][k] = uint8(v)
-			}
-		}
-	}
-	return b
-}
-
-func (b *BlinkenFile) Write(fileName string) {
-	var strBuild strings.Builder
-
-	xmlFile, err := os.Create(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer xmlFile.Close()
-
-	for i, frame := range b.Frames {
-		for j, row := range frame.Values {
-			strBuild.Reset()
-			for _, v := range row {
-				strBuild.WriteString(strconv.FormatUint(uint64(v), 32))
-			}
-			b.Frames[i].Rows[j] = []byte(strBuild.String())
-		}
-	}
-
-	byteValue, err := xml.MarshalIndent(b, "", "    ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = xmlFile.Write(byteValue)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (b *BlinkenFile) MakePixelAnimation(lg *LedGrid, pal ColorSource) *ImageAnimation {
-	i := NewImageAnimation(lg)
-
-	for _, frame := range b.Frames {
-		img := NewPixelImage(lg, pal)
-		img.SetPixels(frame.Values)
-		i.AddImage(img, time.Duration(frame.Duration)*time.Millisecond)
-	}
-	return i
-}
-
-//----------------------------------------------------------------------------
-
-// func Main() {
-// 	var blinkenFile *BlinkenFile
-// 	var pal *SlicePalette
-
-// 	blinkenFile = ReadBlinkenFile("alien.bml")
-
-// 	frame := blinkenFile.Frames[20]
-// 	fmt.Printf("%v\n", frame)
-
-// 	pal = NewSlicePalette()
-// 	i := NewImage(image.Point{10, 10}, pal)
-// 	i.SetPixels(frame.Rows)
-// }
