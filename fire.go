@@ -44,9 +44,7 @@ func NewFire(lg *LedGrid) *Fire {
 	f.params[0].BindVar(&f.cooling)
 	f.params[1] = NewBounded("Sparking factor", fireDefSparking, 0.19, 0.78, 0.05)
 	f.params[1].BindVar(&f.sparking)
-
 	f.anim = NewInfAnimation(f.Update)
-	theAnimator.AddAnimations(f.anim)
 
 	return f
 }
@@ -104,6 +102,7 @@ func (f *Fire) Update(t float64) {
 func (f *Fire) Draw() {
 	f.scaler.Scale(f.lg, f.lg.Bounds(), f, f.rect, draw.Over, nil)
 }
+
 
 func (f *Fire) ColorModel() color.Model {
 	return LedColorModel

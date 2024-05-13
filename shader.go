@@ -1,6 +1,9 @@
 package ledgrid
 
 import (
+	"golang.org/x/image/draw"
+	"image"
+	"image/color"
 	"math"
 	"slices"
 )
@@ -26,6 +29,7 @@ type ShaderFuncType func(x, y, t float64, p []*Bounded[float64]) float64
 type Shader struct {
 	VisualEmbed
 	lg                 *LedGrid
+	rect               image.Rectangle
 	field              [][]float64
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
@@ -38,13 +42,13 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 	s := &Shader{}
 	s.VisualEmbed.Init("Shader")
 	s.lg = lg
-	size := lg.Rect.Size()
-	s.field = make([][]float64, size.Y)
-	for i := range size.Y {
-		s.field[i] = make([]float64, size.X)
+	s.rect = lg.Bounds()
+	s.field = make([][]float64, s.rect.Dy())
+	for i := range s.rect.Dy() {
+		s.field[i] = make([]float64, s.rect.Dx())
 	}
-	s.dPixel = 2.0 / float64(max(size.X, size.Y)-1)
-	ratio := float64(size.X) / float64(size.Y)
+	s.dPixel = 2.0 / float64(max(s.rect.Dx(), s.rect.Dy())-1)
+	ratio := float64(s.rect.Dx()) / float64(s.rect.Dy())
 	if ratio > 1.0 {
 		s.xMin = -1.0
 		s.yMax = ratio * 1.0
@@ -58,7 +62,6 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 	s.pal = pal
 	s.SetShaderData(shr)
 	s.anim = NewInfAnimation(s.Update)
-	theAnimator.AddAnimations(s.anim)
 	return s
 }
 
@@ -110,14 +113,19 @@ func (s *Shader) Update(t float64) {
 }
 
 func (s *Shader) Draw() {
-	var col, row int
+    draw.Copy(s.lg, image.Point{}, s, s.rect, draw.Src, nil)
+}
 
-	for row = range s.lg.Bounds().Dy() {
-		for col = range s.lg.Bounds().Dx() {
-			shaderColor := s.pal.Color(s.field[row][col])
-			s.lg.MixLedColor(col, row, shaderColor, Max)
-		}
-	}
+func (s *Shader) ColorModel() color.Model {
+	return LedColorModel
+}
+
+func (s *Shader) Bounds() image.Rectangle {
+	return s.rect
+}
+
+func (s *Shader) At(x, y int) color.Color {
+	return s.pal.Color(s.field[y][x])
 }
 
 // Im folgenden Abschnitt sind ein paar vordefinierte Shader zusammengestellt.

@@ -24,7 +24,7 @@ import (
 const (
 	Margin    = 10.0
 	AppWidth  = 480.0
-	AppHeight = 320.0
+	AppHeight = 480.0
 )
 
 var (
@@ -52,7 +52,7 @@ func main() {
 
 	var animList []ledgrid.Visual
 	var animNameList, paletteNameList []string
-	var curAnim ledgrid.Visual
+	// var curAnim ledgrid.Visual
 
 	var pal *ledgrid.PaletteFader
 	var palFadeTime, backFadeTime *ledgrid.Bounded[float64]
@@ -118,7 +118,7 @@ func main() {
 	animNameList = make([]string, len(animList))
 	for i, anim := range animList {
 		animNameList[i] = anim.Name()
-		pixAnim.AddObjects(anim)
+		//pixAnim.AddObjects(anim)
 	}
 
 	paletteNameList = make([]string, len(ledgrid.PaletteList))
@@ -133,18 +133,15 @@ func main() {
 
 	animLabel = widget.NewLabel("Type:")
 	animSelect = widget.NewSelect(animNameList, func(s string) {
-		if curAnim != nil {
-			curAnim.SetVisible(false)
-		}
-		curAnim = animList[animSelect.SelectedIndex()]
-		curAnim.SetVisible(true)
-		if obj, ok := curAnim.(ledgrid.Paintable); ok {
-			paletteSelect.Enable()
-			paletteSelect.SetSelected(obj.Palette().Name())
-		} else {
-			paletteSelect.SetSelectedIndex(-1)
-			paletteSelect.Disable()
-		}
+        newBack := animList[animSelect.SelectedIndex()]
+        pixAnim.SetBackground(newBack, time.Duration(backFadeTime.Val() * float64(time.Second)))
+        if obj, ok := newBack.(ledgrid.Paintable); ok {
+            paletteSelect.Enable()
+            paletteSelect.SetSelected(obj.Palette().Name())
+        } else {
+            paletteSelect.SetSelectedIndex(-1)
+            paletteSelect.Disable()
+        }
 		for _, obj := range paramForm.Objects {
 			switch o := obj.(type) {
 			case *widget.Label:
@@ -154,7 +151,7 @@ func main() {
 			}
 		}
 		paramForm.RemoveAll()
-		if obj, ok := curAnim.(ledgrid.Parametrizable); ok {
+		if obj, ok := newBack.(ledgrid.Parametrizable); ok {
 			for _, param := range obj.ParamList() {
 				label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+": %.3f"))
 				slider := widget.NewSliderWithData(param.Min(), param.Max(), param)

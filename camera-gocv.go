@@ -48,7 +48,6 @@ func NewCamera(lg *LedGrid) *Camera {
 	c.mat = gocv.NewMat()
 	c.anim = NewInfAnimation(c.Update)
 	// c.anim.Start()
-	theAnimator.AddAnimations(c.anim)
 	return c
 }
 

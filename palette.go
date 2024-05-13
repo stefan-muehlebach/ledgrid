@@ -176,7 +176,6 @@ func (p *PaletteFader) StartFade(nextPal ColorSource, fadeTime time.Duration) bo
 	p.Pals[1] = nextPal
 	anim := NewNormAnimation(fadeTime, p.Update)
 	anim.Start()
-	theAnimator.AddAnimations(anim)
 	return true
 }
 

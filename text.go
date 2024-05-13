@@ -72,7 +72,6 @@ func NewText(lg *LedGrid, txt string, col color.Color) *Text {
 	t.anim = NewNormAnimation(10*time.Second, t.Update)
 	t.anim.AutoReverse = true
 	t.anim.RepeatCount = AnimationRepeatForever
-	theAnimator.AddAnimations(t.anim)
 
 	return t
 }

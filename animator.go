@@ -18,6 +18,12 @@ type Animator struct {
 	ticker   *time.Ticker
 	objList  []Visual
 	animList []Animation
+	backObjs [2]Visual
+	backAnim Animation
+	backT    float64
+	foreObjs [2]Visual
+	foreAnim Animation
+	foreT    float64
 }
 
 // Erstellt einen neuen Animator, welcher fuer die Animation und die
@@ -38,6 +44,28 @@ func NewAnimator(lg *LedGrid, client PixelClient) *Animator {
 	return a
 }
 
+func (a *Animator) SetBackground(obj Visual, fadeTime time.Duration) {
+	if a.backAnim != nil && !a.backAnim.IsStopped() {
+		return
+	}
+    obj.SetVisible(true)
+	if a.backObjs[0] == nil {
+		a.backObjs[0] = obj
+		return
+	}
+	a.backObjs[1] = obj
+	a.backAnim = NewNormAnimation(fadeTime, func(t float64) {
+        if t == 1.0 {
+            a.backObjs[0].SetVisible(false)
+            a.backObjs[0], a.backObjs[1] = a.backObjs[1], nil
+            a.backT = 0.0
+        } else {
+            a.backT = t
+        }
+	})
+    a.backAnim.Start()
+}
+
 // Fuegt ein neues Objekt dem Animator hinzu.
 func (a *Animator) AddObjects(objs ...Visual) {
 	a.objList = append(a.objList, objs...)
@@ -50,8 +78,8 @@ func (a *Animator) Objects() []Visual {
 	return l
 }
 
-func (r *Animator) AddAnimations(anims ...Animation) {
-	r.animList = append(r.animList, anims...)
+func (r *Animator) addAnim(anim Animation) {
+	r.animList = append(r.animList, anim)
 }
 
 func (r *Animator) Animations() []Animation {
@@ -82,11 +110,15 @@ func (a *Animator) coordinator() {
 				<-doneChan
 			}
 			a.lg.Clear(Black)
-			for _, obj := range a.objList {
-				if obj.Visible() {
-					obj.Draw()
-				}
-			}
+			// for _, obj := range a.objList {
+			// 	if obj.Visible() {
+			// 		obj.Draw()
+			// 	}
+			// }
+            if a.backObjs[0] == nil {
+                continue
+            }
+            a.backObjs[0].Draw()
 			a.client.Draw(a.lg)
 		}
 	}()
@@ -155,6 +187,7 @@ func NewNormAnimation(d time.Duration, fn func(float64)) *NormAnimation {
 	a.Curve = LinearAnimationCurve
 	a.Duration = d
 	a.Tick = fn
+    theAnimator.addAnim(a)
 	return a
 }
 
@@ -234,6 +267,7 @@ type InfAnimation struct {
 func NewInfAnimation(fn func(float64)) *InfAnimation {
 	a := &InfAnimation{}
 	a.Tick = fn
+    theAnimator.addAnim(a)
 	return a
 }
 

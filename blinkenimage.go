@@ -225,6 +225,5 @@ func (b *BlinkenFile) NewImageAnimation(lg *LedGrid) *ImageAnimation {
 		a.AddImage(img, time.Duration(frame.Duration)*time.Millisecond)
 	}
 	a.anim = NewInfAnimation(a.Update)
-	theAnimator.AddAnimations(a.anim)
 	return a
 }
