@@ -11,7 +11,7 @@ import (
 //----------------------------------------------------------------------------
 
 const (
-	camDevId      = 1
+	camDevId      = 0
 	camWidth      = 320
 	camHeight     = 240
 	camFrameRate  = 30

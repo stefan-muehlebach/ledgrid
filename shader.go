@@ -58,7 +58,6 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 	s.pal = pal
 	s.SetShaderData(shr)
 	s.anim = NewInfAnimation(s.Update)
-	s.anim.Start()
 	theAnimator.AddAnimations(s.anim)
 	return s
 }
@@ -84,6 +83,15 @@ func (s *Shader) Param(name string) *Bounded[float64] {
 
 func (s *Shader) Palette() ColorSource {
 	return s.pal
+}
+
+func (s *Shader) SetVisible(vis bool) {
+	if vis {
+		s.anim.Start()
+	} else {
+		s.anim.Stop()
+	}
+	s.VisualEmbed.SetVisible(vis)
 }
 
 func (s *Shader) Update(t float64) {
@@ -125,12 +133,12 @@ var (
 		"Plasma (Shader)",
 		PlasmaShaderFunc,
 		[]*Bounded[float64]{
-			NewBounded("P1.1", 1.2, 0.0, 10.0, 0.1),
-			NewBounded("P2.1", 1.6, 0.0, 10.0, 0.1),
-			NewBounded("P2.2", 3.0, 0.0, 10.0, 0.1),
-			NewBounded("P2.3", 1.5, 0.0, 10.0, 0.1),
-			NewBounded("P3.1", 5.0, 0.0, 10.0, 0.1),
-			NewBounded("P3.2", 5.0, 0.0, 10.0, 0.1),
+			NewBounded("Func1, P1", 1.2, 0.0, 10.0, 0.1),
+			NewBounded("Func2, P1", 1.6, 0.0, 10.0, 0.1),
+			NewBounded("Func2, P2", 3.0, 0.0, 10.0, 0.1),
+			NewBounded("Func2, P3", 1.5, 0.0, 10.0, 0.1),
+			NewBounded("Func3, P1", 5.0, 0.0, 10.0, 0.1),
+			NewBounded("Func3, P2", 5.0, 0.0, 10.0, 0.1),
 		},
 	}
 	CircleShader = ShaderRecord{

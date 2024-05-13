@@ -18,7 +18,7 @@ func TestOpenBlinkenFile(t *testing.T) {
 
 	for _, fileName := range bmlFileList {
 		t.Logf("File  : %s", fileName)
-		blinkenFile = OpenBlinkenFile(fileName)
+		blinkenFile = ReadBlinkenFile(fileName)
 		frame := blinkenFile.Frames[0]
 		// t.Logf("Rows  : %+v", frame.Rows)
 		t.Logf("Values: %+v", frame.Values)

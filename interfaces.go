@@ -48,17 +48,17 @@ type VisualEmbed struct {
 	visible bool
 }
 
-func (d *VisualEmbed) Init(name string) {
-	d.NameableEmbed.Init(name)
-	d.visible = false
+func (v *VisualEmbed) Init(name string) {
+	v.NameableEmbed.Init(name)
+	v.visible = false
 }
 
-func (d *VisualEmbed) Visible() bool {
-	return d.visible
+func (v *VisualEmbed) Visible() bool {
+	return v.visible
 }
 
-func (d *VisualEmbed) SetVisible(v bool) {
-	d.visible = v
+func (v *VisualEmbed) SetVisible(vis bool) {
+	v.visible = vis
 }
 
 // Einige der Objekte (wie beispielsweise Shader) koennen zusaetzlich mit

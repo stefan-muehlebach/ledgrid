@@ -1,0 +1,8 @@
+Website = "https://ischmieregal.ch"
+
+[Details]
+Icon = "Icon.ico"
+Name = "LedGrid GUI"
+ID   = "Naja"
+Version = "1.0.0"
+Build = 1

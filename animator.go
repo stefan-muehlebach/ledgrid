@@ -13,11 +13,11 @@ var (
 // Animator. Es ist sichergestellt, dass nur ein (1) Objekt von diesem Typ
 // existiert.
 type Animator struct {
-	lg         *LedGrid
-	client     PixelClient
-	ticker     *time.Ticker
-	drawList   []Visual
-	animations []Animation
+	lg       *LedGrid
+	client   PixelClient
+	ticker   *time.Ticker
+	objList  []Visual
+	animList []Animation
 }
 
 // Erstellt einen neuen Animator, welcher fuer die Animation und die
@@ -29,8 +29,8 @@ func NewAnimator(lg *LedGrid, client PixelClient) *Animator {
 	a := &Animator{}
 	a.lg = lg
 	a.client = client
-	a.drawList = make([]Visual, 0)
-	a.animations = make([]Animation, 0)
+	a.objList = make([]Visual, 0)
+	a.animList = make([]Animation, 0)
 
 	a.coordinator()
 
@@ -40,23 +40,23 @@ func NewAnimator(lg *LedGrid, client PixelClient) *Animator {
 
 // Fuegt ein neues Objekt dem Animator hinzu.
 func (a *Animator) AddObjects(objs ...Visual) {
-	a.drawList = append(a.drawList, objs...)
+	a.objList = append(a.objList, objs...)
 }
 
 // Retourniert alle Objekte.
 func (a *Animator) Objects() []Visual {
-	l := make([]Visual, len(a.drawList))
-	copy(l, a.drawList)
+	l := make([]Visual, len(a.objList))
+	copy(l, a.objList)
 	return l
 }
 
 func (r *Animator) AddAnimations(anims ...Animation) {
-	r.animations = append(r.animations, anims...)
+	r.animList = append(r.animList, anims...)
 }
 
 func (r *Animator) Animations() []Animation {
-	l := make([]Animation, len(r.animations))
-	copy(l, r.animations)
+	l := make([]Animation, len(r.animList))
+	copy(l, r.animList)
 	return l
 }
 
@@ -71,7 +71,7 @@ func (a *Animator) coordinator() {
 	go func() {
 		for range a.ticker.C {
 			numObjs := 0
-			for _, obj := range a.animations {
+			for _, obj := range a.animList {
 				if obj.IsStopped() {
 					continue
 				}
@@ -82,7 +82,7 @@ func (a *Animator) coordinator() {
 				<-doneChan
 			}
 			a.lg.Clear(Black)
-			for _, obj := range a.drawList {
+			for _, obj := range a.objList {
 				if obj.Visible() {
 					obj.Draw()
 				}
@@ -112,6 +112,14 @@ type Animation interface {
 //----------------------------------------------------------------------------
 
 type AnimationCurve func(t float64) float64
+
+func LinearAnimationCurve(t float64) float64 {
+	return t
+}
+
+func CubicAnimationCurve(t float64) float64 {
+	return 3*t*t - 2*t*t*t
+}
 
 const (
 	AnimationRepeatForever = -1
@@ -144,7 +152,7 @@ type NormAnimation struct {
 // t=d mit 1.0
 func NewNormAnimation(d time.Duration, fn func(float64)) *NormAnimation {
 	a := &NormAnimation{}
-	a.Curve = func(t float64) float64 { return t }
+	a.Curve = LinearAnimationCurve
 	a.Duration = d
 	a.Tick = fn
 	return a

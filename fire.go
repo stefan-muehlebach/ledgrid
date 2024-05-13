@@ -46,7 +46,6 @@ func NewFire(lg *LedGrid) *Fire {
 	f.params[1].BindVar(&f.sparking)
 
 	f.anim = NewInfAnimation(f.Update)
-	f.anim.Start()
 	theAnimator.AddAnimations(f.anim)
 
 	return f
@@ -54,6 +53,15 @@ func NewFire(lg *LedGrid) *Fire {
 
 func (f *Fire) ParamList() []*Bounded[float64] {
 	return f.params
+}
+
+func (f *Fire) SetVisible(vis bool) {
+	if vis {
+		f.anim.Start()
+	} else {
+		f.anim.Stop()
+	}
+	f.VisualEmbed.SetVisible(vis)
 }
 
 func (f *Fire) Update(t float64) {
