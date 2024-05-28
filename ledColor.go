@@ -67,7 +67,7 @@ func NewLedColor(hex int) LedColor {
 	return LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 }
 
-func NewLedColorAlpha(hex int) LedColor {
+func NewLedColorAlpha(hex int64) LedColor {
 	r := (hex & 0xff000000) >> 24
 	g := (hex & 0x00ff0000) >> 16
 	b := (hex & 0x0000ff00) >> 8
