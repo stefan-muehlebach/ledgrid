@@ -1,4 +1,4 @@
-//go:build ignore
+//go:build arm || arm64
 
 package ledgrid
 
