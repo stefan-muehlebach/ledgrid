@@ -253,12 +253,12 @@ type BrightArg struct {
 	RedVal, GreenVal, BlueVal uint8
 }
 
-func (p *PixelServer) RPCSetBright(arg BrightArg, reply *int) error {
+func (p *PixelServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
 	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
 
-func (p *PixelServer) RPCBright(arg int, reply *BrightArg) error {
+func (p *PixelServer) RPCMaxBright(arg int, reply *BrightArg) error {
 	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
 	return nil
 }

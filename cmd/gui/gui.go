@@ -47,7 +47,7 @@ func main() {
 	var local, dummy bool
 	var host string
 	var port uint
-	var gammaValue *ledgrid.Bounded[float64]
+	var gammaValue, maxBrightValue *ledgrid.Bounded[float64]
 
 	var pixCtrl ledgrid.PixelClient
 	var pixGrid *ledgrid.LedGrid
@@ -89,6 +89,11 @@ func main() {
 	gammaValue = ledgrid.NewBounded("Gamma", defGammaValue, 1.0, 5.0, 0.1)
 	gammaValue.SetCallback(func(oldVal, newVal float64) {
 		pixCtrl.SetGamma(newVal, newVal, newVal)
+	})
+	maxBrightValue = ledgrid.NewBounded("MaxBright", 255.0, 1.0, 255.0, 1.0)
+	maxBrightValue.SetCallback(func(oldVal, newVal float64) {
+        val := uint8(newVal)
+		pixCtrl.SetMaxBright(val, val, val)
 	})
 
 	pal = ledgrid.NewPaletteFader(ledgrid.HipsterPalette)
@@ -207,6 +212,11 @@ func main() {
 	gammaSlider.Step = gammaValue.Step()
 	gammaSlider.SetValue(gammaValue.Val())
 
+	maxBrightLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(maxBrightValue, "Max. Bright: %.0f"))
+	maxBrightSlider := widget.NewSliderWithData(maxBrightValue.Min(), maxBrightValue.Max(), maxBrightValue)
+	maxBrightSlider.Step = maxBrightValue.Step()
+	maxBrightSlider.SetValue(maxBrightValue.Val())
+
 	visualForm := container.New(
 		layout.NewFormLayout(),
 		bgTypeLabel, bgTypeSelect,
@@ -237,6 +247,7 @@ func main() {
 	prefTab := container.New(
         layout.NewFormLayout(),
     		gammaLabel, gammaSlider,
+        maxBrightLabel, maxBrightSlider,
     )
 
 	tabs := container.NewAppTabs(
