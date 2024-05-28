@@ -1,7 +1,6 @@
 package ledgrid
 
 import (
-	"golang.org/x/image/draw"
 	"image"
 	"image/color"
 	"math"
@@ -35,7 +34,7 @@ type Shader struct {
 	fnc                ShaderFuncType
 	params             []*Bounded[float64]
 	pal                ColorSource
-	anim               *InfAnimation
+	anim               Animation
 }
 
 func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
@@ -112,10 +111,6 @@ func (s *Shader) Update(t float64) {
 	}
 }
 
-func (s *Shader) Draw() {
-    draw.Copy(s.lg, image.Point{}, s, s.rect, draw.Src, nil)
-}
-
 func (s *Shader) ColorModel() color.Model {
 	return LedColorModel
 }
@@ -185,12 +180,15 @@ func PlasmaShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 	v := (v1+v2+v3)/6.0 + 0.5
 	return v
 }
+
 func f1(x, y, t, p1 float64) float64 {
 	return math.Sin(x*p1 + t)
 }
+
 func f2(x, y, t, p1, p2, p3 float64) float64 {
 	return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
 }
+
 func f3(x, y, t, p1, p2 float64) float64 {
 	cx := 0.125*x + 0.5*math.Sin(t/p1)
 	cy := 0.125*y + 0.5*math.Cos(t/p2)

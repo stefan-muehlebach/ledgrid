@@ -6,6 +6,7 @@ replace github.com/stefan-muehlebach/gg => ../gg
 
 require (
 	fyne.io/fyne/v2 v2.4.5
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/rthornton128/goncurses v0.0.0-20231014161942-82671379df88
 	github.com/stefan-muehlebach/gg v0.0.0-00010101000000-000000000000
 	gocv.io/x/gocv v0.36.1

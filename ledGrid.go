@@ -92,13 +92,13 @@ func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
 	slc[2] = c.B
 }
 
-func (g *LedGrid) MixLedColor(x, y int, c LedColor, mixType ColorMixType) {
-	if !(image.Point{x, y}.In(g.Rect)) {
-		return
-	}
-	bgCol := g.LedColorAt(x, y)
-	g.SetLedColor(x, y, c.Mix(bgCol, mixType))
-}
+// func (g *LedGrid) MixLedColor(x, y int, c LedColor, mixType ColorMixType) {
+// 	if !(image.Point{x, y}.In(g.Rect)) {
+// 		return
+// 	}
+// 	bgCol := g.LedColorAt(x, y)
+// 	g.SetLedColor(x, y, c.Mix(bgCol, mixType))
+// }
 
 // Damit wird der Offset eines bestimmten Farbwerts innerhalb des Slices
 // Pix berechnet. Dabei wird beruecksichtigt, dass das die LED's im LedGrid
@@ -125,3 +125,4 @@ func (g *LedGrid) Clear(c LedColor) {
 		slc[2] = c.B
 	}
 }
+

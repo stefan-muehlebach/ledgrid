@@ -1,138 +1,285 @@
-//go:build ignore
-
 package ledgrid
 
 import (
+	"encoding/xml"
+	"fmt"
 	"image"
+	"image/color"
 	"image/png"
+	"io/ioutil"
 	"log"
+	"math"
 	"os"
+	"strconv"
 	"time"
+
+	"golang.org/x/image/draw"
 )
-
-
-type PictureAnimation struct {
-	VisualEmbed
-	lg       *LedGrid
-	pictList []*Picture
-	timeList []time.Duration
-	Idx      int
-	Cycle    bool
-}
-
-func NewPictureAnimation(lg *LedGrid) *PictureAnimation {
-	i := &PictureAnimation{}
-	i.VisualEmbed.Init("PictAnim")
-	i.lg = lg
-	i.pictList = make([]*Picture, 0)
-	i.timeList = make([]time.Duration, 0)
-	i.Idx = 0
-	i.Cycle = true
-	return i
-}
-
-func (i *PictureAnimation) AddPicture(pict *Picture, dur time.Duration) {
-	i.pictList = append(i.pictList, pict)
-	if len(i.timeList) > 0 {
-		dur += i.timeList[len(i.timeList)-1]
-	}
-	i.timeList = append(i.timeList, dur)
-}
-
-func (i *PictureAnimation) Update(dt time.Duration) bool {
-	// i.AnimatableEmbed.Update(dt)
-	t := i.t0 % i.timeList[len(i.timeList)-1]
-	for idx, v := range i.timeList {
-		if t < v {
-			i.Idx = idx
-			return true
-		}
-	}
-	return true
-}
-
-func (i *PictureAnimation) Draw() {
-	i.pictList[i.Idx].Draw()
-}
 
 //----------------------------------------------------------------------------
 
-type PixelImage struct {
-	VisualEmbed
-	lg  *LedGrid
-	pal ColorSource
-	img []uint8
+type Uniform struct {
+    C LedColor
 }
 
-func NewPixelImage(lg *LedGrid, pal ColorSource) *PixelImage {
-	i := &PixelImage{}
-	i.DrawableEmbed.Init()
+func NewUniform(c LedColor) *Uniform {
+    u := &Uniform{}
+    u.C = c
+    return u
+}
+
+func (u *Uniform) ColorModel() color.Model {
+	return LedColorModel
+}
+
+func (u *Uniform) Bounds() image.Rectangle {
+	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
+}
+
+func (u *Uniform) At(x, y int) color.Color {
+	return u.C
+}
+
+func (u *Uniform) Set(x, y int, c color.Color) {
+}
+
+type Image struct {
+	VisualEmbed
+	lg     *LedGrid
+	img    draw.Image
+	rect   image.Rectangle
+}
+
+func NewImageFromFile(lg *LedGrid, fileName string) *Image {
+	i := &Image{}
+	i.VisualEmbed.Init(fmt.Sprintf("Image '%s'", fileName))
 	i.lg = lg
-	i.pal = pal
-	i.img = make([]uint8, lg.Rect.Dx()*lg.Rect.Dy())
+	fh, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't open file: %v", err)
+	}
+	tmp, err := png.Decode(fh)
+	if err != nil {
+		log.Fatalf("Couldn't decode file: %v", err)
+	}
+	i.img = tmp.(draw.Image)
+    i.rect = i.img.Bounds()
 	return i
 }
 
-func (i *PixelImage) Draw() {
-	for idx, v := range i.img {
-		row := idx / i.lg.Rect.Dx()
-		col := idx % i.lg.Rect.Dx()
-		fg := i.pal.Color(float64(v))
-		bg := i.lg.LedColorAt(col, row)
-		i.lg.SetLedColor(col, row, fg.Mix(bg, Blend))
-	}
+func NewImageFromColor(lg *LedGrid, c LedColor) *Image {
+	i := &Image{}
+	i.VisualEmbed.Init("Uniform Color")
+	i.lg = lg
+	i.img = NewUniform(c)
+    i.rect = i.lg.Bounds()
+	return i
 }
 
-func (i *PixelImage) SetPixels(pix [][]uint8) {
-	for row, data := range pix {
-		for col, v := range data {
-			i.img[row*i.lg.Rect.Dx()+col] = v
+// func (i *Image) Scale(dst draw.Image, dr image.Rectangle, src image.Image, sr image.Rectangle, op draw.Op, opts *draw.Options) {
+// 	// draw.Draw(dst, dr, src, image.Point{}, op)
+// }
+
+func NewImageFromBlinken(lg *LedGrid, blk *BlinkenFile, fn int) *Image {
+	var c color.Color
+
+	i := &Image{}
+	i.VisualEmbed.Init(fmt.Sprintf("Blinken [%d]", fn))
+	i.lg = lg
+	i.img = image.NewRGBA(image.Rect(0, 0, blk.Width, blk.Height))
+	colorScale := uint8(255 / ((1 << blk.Bits) - 1))
+	for row := range blk.Height {
+		for col := range blk.Width {
+			idxFrom := col * blk.Channels
+			idxTo := idxFrom + blk.Channels
+			src := blk.Frames[fn].Values[row][idxFrom:idxTo:idxTo]
+			switch blk.Channels {
+			case 1:
+                v := colorScale * src[0]
+                if v == 0 {
+                    c = color.RGBA{0, 0, 0, 0}
+                } else {
+    			        c = color.RGBA{v, v, v, 0xff}
+                }
+			case 3:
+                r, g, b := colorScale * src[0], colorScale * src[1], colorScale * src[2]
+                if r == 0 && g == 0 && b == 0 {
+                    c = color.RGBA{0, 0, 0, 0}
+                } else {
+				    c = color.RGBA{r, g, b, 0xff}
+                }
+			}
+			i.img.Set(col, row, c)
 		}
 	}
+    i.rect = i.img.Bounds()
+	return i
+}
+
+func (i *Image) ColorModel() color.Model {
+	return LedColorModel
+}
+
+func (i *Image) Bounds() image.Rectangle {
+	return i.rect
+}
+
+func (i *Image) At(x, y int) color.Color {
+	return i.img.At(x, y)
 }
 
 //----------------------------------------------------------------------------
 
 type ImageAnimation struct {
-	VisualizableEmbed
-	lg        *LedGrid
-	imageList []*PixelImage
-	timeList  []time.Duration
-	Idx       int
-	Cycle     bool
+	VisualEmbed
+	lg       *LedGrid
+	imgIdx   int
+	total    float64
+	imgList  []*Image
+	timeList []float64
+	rect     image.Rectangle
+	anim     Animation
 }
 
 func NewImageAnimation(lg *LedGrid) *ImageAnimation {
-	i := &ImageAnimation{}
-	i.VisualizableEmbed.Init("ImageAnim")
-	i.lg = lg
-	i.imageList = make([]*PixelImage, 0)
-	i.timeList = make([]time.Duration, 0)
-	i.Idx = 0
-	i.Cycle = true
-	return i
+	a := &ImageAnimation{}
+	a.VisualEmbed.Init("Image Animation")
+	a.lg = lg
+	a.imgIdx = 0
+	a.total = 0.0
+	a.imgList = make([]*Image, 0)
+	a.timeList = make([]float64, 0)
+	return a
 }
 
-func (i *ImageAnimation) AddImage(img *PixelImage, dur time.Duration) {
-	i.imageList = append(i.imageList, img)
-	if len(i.timeList) > 0 {
-		dur += i.timeList[len(i.timeList)-1]
+func (a *ImageAnimation) AddImage(img *Image, dur time.Duration) {
+	a.imgList = append(a.imgList, img)
+	a.total += dur.Seconds()
+	a.timeList = append(a.timeList, a.total)
+}
+
+func (a *ImageAnimation) Frame() int {
+	return a.imgIdx
+}
+
+func (a *ImageAnimation) SetFrame(i int) {
+	a.imgIdx = i
+}
+
+func (a *ImageAnimation) Total() float64 {
+	return a.total
+}
+
+func (a *ImageAnimation) SetVisible(vis bool) {
+	if vis {
+		a.anim.Start()
+	} else {
+		a.anim.Stop()
 	}
-	i.timeList = append(i.timeList, dur)
+	a.VisualEmbed.SetVisible(vis)
 }
 
-func (i *ImageAnimation) Update(dt time.Duration) bool {
-	i.AnimatableEmbed.Update(dt)
-	t := i.t0 % i.timeList[len(i.timeList)-1]
-	for idx, v := range i.timeList {
-		if t < v {
-			i.Idx = idx
-			return true
+func (a *ImageAnimation) Update(t float64) {
+	t = math.Mod(t, a.total)
+	for i, ts := range a.timeList {
+		if t <= ts {
+			a.imgIdx = i
+			return
 		}
 	}
-	return true
 }
 
-func (i *ImageAnimation) Draw() {
-	i.imageList[i.Idx].Draw()
+func (a *ImageAnimation) ColorModel() color.Model {
+	return LedColorModel
+}
+
+func (a *ImageAnimation) Bounds() image.Rectangle {
+	return a.imgList[a.imgIdx].Bounds()
+}
+
+func (a *ImageAnimation) At(x, y int) color.Color {
+	return a.imgList[a.imgIdx].At(x, y)
+}
+
+//----------------------------------------------------------------------------
+
+type BlinkenFile struct {
+	XMLName  xml.Name       `xml:"blm"`
+	Width    int            `xml:"width,attr"`
+	Height   int            `xml:"height,attr"`
+	Bits     int            `xml:"bits,attr"`
+	Channels int            `xml:"channels,attr"`
+	Header   BlinkenHeader  `xml:"header"`
+	Frames   []BlinkenFrame `xml:"frame"`
+}
+
+type BlinkenHeader struct {
+	XMLName  xml.Name `xml:"header"`
+	Title    string   `xml:"title"`
+	Author   string   `xml:"author"`
+	Email    string   `xml:"email"`
+	Creator  string   `xml:"creator"`
+	Duration int      `xml:"duration,omitempty"`
+}
+
+type BlinkenFrame struct {
+	XMLName  xml.Name  `xml:"frame"`
+	Duration int       `xml:"duration,attr"`
+	Rows     [][]byte  `xml:"row"`
+	Values   [][]uint8 `xml:"-"`
+}
+
+func ReadBlinkenFile(fileName string) *BlinkenFile {
+	b := &BlinkenFile{Channels: 1}
+
+	xmlFile, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer xmlFile.Close()
+
+	byteValue, err := ioutil.ReadAll(xmlFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = xml.Unmarshal(byteValue, b)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	numberWidth := b.Bits / 4
+	if b.Bits%4 != 0 {
+		numberWidth++
+	}
+	for i, frame := range b.Frames {
+		b.Frames[i].Values = make([][]uint8, b.Height)
+		for j, row := range frame.Rows {
+			b.Frames[i].Values[j] = make([]uint8, b.Width*b.Channels)
+			for k := 0; k < b.Width; k++ {
+				for l := range b.Channels {
+					idx := k*numberWidth*b.Channels + l*numberWidth
+					val := row[idx : idx+numberWidth]
+					v, err := strconv.ParseUint(string(val), 16, b.Bits)
+					if err != nil {
+						log.Fatalf("'%s' not parseable: %v", string(val), err)
+					}
+					idx = k*b.Channels + l
+					b.Frames[i].Values[j][idx] = uint8(v)
+				}
+			}
+		}
+	}
+	return b
+}
+
+func (b *BlinkenFile) NewImageAnimation(lg *LedGrid) *ImageAnimation {
+	a := NewImageAnimation(lg)
+	a.SetName(b.Header.Title + " (BlinkenLight)")
+	for i, frame := range b.Frames {
+		img := NewImageFromBlinken(lg, b, i)
+		a.AddImage(img, time.Duration(frame.Duration)*time.Millisecond)
+	}
+	a.anim = NewInfAnimation(a.Update)
+	return a
 }

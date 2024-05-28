@@ -4,8 +4,6 @@ import (
 	"image"
 	"image/color"
 	"math/rand"
-
-	"golang.org/x/image/draw"
 )
 
 const (
@@ -21,9 +19,8 @@ type Fire struct {
 	heat              [][]float64
 	pal               ColorSource
 	cooling, sparking float64
-	scaler            draw.Scaler
 	params            []*Bounded[float64]
-	anim              *InfAnimation
+	anim              Animation
 }
 
 func NewFire(lg *LedGrid) *Fire {
@@ -36,8 +33,6 @@ func NewFire(lg *LedGrid) *Fire {
 		f.heat[i] = make([]float64, f.rect.Dy())
 	}
 	f.pal = FirePalette
-	f.scaler = draw.BiLinear.NewScaler(lg.Bounds().Dx(), lg.Bounds().Dy(),
-		f.rect.Dx(), f.rect.Dy())
 
 	f.params = make([]*Bounded[float64], 2)
 	f.params[0] = NewBounded("Cooling factor", fireDefCooling, 0.08, 1.00, 0.05)
@@ -98,11 +93,6 @@ func (f *Fire) Update(t float64) {
 		}
 	}
 }
-
-func (f *Fire) Draw() {
-	f.scaler.Scale(f.lg, f.lg.Bounds(), f, f.rect, draw.Over, nil)
-}
-
 
 func (f *Fire) ColorModel() color.Model {
 	return LedColorModel

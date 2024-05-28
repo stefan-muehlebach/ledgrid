@@ -5,26 +5,27 @@ package main
 import (
 	"flag"
 	"image"
+	"image/png"
+	"log"
+	"os"
 	"time"
 
-	"fyne.io/fyne/v2/data/binding"
-
-	"fyne.io/fyne/v2/layout"
-
 	"github.com/stefan-muehlebach/gg/colornames"
+	"github.com/stefan-muehlebach/ledgrid"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	_ "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/stefan-muehlebach/ledgrid"
 )
 
 const (
 	Margin    = 10.0
 	AppWidth  = 480.0
-	AppHeight = 480.0
+	AppHeight = 640.0
 )
 
 var (
@@ -35,13 +36,15 @@ var (
 	width              = 10
 	height             = 10
 	defLocal           = false
+	defDummy           = false
 	defHost            = "raspi-2"
 	defPort       uint = 5333
 	defGammaValue      = 3.0
+	blinkenFiles       = []string{"flatter.bml", "torus.bml", "lemming.bml", "mario.bml"}
 )
 
 func main() {
-	var local bool
+	var local, dummy bool
 	var host string
 	var port uint
 	var gammaValue *ledgrid.Bounded[float64]
@@ -50,30 +53,35 @@ func main() {
 	var pixGrid *ledgrid.LedGrid
 	var pixAnim *ledgrid.Animator
 
-	var animList []ledgrid.Visual
-	var animNameList, paletteNameList []string
-	// var curAnim ledgrid.Visual
+	var bgList, fgList []ledgrid.Visual
+	var bgNameList, fgNameList []string
+	var paletteNameList []string
 
 	var pal *ledgrid.PaletteFader
-	var palFadeTime, backFadeTime *ledgrid.Bounded[float64]
+	var palFadeTime, bgFadeTime, fgFadeTime *ledgrid.Bounded[float64]
 
 	var blinken *ledgrid.BlinkenFile
-	var flatterAnim, torusAnim, lemmingAnim, marioAnim *ledgrid.ImageAnimation
+	var blinkenAnim *ledgrid.ImageAnimation
 
-	var animSelect, paletteSelect *widget.Select
-	var animLabel, paletteLabel *widget.Label
+	var bgTypeLabel, fgTypeLabel, paletteLabel *widget.Label
+	var bgTypeSelect, fgTypeSelect, paletteSelect *widget.Select
 
 	var paramForm *fyne.Container
 
 	flag.BoolVar(&local, "local", defLocal, "PixelController is local")
+	flag.BoolVar(&dummy, "dummy", defDummy, "Use dummy PixelController")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.Parse()
 
-	if local {
-		pixCtrl = ledgrid.NewPixelServer(5333, "/dev/spidev0.0", 2_000_000)
+	if dummy {
+		pixCtrl = ledgrid.NewDummyPixelClient()
 	} else {
-		pixCtrl = ledgrid.NewNetPixelClient(host, port)
+		if local {
+			pixCtrl = ledgrid.NewLocalPixelClient(5333, "/dev/spidev0.0", 2_000_000)
+		} else {
+			pixCtrl = ledgrid.NewNetPixelClient(host, port)
+		}
 	}
 	pixGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
 	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)
@@ -86,39 +94,40 @@ func main() {
 	pal = ledgrid.NewPaletteFader(ledgrid.HipsterPalette)
 	palFadeTime = ledgrid.NewBounded("Fade Time", 1.5, 0.0, 5.0, 0.1)
 
-	backFadeTime = ledgrid.NewBounded("Fade Time", 1.5, 0.0, 5.0, 0.1)
+	bgFadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
+	fgFadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
 
-	blinken = ledgrid.ReadBlinkenFile("flatter.bml")
-	flatterAnim = blinken.NewImageAnimation(pixGrid)
+	transpVisual := ledgrid.NewImageFromColor(pixGrid, ledgrid.Transparent)
+	transpVisual.SetName("(Transparent)")
 
-	blinken = ledgrid.ReadBlinkenFile("torus.bml")
-	torusAnim = blinken.NewImageAnimation(pixGrid)
-
-	blinken = ledgrid.ReadBlinkenFile("lemmingWalk.bml")
-	lemmingAnim = blinken.NewImageAnimation(pixGrid)
-
-	blinken = ledgrid.ReadBlinkenFile("mario.bml")
-	marioAnim = blinken.NewImageAnimation(pixGrid)
-
-	animList = []ledgrid.Visual{
+	bgList = []ledgrid.Visual{
+		transpVisual,
 		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, pal),
 		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, pal),
 		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, pal),
 		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, pal),
 		ledgrid.NewFire(pixGrid),
 		ledgrid.NewCamera(pixGrid),
-		ledgrid.NewText(pixGrid, "Lochbach", colornames.Crimson),
-		ledgrid.NewImageFromFile(pixGrid, "image.png"),
-		flatterAnim,
-		torusAnim,
-		lemmingAnim,
-		marioAnim,
-		// txtAnim,dir
 	}
-	animNameList = make([]string, len(animList))
-	for i, anim := range animList {
-		animNameList[i] = anim.Name()
-		//pixAnim.AddObjects(anim)
+	bgNameList = make([]string, len(bgList))
+	for i, anim := range bgList {
+		bgNameList[i] = anim.Name()
+	}
+
+	fgList = []ledgrid.Visual{
+		transpVisual,
+		ledgrid.NewText(pixGrid, "Lochbach", colornames.Crimson),
+		ledgrid.NewTextFT(pixGrid, "Lochbach", colornames.Teal),
+		ledgrid.NewImageFromFile(pixGrid, "image.png"),
+	}
+	for _, fileName := range blinkenFiles {
+		blinken = ledgrid.ReadBlinkenFile(fileName)
+		blinkenAnim = blinken.NewImageAnimation(pixGrid)
+		fgList = append(fgList, blinkenAnim)
+	}
+	fgNameList = make([]string, len(fgList))
+	for i, anim := range fgList {
+		fgNameList[i] = anim.Name()
 	}
 
 	paletteNameList = make([]string, len(ledgrid.PaletteList))
@@ -126,22 +135,25 @@ func main() {
 		paletteNameList[i] = palette.Name()
 	}
 
+	//------------------------------------------------------------------------
+	//
 	// Ab dieser Stelle wird das GUI aufgebaut
-	myApp := app.New()
-	myApp.SetIcon(resourceIconIco)
-	myWindow := myApp.NewWindow("PixelGui")
+	//
+	app := app.New()
+	app.SetIcon(resourceIconIco)
+	win := app.NewWindow("LedGrid GUI")
 
-	animLabel = widget.NewLabel("Type:")
-	animSelect = widget.NewSelect(animNameList, func(s string) {
-        newBack := animList[animSelect.SelectedIndex()]
-        pixAnim.SetBackground(newBack, time.Duration(backFadeTime.Val() * float64(time.Second)))
-        if obj, ok := newBack.(ledgrid.Paintable); ok {
-            paletteSelect.Enable()
-            paletteSelect.SetSelected(obj.Palette().Name())
-        } else {
-            paletteSelect.SetSelectedIndex(-1)
-            paletteSelect.Disable()
-        }
+	bgTypeLabel = widget.NewLabel("Background:")
+	bgTypeSelect = widget.NewSelect(bgNameList, func(s string) {
+		newBg := bgList[bgTypeSelect.SelectedIndex()]
+		pixAnim.SetBackground(newBg, time.Duration(bgFadeTime.Val()*float64(time.Second)))
+		if obj, ok := newBg.(ledgrid.Paintable); ok {
+			paletteSelect.Enable()
+			paletteSelect.SetSelected(obj.Palette().Name())
+		} else {
+			paletteSelect.SetSelectedIndex(-1)
+			paletteSelect.Disable()
+		}
 		for _, obj := range paramForm.Objects {
 			switch o := obj.(type) {
 			case *widget.Label:
@@ -151,7 +163,7 @@ func main() {
 			}
 		}
 		paramForm.RemoveAll()
-		if obj, ok := newBack.(ledgrid.Parametrizable); ok {
+		if obj, ok := newBg.(ledgrid.Parametrizable); ok {
 			for _, param := range obj.ParamList() {
 				label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+": %.3f"))
 				slider := widget.NewSliderWithData(param.Min(), param.Max(), param)
@@ -163,12 +175,22 @@ func main() {
 		}
 	})
 
-	backFadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(backFadeTime, backFadeTime.Name()+": %.1f"))
-	backFadeTimeSlider := widget.NewSliderWithData(backFadeTime.Min(), backFadeTime.Max(), backFadeTime)
-	backFadeTimeSlider.Step = backFadeTime.Step()
-	backFadeTimeSlider.SetValue(backFadeTime.Val())
+	bgFadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(bgFadeTime, bgFadeTime.Name()+": %.1f"))
+	bgFadeTimeSlider := widget.NewSliderWithData(bgFadeTime.Min(), bgFadeTime.Max(), bgFadeTime)
+	bgFadeTimeSlider.Step = bgFadeTime.Step()
+	bgFadeTimeSlider.SetValue(bgFadeTime.Val())
 
-	paletteLabel = widget.NewLabel("Color:")
+	fgTypeLabel = widget.NewLabel("Foreground:")
+	fgTypeSelect = widget.NewSelect(fgNameList, func(s string) {
+		newFg := fgList[fgTypeSelect.SelectedIndex()]
+		pixAnim.SetForeground(newFg, time.Duration(fgFadeTime.Val()*float64(time.Second)))
+	})
+	fgFadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(fgFadeTime, fgFadeTime.Name()+": %.1f"))
+	fgFadeTimeSlider := widget.NewSliderWithData(fgFadeTime.Min(), fgFadeTime.Max(), fgFadeTime)
+	fgFadeTimeSlider.Step = fgFadeTime.Step()
+	fgFadeTimeSlider.SetValue(fgFadeTime.Val())
+
+	paletteLabel = widget.NewLabel("Palette:")
 	paletteSelect = widget.NewSelect(paletteNameList, func(s string) {
 		id := paletteSelect.SelectedIndex()
 		pal.StartFade(ledgrid.PaletteList[id], time.Duration(palFadeTime.Val()*float64(time.Second)))
@@ -185,42 +207,70 @@ func main() {
 	gammaSlider.Step = gammaValue.Step()
 	gammaSlider.SetValue(gammaValue.Val())
 
-	backForm := container.New(
+	visualForm := container.New(
 		layout.NewFormLayout(),
-		animLabel, animSelect,
-		backFadeTimeLabel, backFadeTimeSlider,
+		bgTypeLabel, bgTypeSelect,
+		bgFadeTimeLabel, bgFadeTimeSlider,
+		fgTypeLabel, fgTypeSelect,
+		fgFadeTimeLabel, fgFadeTimeSlider,
+	)
+	visualCard := widget.NewCard("Visual Effects", "", visualForm)
+
+	colorForm := container.New(
+		layout.NewFormLayout(),
 		paletteLabel, paletteSelect,
 		palFadeTimeLabel, palFadeTimeSlider,
-		gammaLabel, gammaSlider,
 	)
-	backCard := widget.NewCard("Background", "", backForm)
+	colorCard := widget.NewCard("Color / Palette", "", colorForm)
 
 	paramForm = container.New(
 		layout.NewFormLayout(),
 	)
 	paramCard := widget.NewCard("Parameters", "", paramForm)
 
-	quitBtn := widget.NewButton("Quit", myApp.Quit)
-	btnBox := container.NewHBox(layout.NewSpacer(), quitBtn)
-
-	root := container.NewVBox(
-		backCard,
-		widget.NewSeparator(),
-		paramCard,
-		layout.NewSpacer(),
-		btnBox,
+	effectTab := container.NewVBox(
+		visualCard,
+		colorCard,
+        paramCard,
 	)
 
-	myWindow.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
+	prefTab := container.New(
+        layout.NewFormLayout(),
+    		gammaLabel, gammaSlider,
+    )
+
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Effects", effectTab),
+		container.NewTabItem("Preferences", prefTab),
+	)
+
+	saveBtn := widget.NewButton("Save", func() {
+		fh, err := os.Create("ledgrid.png")
+		if err != nil {
+			log.Fatalf("Couldn't create file 'ledgrid.png': %v", err)
+		}
+		png.Encode(fh, pixGrid)
+		fh.Close()
+	})
+	quitBtn := widget.NewButton("Quit", app.Quit)
+	btnBox := container.NewHBox(saveBtn, layout.NewSpacer(), quitBtn)
+
+    root := container.NewVBox(
+        tabs,
+        layout.NewSpacer(),
+        btnBox,
+    )
+
+	win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
 		case fyne.KeyEscape, fyne.KeyQ:
-			myApp.Quit()
+			app.Quit()
 		}
 	})
 
-	myWindow.SetContent(root)
-	myWindow.Resize(AppSize)
-	myWindow.ShowAndRun()
+	win.SetContent(root)
+	win.Resize(AppSize)
+	win.ShowAndRun()
 
 	pixGrid.Clear(ledgrid.Black)
 	pixCtrl.Draw(pixGrid)

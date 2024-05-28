@@ -1,5 +1,9 @@
 package ledgrid
 
+import (
+	"image"
+)
+
 // Diese Datei enthaelt viele Interfaces aber auch sog. Embedables, welche
 // als Standard- oder Default-Implementation des entsprechenden Interfaces
 // genutzt werden koennen - aber nicht muessen.
@@ -38,8 +42,18 @@ type Visual interface {
 	Visible() bool
 	SetVisible(v bool)
 	// Zeichnet das Objekt auf dem LedGrid.
-	Draw()
+    image.Image
 }
+
+// type VisualImage interface {
+//     Visual
+//     image.Image
+// }
+
+// type VisualDrawing interface {
+//     Visual
+//     Draw(alpha uint8)
+// }
 
 // Dieses Embedable kann fuer eine Default-Implementation des Drawable-
 // Interfaces genutzt werden.

@@ -2,10 +2,10 @@ package ledgrid
 
 import (
 	"image"
+	"image/color"
 	"log"
 
 	"gocv.io/x/gocv"
-	"golang.org/x/image/draw"
 )
 
 //----------------------------------------------------------------------------
@@ -23,10 +23,10 @@ type Camera struct {
 	lg      *LedGrid
 	img     image.Image
 	imgRect image.Rectangle
-	scaler  draw.Scaler
-	webcam  *gocv.VideoCapture
-	mat     gocv.Mat
-	anim    Animation
+	// scaler  draw.Scaler
+	webcam *gocv.VideoCapture
+	mat    gocv.Mat
+	anim   Animation
 }
 
 func NewCamera(lg *LedGrid) *Camera {
@@ -37,7 +37,7 @@ func NewCamera(lg *LedGrid) *Camera {
 	c.lg = lg
 
 	c.imgRect = image.Rect(40, 0, 280, 240)
-	c.scaler = draw.BiLinear.NewScaler(10, 10, camHeight, camHeight)
+	// c.scaler = draw.BiLinear.NewScaler(10, 10, camHeight, camHeight)
 
 	c.webcam, err = gocv.VideoCaptureDevice(camDevId)
 	if err != nil {
@@ -67,8 +67,20 @@ func (c *Camera) Update(t float64) {
 	}
 }
 
-func (c *Camera) Draw() {
-	c.scaler.Scale(c.lg, c.lg.Bounds(), c.img, c.imgRect, draw.Src, nil)
+// func (c *Camera) Draw() {
+// 	c.scaler.Scale(c.lg, c.lg.Bounds(), c.img, c.imgRect, draw.Src, nil)
+// }
+
+func (c *Camera) ColorModel() color.Model {
+	return LedColorModel
+}
+
+func (c *Camera) Bounds() image.Rectangle {
+	return c.imgRect
+}
+
+func (c *Camera) At(x, y int) color.Color {
+	return c.img.At(x, y)
 }
 
 func (c *Camera) SetVisible(visible bool) {

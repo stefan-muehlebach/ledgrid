@@ -6,13 +6,12 @@ import (
 	"bytes"
 	"context"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"log"
-	"time"
 
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
-	"golang.org/x/image/draw"
 )
 
 //----------------------------------------------------------------------------
@@ -26,25 +25,24 @@ const (
 )
 
 type Camera struct {
-	VisualizableEmbed
+	VisualEmbed
 	lg      *LedGrid
 	img     image.Image
 	imgRect image.Rectangle
-	scaler  draw.Scaler
 	dev     *device.Device
 	params  []*Bounded[float64]
 	cancel  context.CancelFunc
+	anim    Animation
 }
 
 func NewCamera(lg *LedGrid) *Camera {
 	var err error
 
 	c := &Camera{}
-	c.VisualizableEmbed.Init("Camera")
+	c.VisualEmbed.Init("Camera")
 	c.lg = lg
 
 	c.imgRect = image.Rect(40, 0, 280, 240)
-	c.scaler = draw.BiLinear.NewScaler(10, 10, camHeight, camHeight)
 
 	paramDev, err := device.Open(camDevName)
 	if err != nil {
@@ -67,6 +65,7 @@ func NewCamera(lg *LedGrid) *Camera {
 			c.params = append(c.params, param)
 		}
 	}
+	c.anim = NewInfAnimation(c.Update)
 	return c
 }
 
@@ -80,33 +79,40 @@ func (c *Camera) SetParamValue(id v4l2.CtrlID, val v4l2.CtrlValue) {
 	}
 }
 
-func (c *Camera) Update(dt time.Duration) bool {
+func (c *Camera) Update(t float64) {
 	var err error
 	var frame []byte
 	var ok bool
 
-	dt = c.AnimatableEmbed.Update(dt)
 	if frame, ok = <-c.dev.GetOutput(); !ok {
 		log.Printf("no frame to process")
-		return true
+		return
 	}
 	reader := bytes.NewReader(frame)
 	c.img, err = jpeg.Decode(reader)
 	if err != nil {
 		log.Fatalf("failed to decode data: %v", err)
 	}
-	return true
+	return
 }
 
-func (c *Camera) Draw() {
-	c.scaler.Scale(c.lg, c.lg.Bounds(), c.img, c.imgRect, draw.Src, nil)
+func (c *Camera) ColorModel() color.Model {
+	return LedColorModel
 }
 
-func (c *Camera) SetActive(active bool) {
+func (c *Camera) Bounds() image.Rectangle {
+	return c.imgRect
+}
+
+func (c *Camera) At(x, y int) color.Color {
+	return c.img.At(x, y)
+}
+
+func (c *Camera) SetVisible(visible bool) {
 	var ctx context.Context
 	var err error
 
-	if active {
+	if visible {
 		c.dev, err = device.Open(camDevName,
 			device.WithIOType(v4l2.IOTypeMMAP),
 			device.WithPixFormat(v4l2.PixFormat{
@@ -124,9 +130,11 @@ func (c *Camera) SetActive(active bool) {
 		if err = c.dev.Start(ctx); err != nil {
 			log.Fatalf("failed to start stream: %v", err)
 		}
-		c.VisualizableEmbed.SetActive(active)
+		c.VisualEmbed.SetVisible(visible)
+		c.anim.Start()
 	} else {
-		c.VisualizableEmbed.SetActive(active)
+		c.anim.Stop()
+		c.VisualEmbed.SetVisible(visible)
 		c.cancel()
 		if err = c.dev.Close(); err != nil {
 			log.Fatalf("failed to close device: %v", err)

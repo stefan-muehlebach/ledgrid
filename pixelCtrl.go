@@ -36,6 +36,7 @@ type PixelServer struct {
 	buffer      []byte
 	maxTxSize   int
 	gammaValue  [3]float64
+	maxValue    [3]uint8
 	gamma       [3][256]byte
 }
 
@@ -66,7 +67,9 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur erstellt.
 	//
-	p.SetGamma(1.0, 1.0, 1.0)
+	p.gammaValue = [3]float64{1.0, 1.0, 1.0}
+	p.maxValue = [3]uint8{255, 255, 255}
+	p.updateGammaTable()
 
 	// Dann wird der SPI-Bus initialisiert.
 	//
@@ -119,9 +122,23 @@ func (p *PixelServer) Gamma() (r, g, b float64) {
 
 func (p *PixelServer) SetGamma(r, g, b float64) {
 	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = r, g, b
+	p.updateGammaTable()
+}
+
+func (p *PixelServer) MaxBright() (r, g, b uint8) {
+	return p.maxValue[0], p.maxValue[1], p.maxValue[2]
+}
+
+func (p *PixelServer) SetMaxBright(r, g, b uint8) {
+	p.maxValue[0], p.maxValue[1], p.maxValue[2] = r, g, b
+	p.updateGammaTable()
+}
+
+func (p *PixelServer) updateGammaTable() {
 	for color, val := range p.gammaValue {
+		max := float64(p.maxValue[color])
 		for i := range 256 {
-			p.gamma[color][i] = byte(255.0 * math.Pow(float64(i)/255.0, val))
+			p.gamma[color][i] = byte(max * math.Pow(float64(i)/max, val))
 		}
 	}
 }
@@ -130,12 +147,12 @@ func (p *PixelServer) Draw(lg *LedGrid) {
 	var bufferSize int
 	var err error
 
-    bufferSize = len(lg.Pix)
-    for i := 0; i < bufferSize; i += 3 {
-        p.buffer[i+0] = p.gamma[0][lg.Pix[i+0]]
-        p.buffer[i+1] = p.gamma[1][lg.Pix[i+1]]
-        p.buffer[i+2] = p.gamma[2][lg.Pix[i+2]]
-    }
+	bufferSize = len(lg.Pix)
+	for i := 0; i < bufferSize; i += 3 {
+		p.buffer[i+0] = p.gamma[0][lg.Pix[i+0]]
+		p.buffer[i+1] = p.gamma[1][lg.Pix[i+1]]
+		p.buffer[i+2] = p.gamma[2][lg.Pix[i+2]]
+	}
 	if p.onRaspi {
 		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
 			txSize := min(p.maxTxSize, bufferSize-idx)
@@ -228,20 +245,44 @@ func (p *PixelServer) RPCSetGamma(arg GammaArg, reply *int) error {
 }
 
 func (p *PixelServer) RPCGamma(arg int, reply *GammaArg) error {
-    reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
-    return nil
+	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
+	return nil
+}
+
+type BrightArg struct {
+	RedVal, GreenVal, BlueVal uint8
+}
+
+func (p *PixelServer) RPCSetBright(arg BrightArg, reply *int) error {
+	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
+	return nil
+}
+
+func (p *PixelServer) RPCBright(arg int, reply *BrightArg) error {
+	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
+	return nil
 }
 
 // Um den clientseitigen Code so generisch wie moeglich zu halten, ist der
-// PixelClient als Interface definiert. Zwei konkrete Implementationen
+// PixelClient als Interface definiert. Drei konkrete Implementationen
 // stehen zur Verfuegung:
 // - LocalPixelClient
 // - NetPixelClient
+// - DummyPixelClient
 type PixelClient interface {
-    Close()
-    Draw(lg *LedGrid)
-    Gamma() (r, g, b float64)
-    SetGamma(r, g, b float64)
+	Close()
+	Draw(lg *LedGrid)
+	Gamma() (r, g, b float64)
+	SetGamma(r, g, b float64)
+    MaxBright() (r, g, b uint8)
+    SetMaxBright(r, g, b uint8)
+}
+
+type LocalPixelClient PixelServer
+
+func NewLocalPixelClient(port uint, spiDev string, baud int) PixelClient {
+	p := NewPixelServer(port, spiDev, baud)
+	return p
 }
 
 // Dieser Typ wird client-seitig fuer die Ansteuerung des LedGrid verwendet.
@@ -254,7 +295,7 @@ type NetPixelClient struct {
 
 // Erzeugt ein neues Controller-Objekt, welches das LedGrid ueber die Adresse
 // in Host und den UDP-Port in Port anspricht.
-func NewNetPixelClient(host string, port uint) *NetPixelClient {
+func NewNetPixelClient(host string, port uint) PixelClient {
 	var hostPort string
 	var err error
 
@@ -300,7 +341,7 @@ func (p *NetPixelClient) Gamma() (r, g, b float64) {
 	if err != nil {
 		log.Fatal("Gamma error:", err)
 	}
-    return reply.RedVal, reply.GreenVal, reply.BlueVal
+	return reply.RedVal, reply.GreenVal, reply.BlueVal
 }
 
 func (p *NetPixelClient) SetGamma(r, g, b float64) {
@@ -311,4 +352,58 @@ func (p *NetPixelClient) SetGamma(r, g, b float64) {
 	if err != nil {
 		log.Fatal("SetGamma error:", err)
 	}
+}
+
+func (p *NetPixelClient) MaxBright() (r, g, b uint8) {
+	var reply BrightArg
+	var err error
+
+	err = p.rpcClient.Call("PixelServer.RPCMaxBright", 0, &reply)
+	if err != nil {
+		log.Fatal("MaxBright error:", err)
+	}
+	return reply.RedVal, reply.GreenVal, reply.BlueVal
+}
+
+func (p *NetPixelClient) SetMaxBright(r, g, b uint8) {
+	var reply int
+	var err error
+
+	err = p.rpcClient.Call("PixelServer.RPCSetMaxBright", BrightArg{r, g, b}, &reply)
+	if err != nil {
+		log.Fatal("SetMaxBright error:", err)
+	}
+}
+
+
+type DummyPixelClient struct {
+}
+
+func NewDummyPixelClient() PixelClient {
+	p := &DummyPixelClient{}
+	return p
+}
+
+func (p *DummyPixelClient) Close() {
+
+}
+
+func (p *DummyPixelClient) Draw(lg *LedGrid) {
+
+}
+
+func (p *DummyPixelClient) Gamma() (r, g, b float64) {
+	return 1.0, 1.0, 1.0
+}
+
+func (p *DummyPixelClient) SetGamma(r, g, b float64) {
+
+}
+
+func (p *DummyPixelClient) MaxBright() (r, g, b uint8) {
+    return 0xff, 0xff, 0xff
+}
+
+func (p *DummyPixelClient) SetMaxBright(r, g, b uint8) {
+
 }

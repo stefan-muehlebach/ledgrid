@@ -1,81 +1,100 @@
 package ledgrid
 
 import (
+	"image"
+	"image/color"
 	"runtime"
 	"time"
+
+	"golang.org/x/image/draw"
 )
 
 var (
 	theAnimator *Animator
 )
 
+func init() {
+	theAnimator = newAnimator()
+}
+
 // Die Animation und die Darstellung von Objekten erfolgt zentral ueber einen
 // Animator. Es ist sichergestellt, dass nur ein (1) Objekt von diesem Typ
 // existiert.
 type Animator struct {
-	lg       *LedGrid
-	client   PixelClient
-	ticker   *time.Ticker
-	objList  []Visual
-	animList []Animation
-	backObjs [2]Visual
-	backAnim Animation
-	backT    float64
-	foreObjs [2]Visual
-	foreAnim Animation
-	foreT    float64
+	lg               *LedGrid
+	client           PixelClient
+	ticker           *time.Ticker
+	animList         []Animation
+	bgList, fgList   [2]Visual
+	bgAnim, fgAnim   Animation
+	bgAnimT, fgAnimT float64
+}
+
+// Erstellt einen neuen Animator, welcher fuer die Animation und die
+// Darstellung aller Objekte auf dem LedGrid zustaendig ist.
+func newAnimator() *Animator {
+	if theAnimator != nil {
+		return theAnimator
+	}
+	a := &Animator{}
+	a.animList = make([]Animation, 0)
+	theAnimator = a
+
+	return a
 }
 
 // Erstellt einen neuen Animator, welcher fuer die Animation und die
 // Darstellung aller Objekte auf dem LedGrid zustaendig ist.
 func NewAnimator(lg *LedGrid, client PixelClient) *Animator {
-	if theAnimator != nil {
-		return theAnimator
-	}
-	a := &Animator{}
-	a.lg = lg
-	a.client = client
-	a.objList = make([]Visual, 0)
-	a.animList = make([]Animation, 0)
+	theAnimator.lg = lg
+	theAnimator.client = client
+	theAnimator.coordinator()
 
-	a.coordinator()
-
-	theAnimator = a
-	return a
+	return theAnimator
 }
 
 func (a *Animator) SetBackground(obj Visual, fadeTime time.Duration) {
-	if a.backAnim != nil && !a.backAnim.IsStopped() {
+	if a.bgAnim != nil && !a.bgAnim.IsStopped() {
 		return
 	}
-    obj.SetVisible(true)
-	if a.backObjs[0] == nil {
-		a.backObjs[0] = obj
+	obj.SetVisible(true)
+	if a.bgList[0] == nil {
+		a.bgList[0] = obj
 		return
 	}
-	a.backObjs[1] = obj
-	a.backAnim = NewNormAnimation(fadeTime, func(t float64) {
-        if t == 1.0 {
-            a.backObjs[0].SetVisible(false)
-            a.backObjs[0], a.backObjs[1] = a.backObjs[1], nil
-            a.backT = 0.0
-        } else {
-            a.backT = t
-        }
+	a.bgList[1] = obj
+	a.bgAnim = NewNormAnimation(fadeTime, func(t float64) {
+		if t == 1.0 {
+			a.bgList[0].SetVisible(false)
+			a.bgList[0], a.bgList[1] = a.bgList[1], nil
+			a.bgAnimT = 0.0
+		} else {
+			a.bgAnimT = t
+		}
 	})
-    a.backAnim.Start()
+	a.bgAnim.Start()
 }
 
-// Fuegt ein neues Objekt dem Animator hinzu.
-func (a *Animator) AddObjects(objs ...Visual) {
-	a.objList = append(a.objList, objs...)
-}
-
-// Retourniert alle Objekte.
-func (a *Animator) Objects() []Visual {
-	l := make([]Visual, len(a.objList))
-	copy(l, a.objList)
-	return l
+func (a *Animator) SetForeground(obj Visual, fadeTime time.Duration) {
+	if a.fgAnim != nil && !a.fgAnim.IsStopped() {
+		return
+	}
+	obj.SetVisible(true)
+	if a.fgList[0] == nil {
+		a.fgList[0] = obj
+		return
+	}
+	a.fgList[1] = obj
+	a.fgAnim = NewNormAnimation(fadeTime, func(t float64) {
+		if t == 1.0 {
+			a.fgList[0].SetVisible(false)
+			a.fgList[0], a.fgList[1] = a.fgList[1], nil
+			a.fgAnimT = 0.0
+		} else {
+			a.fgAnimT = t
+		}
+	})
+	a.fgAnim.Start()
 }
 
 func (r *Animator) addAnim(anim Animation) {
@@ -88,45 +107,68 @@ func (r *Animator) Animations() []Animation {
 	return l
 }
 
+type animationJob struct {
+	anim Animation
+	pt   time.Time
+}
+
 func (a *Animator) coordinator() {
 	numCores := runtime.NumCPU()
-	objChan := make(chan Animation, 2*numCores)
+	jobChan := make(chan animationJob, 2*numCores)
 	doneChan := make(chan bool, 2*numCores)
+	drawMask := image.NewUniform(color.Alpha{0xff})
+	drawOpts := &draw.Options{
+		SrcMask: drawMask,
+	}
+    scaler := draw.BiLinear
+
 	for range numCores {
-		go a.animUpdater(objChan, doneChan)
+		go a.animUpdater(jobChan, doneChan)
 	}
 	a.ticker = time.NewTicker(frameRefresh)
 	go func() {
-		for range a.ticker.C {
+		for pt := range a.ticker.C {
 			numObjs := 0
-			for _, obj := range a.animList {
-				if obj.IsStopped() {
+			for _, anim := range a.animList {
+				if anim.IsStopped() {
 					continue
 				}
-				objChan <- obj
+				jobChan <- animationJob{anim, pt}
 				numObjs++
 			}
 			for range numObjs {
 				<-doneChan
 			}
 			a.lg.Clear(Black)
-			// for _, obj := range a.objList {
-			// 	if obj.Visible() {
-			// 		obj.Draw()
-			// 	}
-			// }
-            if a.backObjs[0] == nil {
-                continue
-            }
-            a.backObjs[0].Draw()
+
+			if bg := a.bgList[0]; bg != nil {
+				alpha := uint8((1 - a.bgAnimT) * 255.0)
+				drawMask.C = color.Alpha{alpha}
+				scaler.Scale(a.lg, a.lg.Bounds(), bg, bg.Bounds(), draw.Over, drawOpts)
+				if bg := a.bgList[1]; bg != nil {
+					alpha := uint8(a.bgAnimT * 255.0)
+					drawMask.C = color.Alpha{alpha}
+					scaler.Scale(a.lg, a.lg.Bounds(), bg, bg.Bounds(), draw.Over, drawOpts)
+				}
+			}
+			if fg := a.fgList[0]; fg != nil {
+				alpha := uint8((1 - a.fgAnimT) * 255.0)
+				drawMask.C = color.Alpha{alpha}
+				scaler.Scale(a.lg, a.lg.Bounds(), fg, fg.Bounds(), draw.Over, drawOpts)
+				if fg := a.fgList[1]; fg != nil {
+					alpha := uint8(a.fgAnimT * 255.0)
+					drawMask.C = color.Alpha{alpha}
+					scaler.Scale(a.lg, a.lg.Bounds(), fg, fg.Bounds(), draw.Over, drawOpts)
+				}
+			}
 			a.client.Draw(a.lg)
 		}
 	}()
 }
 
-func (a *Animator) animUpdater(objChan <-chan Animation, doneChan chan<- bool) {
-	for obj := range objChan {
-		obj.update(time.Now())
+func (a *Animator) animUpdater(jobChan <-chan animationJob, doneChan chan<- bool) {
+	for job := range jobChan {
+		job.anim.update(job.pt)
 		doneChan <- true
 	}
 }
@@ -137,6 +179,7 @@ func (a *Animator) animUpdater(objChan <-chan Animation, doneChan chan<- bool) {
 type Animation interface {
 	Start()
 	Stop()
+	Cont()
 	IsStopped() bool
 	update(t time.Time) bool
 }
@@ -172,11 +215,11 @@ type NormAnimation struct {
 	// Diese Funktion wird bei jedem Update aufgerufen.
 	Tick func(t float64)
 
-	reverse     bool
-	start, end  time.Time
-	total       int64
-	repeatsLeft int
-	running     bool
+	reverse          bool
+	start, stop, end time.Time
+	total            int64
+	repeatsLeft      int
+	running          bool
 }
 
 // Erstellt eine neue Animation, welche ueber den Zeitraum d die Funktion
@@ -187,7 +230,7 @@ func NewNormAnimation(d time.Duration, fn func(float64)) *NormAnimation {
 	a.Curve = LinearAnimationCurve
 	a.Duration = d
 	a.Tick = fn
-    theAnimator.addAnim(a)
+	theAnimator.addAnim(a)
 	return a
 }
 
@@ -203,7 +246,21 @@ func (a *NormAnimation) Start() {
 
 // Stoppt die Animation.
 func (a *NormAnimation) Stop() {
+	if !a.running {
+		return
+	}
+	a.stop = time.Now()
 	a.running = false
+}
+
+func (a *NormAnimation) Cont() {
+	if a.running {
+		return
+	}
+	dt := time.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.end = a.end.Add(dt)
+	a.running = true
 }
 
 // Dient der Abfrage, ob die Animation noch am Laufen ist.
@@ -256,9 +313,9 @@ func (a *NormAnimation) update(t time.Time) bool {
 // es gibt aber keine max. Animationsdauer oder die Möglichkeit die Animation
 // zyklisch auszufuehren.
 type InfAnimation struct {
-	Tick    func(t float64)
-	start   time.Time
-	running bool
+	Tick        func(t float64)
+	start, stop time.Time
+	running     bool
 }
 
 // Erzeugt eine neue Infinite-Animation, welche bei jedem Refresh die Funktion
@@ -267,7 +324,7 @@ type InfAnimation struct {
 func NewInfAnimation(fn func(float64)) *InfAnimation {
 	a := &InfAnimation{}
 	a.Tick = fn
-    theAnimator.addAnim(a)
+	theAnimator.addAnim(a)
 	return a
 }
 
@@ -277,7 +334,19 @@ func (a *InfAnimation) Start() {
 }
 
 func (a *InfAnimation) Stop() {
+	if !a.running {
+		return
+	}
+	a.stop = time.Now()
 	a.running = false
+}
+
+func (a *InfAnimation) Cont() {
+	if a.running {
+		return
+	}
+	a.start = a.start.Add(time.Now().Sub(a.stop))
+	a.running = true
 }
 
 func (a *InfAnimation) IsStopped() bool {

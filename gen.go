@@ -35,7 +35,7 @@ import (
 
 var (
     // PaletteList ist ein Slice mit den Namen aller vorhandenen Paletten.
-    PaletteList = []Colorable{
+    PaletteList = []ColorSource{
 {{- range $i, $row := .}}
         {{printf "%sPalette" $row.PaletteName}},
 {{- end}}
@@ -57,7 +57,7 @@ var (
 
     colorNamesTemplate = `
 var (
-    ColorList = []Colorable{
+    ColorList = []ColorSource{
 {{- range $i, $row := .}}
         {{printf "%sColor" $row}},
 {{- end}}
