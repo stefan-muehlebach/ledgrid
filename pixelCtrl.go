@@ -138,7 +138,7 @@ func (p *PixelServer) updateGammaTable() {
 	for color, val := range p.gammaValue {
 		max := float64(p.maxValue[color])
 		for i := range 256 {
-			p.gamma[color][i] = byte(max * math.Pow(float64(i)/max, val))
+			p.gamma[color][i] = byte(max * math.Pow(float64(i)/255.0, val))
 		}
 	}
 }
