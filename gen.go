@@ -34,21 +34,31 @@ import (
 )
 
 var (
-    // PaletteList ist ein Slice mit den Namen aller vorhandenen Paletten.
+    // PaletteList ist ein Slice mit allen vorhandenen Paletten.
     PaletteList = []ColorSource{
 {{- range $i, $row := .}}
-        {{printf "%sPalette" $row.PaletteName}},
+        {{printf "%s" $row.PaletteName}},
 {{- end}}
     }
+
+    // PaletteMap ist ein Map um Paletten mit ihrem Namen anzusprechen.
+    PaletteMap = map[string]ColorSource{
+{{- range $i, $row := .}}
+        {{printf "\"%s\": %[1]s" $row.PaletteName}},
+{{- end}}
+    }
+
 )
 
 var (
     // In diesem Block werden die Paletten konkret erstellt.
 {{- range $i, $row := .}}
-    {{- if $row.IsGradient}}
-    {{printf "%sPalette = NewGradientPalette(\"%[1]s\", %s...)" $row.PaletteName $row.ColorListName}}
+    {{- if $row.IsUniform}}
+    {{printf "%s = NewUniformPalette(\"%[1]s\", %s)" $row.PaletteName $row.ColorListName}}
+    {{- else if $row.IsGradient}}
+    {{printf "%s = NewGradientPalette(\"%[1]s\", %s...)" $row.PaletteName $row.ColorListName}}
     {{- else}}
-    {{printf "%sPalette = NewGradientPaletteByList(\"%[1]s\", %v, %s...)" $row.PaletteName $row.Cycle $row.ColorListName}}
+    {{printf "%s = NewGradientPaletteByList(\"%[1]s\", %v, %s...)" $row.PaletteName $row.Cycle $row.ColorListName}}
     {{- end}}
 {{- end}}
 )
@@ -57,11 +67,21 @@ var (
 
     colorNamesTemplate = `
 var (
+    // ColorList ist ein Slice mit allen vorhandenen Farben (resp. uniformen
+    // Paletten).
     ColorList = []ColorSource{
 {{- range $i, $row := .}}
         {{printf "%sColor" $row}},
 {{- end}}
     }
+
+    // ColorMap ist ein Map um Farben mit Namen anzusprechen.
+    ColorMap = map[string]ColorSource{
+{{- range $i, $row := .}}
+        {{printf "\"%s\": %[1]sColor" $row}},
+{{- end}}
+    }
+
 )
 
 var (
@@ -77,12 +97,13 @@ var (
 type Record struct {
     PaletteName string
     ColorListName string
+    IsUniform bool
     IsGradient bool
     Cycle bool
 }
 
 func main() {
-	var nameList []Record
+	var nameList, nameList2 []Record
 
 	fh, err := os.Open("paletteColors.go")
 	if err != nil {
@@ -97,7 +118,7 @@ func main() {
 			matches := reListName.FindStringSubmatch(line)
             record := Record{}
 			record.ColorListName = matches[1]
-			record.PaletteName = fmt.Sprintf("%c%s", matches[2][0]-('a'-'A'), matches[2][1:])
+			record.PaletteName = fmt.Sprintf("%c%sPalette", matches[2][0]-('a'-'A'), matches[2][1:])
             if matches[3] == "Gradient" {
                 record.IsGradient = true
             } else {
@@ -112,10 +133,23 @@ func main() {
 		}
     }
 	fh.Close()
-
     slices.SortFunc(nameList, func(a Record, b Record) int {
         return strings.Compare(a.PaletteName, b.PaletteName)
     })
+
+	nameList2 = make([]Record, 0)
+    for _, colName := range colornames.Names {
+        record := Record{}
+        record.ColorListName = fmt.Sprintf("colornames.%s", colName)
+        record.PaletteName = fmt.Sprintf("%sColor", colName)
+        record.IsUniform = true
+        nameList2 = append(nameList2, record)
+    }
+    slices.SortFunc(nameList2, func(a Record, b Record) int {
+        return strings.Compare(a.PaletteName, b.PaletteName)
+    })
+
+    nameList = append(nameList, nameList2...)
 
 	fh, err = os.Create("paletteNames.go")
 	if err != nil {
@@ -126,8 +160,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("executing template: %v", err)
 	}
-    err = colorTempl.Execute(fh, colornames.Names)
-	if err != nil {
-		log.Fatalf("executing template: %v", err)
-	}
+    // err = colorTempl.Execute(fh, colornames.Names)
+	// if err != nil {
+		// log.Fatalf("executing template: %v", err)
+	// }
 }

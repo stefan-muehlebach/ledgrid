@@ -5,12 +5,8 @@ package main
 import (
 	"flag"
 	"image"
-	"image/png"
-	"log"
-	"os"
 	"time"
 
-	"github.com/stefan-muehlebach/gg/colornames"
 	"github.com/stefan-muehlebach/ledgrid"
 
 	"fyne.io/fyne/v2"
@@ -58,15 +54,14 @@ func main() {
 	var paletteNameList []string
 
 	var pal *ledgrid.PaletteFader
-	var palFadeTime, bgFadeTime, fgFadeTime *ledgrid.Bounded[float64]
+	var fadeTime *ledgrid.Bounded[float64]
 
 	var blinken *ledgrid.BlinkenFile
 	var blinkenAnim *ledgrid.ImageAnimation
 
-	var bgTypeLabel, fgTypeLabel, paletteLabel *widget.Label
-	var bgTypeSelect, fgTypeSelect, paletteSelect *widget.Select
+	var bgTypeSelect, fgTypeSelect *widget.Select
 
-	var paramForm *fyne.Container
+	var bgParamForm, fgParamForm *fyne.Container
 
 	flag.BoolVar(&local, "local", defLocal, "PixelController is local")
 	flag.BoolVar(&dummy, "dummy", defDummy, "Use dummy PixelController")
@@ -92,15 +87,12 @@ func main() {
 	})
 	maxBrightValue = ledgrid.NewBounded("MaxBright", 255.0, 1.0, 255.0, 1.0)
 	maxBrightValue.SetCallback(func(oldVal, newVal float64) {
-        val := uint8(newVal)
+		val := uint8(newVal)
 		pixCtrl.SetMaxBright(val, val, val)
 	})
 
 	pal = ledgrid.NewPaletteFader(ledgrid.HipsterPalette)
-	palFadeTime = ledgrid.NewBounded("Fade Time", 1.5, 0.0, 5.0, 0.1)
-
-	bgFadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
-	fgFadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
+	fadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
 
 	transpVisual := ledgrid.NewImageFromColor(pixGrid, ledgrid.Transparent)
 	transpVisual.SetName("(Transparent)")
@@ -121,8 +113,8 @@ func main() {
 
 	fgList = []ledgrid.Visual{
 		transpVisual,
-		ledgrid.NewText(pixGrid, "Lochbach", colornames.Crimson),
-		ledgrid.NewTextFT(pixGrid, "Lochbach", colornames.Teal),
+		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.PaletteMap["GreenYellowColor"]),
+		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.PaletteMap["LightSeaGreenColor"]),
 		ledgrid.NewImageFromFile(pixGrid, "image.png"),
 	}
 	for _, fileName := range blinkenFiles {
@@ -144,22 +136,8 @@ func main() {
 	//
 	// Ab dieser Stelle wird das GUI aufgebaut
 	//
-	app := app.New()
-	app.SetIcon(resourceIconIco)
-	win := app.NewWindow("LedGrid GUI")
-
-	bgTypeLabel = widget.NewLabel("Background:")
-	bgTypeSelect = widget.NewSelect(bgNameList, func(s string) {
-		newBg := bgList[bgTypeSelect.SelectedIndex()]
-		pixAnim.SetBackground(newBg, time.Duration(bgFadeTime.Val()*float64(time.Second)))
-		if obj, ok := newBg.(ledgrid.Paintable); ok {
-			paletteSelect.Enable()
-			paletteSelect.SetSelected(obj.Palette().Name())
-		} else {
-			paletteSelect.SetSelectedIndex(-1)
-			paletteSelect.Disable()
-		}
-		for _, obj := range paramForm.Objects {
+	ShowParameter := func(vis ledgrid.Visual, form *fyne.Container) {
+		for _, obj := range form.Objects {
 			switch o := obj.(type) {
 			case *widget.Label:
 				o.Unbind()
@@ -167,110 +145,131 @@ func main() {
 				o.Unbind()
 			}
 		}
-		paramForm.RemoveAll()
-		if obj, ok := newBg.(ledgrid.Parametrizable); ok {
+		form.RemoveAll()
+		if obj, ok := vis.(ledgrid.Paintable); ok {
+			label := widget.NewLabel("Palette/Color")
+			label.Alignment = fyne.TextAlignTrailing
+			label.TextStyle.Bold = true
+			selection := widget.NewSelect(paletteNameList, func(s string) {
+				obj.SetPalette(ledgrid.PaletteMap[s], time.Duration(fadeTime.Val()*float64(time.Second)))
+			})
+			selection.Selected = obj.Palette().Name()
+			form.Add(label)
+			form.Add(selection)
+		}
+		if obj, ok := vis.(ledgrid.Parametrizable); ok {
 			for _, param := range obj.ParamList() {
-				label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+": %.3f"))
+				label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+" (%.3f)"))
+				label.Alignment = fyne.TextAlignTrailing
+				label.TextStyle.Bold = true
 				slider := widget.NewSliderWithData(param.Min(), param.Max(), param)
 				slider.Step = param.Step()
 				slider.SetValue(param.Val())
-				paramForm.Add(label)
-				paramForm.Add(slider)
+				form.Add(label)
+				form.Add(slider)
 			}
 		}
+		if obj, ok := vis.(ledgrid.Text); ok {
+			label := widget.NewLabel("Message")
+			label.Alignment = fyne.TextAlignTrailing
+			label.TextStyle.Bold = true
+			entry := widget.NewEntry()
+			entry.Text = obj.String()
+			button := widget.NewButton("Apply", func() {
+				obj.SetString(entry.Text)
+			})
+			form.Add(label)
+			form.Add(entry)
+			form.Add(layout.NewSpacer())
+			form.Add(button)
+		}
+	}
+
+	app := app.New()
+	app.SetIcon(resourceIconIco)
+	win := app.NewWindow("LedGrid GUI")
+
+	bgTypeSelect = widget.NewSelect(bgNameList, func(s string) {
+		newBg := bgList[bgTypeSelect.SelectedIndex()]
+		pixAnim.SetBackground(newBg, time.Duration(fadeTime.Val()*float64(time.Second)))
+		ShowParameter(newBg, bgParamForm)
 	})
 
-	bgFadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(bgFadeTime, bgFadeTime.Name()+": %.1f"))
-	bgFadeTimeSlider := widget.NewSliderWithData(bgFadeTime.Min(), bgFadeTime.Max(), bgFadeTime)
-	bgFadeTimeSlider.Step = bgFadeTime.Step()
-	bgFadeTimeSlider.SetValue(bgFadeTime.Val())
-
-	fgTypeLabel = widget.NewLabel("Foreground:")
 	fgTypeSelect = widget.NewSelect(fgNameList, func(s string) {
 		newFg := fgList[fgTypeSelect.SelectedIndex()]
-		pixAnim.SetForeground(newFg, time.Duration(fgFadeTime.Val()*float64(time.Second)))
+		pixAnim.SetForeground(newFg, time.Duration(fadeTime.Val()*float64(time.Second)))
+		ShowParameter(newFg, fgParamForm)
 	})
-	fgFadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(fgFadeTime, fgFadeTime.Name()+": %.1f"))
-	fgFadeTimeSlider := widget.NewSliderWithData(fgFadeTime.Min(), fgFadeTime.Max(), fgFadeTime)
-	fgFadeTimeSlider.Step = fgFadeTime.Step()
-	fgFadeTimeSlider.SetValue(fgFadeTime.Val())
 
-	paletteLabel = widget.NewLabel("Palette:")
-	paletteSelect = widget.NewSelect(paletteNameList, func(s string) {
-		id := paletteSelect.SelectedIndex()
-		pal.StartFade(ledgrid.PaletteList[id], time.Duration(palFadeTime.Val()*float64(time.Second)))
-	})
-	paletteSelect.Disable()
+	visualForm := &widget.Form{
+		Items: []*widget.FormItem{
+			{Text: "Background", Widget: bgTypeSelect},
+			{Text: "Foreground", Widget: fgTypeSelect},
+		},
+	}
 
-	palFadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(palFadeTime, palFadeTime.Name()+": %.1f"))
-	palFadeTimeSlider := widget.NewSliderWithData(palFadeTime.Min(), palFadeTime.Max(), palFadeTime)
-	palFadeTimeSlider.Step = palFadeTime.Step()
-	palFadeTimeSlider.SetValue(palFadeTime.Val())
-
-	gammaLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaValue, "Gamma: %.1f"))
+	gammaLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaValue, "Gamma (%.1f)"))
+	gammaLabel.Alignment = fyne.TextAlignTrailing
+	gammaLabel.TextStyle.Bold = true
 	gammaSlider := widget.NewSliderWithData(gammaValue.Min(), gammaValue.Max(), gammaValue)
 	gammaSlider.Step = gammaValue.Step()
 	gammaSlider.SetValue(gammaValue.Val())
 
-	maxBrightLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(maxBrightValue, "Max. Bright: %.0f"))
+	maxBrightLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(maxBrightValue, "Brightness (%.0f)"))
+	maxBrightLabel.Alignment = fyne.TextAlignTrailing
+	maxBrightLabel.TextStyle.Bold = true
 	maxBrightSlider := widget.NewSliderWithData(maxBrightValue.Min(), maxBrightValue.Max(), maxBrightValue)
 	maxBrightSlider.Step = maxBrightValue.Step()
 	maxBrightSlider.SetValue(maxBrightValue.Val())
 
-	visualForm := container.New(
-		layout.NewFormLayout(),
-		bgTypeLabel, bgTypeSelect,
-		bgFadeTimeLabel, bgFadeTimeSlider,
-		fgTypeLabel, fgTypeSelect,
-		fgFadeTimeLabel, fgFadeTimeSlider,
-	)
-	visualCard := widget.NewCard("Visual Effects", "", visualForm)
+	fadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(fadeTime, fadeTime.Name()+" (%.1f)"))
+	fadeTimeLabel.Alignment = fyne.TextAlignTrailing
+	fadeTimeLabel.TextStyle.Bold = true
+	fadeTimeSlider := widget.NewSliderWithData(fadeTime.Min(), fadeTime.Max(), fadeTime)
+	fadeTimeSlider.Step = fadeTime.Step()
+	fadeTimeSlider.SetValue(fadeTime.Val())
 
-	colorForm := container.New(
+	prefForm := container.New(
 		layout.NewFormLayout(),
-		paletteLabel, paletteSelect,
-		palFadeTimeLabel, palFadeTimeSlider,
+		gammaLabel, gammaSlider,
+		maxBrightLabel, maxBrightSlider,
+		fadeTimeLabel, fadeTimeSlider,
 	)
-	colorCard := widget.NewCard("Color / Palette", "", colorForm)
+	prefCard := widget.NewCard("Preferences", "", prefForm)
 
-	paramForm = container.New(
+	visualCard := widget.NewCard("Visuals", "There can be one background and one foreground", visualForm)
+
+	bgParamForm = container.New(
 		layout.NewFormLayout(),
 	)
-	paramCard := widget.NewCard("Parameters", "", paramForm)
+	bgParamCard := widget.NewCard("Background Parameters", "", bgParamForm)
+	fgParamForm = container.New(
+		layout.NewFormLayout(),
+	)
+	fgParamCard := widget.NewCard("Foreground Parameters", "", fgParamForm)
 
 	effectTab := container.NewVBox(
 		visualCard,
-		colorCard,
-        paramCard,
+		bgParamCard,
+		fgParamCard,
 	)
-
-	prefTab := container.New(
-        layout.NewFormLayout(),
-    		gammaLabel, gammaSlider,
-        maxBrightLabel, maxBrightSlider,
-    )
 
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Effects", effectTab),
-		container.NewTabItem("Preferences", prefTab),
+		container.NewTabItem("Visuals", effectTab),
+		container.NewTabItem("Preferences", prefCard),
 	)
 
-	saveBtn := widget.NewButton("Save", func() {
-		fh, err := os.Create("ledgrid.png")
-		if err != nil {
-			log.Fatalf("Couldn't create file 'ledgrid.png': %v", err)
-		}
-		png.Encode(fh, pixGrid)
-		fh.Close()
-	})
-	quitBtn := widget.NewButton("Quit", app.Quit)
-	btnBox := container.NewHBox(saveBtn, layout.NewSpacer(), quitBtn)
+	bgTypeSelect.SetSelectedIndex(0)
+	fgTypeSelect.SetSelectedIndex(0)
 
-    root := container.NewVBox(
-        tabs,
-        layout.NewSpacer(),
-        btnBox,
-    )
+	quitBtn := widget.NewButton("Quit", app.Quit)
+	btnBox := container.NewHBox(layout.NewSpacer(), quitBtn)
+
+	root := container.NewVBox(
+		tabs,
+		layout.NewSpacer(),
+		btnBox,
+	)
 
 	win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {

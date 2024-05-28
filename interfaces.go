@@ -2,6 +2,7 @@ package ledgrid
 
 import (
 	"image"
+	"time"
 )
 
 // Diese Datei enthaelt viele Interfaces aber auch sog. Embedables, welche
@@ -42,7 +43,7 @@ type Visual interface {
 	Visible() bool
 	SetVisible(v bool)
 	// Zeichnet das Objekt auf dem LedGrid.
-    image.Image
+	image.Image
 }
 
 // type VisualImage interface {
@@ -89,6 +90,7 @@ type Paintable interface {
 	// Retourniert die Palette, welche zur Faerbung des Objektes hinterlegt
 	// ist.
 	Palette() ColorSource
+	SetPalette(pal ColorSource, fadeTime time.Duration)
 }
 
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
@@ -99,6 +101,18 @@ type ColorSource interface {
 	Nameable
 	// Liefert in Abhaengigkeit des Parameters v eine Farbe aus der Palette
 	// zurueck. v kann vielfaeltig verwendet werden, bsp. als Parameter im
-	// Intervall [0,1] oder als Index (natuerliche Zahl) einer Farbenliste.
+	// Intervall [0,1] oder als Index (natuerliche Zahl) einer Farbenliste
+	// oder gar nicht, wenn die Farbquelle bspw. einfarbig ist.
 	Color(v float64) LedColor
+}
+
+//----------------------------------------------------------------------------
+
+type Text interface {
+	Nameable
+	Visual
+	Parametrizable
+	Paintable
+	String() string
+	SetString(s string)
 }

@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"math"
 	"slices"
+	"time"
 )
 
 // Der Shader verwendet zur Berechnung der darzustellenden Farben
@@ -33,7 +34,7 @@ type Shader struct {
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
 	params             []*Bounded[float64]
-	pal                ColorSource
+	pal                *PaletteFader
 	anim               Animation
 }
 
@@ -58,7 +59,7 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 		s.xMin = -1.0
 		s.yMax = 1.0
 	}
-	s.pal = pal
+	s.pal = NewPaletteFader(pal)
 	s.SetShaderData(shr)
 	s.anim = NewInfAnimation(s.Update)
 	return s
@@ -85,6 +86,10 @@ func (s *Shader) Param(name string) *Bounded[float64] {
 
 func (s *Shader) Palette() ColorSource {
 	return s.pal
+}
+
+func (s *Shader) SetPalette(pal ColorSource, fadeTime time.Duration) {
+	s.pal.StartFade(pal, fadeTime)
 }
 
 func (s *Shader) SetVisible(vis bool) {
