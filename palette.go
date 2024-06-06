@@ -49,6 +49,7 @@ func NewGradientPaletteByList(name string, cycle bool, cl ...LedColor) *Gradient
 	return p
 }
 
+
 // Setzt in der Palette einen neuen Stuetzwert. Existiert bereits eine Farbe
 // an dieser Position, wird sie ueberschrieben.
 func (p *GradientPalette) SetColorStop(colStop ColorStop) {
@@ -68,6 +69,10 @@ func (p *GradientPalette) SetColorStop(colStop ColorStop) {
 		}
 	}
 	p.stops = slices.Insert(p.stops, i, colStop)
+}
+
+func (p *GradientPalette) ColorStops() []ColorStop {
+    return p.stops
 }
 
 // Verwendet die Eintraege in cl als neue Stuetzwerte der Palette.

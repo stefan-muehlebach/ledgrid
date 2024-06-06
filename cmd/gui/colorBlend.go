@@ -12,9 +12,6 @@ import (
 	"os"
 )
 
-// displayImage renders an image to the playground's console by
-// base64-encoding the encoded image and printing it to stdout
-// with the prefix "IMAGE:".
 func SaveImage(m image.Image) {
 	fh, err := os.Create("colorBlend.png")
 	if err != nil {

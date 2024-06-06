@@ -23,8 +23,7 @@ import (
 var (
 	reListName = regexp.MustCompile(`^[[:space:]]*(([[:alpha:]]*)(Gradient|ColorList)(NonCyc)?)`)
 
-	paletteNamesTemplate = `
-// ACHTUNG: dieses File wird automatisch durch das Tool 'gen' in diesem
+	paletteNamesTemplate = `// ACHTUNG: dieses File wird automatisch durch das Tool 'gen' in diesem
 // Verzeichnis erzeugt! Manuelle Anpassungen koennen verloren gehen.
 
 package ledgrid

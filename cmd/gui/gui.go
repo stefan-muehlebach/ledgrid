@@ -20,8 +20,8 @@ import (
 
 const (
 	Margin    = 10.0
-	AppWidth  = 480.0
-	AppHeight = 640.0
+	AppWidth  = 512.0
+	AppHeight = 1024.0
 )
 
 var (
@@ -36,7 +36,18 @@ var (
 	defHost            = "raspi-2"
 	defPort       uint = 5333
 	defGammaValue      = 3.0
-	blinkenFiles       = []string{"flatter.bml", "torus.bml", "lemming.bml", "mario.bml"}
+	blinkenFiles       = []string{
+		"bml/flatter.bml",
+		"bml/torus.bml",
+		"bml/cube.bml",
+		"bml/kreise.bml",
+		"bml/benedictus.bml",
+		"bml/lemming.bml",
+		"bml/mario.bml",
+	}
+
+    App fyne.App
+    Win fyne.Window
 )
 
 func main() {
@@ -53,7 +64,8 @@ func main() {
 	var bgNameList, fgNameList []string
 	var paletteNameList []string
 
-	var pal *ledgrid.PaletteFader
+    var pal ledgrid.ColorSource
+	// var pal *ledgrid.PaletteFader
 	var fadeTime *ledgrid.Bounded[float64]
 
 	var blinken *ledgrid.BlinkenFile
@@ -91,7 +103,8 @@ func main() {
 		pixCtrl.SetMaxBright(val, val, val)
 	})
 
-	pal = ledgrid.NewPaletteFader(ledgrid.HipsterPalette)
+	// pal = ledgrid.NewPaletteFader(ledgrid.HipsterPalette)
+    pal = ledgrid.HipsterPalette
 	fadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
 
 	transpVisual := ledgrid.NewImageFromColor(pixGrid, ledgrid.Transparent)
@@ -150,12 +163,19 @@ func main() {
 			label := widget.NewLabel("Palette/Color")
 			label.Alignment = fyne.TextAlignTrailing
 			label.TextStyle.Bold = true
+			visPal := NewPalette(obj.Palette())
 			selection := widget.NewSelect(paletteNameList, func(s string) {
-				obj.SetPalette(ledgrid.PaletteMap[s], time.Duration(fadeTime.Val()*float64(time.Second)))
+				pal := ledgrid.PaletteMap[s]
+				obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
+				visPal.ColorSource = pal
+				visPal.Refresh()
 			})
 			selection.Selected = obj.Palette().Name()
 			form.Add(label)
 			form.Add(selection)
+			label = widget.NewLabel("")
+			form.Add(label)
+			form.Add(visPal)
 		}
 		if obj, ok := vis.(ledgrid.Parametrizable); ok {
 			for _, param := range obj.ParamList() {
@@ -185,9 +205,9 @@ func main() {
 		}
 	}
 
-	app := app.New()
-	app.SetIcon(resourceIconIco)
-	win := app.NewWindow("LedGrid GUI")
+	App = app.New()
+	App.SetIcon(resourceIconIco)
+	Win = App.NewWindow("LedGrid GUI")
 
 	bgTypeSelect = widget.NewSelect(bgNameList, func(s string) {
 		newBg := bgList[bgTypeSelect.SelectedIndex()]
@@ -236,6 +256,11 @@ func main() {
 		fadeTimeLabel, fadeTimeSlider,
 	)
 	prefCard := widget.NewCard("Preferences", "", prefForm)
+	// testWidget := NewPalettePreview(ledgrid.NightspellPalette)
+	prefTab := container.NewVBox(
+		prefCard,
+		// testWidget,
+	)
 
 	visualCard := widget.NewCard("Visuals", "There can be one background and one foreground", visualForm)
 
@@ -256,13 +281,13 @@ func main() {
 
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Visuals", effectTab),
-		container.NewTabItem("Preferences", prefCard),
+		container.NewTabItem("Preferences", prefTab),
 	)
 
 	bgTypeSelect.SetSelectedIndex(0)
 	fgTypeSelect.SetSelectedIndex(0)
 
-	quitBtn := widget.NewButton("Quit", app.Quit)
+	quitBtn := widget.NewButton("Quit", App.Quit)
 	btnBox := container.NewHBox(layout.NewSpacer(), quitBtn)
 
 	root := container.NewVBox(
@@ -271,16 +296,16 @@ func main() {
 		btnBox,
 	)
 
-	win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
+	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
 		case fyne.KeyEscape, fyne.KeyQ:
-			app.Quit()
+			App.Quit()
 		}
 	})
 
-	win.SetContent(root)
-	win.Resize(AppSize)
-	win.ShowAndRun()
+	Win.SetContent(root)
+	Win.Resize(AppSize)
+	Win.ShowAndRun()
 
 	pixGrid.Clear(ledgrid.Black)
 	pixCtrl.Draw(pixGrid)
