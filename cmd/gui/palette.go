@@ -1,15 +1,15 @@
 package main
 
 import (
-	"image/color"
 	"image"
 	"log"
+
+	"fyne.io/fyne/v2/driver/desktop"
 
 	"github.com/stefan-muehlebach/ledgrid"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-    "fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -51,12 +51,44 @@ func NewPalette(colSource ledgrid.ColorSource) *Palette {
 }
 
 func (p *Palette) Tapped(evt *fyne.PointEvent) {
-	log.Printf("tapped at %v\n", evt)
+	log.Printf("tapped at %+v\n", evt)
+
 	log.Printf("  size: %v\n", p.Size())
-	log.Printf("  fraction within: %.4f\n", evt.Position.X/p.Size().Width)
-    colorPicker := dialog.NewColorPicker("Title", "Message", func(c color.Color){}, Win)
-    colorPicker.Advanced = true
-    colorPicker.Show()
+	log.Printf("  ratio within: %.4f\n", p.getRatio(evt))
+	// colorPicker := dialog.NewColorPicker("Title", "Message", func(c color.Color){}, Win)
+	// colorPicker.Advanced = true
+	// colorPicker.Show()
+}
+
+func (p *Palette) getRatio(evt *fyne.PointEvent) float64 {
+    margin := float32(colStopDia/2)
+
+    x := evt.Position.X
+
+    switch p.Orientation {
+    case widget.Horizontal:
+        if x > p.Size().Width-margin {
+            return 1.0
+        } else if x < margin {
+            return 0.0
+        } else {
+            return float64(x-margin) / float64(p.Size().Width-2*margin)
+        }
+    }
+    return 0.0
+}
+
+
+func (p *Palette) MouseIn(evt *desktop.MouseEvent) {
+	// log.Printf("Mouse in!")
+}
+
+func (p *Palette) MouseMoved(evt *desktop.MouseEvent) {
+	// log.Printf("Mouse moved: %v", evt)
+}
+
+func (p *Palette) MouseOut() {
+	// log.Printf("Mouse out!")
 }
 
 func (p *Palette) CreateRenderer() fyne.WidgetRenderer {
@@ -65,13 +97,13 @@ func (p *Palette) CreateRenderer() fyne.WidgetRenderer {
 	renderer := &paletteRenderer{pal: p}
 
 	gradient := canvas.NewRaster(renderer.generator)
-    renderer.gradient = gradient
+	renderer.gradient = gradient
 
 	rect := canvas.NewRectangle(ledgrid.Transparent)
 	rect.StrokeColor = ledgrid.White
 	rect.StrokeWidth = borderWidth
 	rect.SetMinSize(fyne.NewSize(0, minHeight))
-    renderer.rect = rect
+	renderer.rect = rect
 
 	renderer.Refresh()
 	return renderer
@@ -116,11 +148,16 @@ func (r *paletteRenderer) Destroy() {
 }
 
 func (r *paletteRenderer) Layout(s fyne.Size) {
+    pos := fyne.NewPos(colStopDia/2, 0)
+    s = s.SubtractWidthHeight(colStopDia, 0)
+    r.gradient.Move(pos)
 	r.gradient.Resize(s)
+
+    r.rect.Move(pos)
 	r.rect.Resize(s)
 
 	switch pal := r.pal.ColorSource.(type) {
-    case *ledgrid.GradientPalette:
+	case *ledgrid.GradientPalette:
 		for i, cs := range pal.ColorStops() {
 			pos := r.rect.Position().AddXY(float32(cs.Pos)*r.rect.Size().Width, r.rect.Size().Height/2)
 			pos = pos.Add(colStopPosOff)
@@ -134,7 +171,7 @@ func (r *paletteRenderer) MinSize() fyne.Size {
 }
 
 func (r *paletteRenderer) Objects() []fyne.CanvasObject {
-    objects := []fyne.CanvasObject{r.gradient, r.rect}
+	objects := []fyne.CanvasObject{r.gradient, r.rect}
 	for _, cs := range r.colorStops {
 		objects = append(objects, cs)
 	}
@@ -144,7 +181,7 @@ func (r *paletteRenderer) Objects() []fyne.CanvasObject {
 func (r *paletteRenderer) Refresh() {
 	r.gradient.Refresh()
 	r.rect.Refresh()
-    r.updateColorStops()
+	r.updateColorStops()
 	r.Layout(r.pal.Size())
 }
 
@@ -160,20 +197,20 @@ func (r *paletteRenderer) generator(w, h int) image.Image {
 }
 
 func (r *paletteRenderer) updateColorStops() {
-    switch pal := r.pal.ColorSource.(type) {
-    case *ledgrid.GradientPalette:
-        colorStops := pal.ColorStops()
-        	if len(colorStops) != len(r.colorStops) {
-		    r.colorStops = make([]*canvas.Circle, len(colorStops))
-        }
-        	for i, cs := range colorStops {
-        		stop := canvas.NewCircle(cs.Col)
-        		stop.Resize(colStopSize)
-        		stop.StrokeColor = ledgrid.White
-        		stop.StrokeWidth = 2 * borderWidth
-        		r.colorStops[i] = stop
-        	}
-    case *ledgrid.UniformPalette:
-        r.colorStops = make([]*canvas.Circle, 0)
-    }
+	switch pal := r.pal.ColorSource.(type) {
+	case *ledgrid.GradientPalette:
+		colorStops := pal.ColorStops()
+		if len(colorStops) != len(r.colorStops) {
+			r.colorStops = make([]*canvas.Circle, len(colorStops))
+		}
+		for i, cs := range colorStops {
+			stop := canvas.NewCircle(cs.Col)
+			stop.Resize(colStopSize)
+			stop.StrokeColor = ledgrid.White
+			stop.StrokeWidth = 2 * borderWidth
+			r.colorStops[i] = stop
+		}
+	case *ledgrid.UniformPalette:
+		r.colorStops = make([]*canvas.Circle, 0)
+	}
 }

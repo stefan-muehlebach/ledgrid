@@ -11,11 +11,11 @@ import (
 
 const (
 	width         = 10
-	height        = 10
+	height        = 15
 	defHost       = "raspi-2"
 	defPort       = 5333
 	termWidth     = 97
-	termHeight    = 37
+	termHeight    = 57
 	KEY_SUP       = 0x151 /* Shifted up arrow */
 	KEY_SDOWN     = 0x150 /* Shifted down arrow */
 	KEY_CLEFT     = 0x222 /* Ctrl-left arrow */
@@ -84,7 +84,7 @@ func main() {
 
 	// rows, cols := stdscr.MaxYX()
 
-	gridHeight, gridWidth := 17, 89
+	gridHeight, gridWidth := height+7, 89
 	y, x := 2, 4
 
 	winGrid, err = gc.NewWindow(gridHeight, gridWidth, y, x)
@@ -95,7 +95,7 @@ func main() {
 	winGrid.Box(0, 0)
 
 	helpHeight, helpWidth := 18, 55
-	y, x = 19, 4
+	y, x = height+9, 4
 
 	winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
 	if err != nil {
@@ -159,7 +159,7 @@ main:
 			winGrid.MovePrintf(3+row, 2, "[%02d]", row)
 			winGrid.AttrOff(gc.A_BOLD)
 		}
-		winGrid.VLine(1, 7, gc.ACS_VLINE, 12)
+		winGrid.VLine(1, 7, gc.ACS_VLINE, height+2)
 		for row := 0; row < ledGrid.Rect.Dy(); row++ {
 			for col := 0; col < ledGrid.Rect.Dx(); col++ {
 				if between(row, curRow, selRow) && between(col, curCol, selCol) {
@@ -180,10 +180,11 @@ main:
 				winGrid.AttrOff(gc.A_REVERSE)
 			}
 		}
-		winGrid.HLine(13, 1, gc.ACS_HLINE, gridWidth-2)
+        row := height + 3
+		winGrid.HLine(row, 1, gc.ACS_HLINE, gridWidth-2)
 
-		winGrid.MovePrintf(14, 2, "New hex value for this color: %02x", newColorValue)
-		winGrid.MovePrintf(15, 2, "Current gamma values        : %.2f, %.2f, %.2f",
+		winGrid.MovePrintf(row+1, 2, "New hex value for this color: %02x", newColorValue)
+		winGrid.MovePrintf(row+2, 2, "Current gamma values        : %.2f, %.2f, %.2f",
 			gammaValues[0], gammaValues[1], gammaValues[2])
 		winGrid.NoutRefresh()
 		winHelp.NoutRefresh()

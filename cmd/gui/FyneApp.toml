@@ -3,6 +3,6 @@ Website = "https://ischmieregal.ch"
 [Details]
 Icon = "Icon.ico"
 Name = "LedGrid GUI"
-ID   = "Naja"
+ID   = "com.example.tutorial.preferences"
 Version = "1.0.0"
 Build = 1
