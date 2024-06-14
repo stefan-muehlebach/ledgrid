@@ -22,7 +22,7 @@ const (
 const (
 	defPort        = 5333
 	defGammaValues = "3.0,3.0,3.0"
-	defBaud        = 1_500_000
+	defBaud        = 2_000_000
 	defUseTCP      = false
 
 	bufferSize = 1024

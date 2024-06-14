@@ -163,7 +163,7 @@ func main() {
 			label := widget.NewLabel("Palette/Color")
 			label.Alignment = fyne.TextAlignTrailing
 			label.TextStyle.Bold = true
-			visPal := NewPalette(obj.Palette())
+			visPal := ledgrid.NewPalette(obj.Palette())
 			selection := widget.NewSelect(paletteNameList, func(s string) {
 				pal := ledgrid.PaletteMap[s]
 				obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
