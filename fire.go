@@ -19,7 +19,7 @@ type Fire struct {
 	heat              [][]float64
 	pal               ColorSource
 	cooling, sparking float64
-	params            []*Bounded[float64]
+	params            []Parameter
 	anim              Animation
 }
 
@@ -34,17 +34,27 @@ func NewFire(lg *LedGrid) *Fire {
 	}
 	f.pal = FirePalette
 
-	f.params = make([]*Bounded[float64], 2)
-	f.params[0] = NewBounded("Cooling factor", fireDefCooling, 0.08, 1.00, 0.05)
-	f.params[0].BindVar(&f.cooling)
-	f.params[1] = NewBounded("Sparking factor", fireDefSparking, 0.19, 0.78, 0.05)
-	f.params[1].BindVar(&f.sparking)
+	f.params = make([]Parameter, 2)
+	f.params[0] = NewFloatParameter("Cooling factor", fireDefCooling, 0.08, 1.00, 0.05)
+	f.params[0].SetCallback(func (p Parameter) {
+        v := f.params[0].(FloatParameter).Val()
+        f.cooling = v
+    })
+    // f.params[0].BindVar(&f.cooling)
+
+	f.params[1] = NewFloatParameter("Sparking factor", fireDefSparking, 0.19, 0.78, 0.05)
+	f.params[1].SetCallback(func (p Parameter) {
+        v := f.params[1].(FloatParameter).Val()
+        f.sparking = v
+    })
+	// f.params[1].BindVar(&f.sparking)
+
 	f.anim = NewInfAnimation(f.Update)
 
 	return f
 }
 
-func (f *Fire) ParamList() []*Bounded[float64] {
+func (f *Fire) ParamList() []Parameter {
 	return f.params
 }
 

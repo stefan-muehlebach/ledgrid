@@ -15,6 +15,30 @@ const (
 	defFramesPerSec = 30
 )
 
+type CableConfig struct {
+	start, dir image.Point
+}
+
+var (
+	UpperLeft2Right = CableConfig{upperLeft, right}
+	UpperLeft2Down  = CableConfig{upperLeft, down}
+	UpperRight2Left = CableConfig{upperRight, left}
+	UpperRight2Down = CableConfig{upperRight, down}
+	LowerLeft2Right = CableConfig{lowerLeft, right}
+	LowerLeft2Up    = CableConfig{lowerLeft, up}
+	LowerRight2Left = CableConfig{lowerRight, left}
+	LowerRight2Up   = CableConfig{lowerRight, up}
+
+	upperLeft  = image.Point{0, 0}
+	upperRight = image.Point{1, 0}
+	lowerLeft  = image.Point{0, 1}
+	lowerRight = image.Point{1, 1}
+	right      = image.Point{1, 0}
+	left       = image.Point{-1, 0}
+	down       = image.Point{0, 1}
+	up         = image.Point{0, -1}
+)
+
 var (
 	framesPerSecond int
 	frameRefresh    time.Duration
@@ -42,12 +66,17 @@ type LedGrid struct {
 	// geht dann nach rechts und auf der zweiten Zeile wieder nach links und
 	// so schlangenfoermig weiter.
 	Pix []uint8
+
+	cabConf CableConfig
 }
 
-func NewLedGrid(r image.Rectangle) *LedGrid {
+// Erstellt ein neues LED-Panel. r enthaelt die Dimension des (gesamten)
+// Panels, und mit cabConf wird die Verkabelungskonfiguration bezeichnet.
+func NewLedGrid(r image.Rectangle, cabConf CableConfig) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = r
 	g.Pix = make([]uint8, 3*r.Dx()*r.Dy())
+	g.cabConf = cabConf
 	return g
 }
 
@@ -102,16 +131,33 @@ func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
 
 // Damit wird der Offset eines bestimmten Farbwerts innerhalb des Slices
 // Pix berechnet. Dabei wird beruecksichtigt, dass das die LED's im LedGrid
-// schlangenfoermig angeordnet sind, wobei die Reihe mit der LED links oben
-// beginnt.
+// schlangenfoermig angeordnet sind, und der Beginn der LED-Kette frei
+// waehlbar in einer Ecke des Panels liegen kann.
 func (g *LedGrid) PixOffset(x, y int) int {
 	var idx int
 
-	idx = y * g.Rect.Dx()
-	if y%2 == 0 {
-		idx += x
-	} else {
-		idx += (g.Rect.Dx() - x - 1)
+	if g.cabConf.start.X == 1 {
+		x = (g.Rect.Dx() - 1) - x
+	}
+	if g.cabConf.start.Y == 1 {
+		y = (g.Rect.Dy() - 1) - y
+	}
+
+	if g.cabConf.dir.X != 0 {
+		idx = y * g.Rect.Dx()
+		if y%2 == 0 {
+			idx += x
+		} else {
+			idx += (g.Rect.Dx() - 1) - x
+		}
+	}
+	if g.cabConf.dir.Y != 0 {
+		idx = x * g.Rect.Dy()
+		if x%2 == 0 {
+			idx += y
+		} else {
+			idx += (g.Rect.Dy() - 1) - y
+		}
 	}
 	return 3 * idx
 }
@@ -125,4 +171,3 @@ func (g *LedGrid) Clear(c LedColor) {
 		slc[2] = c.B
 	}
 }
-

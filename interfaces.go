@@ -46,16 +46,6 @@ type Visual interface {
 	image.Image
 }
 
-// type VisualImage interface {
-//     Visual
-//     image.Image
-// }
-
-// type VisualDrawing interface {
-//     Visual
-//     Draw(alpha uint8)
-// }
-
 // Dieses Embedable kann fuer eine Default-Implementation des Drawable-
 // Interfaces genutzt werden.
 type VisualEmbed struct {
@@ -81,7 +71,7 @@ func (v *VisualEmbed) SetVisible(vis bool) {
 // moeglich ist, haben alle parametrisierbaren Typen dieses Interface zu
 // implementieren.
 type Parametrizable interface {
-	ParamList() []*Bounded[float64]
+	ParamList() []Parameter
 }
 
 // Dieses Interface word von allen Objekten implementiert, die sich
@@ -89,6 +79,7 @@ type Parametrizable interface {
 type Paintable interface {
 	// Retourniert die Palette, welche zur Faerbung des Objektes hinterlegt
 	// ist.
+    PaletteParam() PaletteParameter
 	Palette() ColorSource
 	SetPalette(pal ColorSource, fadeTime time.Duration)
 }

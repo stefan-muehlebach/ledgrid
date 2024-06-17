@@ -38,7 +38,6 @@ func newAnimator() *Animator {
 	}
 	a := &Animator{}
 	a.animList = make([]Animation, 0)
-	theAnimator = a
 
 	return a
 }
@@ -234,7 +233,7 @@ func NewNormAnimation(d time.Duration, fn func(float64)) *NormAnimation {
 	return a
 }
 
-// Startet die Animation, resp. fuehrt eine Restart durch, falls die Animation
+// Startet die Animation, resp. fuehrt einen Restart durch, falls die Animation
 // bereits am Laufen ist.
 func (a *NormAnimation) Start() {
 	a.start = time.Now()

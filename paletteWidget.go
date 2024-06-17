@@ -105,32 +105,6 @@ func (p *Palette) CreateRenderer() fyne.WidgetRenderer {
 	return renderer
 }
 
-// type ColorStop struct {
-// 	widget.BaseWidget
-// 	ColStop *ledgrid.ColorStop
-// 	Pal     *Palette
-// }
-
-// func NewColorStop(pal *Palette, colStop *ledgrid.ColorStop) *ColorStop {
-// 	c := &ColorStop{
-// 		Pal: pal, ColStop: colStop,
-// 	}
-// 	c.ExtendBaseWidget(c)
-// 	return c
-// }
-
-// func (c *ColorStop) Tapped(evt *fyne.PointEvent) {
-// 	log.Printf("tapped at %v\n", evt)
-// 	log.Printf("  size: %v\n", c.Size())
-// }
-
-// func (c *ColorStop) CreateRenderer() fyne.WidgetRenderer {
-// 	return nil
-// 	// return newColorStopRenderer(c)
-// }
-
-// -----------------------------------------------------------------------------
-//
 // Render-Keller
 type paletteRenderer struct {
 	// objects    []fyne.CanvasObject

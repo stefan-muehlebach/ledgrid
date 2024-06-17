@@ -1,3 +1,4 @@
+// Code generated  DO NOT EDIT.
 
 // ACHTUNG: dieses File wird automatisch durch das Tool 'gen' in diesem
 // Verzeichnis erzeugt! Manuelle Anpassungen koennen verloren gehen.
@@ -11,7 +12,7 @@ import (
 var (
     // PaletteList ist ein Slice mit allen vorhandenen Paletten.
     PaletteList = []ColorSource{
-        BlackAndWhitePalette,
+        BlackToWhitePalette,
         DarkJunglePalette,
         DarkPalette,
         DarkerPalette,
@@ -37,6 +38,73 @@ var (
         SeashorePalette,
         WayyouPalette,
         WepartedPalette,
+    }
+
+    // PaletteMap ist ein Map um Paletten mit ihrem Namen anzusprechen.
+    PaletteMap = map[string]ColorSource{
+        "BlackToWhitePalette": BlackToWhitePalette,
+        "DarkJunglePalette": DarkJunglePalette,
+        "DarkPalette": DarkPalette,
+        "DarkerPalette": DarkerPalette,
+        "DefaultPalette": DefaultPalette,
+        "EarthAndSkyPalette": EarthAndSkyPalette,
+        "FadeBluePalette": FadeBluePalette,
+        "FadeCyanPalette": FadeCyanPalette,
+        "FadeGreenPalette": FadeGreenPalette,
+        "FadeMagentaPalette": FadeMagentaPalette,
+        "FadeRedPalette": FadeRedPalette,
+        "FadeYellowPalette": FadeYellowPalette,
+        "FirePalette": FirePalette,
+        "HipsterPalette": HipsterPalette,
+        "HotAndColdPalette": HotAndColdPalette,
+        "HotFirePalette": HotFirePalette,
+        "KittyPalette": KittyPalette,
+        "LanternPalette": LanternPalette,
+        "LemmingPalette": LemmingPalette,
+        "MiamiVicePalette": MiamiVicePalette,
+        "NeonPalette": NeonPalette,
+        "NightspellPalette": NightspellPalette,
+        "PastellPalette": PastellPalette,
+        "SeashorePalette": SeashorePalette,
+        "WayyouPalette": WayyouPalette,
+        "WepartedPalette": WepartedPalette,
+    }
+
+)
+
+var (
+    // In diesem Block werden die Paletten konkret erstellt.
+    BlackToWhitePalette = NewGradientPalette("BlackToWhitePalette", blackToWhiteGradient...)
+    DarkJunglePalette = NewGradientPaletteByList("DarkJunglePalette", true, darkJungleColorList...)
+    DarkPalette = NewGradientPalette("DarkPalette", darkGradient...)
+    DarkerPalette = NewGradientPalette("DarkerPalette", darkerGradient...)
+    DefaultPalette = NewGradientPalette("DefaultPalette", defaultGradient...)
+    EarthAndSkyPalette = NewGradientPalette("EarthAndSkyPalette", earthAndSkyGradient...)
+    FadeBluePalette = NewGradientPaletteByList("FadeBluePalette", false, fadeBlueColorListNonCyc...)
+    FadeCyanPalette = NewGradientPaletteByList("FadeCyanPalette", false, fadeCyanColorListNonCyc...)
+    FadeGreenPalette = NewGradientPaletteByList("FadeGreenPalette", false, fadeGreenColorListNonCyc...)
+    FadeMagentaPalette = NewGradientPaletteByList("FadeMagentaPalette", false, fadeMagentaColorListNonCyc...)
+    FadeRedPalette = NewGradientPaletteByList("FadeRedPalette", false, fadeRedColorListNonCyc...)
+    FadeYellowPalette = NewGradientPaletteByList("FadeYellowPalette", false, fadeYellowColorListNonCyc...)
+    FirePalette = NewGradientPalette("FirePalette", fireGradient...)
+    HipsterPalette = NewGradientPaletteByList("HipsterPalette", true, hipsterColorList...)
+    HotAndColdPalette = NewGradientPalette("HotAndColdPalette", hotAndColdGradient...)
+    HotFirePalette = NewGradientPaletteByList("HotFirePalette", true, hotFireColorList...)
+    KittyPalette = NewGradientPaletteByList("KittyPalette", true, kittyColorList...)
+    LanternPalette = NewGradientPaletteByList("LanternPalette", true, lanternColorList...)
+    LemmingPalette = NewGradientPaletteByList("LemmingPalette", true, lemmingColorList...)
+    MiamiVicePalette = NewGradientPaletteByList("MiamiVicePalette", true, miamiViceColorList...)
+    NeonPalette = NewGradientPaletteByList("NeonPalette", true, neonColorList...)
+    NightspellPalette = NewGradientPaletteByList("NightspellPalette", true, nightspellColorList...)
+    PastellPalette = NewGradientPalette("PastellPalette", pastellGradient...)
+    SeashorePalette = NewGradientPalette("SeashorePalette", seashoreGradient...)
+    WayyouPalette = NewGradientPaletteByList("WayyouPalette", true, wayyouColorList...)
+    WepartedPalette = NewGradientPaletteByList("WepartedPalette", true, wepartedColorList...)
+)
+
+var (
+    // ColorList ist ein Slice mit allen vorhandenen Paletten.
+    ColorList = []ColorSource{
         AliceBlueColor,
         AntiqueWhiteColor,
         AquaColor,
@@ -186,34 +254,8 @@ var (
         YellowGreenColor,
     }
 
-    // PaletteMap ist ein Map um Paletten mit ihrem Namen anzusprechen.
-    PaletteMap = map[string]ColorSource{
-        "BlackAndWhitePalette": BlackAndWhitePalette,
-        "DarkJunglePalette": DarkJunglePalette,
-        "DarkPalette": DarkPalette,
-        "DarkerPalette": DarkerPalette,
-        "DefaultPalette": DefaultPalette,
-        "EarthAndSkyPalette": EarthAndSkyPalette,
-        "FadeBluePalette": FadeBluePalette,
-        "FadeCyanPalette": FadeCyanPalette,
-        "FadeGreenPalette": FadeGreenPalette,
-        "FadeMagentaPalette": FadeMagentaPalette,
-        "FadeRedPalette": FadeRedPalette,
-        "FadeYellowPalette": FadeYellowPalette,
-        "FirePalette": FirePalette,
-        "HipsterPalette": HipsterPalette,
-        "HotAndColdPalette": HotAndColdPalette,
-        "HotFirePalette": HotFirePalette,
-        "KittyPalette": KittyPalette,
-        "LanternPalette": LanternPalette,
-        "LemmingPalette": LemmingPalette,
-        "MiamiVicePalette": MiamiVicePalette,
-        "NeonPalette": NeonPalette,
-        "NightspellPalette": NightspellPalette,
-        "PastellPalette": PastellPalette,
-        "SeashorePalette": SeashorePalette,
-        "WayyouPalette": WayyouPalette,
-        "WepartedPalette": WepartedPalette,
+    // ColorMap ist ein Map um Paletten mit ihrem Namen anzusprechen.
+    ColorMap = map[string]ColorSource{
         "AliceBlueColor": AliceBlueColor,
         "AntiqueWhiteColor": AntiqueWhiteColor,
         "AquaColor": AquaColor,
@@ -362,37 +404,10 @@ var (
         "YellowColor": YellowColor,
         "YellowGreenColor": YellowGreenColor,
     }
-
 )
 
 var (
-    // In diesem Block werden die Paletten konkret erstellt.
-    BlackAndWhitePalette = NewGradientPalette("BlackAndWhitePalette", blackAndWhiteGradient...)
-    DarkJunglePalette = NewGradientPaletteByList("DarkJunglePalette", true, darkJungleColorList...)
-    DarkPalette = NewGradientPalette("DarkPalette", darkGradient...)
-    DarkerPalette = NewGradientPalette("DarkerPalette", darkerGradient...)
-    DefaultPalette = NewGradientPalette("DefaultPalette", defaultGradient...)
-    EarthAndSkyPalette = NewGradientPalette("EarthAndSkyPalette", earthAndSkyGradient...)
-    FadeBluePalette = NewGradientPaletteByList("FadeBluePalette", false, fadeBlueColorListNonCyc...)
-    FadeCyanPalette = NewGradientPaletteByList("FadeCyanPalette", false, fadeCyanColorListNonCyc...)
-    FadeGreenPalette = NewGradientPaletteByList("FadeGreenPalette", false, fadeGreenColorListNonCyc...)
-    FadeMagentaPalette = NewGradientPaletteByList("FadeMagentaPalette", false, fadeMagentaColorListNonCyc...)
-    FadeRedPalette = NewGradientPaletteByList("FadeRedPalette", false, fadeRedColorListNonCyc...)
-    FadeYellowPalette = NewGradientPaletteByList("FadeYellowPalette", false, fadeYellowColorListNonCyc...)
-    FirePalette = NewGradientPalette("FirePalette", fireGradient...)
-    HipsterPalette = NewGradientPaletteByList("HipsterPalette", true, hipsterColorList...)
-    HotAndColdPalette = NewGradientPalette("HotAndColdPalette", hotAndColdGradient...)
-    HotFirePalette = NewGradientPaletteByList("HotFirePalette", true, hotFireColorList...)
-    KittyPalette = NewGradientPaletteByList("KittyPalette", true, kittyColorList...)
-    LanternPalette = NewGradientPaletteByList("LanternPalette", true, lanternColorList...)
-    LemmingPalette = NewGradientPaletteByList("LemmingPalette", true, lemmingColorList...)
-    MiamiVicePalette = NewGradientPaletteByList("MiamiVicePalette", true, miamiViceColorList...)
-    NeonPalette = NewGradientPaletteByList("NeonPalette", true, neonColorList...)
-    NightspellPalette = NewGradientPaletteByList("NightspellPalette", true, nightspellColorList...)
-    PastellPalette = NewGradientPalette("PastellPalette", pastellGradient...)
-    SeashorePalette = NewGradientPalette("SeashorePalette", seashoreGradient...)
-    WayyouPalette = NewGradientPaletteByList("WayyouPalette", true, wayyouColorList...)
-    WepartedPalette = NewGradientPaletteByList("WepartedPalette", true, wepartedColorList...)
+    // In diesem Block werden die uniformen Paletten erstellt.
     AliceBlueColor = NewUniformPalette("AliceBlueColor", colornames.AliceBlue)
     AntiqueWhiteColor = NewUniformPalette("AntiqueWhiteColor", colornames.AntiqueWhite)
     AquaColor = NewUniformPalette("AquaColor", colornames.Aqua)

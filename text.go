@@ -26,7 +26,7 @@ var (
 	textImgFactorFloat = float64(textImgFactor)
 	textBaseFontSize   = 11.0
 	textFontSize       = textImgFactorFloat * textBaseFontSize
-	textFont           = fonts.GoBold
+	textFont           = fonts.WorkSansMedium
 	freeFont, _        = truetype.Parse(gobold.TTF)
 	transpPattern      = NewUniform(Transparent)
 )
@@ -39,10 +39,10 @@ type TextNative struct {
 	txt                   string
 	size                  fixed.Point26_6
 	startPos, endPos, pos fixed.Point26_6
-	pal                   *PaletteFader
+	pal                   PaletteParameter
 	img                   draw.Image
 	drawer                *font.Drawer
-	params                []*Bounded[float64]
+	params                []Parameter
 	anim                  Animation
 	mutex                 sync.Mutex
 }
@@ -56,26 +56,35 @@ func NewTextNative(lg *LedGrid, txt string, pal ColorSource) *TextNative {
 		Max: lg.Rect.Max.Mul(textImgFactor),
 	})
 
-	t.params = make([]*Bounded[float64], 2)
-	t.params[0] = NewBounded("Font Size", textBaseFontSize, textBaseFontSize/2.0, 2.0*textBaseFontSize, 1.0)
-	t.params[1] = NewBounded("Baseline", float64(lg.Bounds().Max.Y), 0.0, float64(2*lg.Bounds().Max.Y), 1.0)
+	t.params = make([]Parameter, 3)
+	t.params[0] = NewFloatParameter("Font Size", textBaseFontSize, textBaseFontSize/2.0, 2.0*textBaseFontSize, 1.0)
+	t.params[1] = NewFloatParameter("Baseline", float64(lg.Bounds().Max.Y), 0.0, float64(2*lg.Bounds().Max.Y), 1.0)
+	t.params[2] = NewStringParameter("Message", txt)
 
 	t.txt = txt
-	t.startPos = coord2fix(textImgFactorFloat*(float64(lg.Bounds().Max.X)+1.0), textImgFactorFloat*t.params[1].Val())
+	t.startPos = coord2fix(textImgFactorFloat*(float64(lg.Bounds().Max.X)+1.0), textImgFactorFloat*t.params[1].(FloatParameter).Val())
 	t.endPos = t.startPos
 	t.pos = t.startPos
-	t.pal = NewPaletteFader(pal)
+	t.pal = NewPaletteParameter("Color", NewPaletteFader(pal))
 	t.drawer = &font.Drawer{
 		Dst: t.img,
 	}
 
-	t.params[0].SetCallback(func(oldVal, newVal float64) {
-		t.updateSize(newVal)
+	t.params[0].SetCallback(func(p Parameter) {
+        v := t.params[0].(FloatParameter).Val()
+		t.updateSize(v)
 	})
 
-	t.params[1].SetCallback(func(oldVal, newVal float64) {
-		t.startPos.Y = float2fix(textImgFactorFloat * newVal)
-		t.endPos.Y = float2fix(textImgFactorFloat * newVal)
+	t.params[1].SetCallback(func(p Parameter) {
+        v := t.params[1].(FloatParameter).Val()
+		t.startPos.Y = float2fix(textImgFactorFloat * v)
+		t.endPos.Y = float2fix(textImgFactorFloat * v)
+	})
+
+	t.params[2].SetCallback(func(p Parameter) {
+        v := t.params[2].(StringParameter).Val()
+        	t.txt = v
+        	t.updateSize(t.params[0].(FloatParameter).Val())
 	})
 
 	anim := NewNormAnimation(10*time.Second, t.Update)
@@ -97,16 +106,20 @@ func (t *TextNative) updateSize(fontSize float64) {
 	t.mutex.Unlock()
 }
 
-func (t *TextNative) ParamList() []*Bounded[float64] {
+func (t *TextNative) ParamList() []Parameter {
 	return t.params
 }
 
+func (t *TextNative) PaletteParam() PaletteParameter {
+    return t.pal
+}
+
 func (t *TextNative) Palette() ColorSource {
-	return t.pal
+	return t.pal.Val()
 }
 
 func (t *TextNative) SetPalette(pal ColorSource, fadeTime time.Duration) {
-	t.pal.StartFade(pal, fadeTime)
+	t.pal.Val().(*PaletteFader).StartFade(pal, fadeTime)
 }
 
 func (t *TextNative) String() string {
@@ -115,7 +128,7 @@ func (t *TextNative) String() string {
 
 func (t *TextNative) SetString(txt string) {
 	t.txt = txt
-	t.updateSize(t.params[0].Val())
+	t.updateSize(t.params[0].(FloatParameter).Val())
 }
 
 func (t *TextNative) SetVisible(vis bool) {
@@ -134,7 +147,7 @@ func (t *TextNative) Update(p float64) {
 	x1, y1 := fix2coord(t.endPos)
 	x, y := (1-p)*x0+p*x1, (1-p)*y0+p*y1
 	t.drawer.Dot = coord2fix(x, y)
-	t.drawer.Src = image.NewUniform(t.pal.Color(0))
+	t.drawer.Src = image.NewUniform(t.pal.Val().Color(0))
 	t.drawer.DrawString(t.txt)
 	t.mutex.Unlock()
 }

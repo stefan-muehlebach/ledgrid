@@ -7,15 +7,13 @@ import (
 	"image"
 	"time"
 
-	"github.com/stefan-muehlebach/ledgrid"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	_ "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/stefan-muehlebach/ledgrid"
 )
 
 const (
@@ -31,6 +29,7 @@ var (
 var (
 	width              = 10
 	height             = 10
+	cableConf          = ledgrid.UpperLeft2Right
 	defLocal           = false
 	defDummy           = false
 	defHost            = "raspi-2"
@@ -46,15 +45,15 @@ var (
 		"bml/mario.bml",
 	}
 
-    App fyne.App
-    Win fyne.Window
+	App fyne.App
+	Win fyne.Window
 )
 
 func main() {
 	var local, dummy bool
 	var host string
 	var port uint
-	var gammaValue, maxBrightValue *ledgrid.Bounded[float64]
+	var gammaValue, maxBrightValue, fadeTime ledgrid.FloatParameter
 
 	var pixCtrl ledgrid.PixelClient
 	var pixGrid *ledgrid.LedGrid
@@ -62,11 +61,7 @@ func main() {
 
 	var bgList, fgList []ledgrid.Visual
 	var bgNameList, fgNameList []string
-	var paletteNameList []string
-
-    var pal ledgrid.ColorSource
-	// var pal *ledgrid.PaletteFader
-	var fadeTime *ledgrid.Bounded[float64]
+	var paletteNameList, colorNameList []string
 
 	var blinken *ledgrid.BlinkenFile
 	var blinkenAnim *ledgrid.ImageAnimation
@@ -90,32 +85,32 @@ func main() {
 			pixCtrl = ledgrid.NewNetPixelClient(host, port)
 		}
 	}
-	pixGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
+	pixGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height), cableConf)
 	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)
 
-	gammaValue = ledgrid.NewBounded("Gamma", defGammaValue, 1.0, 5.0, 0.1)
-	gammaValue.SetCallback(func(oldVal, newVal float64) {
-		pixCtrl.SetGamma(newVal, newVal, newVal)
+	gammaValue = ledgrid.NewFloatParameter("Gamma", defGammaValue, 1.0, 5.0, 0.1)
+	gammaValue.SetCallback(func(p ledgrid.Parameter) {
+		v := gammaValue.Val()
+		pixCtrl.SetGamma(v, v, v)
 	})
-	maxBrightValue = ledgrid.NewBounded("MaxBright", 255.0, 1.0, 255.0, 1.0)
-	maxBrightValue.SetCallback(func(oldVal, newVal float64) {
-		val := uint8(newVal)
-		pixCtrl.SetMaxBright(val, val, val)
+	maxBrightValue = ledgrid.NewFloatParameter("Brightness", 255, 1, 255, 1)
+	maxBrightValue.SetCallback(func(p ledgrid.Parameter) {
+		v := uint8(maxBrightValue.Val())
+		pixCtrl.SetMaxBright(v, v, v)
 	})
 
-	// pal = ledgrid.NewPaletteFader(ledgrid.HipsterPalette)
-    pal = ledgrid.HipsterPalette
-	fadeTime = ledgrid.NewBounded("Fade Time", 2.0, 0.0, 5.0, 0.1)
+	fadeTime = ledgrid.NewFloatParameter("Fade Time", 2.0, 0.0, 5.0, 0.1)
 
 	transpVisual := ledgrid.NewImageFromColor(pixGrid, ledgrid.Transparent)
 	transpVisual.SetName("(Transparent)")
 
 	bgList = []ledgrid.Visual{
 		transpVisual,
-		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, pal),
-		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, pal),
-		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, pal),
-		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, pal),
+		ledgrid.NewShader(pixGrid, ledgrid.ExperimentalShader, ledgrid.HipsterPalette),
+		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, ledgrid.HipsterPalette),
+		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, ledgrid.HipsterPalette),
+		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, ledgrid.HipsterPalette),
+		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, ledgrid.HipsterPalette),
 		ledgrid.NewFire(pixGrid),
 		ledgrid.NewCamera(pixGrid),
 	}
@@ -126,15 +121,17 @@ func main() {
 
 	fgList = []ledgrid.Visual{
 		transpVisual,
-		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.PaletteMap["GreenYellowColor"]),
-		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.PaletteMap["LightSeaGreenColor"]),
+		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.ColorMap["GreenYellowColor"]),
+		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.ColorMap["LightSeaGreenColor"]),
 		ledgrid.NewImageFromFile(pixGrid, "image.png"),
 	}
+
 	for _, fileName := range blinkenFiles {
 		blinken = ledgrid.ReadBlinkenFile(fileName)
 		blinkenAnim = blinken.NewImageAnimation(pixGrid)
 		fgList = append(fgList, blinkenAnim)
 	}
+
 	fgNameList = make([]string, len(fgList))
 	for i, anim := range fgList {
 		fgNameList[i] = anim.Name()
@@ -143,6 +140,11 @@ func main() {
 	paletteNameList = make([]string, len(ledgrid.PaletteList))
 	for i, palette := range ledgrid.PaletteList {
 		paletteNameList[i] = palette.Name()
+	}
+
+	colorNameList = make([]string, len(ledgrid.ColorList))
+	for i, palette := range ledgrid.ColorList {
+		colorNameList[i] = palette.Name()
 	}
 
 	//------------------------------------------------------------------------
@@ -160,48 +162,60 @@ func main() {
 		}
 		form.RemoveAll()
 		if obj, ok := vis.(ledgrid.Paintable); ok {
-			label := widget.NewLabel("Palette/Color")
+			var selection *widget.Select
+			var pal ledgrid.ColorSource
+
+			palParam := obj.PaletteParam()
+			label := widget.NewLabel(palParam.Name())
 			label.Alignment = fyne.TextAlignTrailing
 			label.TextStyle.Bold = true
-			visPal := ledgrid.NewPalette(obj.Palette())
-			selection := widget.NewSelect(paletteNameList, func(s string) {
-				pal := ledgrid.PaletteMap[s]
-				obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
-				visPal.ColorSource = pal
-				visPal.Refresh()
-			})
-			selection.Selected = obj.Palette().Name()
+			if p, ok := palParam.Val().(*ledgrid.PaletteFader); ok {
+				pal = p.Pals[0]
+			}
+			switch pal.(type) {
+			case *ledgrid.UniformPalette:
+				selection = widget.NewSelect(colorNameList, func(s string) {
+					pal := ledgrid.ColorMap[s]
+					obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
+				})
+			default:
+				selection = widget.NewSelect(paletteNameList, func(s string) {
+					pal := ledgrid.PaletteMap[s]
+					obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
+				})
+			}
+			selection.Selected = palParam.Val().Name()
 			form.Add(label)
 			form.Add(selection)
-			label = widget.NewLabel("")
-			form.Add(label)
-			form.Add(visPal)
 		}
 		if obj, ok := vis.(ledgrid.Parametrizable); ok {
-			for _, param := range obj.ParamList() {
-				label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+" (%.3f)"))
-				label.Alignment = fyne.TextAlignTrailing
-				label.TextStyle.Bold = true
-				slider := widget.NewSliderWithData(param.Min(), param.Max(), param)
-				slider.Step = param.Step()
-				slider.SetValue(param.Val())
-				form.Add(label)
-				form.Add(slider)
+			for _, p := range obj.ParamList() {
+				switch param := p.(type) {
+				case ledgrid.FloatParameter:
+					label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+" (%.1f)"))
+					label.Alignment = fyne.TextAlignTrailing
+					label.TextStyle.Bold = true
+					slider := widget.NewSliderWithData(param.Min(), param.Max(), param)
+					slider.Step = param.Step()
+					slider.SetValue(param.Val())
+					form.Add(label)
+					form.Add(slider)
+
+				case ledgrid.StringParameter:
+					label := widget.NewLabel(param.Name())
+					label.Alignment = fyne.TextAlignTrailing
+					label.TextStyle.Bold = true
+					entry := widget.NewEntry()
+					entry.Text = param.Val()
+					button := widget.NewButton("Apply", func() {
+						param.SetVal(entry.Text)
+					})
+					form.Add(label)
+					form.Add(entry)
+					form.Add(layout.NewSpacer())
+					form.Add(button)
+				}
 			}
-		}
-		if obj, ok := vis.(ledgrid.Text); ok {
-			label := widget.NewLabel("Message")
-			label.Alignment = fyne.TextAlignTrailing
-			label.TextStyle.Bold = true
-			entry := widget.NewEntry()
-			entry.Text = obj.String()
-			button := widget.NewButton("Apply", func() {
-				obj.SetString(entry.Text)
-			})
-			form.Add(label)
-			form.Add(entry)
-			form.Add(layout.NewSpacer())
-			form.Add(button)
 		}
 	}
 
@@ -228,14 +242,14 @@ func main() {
 		},
 	}
 
-	gammaLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaValue, "Gamma (%.1f)"))
+	gammaLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaValue, gammaValue.Name()+" (%.1f)"))
 	gammaLabel.Alignment = fyne.TextAlignTrailing
 	gammaLabel.TextStyle.Bold = true
 	gammaSlider := widget.NewSliderWithData(gammaValue.Min(), gammaValue.Max(), gammaValue)
 	gammaSlider.Step = gammaValue.Step()
 	gammaSlider.SetValue(gammaValue.Val())
 
-	maxBrightLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(maxBrightValue, "Brightness (%.0f)"))
+	maxBrightLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(maxBrightValue, maxBrightValue.Name()+" (%.0f)"))
 	maxBrightLabel.Alignment = fyne.TextAlignTrailing
 	maxBrightLabel.TextStyle.Bold = true
 	maxBrightSlider := widget.NewSliderWithData(maxBrightValue.Min(), maxBrightValue.Max(), maxBrightValue)
@@ -256,10 +270,8 @@ func main() {
 		fadeTimeLabel, fadeTimeSlider,
 	)
 	prefCard := widget.NewCard("Preferences", "", prefForm)
-	// testWidget := NewPalettePreview(ledgrid.NightspellPalette)
 	prefTab := container.NewVBox(
 		prefCard,
-		// testWidget,
 	)
 
 	visualCard := widget.NewCard("Visuals", "There can be one background and one foreground", visualForm)

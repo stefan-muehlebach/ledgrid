@@ -22,10 +22,9 @@ var (
     // Neben diesen automatisch verarbeiteten Farblisten, gibt es natürlich
     // die Möglichkeit, eigene Listen und Paletten zu definieren.
 
-	blackAndWhiteGradient = []ColorStop{
+	blackToWhiteGradient = []ColorStop{
 		{0.0, NewLedColor(0x000000)},
-		{0.5, NewLedColor(0xFFFFFF)},
-		{1.0, NewLedColor(0x000000)},
+		{1.0, NewLedColor(0xFFFFFF)},
 	}
 
 	// Paletten aus der Mandelbrot-Kueche
@@ -223,7 +222,7 @@ var (
 
 	Pico08Colors = []LedColor{
 		// 16 Farben der Default-Palette
-		NewLedColorAlpha(0x00000000), // black / transparent
+		NewLedColor(0x000000), // black / transparent
 		NewLedColor(0x1d2b53), // dark blue
 		NewLedColor(0x7e2553), // dark purple
 		NewLedColor(0x008751), // dark green

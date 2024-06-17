@@ -24,7 +24,7 @@ import (
 // Dimensionierung des Koord.system), t ist ein fortlaufender Zeitparameter
 // und p ist ein Slice von Parametern, die für diesen Shader verwendet werden
 // (siehe dazu auch den Typ ShaderParam).
-type ShaderFuncType func(x, y, t float64, p []*Bounded[float64]) float64
+type ShaderFuncType func(x, y, t float64, p []Parameter) float64
 
 type Shader struct {
 	VisualEmbed
@@ -33,8 +33,8 @@ type Shader struct {
 	field              [][]float64
 	dPixel, xMin, yMax float64
 	fnc                ShaderFuncType
-	params             []*Bounded[float64]
-	pal                *PaletteFader
+	params             []Parameter
+	pal                PaletteParameter
 	anim               Animation
 }
 
@@ -59,7 +59,8 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 		s.xMin = -1.0
 		s.yMax = 1.0
 	}
-	s.pal = NewPaletteFader(pal)
+	s.pal = NewPaletteParameter("Palette", NewPaletteFader(pal))
+    s.params = make([]Parameter, 0)
 	s.SetShaderData(shr)
 	s.anim = NewInfAnimation(s.Update)
 	return s
@@ -68,14 +69,14 @@ func NewShader(lg *LedGrid, shr ShaderRecord, pal ColorSource) *Shader {
 func (s *Shader) SetShaderData(shr ShaderRecord) {
 	s.name = shr.n
 	s.fnc = shr.f
-	s.params = slices.Clone(shr.p)
+	s.params = append(s.params, slices.Clone(shr.p)...)
 }
 
-func (s *Shader) ParamList() []*Bounded[float64] {
+func (s *Shader) ParamList() []Parameter {
 	return s.params
 }
 
-func (s *Shader) Param(name string) *Bounded[float64] {
+func (s *Shader) Param(name string) Parameter {
 	for _, param := range s.params {
 		if param.Name() == name {
 			return param
@@ -84,12 +85,16 @@ func (s *Shader) Param(name string) *Bounded[float64] {
 	return nil
 }
 
+func (s *Shader) PaletteParam() PaletteParameter {
+    return s.pal
+}
+
 func (s *Shader) Palette() ColorSource {
-	return s.pal
+	return s.pal.Val()
 }
 
 func (s *Shader) SetPalette(pal ColorSource, fadeTime time.Duration) {
-	s.pal.StartFade(pal, fadeTime)
+	s.pal.Val().(*PaletteFader).StartFade(pal, fadeTime)
 }
 
 func (s *Shader) SetVisible(vis bool) {
@@ -125,7 +130,7 @@ func (s *Shader) Bounds() image.Rectangle {
 }
 
 func (s *Shader) At(x, y int) color.Color {
-	return s.pal.Color(s.field[y][x])
+	return s.pal.Val().Color(s.field[y][x])
 }
 
 // Im folgenden Abschnitt sind ein paar vordefinierte Shader zusammengestellt.
@@ -133,55 +138,71 @@ func (s *Shader) At(x, y int) color.Color {
 type ShaderRecord struct {
 	n string
 	f ShaderFuncType
-	p []*Bounded[float64]
+	p []Parameter
 }
 
 var (
 	PlasmaShader = ShaderRecord{
 		"Plasma (Shader)",
 		PlasmaShaderFunc,
-		[]*Bounded[float64]{
-			NewBounded("Func1, P1", 1.2, 0.0, 10.0, 0.1),
-			NewBounded("Func2, P1", 1.6, 0.0, 10.0, 0.1),
-			NewBounded("Func2, P2", 3.0, 0.0, 10.0, 0.1),
-			NewBounded("Func2, P3", 1.5, 0.0, 10.0, 0.1),
-			NewBounded("Func3, P1", 5.0, 0.0, 10.0, 0.1),
-			NewBounded("Func3, P2", 5.0, 0.0, 10.0, 0.1),
+		[]Parameter{
+			NewFloatParameter("Func1, P1", 1.2, 0.0, 10.0, 0.1),
+			NewFloatParameter("Func2, P1", 1.6, 0.0, 10.0, 0.1),
+			NewFloatParameter("Func2, P2", 3.0, 0.0, 10.0, 0.1),
+			NewFloatParameter("Func2, P3", 1.5, 0.0, 10.0, 0.1),
+			NewFloatParameter("Func3, P1", 5.0, 0.0, 10.0, 0.1),
+			NewFloatParameter("Func3, P2", 5.0, 0.0, 10.0, 0.1),
 		},
 	}
 	CircleShader = ShaderRecord{
 		"Circle (Shader)",
 		CircleShaderFunc,
-		[]*Bounded[float64]{
-			NewBounded("X-Scale", 1.0, -2.0, 2.0, 0.1),
-			NewBounded("Y-Scale", 1.0, -2.0, 2.0, 0.1),
+		[]Parameter{
+			NewFloatParameter("X-Scale", 1.0, -2.0, 2.0, 0.1),
+			NewFloatParameter("Y-Scale", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 	KaroShader = ShaderRecord{
 		"Karo (Shader)",
 		KaroShaderFunc,
-		[]*Bounded[float64]{
-			NewBounded("X-Scale", 1.0, -2.0, 2.0, 0.1),
-			NewBounded("Y-Scale", 1.0, -2.0, 2.0, 0.1),
+		[]Parameter{
+			NewFloatParameter("X-Scale", 1.0, -2.0, 2.0, 0.1),
+			NewFloatParameter("Y-Scale", 1.0, -2.0, 2.0, 0.1),
 		},
 	}
 	LinearShader = ShaderRecord{
 		"Linear (Shader)",
 		LinearShaderFunc,
-		[]*Bounded[float64]{
-			NewBounded("X-Speed", 1.0, -2.0, 2.0, 0.1),
-			NewBounded("Y-Speed", 0.0, -2.0, 2.0, 0.1),
+		[]Parameter{
+			NewFloatParameter("X-Speed", 1.0, -2.0, 2.0, 0.1),
+			NewFloatParameter("Y-Speed", 0.0, -2.0, 2.0, 0.1),
 		},
 	}
+	ExperimentalShader = ShaderRecord{
+		"Experimental (Shader)",
+		ExperimentalShaderFunc,
+		[]Parameter{
+			NewFloatParameter("X", 0.0, -1.0, 1.0, 0.05),
+			NewFloatParameter("Y", 0.0, -1.0, 1.0, 0.05),
+			NewFloatParameter("P", 0.0, -1.0, 1.0, 0.05),
+    		},
+	}
 )
+
+func ExperimentalShaderFunc(x, y, t float64, p []Parameter) float64 {
+    p1 := p[0].(FloatParameter).Val()
+    p2 := p[1].(FloatParameter).Val()
+    d := math.Hypot((x-p1), (y-p2)) / (2.0 * math.Sqrt2)
+    return 1.0 - d
+}
 
 // Die beruehmt/beruechtigte Plasma-Animation. Die Parameter p1 - p6 sind eher
 // als Konstanten zu verstehen und eignen sich nicht, um live veraendert
 // zu werden.
-func PlasmaShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	v1 := f1(x, y, t, p[0].Val())
-	v2 := f2(x, y, t, p[1].Val(), p[2].Val(), p[3].Val())
-	v3 := f3(x, y, t, p[4].Val(), p[5].Val())
+func PlasmaShaderFunc(x, y, t float64, p []Parameter) float64 {
+	v1 := f1(x, y, t, p[0].(FloatParameter).Val())
+	v2 := f2(x, y, t, p[1].(FloatParameter).Val(), p[2].(FloatParameter).Val(), p[3].(FloatParameter).Val())
+	v3 := f3(x, y, t, p[4].(FloatParameter).Val(), p[5].(FloatParameter).Val())
 	v := (v1+v2+v3)/6.0 + 0.5
 	return v
 }
@@ -202,9 +223,9 @@ func f3(x, y, t, p1, p2 float64) float64 {
 
 // Zeichnet verschachtelte Kreisflaechen. Mit p1 kann die Geschw. und die
 // Richtung der Anim. beeinflusst werden.
-func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	x = p[0].Val() * x / 10.0
-	y = p[1].Val() * y / 10.0
+func CircleShaderFunc(x, y, t float64, p []Parameter) float64 {
+	x = p[0].(FloatParameter).Val() * x / 10.0
+	y = p[1].(FloatParameter).Val() * y / 10.0
 	t /= 5.0
 	return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
 	// return math.Abs(math.Mod(math.Sqrt(x*x+y*y)-t, 1.0))
@@ -212,9 +233,9 @@ func CircleShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 
 // Zeichnet verschachtelte Karomuster. Mit p1 kann die Geschw. und die
 // Richtung der Anim. beeinflusst werden.
-func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	x = p[0].Val() * x / 10.0
-	y = p[1].Val() * y / 10.0
+func KaroShaderFunc(x, y, t float64, p []Parameter) float64 {
+	x = p[0].(FloatParameter).Val() * x / 10.0
+	y = p[1].(FloatParameter).Val() * y / 10.0
 	t /= 5.0
 	return math.Abs(math.Mod(math.Abs(x)+math.Abs(y)-t, 1.0))
 }
@@ -222,9 +243,9 @@ func KaroShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
 // Allgemeine Funktion fuer einen animierten Farbverlauf. Mit p1 steuert man
 // die Geschwindigkeit der Animation und mit p2/p3 kann festgelegt werden,
 // in welche Richtung (x oder y) der Verlauf erfolgen soll.
-func LinearShaderFunc(x, y, t float64, p []*Bounded[float64]) float64 {
-	x = p[0].Val() * x / 10.0
-	y = p[1].Val() * y / 10.0
+func LinearShaderFunc(x, y, t float64, p []Parameter) float64 {
+	x = p[0].(FloatParameter).Val() * x / 10.0
+	y = p[1].(FloatParameter).Val() * y / 10.0
 	t /= 5.0
 	return math.Abs(math.Mod(x+y-t, 1.0))
 }
