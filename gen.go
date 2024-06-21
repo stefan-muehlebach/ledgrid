@@ -16,7 +16,7 @@ import (
 	"regexp"
 	"text/template"
 
-    "github.com/stefan-muehlebach/gg/colornames"
+    "github.com/stefan-muehlebach/gg/color"
 )
 
 var (
@@ -30,7 +30,7 @@ var (
 package ledgrid
 
 import (
-    "github.com/stefan-muehlebach/gg/colornames"
+    "github.com/stefan-muehlebach/gg/color"
 )
 
 var (
@@ -134,9 +134,9 @@ func main() {
     })
 
 	colorNameList = make([]Record, 0)
-    for _, colName := range colornames.Names {
+    for _, colName := range color.Names {
         record := Record{}
-        record.ColorListName = fmt.Sprintf("colornames.%s", colName)
+        record.ColorListName = fmt.Sprintf("color.%s", colName)
         record.PaletteName = fmt.Sprintf("%sColor", colName)
         record.IsUniform = true
         colorNameList = append(colorNameList, record)

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -19,7 +21,6 @@ import (
 
 	// gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/gg/color"
-	"github.com/stefan-muehlebach/gg/colornames"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"golang.org/x/image/math/fixed"
@@ -284,7 +285,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: 0.0,
-	// 	Color: colornames.Teal,
+	// 	Color: color.Teal,
 	// 	Width: 5.0,
 	// }
 	// obj2 := &ledgrid.RotatingLine{
@@ -292,7 +293,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: -math.Pi / 2.0,
-	// 	Color: colornames.Crimson,
+	// 	Color: color.Crimson,
 	// 	Width: 5.0,
 	// }
 	// obj3 := &ledgrid.RotatingLine{
@@ -300,7 +301,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: math.Pi,
-	// 	Color: colornames.YellowGreen,
+	// 	Color: color.YellowGreen,
 	// 	Width: 5.0,
 	// }
 	// obj4 := &ledgrid.RotatingLine{
@@ -308,7 +309,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: math.Pi / 2.0,
-	// 	Color: colornames.Purple,
+	// 	Color: color.Purple,
 	// 	Width: 5.0,
 	// }
 	obj5 := &ledgrid.GlowingCircle{
@@ -317,7 +318,7 @@ func main() {
 		Speed:       1.0,
 		Radius:      []float64{0.0, 75.0},
 		FillColor:   []color.Color{color.Transparent, color.Transparent},
-		StrokeColor: []color.Color{colornames.Crimson, colornames.LemonChiffon},
+		StrokeColor: []color.Color{color.Crimson, color.LemonChiffon},
 		StrokeWidth: []float64{10.0, 10.0},
 		GlowPeriod:  10 * time.Second,
 	}
@@ -326,8 +327,8 @@ func main() {
 	// 	Dir:         geom.Point{0.3, 0.6},
 	// 	Speed:       1.0,
 	// 	Radius:      []float64{10.0, 15.0},
-	// 	FillColor:   []color.Color{colornames.GreenYellow, colornames.Aquamarine},
-	// 	StrokeColor: []color.Color{colornames.Crimson, color.Black},
+	// 	FillColor:   []color.Color{color.GreenYellow, color.Aquamarine},
+	// 	StrokeColor: []color.Color{color.Crimson, color.Black},
 	// 	StrokeWidth: []float64{5.0, 0.0},
 	// 	GlowPeriod:  3 * time.Second,
 	// }
