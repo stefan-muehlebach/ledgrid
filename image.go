@@ -19,13 +19,13 @@ import (
 //----------------------------------------------------------------------------
 
 type Uniform struct {
-    C LedColor
+	C LedColor
 }
 
 func NewUniform(c LedColor) *Uniform {
-    u := &Uniform{}
-    u.C = c
-    return u
+	u := &Uniform{}
+	u.C = c
+	return u
 }
 
 func (u *Uniform) ColorModel() color.Model {
@@ -43,11 +43,13 @@ func (u *Uniform) At(x, y int) color.Color {
 func (u *Uniform) Set(x, y int, c color.Color) {
 }
 
+//----------------------------------------------------------------------------
+
 type Image struct {
 	VisualEmbed
-	lg     *LedGrid
-	img    draw.Image
-	rect   image.Rectangle
+	lg   *LedGrid
+	img  draw.Image
+	rect image.Rectangle
 }
 
 func NewImageFromFile(lg *LedGrid, fileName string) *Image {
@@ -63,7 +65,7 @@ func NewImageFromFile(lg *LedGrid, fileName string) *Image {
 		log.Fatalf("Couldn't decode file: %v", err)
 	}
 	i.img = tmp.(draw.Image)
-    i.rect = i.img.Bounds()
+	i.rect = i.img.Bounds()
 	return i
 }
 
@@ -72,7 +74,7 @@ func NewImageFromColor(lg *LedGrid, c LedColor) *Image {
 	i.VisualEmbed.Init("Uniform Color")
 	i.lg = lg
 	i.img = NewUniform(c)
-    i.rect = i.lg.Bounds()
+	i.rect = i.lg.Bounds()
 	return i
 }
 
@@ -95,24 +97,24 @@ func NewImageFromBlinken(lg *LedGrid, blk *BlinkenFile, fn int) *Image {
 			src := blk.Frames[fn].Values[row][idxFrom:idxTo:idxTo]
 			switch blk.Channels {
 			case 1:
-                v := colorScale * src[0]
-                if v == 0 {
-                    c = color.RGBA{0, 0, 0, 0}
-                } else {
-    			        c = color.RGBA{v, v, v, 0xff}
-                }
+				v := colorScale * src[0]
+				if v == 0 {
+					c = color.RGBA{0, 0, 0, 0}
+				} else {
+					c = color.RGBA{v, v, v, 0xff}
+				}
 			case 3:
-                r, g, b := colorScale * src[0], colorScale * src[1], colorScale * src[2]
-                if r == 0 && g == 0 && b == 0 {
-                    c = color.RGBA{0, 0, 0, 0}
-                } else {
-				    c = color.RGBA{r, g, b, 0xff}
-                }
+				r, g, b := colorScale*src[0], colorScale*src[1], colorScale*src[2]
+				if r == 0 && g == 0 && b == 0 {
+					c = color.RGBA{0, 0, 0, 0}
+				} else {
+					c = color.RGBA{r, g, b, 0xff}
+				}
 			}
 			i.img.Set(col, row, c)
 		}
 	}
-    i.rect = i.img.Bounds()
+	i.rect = i.img.Bounds()
 	return i
 }
 

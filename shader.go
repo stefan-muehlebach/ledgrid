@@ -182,7 +182,7 @@ var (
 		"Experimental (Shader)",
 		ExperimentalShaderFunc,
 		[]Parameter{
-			NewFloatParameter("X", 0.0, -1.0, 1.0, 0.05),
+			NewFloatParameter("X", 1.0, 1.0, 5.0, 0.1),
 			NewFloatParameter("Y", 0.0, -1.0, 1.0, 0.05),
 			NewFloatParameter("P", 0.0, -1.0, 1.0, 0.05),
     		},
@@ -191,9 +191,11 @@ var (
 
 func ExperimentalShaderFunc(x, y, t float64, p []Parameter) float64 {
     p1 := p[0].(FloatParameter).Val()
-    p2 := p[1].(FloatParameter).Val()
-    d := math.Hypot((x-p1), (y-p2)) / (2.0 * math.Sqrt2)
-    return 1.0 - d
+    // p2 := p[1].(FloatParameter).Val()
+    fx := (x - (-1.0))/2.0
+    // dy := y - (-1.0)
+    d := min(fx/p1, 1.0)
+    return d
 }
 
 // Die beruehmt/beruechtigte Plasma-Animation. Die Parameter p1 - p6 sind eher

@@ -38,7 +38,7 @@ func NewCamera(lg *LedGrid) *Camera {
 	c.VisualEmbed.Init("Camera")
 	c.lg = lg
 
-	c.imgRect = image.Rect(40, 0, 280, 240)
+	c.imgRect = image.Rect(0, 40, 320, 200)
 	// c.scaler = draw.BiLinear.NewScaler(10, 10, camHeight, camHeight)
 
 	c.webcam, err = gocv.VideoCaptureDevice(camDevId)

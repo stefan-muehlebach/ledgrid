@@ -15,30 +15,6 @@ const (
 	defFramesPerSec = 30
 )
 
-type CableConfig struct {
-	start, dir image.Point
-}
-
-var (
-	UpperLeft2Right = CableConfig{upperLeft, right}
-	UpperLeft2Down  = CableConfig{upperLeft, down}
-	UpperRight2Left = CableConfig{upperRight, left}
-	UpperRight2Down = CableConfig{upperRight, down}
-	LowerLeft2Right = CableConfig{lowerLeft, right}
-	LowerLeft2Up    = CableConfig{lowerLeft, up}
-	LowerRight2Left = CableConfig{lowerRight, left}
-	LowerRight2Up   = CableConfig{lowerRight, up}
-
-	upperLeft  = image.Point{0, 0}
-	upperRight = image.Point{1, 0}
-	lowerLeft  = image.Point{0, 1}
-	lowerRight = image.Point{1, 1}
-	right      = image.Point{1, 0}
-	left       = image.Point{-1, 0}
-	down       = image.Point{0, 1}
-	up         = image.Point{0, -1}
-)
-
 var (
 	framesPerSecond int
 	frameRefresh    time.Duration
@@ -67,16 +43,33 @@ type LedGrid struct {
 	// so schlangenfoermig weiter.
 	Pix []uint8
 
-	cabConf CableConfig
+	idxMap [][]int
 }
 
 // Erstellt ein neues LED-Panel. r enthaelt die Dimension des (gesamten)
 // Panels, und mit cabConf wird die Verkabelungskonfiguration bezeichnet.
-func NewLedGrid(r image.Rectangle, cabConf CableConfig) *LedGrid {
+
+func NewLedGrid(size image.Point) *LedGrid {
 	g := &LedGrid{}
-	g.Rect = r
-	g.Pix = make([]uint8, 3*r.Dx()*r.Dy())
-	g.cabConf = cabConf
+	g.Rect = image.Rectangle{Max: size}
+	// log.Printf("g.Rect: %+v", g.Rect)
+	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
+	g.idxMap = make([][]int, g.Rect.Dx())
+	for i := range g.Rect.Dx() {
+		g.idxMap[i] = make([]int, g.Rect.Dy())
+	}
+	idx := 0
+	lay := NewModuleLayout(size)
+	// log.Printf("moduleLayout: %+v", lay)
+	for i, row := range lay {
+		for j, mod := range row {
+			pt := image.Point{j * ModuleSize.X, i * ModuleSize.Y}
+			// log.Printf("pt: %+v", pt)
+			idx = mod.AppendIdxMap(g.idxMap, pt, idx)
+			// log.Printf("next idx: %d", idx)
+		}
+	}
+	// log.Printf("g.idxMap: %+v", g.idxMap)
 	return g
 }
 
@@ -121,45 +114,12 @@ func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
 	slc[2] = c.B
 }
 
-// func (g *LedGrid) MixLedColor(x, y int, c LedColor, mixType ColorMixType) {
-// 	if !(image.Point{x, y}.In(g.Rect)) {
-// 		return
-// 	}
-// 	bgCol := g.LedColorAt(x, y)
-// 	g.SetLedColor(x, y, c.Mix(bgCol, mixType))
-// }
-
 // Damit wird der Offset eines bestimmten Farbwerts innerhalb des Slices
 // Pix berechnet. Dabei wird beruecksichtigt, dass das die LED's im LedGrid
 // schlangenfoermig angeordnet sind, und der Beginn der LED-Kette frei
 // waehlbar in einer Ecke des Panels liegen kann.
 func (g *LedGrid) PixOffset(x, y int) int {
-	var idx int
-
-	if g.cabConf.start.X == 1 {
-		x = (g.Rect.Dx() - 1) - x
-	}
-	if g.cabConf.start.Y == 1 {
-		y = (g.Rect.Dy() - 1) - y
-	}
-
-	if g.cabConf.dir.X != 0 {
-		idx = y * g.Rect.Dx()
-		if y%2 == 0 {
-			idx += x
-		} else {
-			idx += (g.Rect.Dx() - 1) - x
-		}
-	}
-	if g.cabConf.dir.Y != 0 {
-		idx = x * g.Rect.Dy()
-		if x%2 == 0 {
-			idx += y
-		} else {
-			idx += (g.Rect.Dy() - 1) - y
-		}
-	}
-	return 3 * idx
+	return g.idxMap[x][y]
 }
 
 // Hier kommen nun die fuer das LedGrid spezifischen Funktionen.

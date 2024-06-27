@@ -1,0 +1,298 @@
+[
+  {
+    "ID": 100000,
+    "Title": "BlackAndWhite",
+    "Stops": [
+        {"Pos": 0.0, "Color": "000000"},
+        {"Pos": 0.5, "Color": "ffffff"},
+        {"Pos": 1.0, "Color": "000000"}
+    ]
+  },
+  {
+    "ID": 100001,
+    "Title": "Default",
+    "Stops": [
+        {"Pos": 0.00, "Color": "febc08"},
+        {"Pos": 0.25, "Color": "daf9fe"},
+        {"Pos": 0.50, "Color": "010662"},
+        {"Pos": 0.75, "Color": "daf9fe"},
+        {"Pos": 1.00, "Color": "febc08"}
+    ]
+  },
+  {
+    "ID": 100002,
+    "Title": "EarthAndSky",
+    "Stops": [
+        {"Pos": 0.00, "Color": "ffffff"},
+        {"Pos": 0.13, "Color": "ffff00"},
+        {"Pos": 0.46, "Color": "ff3300"},
+        {"Pos": 0.76, "Color": "000099"},
+        {"Pos": 0.90, "Color": "0066ff"},
+        {"Pos": 1.00, "Color": "ffffff"}
+    ]
+  },
+  {
+    "ID": 100003,
+	"Title": "Seashore",
+    "Stops": [
+		{"Pos": 0.00, "Color": "C9FEC2"},
+		{"Pos": 0.16, "Color": "E4E4A7"},
+		{"Pos": 0.33, "Color": "F15020"},
+		{"Pos": 0.50, "Color": "841C17"},
+		{"Pos": 0.66, "Color": "0574AE"},
+		{"Pos": 0.83, "Color": "89D2D0"},
+		{"Pos": 1.00, "Color": "C9FEC2"}
+    ]
+  },
+
+  {
+    "ID": 100004,
+	"Title": "Pastell",
+    "Stops": [
+		{"Pos": 0.00, "Color": "CDD0D1"},
+		{"Pos": 0.18, "Color": "6F85FF"},
+		{"Pos": 0.42, "Color": "FF5B94"},
+		{"Pos": 0.63, "Color": "FFFF84"},
+		{"Pos": 0.86, "Color": "8BEE91"},
+		{"Pos": 1.00, "Color": "CDD0D1"}
+    ]
+  },
+
+  {
+    "ID": 100005,
+	"Title": "Dark",
+    "Stops": [
+		{"Pos": 0.00, "Color": "A80000"},
+		{"Pos": 0.18, "Color": "004D95"},
+		{"Pos": 0.39, "Color": "D06912"},
+		{"Pos": 0.57, "Color": "007C2A"},
+		{"Pos": 0.78, "Color": "4B23BF"},
+		{"Pos": 1.00, "Color": "A80000"}
+    ]
+  },
+
+  {
+    "ID": 100006,
+	"Title": "Darker",
+    "Stops": [
+		{"Pos": 0.00, "Color": "700000"},
+		{"Pos": 0.18, "Color": "003363"},
+		{"Pos": 0.39, "Color": "8a460c"},
+		{"Pos": 0.57, "Color": "00521c"},
+		{"Pos": 0.78, "Color": "32177f"},
+		{"Pos": 1.00, "Color": "700000"}
+    ]
+  },
+
+  {
+    "ID": 100007,
+	"Title": "HotAndCold",
+    "Stops": [
+		{"Pos": 0.00, "Color": "FFFFFF"},
+		{"Pos": 0.16, "Color": "0066FF"},
+		{"Pos": 0.50, "Color": "333333"},
+		{"Pos": 0.84, "Color": "FF00CC"},
+		{"Pos": 1.00, "Color": "FFFFFF"}
+    ]
+  },
+
+  {
+    "ID": 100008,
+	"Title": "Fire",
+    "Stops": [
+		{"Pos": 0.00, "Color": "000000"},
+		{"Pos": 0.10, "Color": "5f0809"},
+		{"Pos": 0.14, "Color": "5f0809"},
+		{"Pos": 0.29, "Color": "be1013"},
+		{"Pos": 0.43, "Color": "d23008"},
+		{"Pos": 0.57, "Color": "e45323"},
+		{"Pos": 0.71, "Color": "ee771c"},
+		{"Pos": 0.86, "Color": "f6960e"},
+		{"Pos": 1.00, "Color": "ffcd06"}
+    ]
+  },
+  {
+    "ID": 100101,
+    "Title": "FadeRed",
+    "IsCyclic": false,
+    "Colors": [
+        "000000",
+        "ff0000"
+    ]
+  },
+  {
+    "ID": 100102,
+    "Title": "FadeGreen",
+    "IsCyclic": false,
+    "Colors": [
+        "000000",
+        "00ff00"
+    ]
+  },
+  {
+    "ID": 100103,
+    "Title": "FadeBlue",
+    "IsCyclic": false,
+    "Colors": [
+        "000000",
+        "0000ff"
+    ]
+  },
+  {
+    "ID": 100104,
+    "Title": "FadeYellow",
+    "IsCyclic": false,
+    "Colors": [
+        "000000",
+        "ffff00"
+    ]
+  },
+  {
+    "ID": 100105,
+    "Title": "FadeCyan",
+    "IsCyclic": false,
+    "Colors": [
+        "000000",
+        "00ffff"
+    ]
+  },
+  {
+    "ID": 100106,
+    "Title": "FadeMagenta",
+    "IsCyclic": false,
+    "Colors": [
+        "000000",
+        "ff00ff"
+    ]
+  },
+  {
+    "ID": 100108,
+    "Title": "Hipster",
+    "IsCyclic": true,
+    "Colors": [
+        "8d0e6b",
+        "053434",
+        "008080",
+        "4d4208",
+        "cdad0a"
+    ]
+  },
+  {
+    "ID": 100109,
+    "Title": "Neon",
+    "IsCyclic": true,
+    "Colors": [
+        "ffffff",
+        "0099cc",
+        "ff0099"
+    ]
+  },
+  {
+    "ID": 100110,
+	"Title": "HotFire",
+    "IsCyclic": true,
+    "Colors": [
+    		"be1013",
+		"d23008",
+		"e45323",
+		"ee771c",
+		"f6960e",
+		"ffcd06",
+		"f6960e",
+		"ee771c",
+		"e45323",
+		"d23008"
+    ]
+  },
+  {
+    "ID": 100111,
+	"Title": "DarkJungle",
+    "IsCyclic": true,
+    "Colors": [
+		"184918",
+		"406a3a",
+		"b1a658",
+		"a28d33",
+		"6a6232",
+		"a28d33",
+		"b1a658",
+		"406a3a"
+    ]
+  },
+  {
+    "ID": 100112,
+	"Title": "Kitty",
+    "IsCyclic": true,
+    "Colors": [
+	    "9f456b",
+	    "4f7a9a",
+	    "e6c84c"
+    ]
+  },
+  {
+    "ID": 100113,
+	"Title": "Lantern",
+    "IsCyclic": true,
+    "Colors": [
+	    "000000",
+	    "0D9A0D",
+	    "FFFFFF"
+    ]
+  },
+  {
+    "ID": 100114,
+	"Title": "Lemming",
+    "Colors": [
+	    "000000",
+	    "0000ff",
+	    "00ff00",
+	    "ffffff"
+    ]
+  },
+  {
+    "ID": 100115,
+	"Title": "MiamiVice",
+     "IsCyclic": true,
+   "Colors": [
+	    "1be3ff",
+	    "ff82dc",
+	    "ffffff"
+    ]
+  },
+  {
+    "ID": 100116,
+	"Title": "Nightspell",
+    "IsCyclic": true,
+    "Colors": [
+	    "EDEEBA",
+	    "FEA81C",
+	    "B20152",
+	    "4B0B44",
+	    "240F37"
+    ]
+  },
+  {
+    "ID": 100117,
+	"Title": "Wayyou",
+    "IsCyclic": true,
+    "Colors": [
+	    "1C2130",
+	    "028F76",
+	    "B3E099",
+	    "FFEAAD",
+	    "D14334"
+    ]
+  },
+  {
+    "ID": 100118,
+	"Title": "Weparted",
+    "IsCyclic": true,
+    "Colors": [
+	    "027B7F",
+	    "FFA588",
+	    "D62957",
+	    "BF1E62",
+	    "572E4F"
+    ]
+  }
+]

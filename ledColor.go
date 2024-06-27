@@ -5,6 +5,7 @@ import (
 	gocol "image/color"
 	"log"
 	"math"
+	"strconv"
 
 	"github.com/stefan-muehlebach/gg/color"
 )
@@ -60,14 +61,14 @@ type LedColor struct {
 	R, G, B, A uint8
 }
 
-func NewLedColor(hex int) LedColor {
+func NewLedColor(hex uint32) LedColor {
 	r := (hex & 0xff0000) >> 16
 	g := (hex & 0x00ff00) >> 8
 	b := (hex & 0x0000ff)
 	return LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 }
 
-func NewLedColorAlpha(hex int64) LedColor {
+func NewLedColorAlpha(hex uint64) LedColor {
 	r := (hex & 0xff000000) >> 24
 	g := (hex & 0x00ff0000) >> 16
 	b := (hex & 0x0000ff00) >> 8
@@ -193,6 +194,19 @@ func (c LedColor) Dark(t float64) color.Color {
 
 func (c LedColor) String() string {
 	return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B, c.A)
+}
+
+func (c *LedColor) UnmarshalText(text []byte) error {
+	hexStr := string(text)
+	hexVal, err := strconv.ParseUint(hexStr, 16, 32)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.R = uint8((hexVal & 0xff0000) >> 16)
+	c.G = uint8((hexVal & 0x00ff00) >> 8)
+	c.B = uint8((hexVal & 0x0000ff))
+    c.A = 0xff
+	return nil
 }
 
 // Das zum Typ LedColor zugehoerende ColorModel.

@@ -27,9 +27,9 @@ var (
 )
 
 var (
-	width              = 10
+	width              = 20
 	height             = 10
-	cableConf          = ledgrid.UpperLeft2Right
+	gridSize           = image.Point{width, height}
 	defLocal           = false
 	defDummy           = false
 	defHost            = "raspi-2"
@@ -85,7 +85,8 @@ func main() {
 			pixCtrl = ledgrid.NewNetPixelClient(host, port)
 		}
 	}
-	pixGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height), cableConf)
+	pixGrid = ledgrid.NewLedGrid(gridSize)
+	// pixGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height), cableConf)
 	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)
 
 	gammaValue = ledgrid.NewFloatParameter("Gamma", defGammaValue, 1.0, 5.0, 0.1)

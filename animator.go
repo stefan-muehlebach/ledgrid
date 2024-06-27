@@ -119,7 +119,7 @@ func (a *Animator) coordinator() {
 	drawOpts := &draw.Options{
 		SrcMask: drawMask,
 	}
-    scaler := draw.BiLinear
+	scaler := draw.BiLinear
 
 	for range numCores {
 		go a.animUpdater(jobChan, doneChan)
@@ -143,6 +143,8 @@ func (a *Animator) coordinator() {
 			if bg := a.bgList[0]; bg != nil {
 				alpha := uint8((1 - a.bgAnimT) * 255.0)
 				drawMask.C = color.Alpha{alpha}
+				// log.Printf("a.lg.Bounds(): %+v", a.lg.Bounds())
+				// log.Printf("bg.Bounds()  : %+v", bg.Bounds())
 				scaler.Scale(a.lg, a.lg.Bounds(), bg, bg.Bounds(), draw.Over, drawOpts)
 				if bg := a.bgList[1]; bg != nil {
 					alpha := uint8(a.bgAnimT * 255.0)
