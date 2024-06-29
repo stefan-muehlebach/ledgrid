@@ -251,13 +251,13 @@
   },
   {
     "ID": 100115,
-	"Title": "MiamiVice",
-     "IsCyclic": true,
-   "Colors": [
+    "Title": "MiamiVice",
+    "IsCyclic": true,
+    "Colors": [
 	    "1be3ff",
 	    "ff82dc",
 	    "ffffff"
-    ]
+   ]
   },
   {
     "ID": 100116,

@@ -20,6 +20,9 @@ import (
 )
 
 const (
+    // Dies ist die Groesse des Buffers, welcher fuer den Empfang der
+    // LED-Daten zur Verfuegung steht. Er ist bewusst extrem grosszuegig
+    // dimensioniert... ;-)
 	bufferSize = 320 * 240 * 3
 )
 
@@ -58,21 +61,19 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	}
 
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
-	// Daten.
-	//
+	// Daten und oeffnen die Verbindung zum LED-Grid via SPI.
 	p.buffer = make([]byte, bufferSize)
 	spiFs, _ := sysfs.NewSPI(0, 0)
 	p.maxTxSize = spiFs.MaxTxSize()
 	spiFs.Close()
 
-	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur erstellt.
-	//
+	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
+    // maximale Helligkeit erstellt.
 	p.gammaValue = [3]float64{1.0, 1.0, 1.0}
 	p.maxValue = [3]uint8{255, 255, 255}
 	p.updateGammaTable()
 
 	// Dann wird der SPI-Bus initialisiert.
-	//
 	if p.onRaspi {
 		p.spiPort, err = spireg.Open(spiDev)
 		if err != nil {
@@ -87,7 +88,6 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt.
-	//
 	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(port))
 	if !addrPort.IsValid() {
 		log.Fatalf("Invalid address or port")
@@ -99,7 +99,6 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	}
 
 	// Anschliessend wird die RPC-Verbindung initiiert.
-	//
 	rpc.Register(p)
 	rpc.HandleHTTP()
 	p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
@@ -112,14 +111,17 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	return p
 }
 
+// Schliesst die diversen Verbindungen.
 func (p *PixelServer) Close() {
 	p.udpConn.Close()
 }
 
+// Retourniert die Gamma-Werte fuer die drei Farben.
 func (p *PixelServer) Gamma() (r, g, b float64) {
 	return p.gammaValue[0], p.gammaValue[1], p.gammaValue[2]
 }
 
+// Setzt die Gamma-Werte fuer die Farben und aktualisiert die Mapping-Tabelle.
 func (p *PixelServer) SetGamma(r, g, b float64) {
 	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = r, g, b
 	p.updateGammaTable()
@@ -278,6 +280,9 @@ type PixelClient interface {
     SetMaxBright(r, g, b uint8)
 }
 
+// Falls die Software zur Erzeugung der Bilder auf dem gleichen Node laeuft
+// an dem auch das LED-Grid angeschlossen ist, dient der PixelServer auch
+// gleich als Client.
 type LocalPixelClient PixelServer
 
 func NewLocalPixelClient(port uint, spiDev string, baud int) PixelClient {
@@ -285,16 +290,13 @@ func NewLocalPixelClient(port uint, spiDev string, baud int) PixelClient {
 	return p
 }
 
-// Dieser Typ wird client-seitig fuer die Ansteuerung des LedGrid verwendet.
-// Im Wesentlichen ist dies eine Abstraktion der Ansteuerung via UDP.
+// Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type NetPixelClient struct {
 	addr      *net.UDPAddr
 	conn      *net.UDPConn
 	rpcClient *rpc.Client
 }
 
-// Erzeugt ein neues Controller-Objekt, welches das LedGrid ueber die Adresse
-// in Host und den UDP-Port in Port anspricht.
 func NewNetPixelClient(host string, port uint) PixelClient {
 	var hostPort string
 	var err error
@@ -375,7 +377,8 @@ func (p *NetPixelClient) SetMaxBright(r, g, b uint8) {
 	}
 }
 
-
+// Mit dieser Implementation des PixelClient-Interfaces kann man ohne Zugriff
+// auf ein reales LED-Grid Software testen.
 type DummyPixelClient struct {
 }
 

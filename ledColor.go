@@ -185,6 +185,7 @@ func (c LedColor) Alpha(a float64) color.Color {
 }
 
 func (c LedColor) Bright(t float64) color.Color {
+
 	return c
 }
 

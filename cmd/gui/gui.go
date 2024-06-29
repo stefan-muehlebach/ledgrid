@@ -44,6 +44,7 @@ var (
 		"bml/lemming.bml",
 		"bml/mario.bml",
 	}
+	gradientImageFile = "gradient.png"
 
 	App fyne.App
 	Win fyne.Window
@@ -125,6 +126,7 @@ func main() {
 		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.ColorMap["GreenYellowColor"]),
 		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.ColorMap["LightSeaGreenColor"]),
 		ledgrid.NewImageFromFile(pixGrid, "image.png"),
+		ledgrid.NewImageFromFile(pixGrid, "gradient.png"),
 	}
 
 	for _, fileName := range blinkenFiles {

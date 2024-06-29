@@ -46,9 +46,8 @@ type LedGrid struct {
 	idxMap [][]int
 }
 
-// Erstellt ein neues LED-Panel. r enthaelt die Dimension des (gesamten)
-// Panels, und mit cabConf wird die Verkabelungskonfiguration bezeichnet.
-
+// Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
+// Panels.
 func NewLedGrid(size image.Point) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = image.Rectangle{Max: size}
