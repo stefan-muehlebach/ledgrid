@@ -10,12 +10,18 @@ import (
 //go:embed data/*.json
 var colorFiles embed.FS
 
-type pixelPaletteRecord struct {
+type jsonPaletteRecord struct {
 	ID       int
 	Name     string    `json:"Title,Name"`
 	IsCyclic bool
 	Colors   []LedColor
 	Stops    []ColorStop
+}
+
+type StopsPalette struct {
+	ID    int
+	Name  string
+	Stops []ColorStop
 }
 
 type ListPalette struct {
@@ -25,14 +31,8 @@ type ListPalette struct {
 	Colors   []LedColor
 }
 
-type StopsPalette struct {
-	ID    int
-	Name  string
-	Stops []ColorStop
-}
-
 func ReadJsonPalette(fileName string) {
-	var colorListJson []pixelPaletteRecord
+	var colorListJson []jsonPaletteRecord
 
 	data, err := colorFiles.ReadFile(filepath.Join("data", fileName))
 	if err != nil {
@@ -59,15 +59,12 @@ func ReadJsonPalette(fileName string) {
             PaletteMap[rec.Name] = pal
             PaletteList = append(PaletteList, pal)
         } else {
-            log.Printf("palette '%s' hat keine farben", rec.Name)
+            log.Printf("Palette '%s' has no colors", rec.Name)
         }
 	}
 }
 
 func init() {
-	log.Printf("len(PaletteMap): %d", len(PaletteMap))
+	ReadJsonPalette("palettes.json")
 	ReadJsonPalette("colourlovers.json")
-	log.Printf("len(PaletteMap): %d", len(PaletteMap))
-	ReadJsonPalette("pixelpalettes.json")
-	log.Printf("len(PaletteMap): %d", len(PaletteMap))
 }

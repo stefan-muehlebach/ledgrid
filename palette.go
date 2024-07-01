@@ -8,16 +8,30 @@ import (
 	"github.com/stefan-muehlebach/gg/color"
 )
 
-// Dieser (interne) Typ wird verwendet, um einen bestimmten Wert im Interval
-// [0, 1] mit einer Farbe zu assoziieren.
-type ColorStop struct {
-	Pos float64
-	Col LedColor
+// Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
+// das ColorSource Interface.
+type ColorSource interface {
+	// Da diese Objekte auch oft in GUI angezeigt werden, muessen sie das
+	// Nameable-Interface implementieren, d.h. einen Namen haben.
+	Nameable
+	// Liefert in Abhaengigkeit des Parameters v eine Farbe aus der Palette
+	// zurueck. v kann vielfaeltig verwendet werden, bsp. als Parameter im
+	// Intervall [0,1] oder als Index (natuerliche Zahl) einer Farbenliste
+	// oder gar nicht, wenn die Farbquelle bspw. einfarbig ist.
+	Color(v float64) LedColor
 }
 
-// Mit Paletten lassen sich anspruchsvolle Farbverlaeufe realisieren. Jeder
-// Palette liegt eine Liste von Farben (die sog. Stuetzstellen) und ihre
-// jeweilige Position auf dem Intervall [0, 1] zugrunde.
+// Folgende collections enthalten alle Paletten.
+
+var (
+	PaletteList = []ColorSource{}
+	PaletteMap  = map[string]ColorSource{}
+)
+
+// Gradienten-Paletten basieren auf einer Anzahl Farben (Stuetzstellen)
+// zwischen denen eine Farbe interpoliert werden kann. Jede Stuetzstelle
+// besteht aus einer Position (Zahl im Intervall [0,1]) und einer dazu
+// gehoerenden Farbe.
 type GradientPalette struct {
 	NameableEmbed
 	stops []ColorStop
@@ -26,6 +40,17 @@ type GradientPalette struct {
 	fnc InterpolFuncType
 }
 
+// Dieser (interne) Typ wird verwendet, um einen bestimmten Wert im Interval
+// [0,1] mit einer Farbe zu assoziieren.
+type ColorStop struct {
+	Pos float64
+	Color LedColor
+}
+
+// Erzeugt eine neue Palette unter Verwendung der Stuetzwerte in cl. Die
+// Stuetzwerte muessen nicht sortiert sein. Per Default ist 0.0 mit Schwarz
+// und 1.0 mit Weiss vorbelegt - sofern in cl keine Stuetzwerte fuer 0.0 und
+// 1.0 angegeben sind.
 func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	p := &GradientPalette{}
 	p.NameableEmbed.Init(name)
@@ -40,15 +65,25 @@ func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	return p
 }
 
+// Erzeugt eine neue Gradienten-Palette unter Verwendung der Farben in cl,
+// wobei die Farben aequidistant ueber das Interval [0,1] verteilt werden.
+// Ist cycle true, dann wird die erste Farbe in cl auch als letzte Farbe
+// verwendet.
 func NewGradientPaletteByList(name string, cycle bool, cl ...LedColor) *GradientPalette {
-	p := NewGradientPalette(name)
+	if len(cl) < 2 {
+		log.Fatalf("At least two colors are required!")
+	}
 	if cycle {
 		cl = append(cl, cl[0])
 	}
-	p.SetColorList(cl)
-	return p
+	stops := make([]ColorStop, len(cl))
+	posStep := 1.0 / (float64(len(cl) - 1))
+	for i, c := range cl[:len(cl)-1] {
+		stops[i] = ColorStop{float64(i) * posStep, c}
+	}
+	stops[len(cl)-1] = ColorStop{1.0, cl[len(cl)-1]}
+	return NewGradientPalette(name, stops...)
 }
-
 
 // Setzt in der Palette einen neuen Stuetzwert. Existiert bereits eine Farbe
 // an dieser Position, wird sie ueberschrieben.
@@ -61,7 +96,7 @@ func (p *GradientPalette) SetColorStop(colStop ColorStop) {
 	}
 	for i, stop = range p.stops {
 		if stop.Pos == colStop.Pos {
-			p.stops[i].Col = colStop.Col
+			p.stops[i].Color = colStop.Color
 			return
 		}
 		if stop.Pos > colStop.Pos {
@@ -71,17 +106,22 @@ func (p *GradientPalette) SetColorStop(colStop ColorStop) {
 	p.stops = slices.Insert(p.stops, i, colStop)
 }
 
+// Retourniert den Slice mit den Stutzwerten (wird wohl eher fuer Debugging
+// verwendet).
 func (p *GradientPalette) ColorStops() []ColorStop {
-    return p.stops
+	return p.stops
 }
 
 // Verwendet die Eintraege in cl als neue Stuetzwerte der Palette.
+/*
 func (p *GradientPalette) SetColorStops(cl []ColorStop) {
 	for _, c := range cl {
 		p.SetColorStop(c)
 	}
 }
+*/
 
+/*
 func (p *GradientPalette) SetColorList(cl []LedColor) {
 	if len(cl) < 2 {
 		log.Fatalf("At least two colors are required!")
@@ -93,6 +133,7 @@ func (p *GradientPalette) SetColorList(cl []LedColor) {
 	p.SetColorStop(ColorStop{1.0, cl[len(cl)-1]})
 
 }
+*/
 
 // Hier nun spielt die Musik: aufgrund des Wertes t (muss im Intervall [0,1]
 // liegen) wird eine neue Farbe interpoliert.
@@ -109,7 +150,7 @@ func (p *GradientPalette) Color(t float64) (c LedColor) {
 		}
 	}
 	t = (t - p.stops[i].Pos) / (p.stops[i+1].Pos - p.stops[i].Pos)
-	c = p.stops[i].Col.Interpolate(p.stops[i+1].Col, p.fnc(0, 1, t)).(LedColor)
+	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, p.fnc(0, 1, t)).(LedColor)
 	return c
 }
 
@@ -165,6 +206,8 @@ type PaletteFader struct {
 func NewPaletteFader(pal ColorSource) *PaletteFader {
 	p := &PaletteFader{}
 	p.Pals[0] = pal
+	p.Pals[1] = nil
+	p.t = 0.0
 	return p
 }
 

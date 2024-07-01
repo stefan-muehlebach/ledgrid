@@ -174,7 +174,7 @@ func (r *paletteRenderer) updateColorStops() {
 			r.colorStops = make([]*canvas.Circle, len(colorStops))
 		}
 		for i, cs := range colorStops {
-			stop := canvas.NewCircle(cs.Col)
+			stop := canvas.NewCircle(cs.Color)
 			stop.Resize(colStopSize)
 			stop.StrokeColor = White
 			stop.StrokeWidth = 2 * borderWidth

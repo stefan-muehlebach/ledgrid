@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -50,6 +51,14 @@ var (
 	Win fyne.Window
 )
 
+func Quit() {
+	dialog.ShowConfirm("Quit", "Wollen sie die Applikation beenden?", func(b bool) {
+		if b {
+			App.Quit()
+		}
+	}, Win)
+}
+
 func main() {
 	var local, dummy bool
 	var host string
@@ -87,7 +96,6 @@ func main() {
 		}
 	}
 	pixGrid = ledgrid.NewLedGrid(gridSize)
-	// pixGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height), cableConf)
 	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)
 
 	gammaValue = ledgrid.NewFloatParameter("Gamma", defGammaValue, 1.0, 5.0, 0.1)
@@ -108,11 +116,11 @@ func main() {
 
 	bgList = []ledgrid.Visual{
 		transpVisual,
-		ledgrid.NewShader(pixGrid, ledgrid.ExperimentalShader, ledgrid.HipsterPalette),
-		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, ledgrid.HipsterPalette),
-		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, ledgrid.HipsterPalette),
-		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, ledgrid.HipsterPalette),
-		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, ledgrid.HipsterPalette),
+		ledgrid.NewShader(pixGrid, ledgrid.ExperimentalShader, ledgrid.PaletteMap["Hipster"]),
+		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, ledgrid.PaletteMap["Hipster"]),
+		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, ledgrid.PaletteMap["Hipster"]),
+		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, ledgrid.PaletteMap["Hipster"]),
+		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, ledgrid.PaletteMap["Hipster"]),
 		ledgrid.NewFire(pixGrid),
 		ledgrid.NewCamera(pixGrid),
 	}
@@ -302,7 +310,7 @@ func main() {
 	bgTypeSelect.SetSelectedIndex(0)
 	fgTypeSelect.SetSelectedIndex(0)
 
-	quitBtn := widget.NewButton("Quit", App.Quit)
+	quitBtn := widget.NewButton("Quit", Quit)
 	btnBox := container.NewHBox(layout.NewSpacer(), quitBtn)
 
 	root := container.NewVBox(
@@ -314,7 +322,7 @@ func main() {
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
 		case fyne.KeyEscape, fyne.KeyQ:
-			App.Quit()
+			Quit()
 		}
 	})
 

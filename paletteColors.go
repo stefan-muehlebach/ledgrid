@@ -1,3 +1,4 @@
+//go:build ignore
 //go:generate go run gen.go
 
 package ledgrid

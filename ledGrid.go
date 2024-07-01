@@ -8,7 +8,7 @@ import (
 
 // Fuer das gesamte Package gueltige Variablen, resp. Konstanten.
 var (
-	OutsideColor = BlackColor
+// OutsideColor = BlackColor
 )
 
 const (
@@ -38,12 +38,10 @@ type LedGrid struct {
 	Rect image.Rectangle
 	// Enthaelt die Farbwerte red, green, blue (RGB) fuer jede LED, welche
 	// das LedGrid ausmachen. Die Reihenfolge entspricht dabei der
-	// Verkabelung, d.h. sie beginnt links oben mit der LED Nr. 0,
-	// geht dann nach rechts und auf der zweiten Zeile wieder nach links und
-	// so schlangenfoermig weiter.
+	// Verkabelung!
 	Pix []uint8
 
-	idxMap [][]int
+	idxMap IndexMap
 }
 
 // Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
@@ -53,21 +51,27 @@ func NewLedGrid(size image.Point) *LedGrid {
 	g.Rect = image.Rectangle{Max: size}
 	// log.Printf("g.Rect: %+v", g.Rect)
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
-	g.idxMap = make([][]int, g.Rect.Dx())
-	for i := range g.Rect.Dx() {
-		g.idxMap[i] = make([]int, g.Rect.Dy())
-	}
-	idx := 0
-	lay := NewModuleLayout(size)
-	// log.Printf("moduleLayout: %+v", lay)
-	for i, row := range lay {
-		for j, mod := range row {
-			pt := image.Point{j * ModuleSize.X, i * ModuleSize.Y}
-			// log.Printf("pt: %+v", pt)
-			idx = mod.AppendIdxMap(g.idxMap, pt, idx)
-			// log.Printf("next idx: %d", idx)
-		}
-	}
+	// g.idxMap = make([][]int, g.Rect.Dx())
+	// for i := range g.Rect.Dx() {
+	// 	g.idxMap[i] = make([]int, g.Rect.Dy())
+	// }
+	// idx := 0
+	layout := NewModuleLayout(g.Rect.Size())
+	// log.Printf("moduleLayout: %+v", layout)
+	g.idxMap = layout.IndexMap()
+	// for row, moduleRow := range layout {
+	// 	for j := range len(moduleRow) {
+	// 		col := j
+	// 		if row%2 == 1 {
+	// 			col = (len(moduleRow) - 1) - j
+	// 		}
+	// 		mod := moduleRow[col]
+	// 		pt := image.Point{col * ModuleSize.X, row * ModuleSize.Y}
+	// 		// log.Printf("pt: %+v", pt)
+	// 		idx = mod.AppendIdxMap(g.idxMap, pt, idx)
+	// 		// log.Printf("next idx: %d", idx)
+	// 	}
+	// }
 	// log.Printf("g.idxMap: %+v", g.idxMap)
 	return g
 }
@@ -98,7 +102,7 @@ func (g *LedGrid) LedColorAt(x, y int) LedColor {
 	}
 	idx := g.PixOffset(x, y)
 	slc := g.Pix[idx : idx+3 : idx+3]
-	return LedColor{slc[0], slc[1], slc[2], 0xFF}
+	return LedColor{slc[0], slc[1], slc[2], 0xff}
 }
 
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.

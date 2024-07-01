@@ -3,11 +3,12 @@ package ledgrid
 import (
 	"fmt"
 	"image"
+	"math/rand"
 	"testing"
 )
 
 const (
-	Width, Height = 20, 20
+	Width, Height = 20, 10
 	RandSeed      = 123_456
 )
 
@@ -19,16 +20,15 @@ type Coord2Offset struct {
 var (
 	lg        *LedGrid
 	idx       int
-	modLayout = ModuleLayout{
-		{
-			{ModLR, Rot000}, {ModRL, Rot090},
-		},
-	}
 	coordList = []Coord2Offset{
 		{image.Point{0, 0}, 0},
-		{image.Point{Width - 1, 0}, 3 * (Height*Width - 1)},
-		{image.Point{0, Height - 1}, 3 * (Width - 1)},
-		{image.Point{Width - 1, Height - 1}, 3 * Width * (Height - 1)},
+		{image.Point{9, 0}, 3 * (ModuleSize.X*ModuleSize.Y - 1)},
+		{image.Point{10, 0}, 3 * (ModuleSize.X * ModuleSize.Y)},
+		{image.Point{10, 9}, 3 * (2*ModuleSize.X*ModuleSize.Y - 1)},
+		// {image.Point{10, 10}, 3 * (2 * ModuleSize.X * ModuleSize.Y)},
+		// {image.Point{10, 19}, 3 * (3*ModuleSize.X*ModuleSize.Y - 1)},
+		// {image.Point{9, 19}, 3 * (3 * ModuleSize.X * ModuleSize.Y)},
+		// {image.Point{0, 19}, 3 * (4*ModuleSize.X*ModuleSize.Y - 1)},
 	}
 )
 
@@ -57,13 +57,13 @@ func TestPixOffset(t *testing.T) {
 // 	}
 // }
 
-// func BenchmarkPixOffsetMap(b *testing.B) {
-// 	rand.Seed(RandSeed)
-// 	for i := 0; i < b.N; i++ {
-// 		x, y := rand.Intn(Width), rand.Intn(Height)
-// 		idx = lg.PixOffset(x, y)
-// 	}
-// }
+func BenchmarkPixOffset(b *testing.B) {
+	rand.Seed(RandSeed)
+	for i := 0; i < b.N; i++ {
+		x, y := rand.Intn(Width), rand.Intn(Height)
+		idx = lg.PixOffset(x, y)
+	}
+}
 
 func TestModuleScanner(t *testing.T) {
 	var mod Module

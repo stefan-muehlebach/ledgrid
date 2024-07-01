@@ -1,5 +1,3 @@
-//go:build ignore
-
 package main
 
 import (
@@ -228,7 +226,7 @@ func main() {
 	} else {
 		client = ledgrid.NewNetPixelClient(host, port)
 	}
-	grid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
+	grid = ledgrid.NewLedGrid(image.Point{width, height})
 	anim = ledgrid.NewAnimator(grid, client)
 
 	gammaValue = ledgrid.NewBounded("gamma", defGammaValue, 1.0, 5.0, 0.1)

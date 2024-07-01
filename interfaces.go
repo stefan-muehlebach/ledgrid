@@ -84,19 +84,6 @@ type Paintable interface {
 	SetPalette(pal ColorSource, fadeTime time.Duration)
 }
 
-// Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
-// das ColorSource Interface.
-type ColorSource interface {
-	// Da diese Objekte auch oft in GUI angezeigt werden, muessen sie das
-	// Nameable-Interface implementieren, d.h. einen Namen haben.
-	Nameable
-	// Liefert in Abhaengigkeit des Parameters v eine Farbe aus der Palette
-	// zurueck. v kann vielfaeltig verwendet werden, bsp. als Parameter im
-	// Intervall [0,1] oder als Index (natuerliche Zahl) einer Farbenliste
-	// oder gar nicht, wenn die Farbquelle bspw. einfarbig ist.
-	Color(v float64) LedColor
-}
-
 //----------------------------------------------------------------------------
 
 type Text interface {

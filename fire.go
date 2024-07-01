@@ -12,6 +12,20 @@ const (
 	fireYScaling    = 6
 )
 
+var (
+    	fireGradient = []ColorStop{
+		{0.00, NewLedColorAlpha(0x00000000)},
+		{0.10, NewLedColorAlpha(0x5f080900)},
+		{0.14, NewLedColorAlpha(0x5f0809e5)},
+		{0.29, NewLedColor(0xbe1013)},
+		{0.43, NewLedColor(0xd23008)},
+		{0.57, NewLedColor(0xe45323)},
+		{0.71, NewLedColor(0xee771c)},
+		{0.86, NewLedColor(0xf6960e)},
+		{1.00, NewLedColor(0xffcd06)},
+	}
+)
+
 type Fire struct {
 	VisualEmbed
 	lg                *LedGrid
@@ -32,7 +46,7 @@ func NewFire(lg *LedGrid) *Fire {
 	for i := range f.heat {
 		f.heat[i] = make([]float64, f.rect.Dy())
 	}
-	f.pal = FirePalette
+	f.pal = NewGradientPalette("Fire", fireGradient...)
 
 	f.params = make([]Parameter, 2)
 	f.params[0] = NewFloatParameter("Cooling factor", fireDefCooling, 0.08, 1.00, 0.05)
