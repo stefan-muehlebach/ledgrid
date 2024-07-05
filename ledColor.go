@@ -206,7 +206,7 @@ func (c *LedColor) UnmarshalText(text []byte) error {
 	c.R = uint8((hexVal & 0xff0000) >> 16)
 	c.G = uint8((hexVal & 0x00ff00) >> 8)
 	c.B = uint8((hexVal & 0x0000ff))
-    c.A = 0xff
+	c.A = 0xff
 	return nil
 }
 

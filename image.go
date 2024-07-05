@@ -18,43 +18,45 @@ import (
 
 //----------------------------------------------------------------------------
 
-type Uniform struct {
-	C LedColor
-}
+// type Uniform struct {
+//     pal ColorSource
+// 	C LedColor
+// }
 
-func NewUniform(c LedColor) *Uniform {
-	u := &Uniform{}
-	u.C = c
-	return u
-}
+// func NewUniform(pal ColorSource) *Uniform {
+// 	u := &Uniform{}
+//     u.pal = pal
+// 	u.C = pal.Color(0)
+// 	return u
+// }
 
-func (u *Uniform) ColorModel() color.Model {
-	return LedColorModel
-}
+// func (u *Uniform) ColorModel() color.Model {
+// 	return LedColorModel
+// }
 
-func (u *Uniform) Bounds() image.Rectangle {
-	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
-}
+// func (u *Uniform) Bounds() image.Rectangle {
+// 	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
+// }
 
-func (u *Uniform) At(x, y int) color.Color {
-	return u.C
-}
+// func (u *Uniform) At(x, y int) color.Color {
+// 	return u.pal.Color(0)
+// }
 
-func (u *Uniform) Set(x, y int, c color.Color) {
-}
+// func (u *Uniform) Set(x, y int, c color.Color) {
+// }
 
 //----------------------------------------------------------------------------
 
 type Image struct {
 	VisualEmbed
-	lg   *LedGrid
-	img  draw.Image
-	rect image.Rectangle
+	lg    *LedGrid
+	img   draw.Image
+	rect  image.Rectangle
 }
 
 func NewImageFromFile(lg *LedGrid, fileName string) *Image {
 	i := &Image{}
-	i.VisualEmbed.Init(fmt.Sprintf("Image '%s'", fileName))
+	i.VisualEmbed.Init(fmt.Sprintf("%s (Image)", fileName))
 	i.lg = lg
 	fh, err := os.Open(fileName)
 	if err != nil {
@@ -69,14 +71,71 @@ func NewImageFromFile(lg *LedGrid, fileName string) *Image {
 	return i
 }
 
-func NewImageFromColor(lg *LedGrid, c LedColor) *Image {
-	i := &Image{}
-	i.VisualEmbed.Init("Uniform Color")
-	i.lg = lg
-	i.img = NewUniform(c)
-	i.rect = i.lg.Bounds()
-	return i
+func (i *Image) ColorModel() color.Model {
+	return LedColorModel
 }
+
+func (i *Image) Bounds() image.Rectangle {
+	return i.rect
+}
+
+func (i *Image) At(x, y int) color.Color {
+	return i.img.At(x, y)
+}
+
+//----------------------------------------------------------------------------
+
+type Uniform struct {
+    VisualEmbed
+    lg *LedGrid
+    pal PaletteParameter
+}
+
+func NewUniform(lg *LedGrid, pal ColorSource) *Uniform {
+	u := &Uniform{}
+    u.VisualEmbed.Init("Uniform (Image)")
+    u.lg = lg
+    u.pal = NewPaletteParameter("Color", NewPaletteFader(pal))
+	return u
+}
+
+func (u *Uniform) PaletteParam() PaletteParameter {
+	return u.pal
+}
+
+func (u *Uniform) Palette() ColorSource {
+	return u.pal.Val()
+}
+
+func (u *Uniform) SetPalette(pal ColorSource, fadeTime time.Duration) {
+	u.pal.Val().(*PaletteFader).StartFade(pal, fadeTime)
+}
+
+func (u *Uniform) ColorModel() color.Model {
+	return LedColorModel
+}
+
+func (u *Uniform) Bounds() image.Rectangle {
+    return u.lg.Bounds()
+	// return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
+}
+
+func (u *Uniform) At(x, y int) color.Color {
+	return u.pal.Val().Color(0)
+}
+
+//----------------------------------------------------------------------------
+
+
+// func NewImageFromColor(lg *LedGrid, color *UniformPalette) *Image {
+// 	i := &Image{}
+// 	i.VisualEmbed.Init("Uniform Color (" + color.Name() + ")")
+// 	i.lg = lg
+//     i.pal = NewPaletteParameter("Color", NewPaletteFader(color))
+// 	i.img = NewUniform(i.pal.Val())
+// 	i.rect = i.lg.Bounds()
+// 	return i
+// }
 
 // func (i *Image) Scale(dst draw.Image, dr image.Rectangle, src image.Image, sr image.Rectangle, op draw.Op, opts *draw.Options) {
 // 	// draw.Draw(dst, dr, src, image.Point{}, op)
@@ -118,17 +177,18 @@ func NewImageFromBlinken(lg *LedGrid, blk *BlinkenFile, fn int) *Image {
 	return i
 }
 
-func (i *Image) ColorModel() color.Model {
-	return LedColorModel
-}
+// func (i *Image) PaletteParam() PaletteParameter {
+// 	return i.pal
+// }
 
-func (i *Image) Bounds() image.Rectangle {
-	return i.rect
-}
+// func (i *Image) Palette() ColorSource {
+// 	return i.pal.Val()
+// }
 
-func (i *Image) At(x, y int) color.Color {
-	return i.img.At(x, y)
-}
+// func (i *Image) SetPalette(pal ColorSource, fadeTime time.Duration) {
+// 	i.pal.Val().(*PaletteFader).StartFade(pal, fadeTime)
+// }
+
 
 //----------------------------------------------------------------------------
 

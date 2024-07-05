@@ -49,6 +49,10 @@ func TestPixOffset(t *testing.T) {
 	}
 }
 
+func TestMarkDefect(t *testing.T) {
+    lg.idxMap.MarkDefect(image.Point{6,3})
+}
+
 // func BenchmarkPixOffsetCalc(b *testing.B) {
 // 	rand.Seed(RandSeed)
 // 	for i := 0; i < b.N; i++ {

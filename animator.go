@@ -96,13 +96,17 @@ func (a *Animator) SetForeground(obj Visual, fadeTime time.Duration) {
 	a.fgAnim.Start()
 }
 
-func (r *Animator) addAnim(anim Animation) {
-	r.animList = append(r.animList, anim)
+func (a *Animator) Stop() {
+	a.ticker.Stop()
 }
 
-func (r *Animator) Animations() []Animation {
-	l := make([]Animation, len(r.animList))
-	copy(l, r.animList)
+func (a *Animator) addAnim(anim Animation) {
+	a.animList = append(a.animList, anim)
+}
+
+func (a *Animator) Animations() []Animation {
+	l := make([]Animation, len(a.animList))
+	copy(l, a.animList)
 	return l
 }
 
@@ -126,6 +130,12 @@ func (a *Animator) coordinator() {
 	}
 	a.ticker = time.NewTicker(frameRefresh)
 	go func() {
+		var srcRect, dstRect image.Rectangle
+		var srcRatio, dstRatio float64
+
+		dstRect = a.lg.Bounds()
+		dstRatio = float64(dstRect.Dy()) / float64(dstRect.Dx())
+
 		for pt := range a.ticker.C {
 			numObjs := 0
 			for _, anim := range a.animList {
@@ -143,8 +153,6 @@ func (a *Animator) coordinator() {
 			if bg := a.bgList[0]; bg != nil {
 				alpha := uint8((1 - a.bgAnimT) * 255.0)
 				drawMask.C = color.Alpha{alpha}
-				// log.Printf("a.lg.Bounds(): %+v", a.lg.Bounds())
-				// log.Printf("bg.Bounds()  : %+v", bg.Bounds())
 				scaler.Scale(a.lg, a.lg.Bounds(), bg, bg.Bounds(), draw.Over, drawOpts)
 				if bg := a.bgList[1]; bg != nil {
 					alpha := uint8(a.bgAnimT * 255.0)
@@ -155,11 +163,45 @@ func (a *Animator) coordinator() {
 			if fg := a.fgList[0]; fg != nil {
 				alpha := uint8((1 - a.fgAnimT) * 255.0)
 				drawMask.C = color.Alpha{alpha}
-				scaler.Scale(a.lg, a.lg.Bounds(), fg, fg.Bounds(), draw.Over, drawOpts)
+				srcRect = fg.Bounds()
+				dstRect = a.lg.Bounds()
+				srcRatio = float64(srcRect.Dy()) / float64(srcRect.Dx())
+				// log.Printf("srcRatio: %f, dstRatio: %f", srcRatio, dstRatio)
+				if dstRatio > srcRatio {
+					// Destination hoeher als Source
+					h := int(srcRatio * float64(dstRect.Dx()))
+					m := (dstRect.Dy() - h) / 2
+					dstRect.Min.Y = m
+					dstRect.Max.Y = m + h
+				} else if dstRatio < srcRatio {
+					// Destination flacher als Source
+					w := int(float64(dstRect.Dy()) / srcRatio)
+					m := (dstRect.Dx() - w) / 2
+					dstRect.Min.X = m
+					dstRect.Max.X = m + w
+				}
+				scaler.Scale(a.lg, dstRect, fg, srcRect, draw.Over, drawOpts)
 				if fg := a.fgList[1]; fg != nil {
 					alpha := uint8(a.fgAnimT * 255.0)
 					drawMask.C = color.Alpha{alpha}
-					scaler.Scale(a.lg, a.lg.Bounds(), fg, fg.Bounds(), draw.Over, drawOpts)
+					srcRect = fg.Bounds()
+					dstRect = a.lg.Bounds()
+					srcRatio = float64(srcRect.Dy()) / float64(srcRect.Dx())
+					// log.Printf("srcRatio: %f, dstRatio: %f", srcRatio, dstRatio)
+					if dstRatio > srcRatio {
+						// Destination hoeher als Source
+						h := int(srcRatio * float64(dstRect.Dx()))
+						m := (dstRect.Dy() - h) / 2
+						dstRect.Min.Y = m
+						dstRect.Max.Y = m + h
+					} else if dstRatio < srcRatio {
+						// Destination flacher als Source
+						w := int(float64(dstRect.Dy()) / srcRatio)
+						m := (dstRect.Dx() - w) / 2
+						dstRect.Min.X = m
+						dstRect.Max.X = m + w
+					}
+					scaler.Scale(a.lg, dstRect, fg, srcRect, draw.Over, drawOpts)
 				}
 			}
 			a.client.Draw(a.lg)

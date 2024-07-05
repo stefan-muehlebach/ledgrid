@@ -1,15 +1,16 @@
 [
   {
-    "ID": 100000,
+    "ID": 100,
     "Title": "BlackAndWhite",
     "Stops": [
-        {"Pos": 0.0, "Color": "000000"},
-        {"Pos": 0.5, "Color": "ffffff"},
-        {"Pos": 1.0, "Color": "000000"}
+        {"Pos": 0.0, "Color": "ffffff"},
+        {"Pos": 0.3, "Color": "000000"},
+        {"Pos": 0.7, "Color": "000000"},
+        {"Pos": 1.0, "Color": "ffffff"}
     ]
   },
   {
-    "ID": 100001,
+    "ID": 101,
     "Title": "Default",
     "Stops": [
         {"Pos": 0.00, "Color": "febc08"},
@@ -20,7 +21,7 @@
     ]
   },
   {
-    "ID": 100002,
+    "ID": 102,
     "Title": "EarthAndSky",
     "Stops": [
         {"Pos": 0.00, "Color": "ffffff"},
@@ -32,7 +33,7 @@
     ]
   },
   {
-    "ID": 100003,
+    "ID": 103,
 	"Title": "Seashore",
     "Stops": [
 		{"Pos": 0.00, "Color": "C9FEC2"},
@@ -46,7 +47,7 @@
   },
 
   {
-    "ID": 100004,
+    "ID": 104,
 	"Title": "Pastell",
     "Stops": [
 		{"Pos": 0.00, "Color": "CDD0D1"},
@@ -59,7 +60,7 @@
   },
 
   {
-    "ID": 100005,
+    "ID": 105,
 	"Title": "Dark",
     "Stops": [
 		{"Pos": 0.00, "Color": "A80000"},
@@ -72,7 +73,7 @@
   },
 
   {
-    "ID": 100006,
+    "ID": 106,
 	"Title": "Darker",
     "Stops": [
 		{"Pos": 0.00, "Color": "700000"},
@@ -85,7 +86,7 @@
   },
 
   {
-    "ID": 100007,
+    "ID": 107,
 	"Title": "HotAndCold",
     "Stops": [
 		{"Pos": 0.00, "Color": "FFFFFF"},
@@ -97,7 +98,7 @@
   },
 
   {
-    "ID": 100008,
+    "ID": 108,
 	"Title": "Fire",
     "Stops": [
 		{"Pos": 0.00, "Color": "000000"},
@@ -112,7 +113,7 @@
     ]
   },
   {
-    "ID": 100101,
+    "ID": 201,
     "Title": "FadeRed",
     "IsCyclic": false,
     "Colors": [
@@ -121,7 +122,7 @@
     ]
   },
   {
-    "ID": 100102,
+    "ID": 202,
     "Title": "FadeGreen",
     "IsCyclic": false,
     "Colors": [
@@ -130,7 +131,7 @@
     ]
   },
   {
-    "ID": 100103,
+    "ID": 203,
     "Title": "FadeBlue",
     "IsCyclic": false,
     "Colors": [
@@ -139,7 +140,7 @@
     ]
   },
   {
-    "ID": 100104,
+    "ID": 204,
     "Title": "FadeYellow",
     "IsCyclic": false,
     "Colors": [
@@ -148,7 +149,7 @@
     ]
   },
   {
-    "ID": 100105,
+    "ID": 205,
     "Title": "FadeCyan",
     "IsCyclic": false,
     "Colors": [
@@ -157,7 +158,7 @@
     ]
   },
   {
-    "ID": 100106,
+    "ID": 206,
     "Title": "FadeMagenta",
     "IsCyclic": false,
     "Colors": [
@@ -166,7 +167,7 @@
     ]
   },
   {
-    "ID": 100108,
+    "ID": 208,
     "Title": "Hipster",
     "IsCyclic": true,
     "Colors": [
@@ -178,7 +179,7 @@
     ]
   },
   {
-    "ID": 100109,
+    "ID": 209,
     "Title": "Neon",
     "IsCyclic": true,
     "Colors": [
@@ -188,7 +189,7 @@
     ]
   },
   {
-    "ID": 100110,
+    "ID": 210,
 	"Title": "HotFire",
     "IsCyclic": true,
     "Colors": [
@@ -205,7 +206,7 @@
     ]
   },
   {
-    "ID": 100111,
+    "ID": 211,
 	"Title": "DarkJungle",
     "IsCyclic": true,
     "Colors": [
@@ -220,7 +221,7 @@
     ]
   },
   {
-    "ID": 100112,
+    "ID": 212,
 	"Title": "Kitty",
     "IsCyclic": true,
     "Colors": [
@@ -230,7 +231,7 @@
     ]
   },
   {
-    "ID": 100113,
+    "ID": 213,
 	"Title": "Lantern",
     "IsCyclic": true,
     "Colors": [
@@ -240,7 +241,7 @@
     ]
   },
   {
-    "ID": 100114,
+    "ID": 214,
 	"Title": "Lemming",
     "IsCyclic": true,
     "Colors": [
@@ -251,7 +252,7 @@
     ]
   },
   {
-    "ID": 100115,
+    "ID": 215,
     "Title": "MiamiVice",
     "IsCyclic": true,
     "Colors": [
@@ -261,7 +262,7 @@
    ]
   },
   {
-    "ID": 100116,
+    "ID": 216,
 	"Title": "Nightspell",
     "IsCyclic": true,
     "Colors": [
@@ -273,7 +274,7 @@
     ]
   },
   {
-    "ID": 100117,
+    "ID": 217,
 	"Title": "Wayyou",
     "IsCyclic": true,
     "Colors": [
@@ -285,7 +286,7 @@
     ]
   },
   {
-    "ID": 100118,
+    "ID": 218,
 	"Title": "Weparted",
     "IsCyclic": true,
     "Colors": [
@@ -297,7 +298,7 @@
     ]
   },
   {
-    "ID": 100119,
+    "ID": 219,
 	"Title": "Pico08",
     "IsCyclic": false,
     "Colors": [

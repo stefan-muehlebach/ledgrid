@@ -43,7 +43,8 @@ var (
 		"bml/kreise.bml",
 		"bml/benedictus.bml",
 		"bml/lemming.bml",
-		"bml/mario.bml",
+		"bml/marioWalkRight.bml",
+		"bml/marioRunRight.bml",
 	}
 	gradientImageFile = "gradient.png"
 
@@ -111,8 +112,8 @@ func main() {
 
 	fadeTime = ledgrid.NewFloatParameter("Fade Time", 2.0, 0.0, 5.0, 0.1)
 
-	transpVisual := ledgrid.NewImageFromColor(pixGrid, ledgrid.Transparent)
-	transpVisual.SetName("(Transparent)")
+	transpVisual := ledgrid.NewUniform(pixGrid, ledgrid.ColorMap["Transparent"])
+	transpVisual.SetName("Uniform Color")
 
 	bgList = []ledgrid.Visual{
 		transpVisual,
@@ -131,8 +132,8 @@ func main() {
 
 	fgList = []ledgrid.Visual{
 		transpVisual,
-		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.ColorMap["GreenYellowColor"]),
-		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.ColorMap["LightSeaGreenColor"]),
+		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.ColorMap["SkyBlue"]),
+		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.ColorMap["SkyBlue"]),
 		ledgrid.NewImageFromFile(pixGrid, "image.png"),
 		ledgrid.NewImageFromFile(pixGrid, "gradient.png"),
 	}
@@ -148,15 +149,17 @@ func main() {
 		fgNameList[i] = anim.Name()
 	}
 
-	paletteNameList = make([]string, len(ledgrid.PaletteList))
-	for i, palette := range ledgrid.PaletteList {
-		paletteNameList[i] = palette.Name()
-	}
+	paletteNameList = ledgrid.PaletteNames
+	// paletteNameList = make([]string, len(ledgrid.PaletteList))
+	// for i, palette := range ledgrid.PaletteList {
+	// 	paletteNameList[i] = palette.Name()
+	// }
 
-	colorNameList = make([]string, len(ledgrid.ColorList))
-	for i, palette := range ledgrid.ColorList {
-		colorNameList[i] = palette.Name()
-	}
+	colorNameList = ledgrid.ColorNames
+	// colorNameList = make([]string, len(ledgrid.ColorList))
+	// for i, palette := range ledgrid.ColorList {
+	// 	colorNameList[i] = palette.Name()
+	// }
 
 	//------------------------------------------------------------------------
 	//
@@ -330,8 +333,8 @@ func main() {
 	Win.Resize(AppSize)
 	Win.ShowAndRun()
 
+	pixAnim.Stop()
 	pixGrid.Clear(ledgrid.Black)
 	pixCtrl.Draw(pixGrid)
 	pixCtrl.Close()
-
 }

@@ -53,7 +53,7 @@ func NewCamera(lg *LedGrid) *Camera {
 	return c
 }
 
-func (c *Camera) ParamList() []*Bounded[float64] {
+func (c *Camera) ParamList() []Parameter {
 	return nil
 }
 

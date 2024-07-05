@@ -10,12 +10,14 @@ import (
 )
 
 const (
-	width         = 10
-	height        = 15
+	width         = 20
+	height        = 10
+    gridWidth     = 8 * width + 9
+    gridHeight    = height + 7
+	termWidth     = gridWidth + 10
+	termHeight    = gridHeight + 40
 	defHost       = "raspi-2"
 	defPort       = 5333
-	termWidth     = 97
-	termHeight    = 57
 	KEY_SUP       = 0x151 /* Shifted up arrow */
 	KEY_SDOWN     = 0x150 /* Shifted down arrow */
 	KEY_CLEFT     = 0x222 /* Ctrl-left arrow */
@@ -55,7 +57,7 @@ func main() {
 	var newColorValue uint8
 	var gammaValues [3]float64
 
-	ledGrid = ledgrid.NewLedGrid(image.Rect(0, 0, width, height))
+	ledGrid = ledgrid.NewLedGrid(image.Point{width, height})
 	pixelClient = ledgrid.NewNetPixelClient(defHost, defPort)
 	gammaValues[0], gammaValues[1], gammaValues[2] = pixelClient.Gamma()
 
@@ -84,7 +86,7 @@ func main() {
 
 	// rows, cols := stdscr.MaxYX()
 
-	gridHeight, gridWidth := height+7, 89
+	// gridHeight, gridWidth := height+7, 8*width+9
 	y, x := 2, 4
 
 	winGrid, err = gc.NewWindow(gridHeight, gridWidth, y, x)

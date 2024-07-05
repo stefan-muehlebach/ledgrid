@@ -2,6 +2,7 @@
 <blm width="36" height="36" bits="8" channels="3">
 	<header>
 		<creator>Blimp (version 1.5.0)</creator>
+		<title>Running Mario</title>
 	</header>
 
 	<frame duration="100">

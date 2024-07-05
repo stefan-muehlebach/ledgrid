@@ -11,10 +11,12 @@ import (
 // mit 100 LEDs (10x10) aufgebaut werden. Da sich bei 100 LEDs Anfang und Ende
 // der Lichterkette auf der selben Quadratseite befinden, muss man fuer die
 // korrekte Verkabelung von groesseren LED-Panels ein wenig "proebeln".
-// Urspruenglich war diese Konfiguration extern, d.h. durch ein aufrufendes
-// Programm steuerbar. Mittlerweile ist klar, dass die gesamte Konfiguration
-// aufgrund der Zielgroesse des LED-Panels automatisch erstellt werden kann
-// und muss!
+// Urspruenglich war vorgesehen, diese Konfiguration durch ein aufrufendes
+// Programm, resp. einen Benutzer vornehmen zu lassen. Mittlerweile ist klar,
+// dass die gesamte Konfiguration automatisch erstellt werden kann und muss!
+// Trotzdem muss ein Anwender die Idee hinter dieser Konfiguration verstehen -
+// schliesslich ist er für die Erstellung der Module und deren Verkabelung
+// zustaendig.
 //
 //   +--------+--------+--------+
 //   |I      O|I      O|I       |
@@ -42,7 +44,6 @@ import (
 //    LR:0   LR:0   RL:90
 //    LR:180 LR:180 RL:90
 //    LR:0   LR:0   RL:90
-//
 
 // Die Anzahl LED's pro Modul in Breite und Hoehe.
 var (
@@ -163,7 +164,8 @@ type ModuleLayout [][]Module
 // Es koennen nur LED-Grids erstellt werden, deren Groesse ein Vielfaches der
 // Modul-Groesse ist.
 func NewModuleLayout(size image.Point) ModuleLayout {
-    if size.X < ModuleSize.X || size.Y < ModuleSize.Y || size.X % ModuleSize.X != 0 || size.Y % ModuleSize.Y != 0 {
+    if size.X < ModuleSize.X || size.Y < ModuleSize.Y ||
+            size.X % ModuleSize.X != 0 || size.Y % ModuleSize.Y != 0 {
         log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleSize)
     }
     cols, rows := size.X / ModuleSize.X, size.Y / ModuleSize.Y
@@ -189,10 +191,16 @@ func NewModuleLayout(size image.Point) ModuleLayout {
     return layout
 }
 
+// Mit dieser Struktur wird die Koordinate einer LED auf dem Panel auf den
+// Index dieser LED innerhalb der Lichterkette gemappt.
 type IndexMap [][]int
 
+// Erstellt ein Feld (Slice of slice) fuer die direkte Uebersetzung von
+// Pixel-Koordinaten zur Position (Index) innerhalb der Lichterkette.
 func (layout ModuleLayout) IndexMap() IndexMap {
-    idxMap := make([][]int, len(layout[0]) * ModuleSize.X)
+    var idxMap IndexMap
+
+    idxMap = make([][]int, len(layout[0]) * ModuleSize.X)
     for col := range idxMap {
         idxMap[col] = make([]int, len(layout) * ModuleSize.Y)
     }
@@ -205,17 +213,36 @@ func (layout ModuleLayout) IndexMap() IndexMap {
 			}
 			mod := moduleRow[col]
 			pt := image.Point{col * ModuleSize.X, row * ModuleSize.Y}
-			idx = mod.AppendIdxMap(idxMap, pt, idx)
+			idx = idxMap.Append(mod, pt, idx)
 		}
 	}
     return idxMap
+}
+
+// Mit dieser Methode kann eine bestimmte Position im LED-Panel als 'defekt'
+// markiert werden. In der Lichterkette muss diese Position ueberbrueckt,
+// d.h. die entsprechende LED entfernt und die Anschlusskabel direkt
+// miteinander verbunden.
+func (idxMap IndexMap) MarkDefect(pos image.Point) {
+    idxDefect := idxMap[pos.X][pos.Y]
+    cols := len(idxMap)
+    rows := len(idxMap[0])
+    for col := range cols {
+        for row := range rows {
+            if idxMap[col][row] > idxDefect {
+                idxMap[col][row] -= 3
+            }
+        }
+    }
+    idxSpare := 3 * (cols * rows - 1)
+    idxMap[pos.X][pos.Y] = idxSpare
 }
 
 // Diese Methode ergaenzt den Slice idxMap um die Koordinaten und Indizes des
 // Modules m. basePt sind die Pixel-Koordinaten der linken oberen Ecke des
 // Moduls und baseIdx ist der Index der ersten LED des Moduls.
 // Der Rueckgabewert ist der Index der ersten LED des nachfolgenden Moduls.
-func (m *Module) AppendIdxMap(idxMap [][]int, basePt image.Point, baseIdx int) int {
+func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 	var idx int
 
 	switch m.Type {
@@ -269,6 +296,6 @@ func (m *Module) AppendIdxMap(idxMap [][]int, basePt image.Point, baseIdx int) i
 			log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
 		}
 	}
-	return baseIdx + 3*ModuleSize.X*ModuleSize.Y
+	return baseIdx + 3 * ModuleSize.X * ModuleSize.Y
 }
 

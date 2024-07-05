@@ -24,13 +24,15 @@ var (
 // -----------------------------------------------------------------------------
 //
 // Objekt-Himmel
-type Palette struct {
+
+
+type PaletteWidget struct {
 	widget.BaseWidget
 	Orientation widget.Orientation
 	ColorSource ColorSource
 }
 
-func NewPalette(colSource ColorSource) *Palette {
+func NewPaletteWidget(colSource ColorSource) *PaletteWidget {
 	var cs ColorSource
 
 	switch pal := colSource.(type) {
@@ -39,7 +41,7 @@ func NewPalette(colSource ColorSource) *Palette {
 	default:
 		cs = pal
 	}
-	p := &Palette{
+	p := &PaletteWidget{
 		Orientation: widget.Horizontal,
 		ColorSource: cs,
 	}
@@ -47,7 +49,7 @@ func NewPalette(colSource ColorSource) *Palette {
 	return p
 }
 
-func (p *Palette) Tapped(evt *fyne.PointEvent) {
+func (p *PaletteWidget) Tapped(evt *fyne.PointEvent) {
 	log.Printf("tapped at %+v\n", evt)
 
 	log.Printf("  size: %v\n", p.Size())
@@ -57,7 +59,7 @@ func (p *Palette) Tapped(evt *fyne.PointEvent) {
 	// colorPicker.Show()
 }
 
-func (p *Palette) getRatio(evt *fyne.PointEvent) float64 {
+func (p *PaletteWidget) getRatio(evt *fyne.PointEvent) float64 {
 	margin := float32(colStopDia / 2)
 
 	x := evt.Position.X
@@ -75,22 +77,22 @@ func (p *Palette) getRatio(evt *fyne.PointEvent) float64 {
 	return 0.0
 }
 
-func (p *Palette) MouseIn(evt *desktop.MouseEvent) {
-	// log.Printf("Mouse in!")
+func (p *PaletteWidget) MouseIn(evt *desktop.MouseEvent) {
+	log.Printf("Mouse in: %+v", evt)
 }
 
-func (p *Palette) MouseMoved(evt *desktop.MouseEvent) {
-	// log.Printf("Mouse moved: %v", evt)
+func (p *PaletteWidget) MouseMoved(evt *desktop.MouseEvent) {
+	log.Printf("Mouse moved: %+v", evt)
 }
 
-func (p *Palette) MouseOut() {
-	// log.Printf("Mouse out!")
+func (p *PaletteWidget) MouseOut() {
+	log.Printf("Mouse out!")
 }
 
-func (p *Palette) CreateRenderer() fyne.WidgetRenderer {
+func (p *PaletteWidget) CreateRenderer() fyne.WidgetRenderer {
 	p.ExtendBaseWidget(p)
 
-	renderer := &paletteRenderer{pal: p}
+	renderer := &paletteWidgetRenderer{pal: p}
 
 	gradient := canvas.NewRaster(renderer.generator)
 	renderer.gradient = gradient
@@ -106,18 +108,18 @@ func (p *Palette) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // Render-Keller
-type paletteRenderer struct {
+type paletteWidgetRenderer struct {
 	// objects    []fyne.CanvasObject
 	gradient   *canvas.Raster
 	rect       *canvas.Rectangle
 	colorStops []*canvas.Circle
-	pal        *Palette
+	pal        *PaletteWidget
 }
 
-func (r *paletteRenderer) Destroy() {
+func (r *paletteWidgetRenderer) Destroy() {
 }
 
-func (r *paletteRenderer) Layout(s fyne.Size) {
+func (r *paletteWidgetRenderer) Layout(s fyne.Size) {
 	pos := fyne.NewPos(colStopDia/2, 0)
 	s = s.SubtractWidthHeight(colStopDia, 0)
 	r.gradient.Move(pos)
@@ -136,11 +138,11 @@ func (r *paletteRenderer) Layout(s fyne.Size) {
 	}
 }
 
-func (r *paletteRenderer) MinSize() fyne.Size {
+func (r *paletteWidgetRenderer) MinSize() fyne.Size {
 	return r.rect.MinSize()
 }
 
-func (r *paletteRenderer) Objects() []fyne.CanvasObject {
+func (r *paletteWidgetRenderer) Objects() []fyne.CanvasObject {
 	objects := []fyne.CanvasObject{r.gradient, r.rect}
 	for _, cs := range r.colorStops {
 		objects = append(objects, cs)
@@ -148,14 +150,14 @@ func (r *paletteRenderer) Objects() []fyne.CanvasObject {
 	return objects
 }
 
-func (r *paletteRenderer) Refresh() {
+func (r *paletteWidgetRenderer) Refresh() {
 	r.gradient.Refresh()
 	r.rect.Refresh()
 	r.updateColorStops()
 	r.Layout(r.pal.Size())
 }
 
-func (r *paletteRenderer) generator(w, h int) image.Image {
+func (r *paletteWidgetRenderer) generator(w, h int) image.Image {
 	img := image.NewNRGBA(image.Rect(0, 0, w, h))
 	for x := range w {
 		f := float64(x) / float64(w)
@@ -166,7 +168,7 @@ func (r *paletteRenderer) generator(w, h int) image.Image {
 	return img
 }
 
-func (r *paletteRenderer) updateColorStops() {
+func (r *paletteWidgetRenderer) updateColorStops() {
 	switch pal := r.pal.ColorSource.(type) {
 	case *GradientPalette:
 		colorStops := pal.ColorStops()

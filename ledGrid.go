@@ -20,6 +20,9 @@ var (
 	frameRefresh    time.Duration
 	frameRefreshMs  int64
 	frameRefreshSec float64
+    defectPosList = []image.Point{
+        {6, 3},
+    }
 )
 
 func init() {
@@ -49,30 +52,12 @@ type LedGrid struct {
 func NewLedGrid(size image.Point) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = image.Rectangle{Max: size}
-	// log.Printf("g.Rect: %+v", g.Rect)
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
-	// g.idxMap = make([][]int, g.Rect.Dx())
-	// for i := range g.Rect.Dx() {
-	// 	g.idxMap[i] = make([]int, g.Rect.Dy())
-	// }
-	// idx := 0
 	layout := NewModuleLayout(g.Rect.Size())
-	// log.Printf("moduleLayout: %+v", layout)
 	g.idxMap = layout.IndexMap()
-	// for row, moduleRow := range layout {
-	// 	for j := range len(moduleRow) {
-	// 		col := j
-	// 		if row%2 == 1 {
-	// 			col = (len(moduleRow) - 1) - j
-	// 		}
-	// 		mod := moduleRow[col]
-	// 		pt := image.Point{col * ModuleSize.X, row * ModuleSize.Y}
-	// 		// log.Printf("pt: %+v", pt)
-	// 		idx = mod.AppendIdxMap(g.idxMap, pt, idx)
-	// 		// log.Printf("next idx: %d", idx)
-	// 	}
-	// }
-	// log.Printf("g.idxMap: %+v", g.idxMap)
+    for _, defectPos := range defectPosList {
+        g.idxMap.MarkDefect(defectPos)
+    }
 	return g
 }
 
