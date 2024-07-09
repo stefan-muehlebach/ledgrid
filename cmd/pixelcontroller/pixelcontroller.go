@@ -37,9 +37,9 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
             pixelServer.Close()
             return
         case syscall.SIGHUP:
-            // Noch nicht belegt
+            log.Printf("You signalled a HUP - which isn't implemented by now")
         case syscall.SIGUSR1:
-            // Start des Test-Programmes
+            log.Printf("You signalled a USR1 - which isn't implemented by now")
         }
     }
 }
