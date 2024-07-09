@@ -1,4 +1,5 @@
-//go:build amd64
+//go:build ignore
+// go:build amd64
 
 package ledgrid
 

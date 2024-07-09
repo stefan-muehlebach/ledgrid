@@ -24,6 +24,14 @@ type Parameter interface {
     RemoveListener(binding.DataListener)
 }
 
+// Einige der Objekte (wie beispielsweise Shader) koennen zusaetzlich mit
+// Parametern gesteuert werden. Damit diese Steuerung so generisch wie
+// moeglich ist, haben alle parametrisierbaren Typen dieses Interface zu
+// implementieren.
+type Parametrizable interface {
+	ParamList() []Parameter
+}
+
 //----------------------------------------------------------------------------
 
 type baseParam[T ParameterType] struct {
@@ -88,8 +96,6 @@ func (p *baseParam[T]) set(v T) {
 		}
 	}
 }
-
-
 
 //----------------------------------------------------------------------------
 

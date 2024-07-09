@@ -168,6 +168,11 @@ func (p *PixelServer) Draw(lg *LedGrid) {
 	}
 }
 
+// Dies ist die zentrale Verarbeitungs-Funktion des Pixel-Controllers. In ihr
+// wird laufend ein Datenpaket via UDP empfangen, die empfangenen Werte gem.
+// Gamma-Korrektur umgeschrieben und via SPI-Bus auf das LED-Grid uebertragen.
+// Die genaue Konfiguration des LED-Grids (Anordnung der Lichterketten) ist
+// dem Pixel-Controller nicht bekannt.
 func (p *PixelServer) Handle() {
 	var bufferSize int
 	var err error

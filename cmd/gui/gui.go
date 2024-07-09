@@ -123,7 +123,7 @@ func main() {
 		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, ledgrid.PaletteMap["Hipster"]),
 		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, ledgrid.PaletteMap["Hipster"]),
 		ledgrid.NewFire(pixGrid),
-		ledgrid.NewCamera(pixGrid),
+		// ledgrid.NewCamera(pixGrid),
 	}
 	bgNameList = make([]string, len(bgList))
 	for i, anim := range bgList {

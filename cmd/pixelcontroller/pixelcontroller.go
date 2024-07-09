@@ -1,6 +1,8 @@
+
 package main
 
 import (
+	"syscall"
 	"flag"
 	"log"
 	"os"
@@ -24,9 +26,24 @@ const (
 	defGammaValues = "3.0,3.0,3.0"
 	defBaud        = 2_000_000
 	defUseTCP      = false
-
-	bufferSize = 1024
 )
+
+func SignalHandler(pixelServer *ledgrid.PixelServer) {
+    sigChan := make(chan os.Signal)
+    signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+    for sig := range sigChan {
+        switch sig {
+        case os.Interrupt:
+            pixelServer.Close()
+            return
+        case syscall.SIGHUP:
+            // Noch nicht belegt
+        case syscall.SIGUSR1:
+            // Start des Test-Programmes
+        }
+    }
+}
+
 
 func main() {
 	var port uint
@@ -57,13 +74,14 @@ func main() {
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
+    go SignalHandler(pixelServer)
 	//
-	go func() {
-		sigChan := make(chan os.Signal)
-		signal.Notify(sigChan, os.Interrupt)
-		<-sigChan
-		pixelServer.Close()
-	}()
+	// go func() {
+	// 	sigChan := make(chan os.Signal)
+	// 	signal.Notify(sigChan, os.Interrupt)
+	// 	<-sigChan
+	// 	pixelServer.Close()
+	// }()
 
 	pixelServer.Handle()
 }

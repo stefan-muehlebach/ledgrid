@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid
 
-go 1.22.4
+go 1.22.5
 
 replace github.com/stefan-muehlebach/gg => ../gg
 
@@ -10,8 +10,8 @@ require (
 	github.com/rthornton128/goncurses v0.0.0-20231014161942-82671379df88
 	github.com/stefan-muehlebach/gg v1.3.3
 	github.com/vladimirvivien/go4vl v0.0.5
-	gocv.io/x/gocv v0.37.0
 	golang.org/x/image v0.18.0
+	golang.org/x/term v0.22.0
 	periph.io/x/conn/v3 v3.7.0
 	periph.io/x/host/v3 v3.8.2
 )
@@ -35,12 +35,10 @@ require (
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
-	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.7.4 // indirect
 	golang.org/x/mobile v0.0.0-20240604190613-2782386b8afd // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20231112215516-51f43a291193 // indirect

@@ -66,13 +66,6 @@ func (v *VisualEmbed) SetVisible(vis bool) {
 	v.visible = vis
 }
 
-// Einige der Objekte (wie beispielsweise Shader) koennen zusaetzlich mit
-// Parametern gesteuert werden. Damit diese Steuerung so generisch wie
-// moeglich ist, haben alle parametrisierbaren Typen dieses Interface zu
-// implementieren.
-type Parametrizable interface {
-	ParamList() []Parameter
-}
 
 // Dieses Interface word von allen Objekten implementiert, die sich
 // einfaerben lassen.
