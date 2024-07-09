@@ -1,0 +1,14 @@
+#!/usr/bin/bash
+
+if [[ $(whoami) != "root" ]]; then
+    echo "You must be root in order to run this script!"
+    exit 1
+fi
+
+DST_DIR=/usr/local/sbin
+
+systemctl stop pixelcontroller
+cp pixelcontroller $DST_DIR
+systemctl start pixelcontroller
+
+
