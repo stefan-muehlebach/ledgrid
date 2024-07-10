@@ -20,18 +20,18 @@ type JsonPalette struct {
 	Stops    []ColorStop
 }
 
-type StopsPalette struct {
-	ID    int
-	Name  string
-	Stops []ColorStop
-}
+// type StopsPalette struct {
+// 	ID    int
+// 	Name  string
+// 	Stops []ColorStop
+// }
 
-type ListPalette struct {
-	ID       int
-	Name     string
-	IsCyclic bool
-	Colors   []LedColor
-}
+// type ListPalette struct {
+// 	ID       int
+// 	Name     string
+// 	IsCyclic bool
+// 	Colors   []LedColor
+// }
 
 func ReadJsonData(fileName string) []JsonPalette {
     var jsonPaletteList []JsonPalette

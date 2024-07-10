@@ -4,7 +4,6 @@ import (
 	"fmt"
 	gocol "image/color"
 	"log"
-	"math"
 	"strconv"
 
 	"github.com/stefan-muehlebach/gg/color"
@@ -19,38 +18,42 @@ var (
 	Transparent = LedColor{0x00, 0x00, 0x00, 0x00}
 )
 
-// Damit verschiedene Interpolationsfunktionen verwendet werden koennen,
-// ist das Profil als Typ definiert. Jede Interp.funktion realisiert eine
-// (wie auch immer geartete) Interpolation zwischen den Werten a und b in
-// Abhaengigkeit von t, wobei t in [0, 1] ist. Es muss gelten:
-//
-//   - f(a, b, 0.0) = a
-//   - f(a, b, 1.0) = b
-//
-// TO DO: aktuell wird keine Fehlererkennung gemacht. Wenn beispielsweise
-// t nicht in [0, 1] liegt, erzeugen die Funktionen ggf. unsinnige Werte.
-type InterpolFuncType func(a, b, t float64) float64
+// // Damit verschiedene Interpolationsfunktionen verwendet werden koennen,
+// // ist das Profil als Typ definiert. Jede Interp.funktion realisiert eine
+// // (wie auch immer geartete) Interpolation zwischen den Werten a und b in
+// // Abhaengigkeit von t, wobei t in [0, 1] ist. Es muss gelten:
+// //
+// //   - f(a, b, 0.0) = a
+// //   - f(a, b, 1.0) = b
+// //
+// // TO DO: aktuell wird keine Fehlererkennung gemacht. Wenn beispielsweise
+// // t nicht in [0, 1] liegt, erzeugen die Funktionen ggf. unsinnige Werte.
+// type InterpolFuncType func(a, b, t float64) float64
 
-var (
-	ColorInterpol = PolynomInterpol
-)
+// var (
+// 	ColorInterpol = PolynomInterpol
+// )
 
-// Realisiert die klassische lineare Interpolation zwischen den Werten a und b.
-func LinearInterpol(a, b, t float64) float64 {
+// // Realisiert die klassische lineare Interpolation zwischen den Werten a und b.
+// func LinearInterpol(a, b, t float64) float64 {
+// 	return (1-t)*a + t*b
+// }
+
+// // Realisiert eine kubische Interpolation.
+// func PolynomInterpol(a, b, t float64) float64 {
+// 	t = 3*t*t - 2*t*t*t
+// 	return LinearInterpol(a, b, t)
+// }
+
+// // Woher diese Interpolation stammt, kann ich auch nicht mehr mit Bestimmtheit
+// // sagen. Sicher ist, dass sie nicht mehr funktioniert, wenn a oder b negativ
+// // sind: dann gelten die oben genannte Bedingungen nicht mehr.
+// func SqrtInterpol(a, b, t float64) float64 {
+// 	return math.Sqrt((1-t)*a*a + t*b*b)
+// }
+
+func interp(a, b, t float64) float64 {
 	return (1-t)*a + t*b
-}
-
-// Realisiert eine kubische Interpolation.
-func PolynomInterpol(a, b, t float64) float64 {
-	t = 3*t*t - 2*t*t*t
-	return LinearInterpol(a, b, t)
-}
-
-// Woher diese Interpolation stammt, kann ich auch nicht mehr mit Bestimmtheit
-// sagen. Sicher ist, dass sie nicht mehr funktioniert, wenn a oder b negativ
-// sind: dann gelten die oben genannte Bedingungen nicht mehr.
-func SqrtInterpol(a, b, t float64) float64 {
-	return math.Sqrt((1-t)*a*a + t*b*b)
 }
 
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
@@ -109,10 +112,10 @@ func (c1 LedColor) Interpolate(c2 color.Color, t float64) color.Color {
 		return c2
 	}
 	if c3, ok := c2.(LedColor); ok {
-		r := ColorInterpol(float64(c1.R), float64(c3.R), t)
-		g := ColorInterpol(float64(c1.G), float64(c3.G), t)
-		b := ColorInterpol(float64(c1.B), float64(c3.B), t)
-		a := ColorInterpol(float64(c1.A), float64(c3.A), t)
+		r := interp(float64(c1.R), float64(c3.R), t)
+		g := interp(float64(c1.G), float64(c3.G), t)
+		b := interp(float64(c1.B), float64(c3.B), t)
+		a := interp(float64(c1.A), float64(c3.A), t)
 		return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
 	} else {
 		return LedColor{}

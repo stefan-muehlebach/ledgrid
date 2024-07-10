@@ -1,20 +1,30 @@
 package main
 
 import (
+	"math"
+
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/color"
 	"github.com/stefan-muehlebach/gg/geom"
 )
 
 var (
-    displ = geom.Point{0.5, 0.5}
-    oversize = 5.0
+	displ    = geom.Point{0.5, 0.5}
+	oversize = 10.0
 )
 
 //----------------------------------------------------------------------------
 
-func Convert(p geom.Point) geom.Point {
-    return p.Add(displ).Mul(oversize)
+func ConvertPos(p geom.Point) geom.Point {
+	return p.Add(displ).Mul(oversize)
+}
+
+func ConvertSize(s geom.Point) geom.Point {
+	return s.Mul(oversize)
+}
+
+func ConvertLen(l float64) float64 {
+    return l * oversize
 }
 
 //----------------------------------------------------------------------------
@@ -32,7 +42,7 @@ type Ellipse struct {
 }
 
 func (e *Ellipse) Draw(gc *gg.Context) {
-	gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X, e.Size.Y)
+	gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
 	gc.SetStrokeWidth(e.BorderWidth)
 	gc.SetStrokeColor(e.BorderColor)
 	gc.SetFillColor(e.FillColor)
@@ -81,6 +91,6 @@ type Pixel struct {
 func (p *Pixel) Draw(gc *gg.Context) {
 	gc.SetStrokeWidth(0.0)
 	gc.SetFillColor(p.Color)
-	gc.DrawPoint(p.Pos.X, p.Pos.Y, oversize/2.0)
+	gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
 	gc.Fill()
 }

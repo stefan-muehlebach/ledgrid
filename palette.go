@@ -49,7 +49,7 @@ type GradientPalette struct {
 	stops []ColorStop
 	// Mit dieser Funktion wird die Interpolation zwischen den gesetzten
 	// Farbwerten realisiert.
-	fnc InterpolFuncType
+	// fnc InterpolFuncType
 }
 
 // Dieser (interne) Typ wird verwendet, um einen bestimmten Wert im Interval
@@ -73,7 +73,7 @@ func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	for _, cs := range cl {
 		p.SetColorStop(cs)
 	}
-	p.fnc = LinearInterpol
+	// p.fnc = LinearInterpol
 	return p
 }
 
@@ -139,7 +139,7 @@ func (p *GradientPalette) Color(t float64) (c LedColor) {
 		}
 	}
 	t = (t - p.stops[i].Pos) / (p.stops[i+1].Pos - p.stops[i].Pos)
-	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, p.fnc(0, 1, t)).(LedColor)
+	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, t).(LedColor)
 	return c
 }
 
