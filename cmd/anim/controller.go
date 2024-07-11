@@ -12,8 +12,7 @@ import (
 	"golang.org/x/image/draw"
 )
 
-//----------------------------------------------------------------------------
-
+// Der Controller ist das Bindeglied zwischen dem
 type Controller struct {
 	pixCtrl   ledgrid.PixelClient
 	ledGrid   *ledgrid.LedGrid
@@ -36,7 +35,7 @@ func NewController(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Contr
 	c.canvas = image.NewRGBA(image.Rectangle{Max: c.ledGrid.Rect.Max.Mul(int(oversize))})
 	c.gc = gg.NewContextForRGBA(c.canvas)
 	c.objList = make([]CanvasObject, 0)
-	c.scaler = draw.BiLinear.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
+	c.scaler = draw.CatmullRom.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
 	c.ticker = time.NewTicker(refreshRate)
     c.animList = make([]Animation, 0)
     c.animMutex = &sync.Mutex{}
@@ -50,7 +49,9 @@ func (c *Controller) Add(objs ...CanvasObject) {
 }
 
 func (c *Controller) AddAnim(anims ...Animation) {
+    c.animMutex.Lock()
 	c.animList = append(c.animList, anims...)
+    c.animMutex.Unlock()
 }
 
 func (c *Controller) Stop() {
@@ -84,9 +85,6 @@ func (c *Controller) backgroundThread() {
 			}
             numAnims++
             animChan <- animJobType{i, pit}
-			// if !anim.Update(pit) {
-			// 	c.animList[i] = nil
-			// }
         }
         for range numAnims {
             <- doneChan
