@@ -18,7 +18,7 @@ var (
 	width            = 20
 	height           = 10
 	gridSize         = image.Point{width, height}
-	pixelHost        = "raspi-2"
+	pixelHost        = "raspi-3"
 	pixelPort   uint = 5333
 	gammaValue       = 3.0
 	refreshRate      = 30 * time.Millisecond
@@ -460,29 +460,45 @@ func GlowingPixels(ctrl *Controller) {
 		// Farbschema 4: es werden zwei Farben ausgewaehlt und jedes Pixel
 		// erhaelt eine zufaellige Interpolation zwischen diesen beiden
 		// Farben.
-		col := color.SeaGreen.Interpolate(color.SteelBlue, rand.Float64())
+		col := color.DimGray.Interpolate(color.DarkGray, rand.Float64())
+		// col := color.SeaGreen.Interpolate(color.SteelBlue, rand.Float64()).Dark(0.2 * rand.Float64())
 		// col := color.BlueViolet.Interpolate(color.DarkMagenta, rand.Float64())
 		// col := color.Purple.Interpolate(color.Indigo, rand.Float64())
 
 		pix := NewPixel(pos, col)
+		pixField[idx] = pix
+		ctrl.Add(pix)
 		// col2 := col.Alpha(0.2 + 0.3*rand.Float64())
-		dur := 800*time.Millisecond + rand.N(400*time.Millisecond)
-		aAlpha := NewFloatAnimation(&pix.Alpha, 0.3, dur)
+		dur := time.Second + rand.N(400*time.Millisecond)
+		aAlpha := NewFloatAnimation(&pix.Alpha, 0.5, dur)
 		aAlpha.AutoReverse = true
 		aAlpha.RepeatCount = AnimationRepeatForever
 		aAlpha.Start()
-		ctrl.Add(pix)
-		pixField[idx] = pix
-	}
-	time.Sleep(7 * time.Second)
-	for _, idx := range rand.Perm(200) {
-		pix := pixField[idx]
-		aColor := NewColorAnimation(&pix.Color, color.Purple.Interpolate(color.Indigo, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aColor.Start()
-		// time.Sleep(10 * time.Millisecond)
 	}
 
+	aGrpPurple := NewGroup(0)
+	aGrpYellow := NewGroup(0)
+	aGrpGreen := NewGroup(0)
+
+	for _, pix := range pixField {
+		aColor := NewColorAnimation(&pix.Color, color.MediumPurple.Interpolate(color.Fuchsia, rand.Float64()), 2*time.Second)
+		aColor.AutoReverse = true
+		aGrpPurple.Add(aColor)
+		aColor = NewColorAnimation(&pix.Color, color.Gold.Interpolate(color.Khaki, rand.Float64()), 2*time.Second)
+		aColor.AutoReverse = true
+		aGrpYellow.Add(aColor)
+		aColor = NewColorAnimation(&pix.Color, color.GreenYellow.Interpolate(color.LightSeaGreen, rand.Float64()), 2*time.Second)
+		aColor.AutoReverse = true
+		aGrpGreen.Add(aColor)
+	}
+
+	aTimel := NewTimeline(30 * time.Second)
+	aTimel.Add(5*time.Second, aGrpPurple)
+	aTimel.Add(15*time.Second, aGrpYellow)
+	aTimel.Add(25*time.Second, aGrpGreen)
+	aTimel.RepeatCount = AnimationRepeatForever
+
+	aTimel.Start()
 }
 
 //----------------------------------------------------------------------------
