@@ -16,6 +16,7 @@ type JsonPalette struct {
 	ID       int
 	Name     string `json:"Title"`
 	IsCyclic bool
+    // Colors []color.Color
 	Colors   []LedColor
 	Stops    []ColorStop
 }
@@ -60,10 +61,11 @@ func ReadJsonPalette(fileName string) {
 	}
 	err = json.Unmarshal(data, &colorListJson)
 	if err != nil {
-		if err, ok := err.(*json.SyntaxError); ok {
-			log.Fatalf("Unmarshal failed in %s: %+v at offset %d", fileName, err, err.Offset)
-		} else {
-			log.Fatalf("Unmarshal failed in %s: %+v (%T)", fileName, err, err)
+        switch e := err.(type) {
+        case *json.SyntaxError:
+			log.Fatalf("Unmarshal failed in %s: %+v at offset %d", fileName, e, e.Offset)
+        default:
+			log.Fatalf("Unmarshal failed in %s: %+v (%T)", fileName, e, e)
 		}
 	}
 

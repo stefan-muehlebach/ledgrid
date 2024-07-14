@@ -2,7 +2,7 @@ package ledgrid
 
 import (
 	"fmt"
-	gocol "image/color"
+	gocolor "image/color"
 	"log"
 	"strconv"
 
@@ -215,11 +215,11 @@ func (c *LedColor) UnmarshalText(text []byte) error {
 
 // Das zum Typ LedColor zugehoerende ColorModel.
 var (
-	LedColorModel gocol.Model = gocol.ModelFunc(ledColorModel)
+	LedColorModel gocolor.Model = gocolor.ModelFunc(ledColorModel)
 )
 
 // Wandelt einen beliebigen Farbwert c in einen LedColor-Typ um.
-func ledColorModel(c gocol.Color) gocol.Color {
+func ledColorModel(c gocolor.Color) gocolor.Color {
 	if _, ok := c.(LedColor); ok {
 		return c
 	}

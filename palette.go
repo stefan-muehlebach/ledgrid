@@ -2,13 +2,13 @@ package ledgrid
 
 import (
 	"image"
-    "image/color"
+    gocolor "image/color"
 	"log"
 	"math"
 	"slices"
 	"time"
 
-	// "github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg/color"
 )
 
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
@@ -91,9 +91,9 @@ func NewGradientPaletteByList(name string, cycle bool, cl ...LedColor) *Gradient
 	stops := make([]ColorStop, len(cl))
 	posStep := 1.0 / (float64(len(cl) - 1))
 	for i, c := range cl[:len(cl)-1] {
-		stops[i] = ColorStop{float64(i) * posStep, c}
+		stops[i] = ColorStop{float64(i) * posStep, LedColorModel.Convert(c).(LedColor)}
 	}
-	stops[len(cl)-1] = ColorStop{1.0, cl[len(cl)-1]}
+	stops[len(cl)-1] = ColorStop{1.0, LedColorModel.Convert(cl[len(cl)-1]).(LedColor)}
 	return NewGradientPalette(name, stops...)
 }
 
@@ -190,7 +190,7 @@ func (p *UniformPalette) Color(v float64) LedColor {
 	return p.Col
 }
 
-func (p *UniformPalette) ColorModel() color.Model {
+func (p *UniformPalette) ColorModel() gocolor.Model {
 	return LedColorModel
 }
 

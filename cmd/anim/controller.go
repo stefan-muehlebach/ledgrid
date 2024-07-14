@@ -12,6 +12,10 @@ import (
 	"golang.org/x/image/draw"
 )
 
+const (
+    queueSize = 200
+)
+
 // Der Controller ist das Bindeglied zwischen dem
 type Controller struct {
 	pixCtrl   ledgrid.PixelClient
@@ -23,6 +27,7 @@ type Controller struct {
 	ticker    *time.Ticker
 	animList  []Animation
 	animMutex *sync.Mutex
+    animPit   time.Time
 }
 
 func NewController(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Controller {
@@ -48,9 +53,30 @@ func (c *Controller) Add(objs ...CanvasObject) {
 	c.objList = append(c.objList, objs...)
 }
 
+func (c *Controller) DelAll() {
+    c.objList = c.objList[:0]
+}
+
 func (c *Controller) AddAnim(anims ...Animation) {
     c.animMutex.Lock()
 	c.animList = append(c.animList, anims...)
+    c.animMutex.Unlock()
+}
+
+func (c *Controller) DelAllAnim() {
+    c.animMutex.Lock()
+    c.animList = c.animList[:0]
+    c.animMutex.Unlock()
+}
+
+func (c *Controller) DelAnim(anim Animation) {
+    c.animMutex.Lock()
+    for i, a := range c.animList {
+        if a == anim {
+            c.animList[i] = nil
+            return
+        }
+    }
     c.animMutex.Unlock()
 }
 
@@ -62,29 +88,24 @@ func (c *Controller) Continue() {
 	c.ticker.Reset(refreshRate)
 }
 
-type animJobType struct {
-    id int
-    pit time.Time
-}
-
 func (c *Controller) backgroundThread() {
 	backColor := color.Black.Alpha(backAlpha)
     numCores := runtime.NumCPU()
-    animChan := make(chan animJobType, 2*numCores)
-    doneChan := make(chan bool, 2*numCores)
+    animChan := make(chan int, queueSize)
+    doneChan := make(chan bool, queueSize)
 
     for range numCores {
-        go c.updateWorker(animChan, doneChan)
+        go c.animationThread(animChan, doneChan)
     }
 
-	for pit := range c.ticker.C {
+	for c.animPit = range c.ticker.C {
         numAnims := 0
 		for i, anim := range c.animList {
 			if anim == nil || anim.IsStopped() {
 				continue
 			}
             numAnims++
-            animChan <- animJobType{i, pit}
+            animChan <- i
         }
         for range numAnims {
             <- doneChan
@@ -100,10 +121,10 @@ func (c *Controller) backgroundThread() {
 	}
 }
 
-func (c *Controller) updateWorker(animChan <-chan animJobType, doneChan chan<- bool) {
-    for animJob := range animChan {
-        if !c.animList[animJob.id].Update(animJob.pit) {
-            c.animList[animJob.id] = nil
+func (c *Controller) animationThread(animChan <-chan int, doneChan chan<- bool) {
+    for animId := range animChan {
+        if !c.animList[animId].Update(c.animPit) {
+            c.animList[animId] = nil
         }
         doneChan <- true
     }

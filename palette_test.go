@@ -75,12 +75,12 @@ func TestPaletteSamples(t *testing.T) {
 		pal := PaletteMap[name]
 		x := Margin + float64(col)*(5*FieldWidth+4*FieldPadding+ColorPaddingHori)
 		y := Margin + float64(row)*(FieldHeight+ColorPaddingVert)
-		for n := range 101 {
-			t := float64(n) / float64(100)
-			x := x + float64(n)*(5.0)
+		for n := range 501 {
+			t := float64(n) / float64(500)
+			x := x + float64(n)
 			gc.SetFillColor(pal.Color(t))
 			gc.SetStrokeWidth(0.0)
-			gc.DrawRectangle(x, y, 5.0, FieldHeight)
+			gc.DrawRectangle(x, y, 1.0, FieldHeight)
 			gc.Fill()
 		}
 		gc.SetStrokeColor(color.Black)

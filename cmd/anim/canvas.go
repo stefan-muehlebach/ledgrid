@@ -59,6 +59,7 @@ type Ellipse struct {
 	Angle                  float64
 	BorderWidth            float64
 	BorderColor, FillColor color.Color
+	FillColorFnc           func(color.Color) color.Color
 }
 
 // Erzeugt eine 'klassische' Ellipse mit einer Randbreite von einem Pixel und
@@ -67,7 +68,10 @@ type Ellipse struct {
 // Erzeugung mittels &Ellipse{...}.
 func NewEllipse(pos, size geom.Point, borderColor color.Color) *Ellipse {
 	e := &Ellipse{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
-		BorderColor: borderColor, FillColor: borderColor.Alpha(fillAlpha)}
+		BorderColor: borderColor, FillColorFnc: func(c color.Color) color.Color {
+            return c.Alpha(fillAlpha)
+        }}
+    e.FillColor = color.Transparent
 	return e
 }
 
@@ -80,7 +84,11 @@ func (e *Ellipse) Draw(gc *gg.Context) {
 	gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
 	gc.SetStrokeWidth(e.BorderWidth)
 	gc.SetStrokeColor(e.BorderColor)
-	gc.SetFillColor(e.FillColor)
+    if e.FillColor == color.Transparent {
+        gc.SetFillColor(e.FillColorFnc(e.BorderColor))
+    } else {
+	    gc.SetFillColor(e.FillColor)
+    }
 	gc.FillStroke()
 }
 
@@ -91,11 +99,15 @@ type Rectangle struct {
 	Angle                  float64
 	BorderWidth            float64
 	BorderColor, FillColor color.Color
+	FillColorFnc           func(color.Color) color.Color
 }
 
 func NewRectangle(pos, size geom.Point, borderColor color.Color) *Rectangle {
 	r := &Rectangle{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
-		BorderColor: borderColor, FillColor: borderColor.Alpha(fillAlpha)}
+		BorderColor: borderColor, FillColorFnc: func(c color.Color) color.Color {
+            return c.Alpha(fillAlpha)
+        }}
+    r.FillColor = color.Transparent
 	return r
 }
 
@@ -108,7 +120,11 @@ func (r *Rectangle) Draw(gc *gg.Context) {
 	gc.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
 	gc.SetStrokeWidth(r.BorderWidth)
 	gc.SetStrokeColor(r.BorderColor)
-	gc.SetFillColor(r.FillColor)
+    if r.FillColor == color.Transparent {
+        gc.SetFillColor(r.FillColorFnc(r.BorderColor))
+    } else {
+	    gc.SetFillColor(r.FillColor)
+    }
 	gc.FillStroke()
 }
 
@@ -138,15 +154,16 @@ func (l *Line) Draw(gc *gg.Context) {
 type Pixel struct {
 	Pos   geom.Point
 	Color color.Color
+    Alpha float64
 }
 
 func NewPixel(pos geom.Point, col color.Color) *Pixel {
-	p := &Pixel{Pos: pos, Color: col}
+	p := &Pixel{Pos: pos, Color: col, Alpha: 1.0}
 	return p
 }
 
 func (p *Pixel) Draw(gc *gg.Context) {
-	gc.SetFillColor(p.Color)
+	gc.SetFillColor(p.Color.Alpha(p.Alpha))
 	gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
 	gc.Fill()
 }
