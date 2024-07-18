@@ -1,16 +1,15 @@
 package ledgrid
 
 import (
+	"strings"
 	"image"
 	"image/color"
 	"image/draw"
 	"sync"
 	"time"
 
-	"github.com/golang/freetype/truetype"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -26,9 +25,9 @@ var (
 	textImgFactorFloat = float64(textImgFactor)
 	textBaseFontSize   = 11.0
 	textFontSize       = textImgFactorFloat * textBaseFontSize
-	textFont           = fonts.WorkSansMedium
-	freeFont, _        = truetype.Parse(gobold.TTF)
+	textFont           = fonts.SeafordBold
 	transpPattern      = image.NewUniform(color.Transparent)
+	wps                = 3
 )
 
 //----------------------------------------------------------------------------
@@ -43,7 +42,7 @@ type TextNative struct {
 	img                   draw.Image
 	drawer                *font.Drawer
 	params                []Parameter
-	anim                  Animation
+	anim                  *NormAnimation
 	mutex                 sync.Mutex
 }
 
@@ -58,10 +57,9 @@ func NewTextNative(lg *LedGrid, txt string, pal ColorSource) *TextNative {
 
 	t.params = make([]Parameter, 3)
 	t.params[0] = NewFloatParameter("Font Size", textBaseFontSize, textBaseFontSize/2.0, 2.0*textBaseFontSize, 0.1)
-	t.params[1] = NewFloatParameter("Baseline", float64(lg.Bounds().Max.Y), 0.0, float64(2*lg.Bounds().Max.Y), 0.1)
+	t.params[1] = NewFloatParameter("Baseline", float64(lg.Bounds().Max.Y-1), 0.0, float64(2*lg.Bounds().Max.Y), 0.1)
 	t.params[2] = NewStringParameter("Message", txt)
 
-	t.txt = txt
 	t.startPos = coord2fix(textImgFactorFloat*(float64(lg.Bounds().Max.X)+1.0), textImgFactorFloat*(t.params[1].(FloatParameter).Val()))
 	t.endPos = t.startPos
 	t.pos = t.startPos
@@ -69,6 +67,7 @@ func NewTextNative(lg *LedGrid, txt string, pal ColorSource) *TextNative {
 	t.drawer = &font.Drawer{
 		Dst: t.img,
 	}
+    t.txt = txt
 
 	t.params[0].SetCallback(func(p Parameter) {
 		v := t.params[0].(FloatParameter).Val()
@@ -83,15 +82,14 @@ func NewTextNative(lg *LedGrid, txt string, pal ColorSource) *TextNative {
 
 	t.params[2].SetCallback(func(p Parameter) {
 		v := t.params[2].(StringParameter).Val()
-		t.txt = v
-		t.updateSize(t.params[0].(FloatParameter).Val())
+		t.SetString(v)
 	})
 
-	anim := NewNormAnimation(10*time.Second, t.Update)
-	anim.AutoReverse = true
-	anim.RepeatCount = AnimationRepeatForever
-	anim.Curve = CubicAnimationCurve
-	t.anim = anim
+	t.anim = NewNormAnimation(time.Second, t.Update)
+	t.anim.RepeatCount = AnimationRepeatForever
+    t.anim.Curve = LinearAnimationCurve
+
+    t.SetString(txt)
 
 	return t
 }
@@ -128,6 +126,8 @@ func (t *TextNative) String() string {
 
 func (t *TextNative) SetString(txt string) {
 	t.txt = txt
+    numWords := len(strings.Fields(t.txt))
+	t.anim.Duration = time.Duration(numWords) * (2 * time.Second)
 	t.updateSize(t.params[0].(FloatParameter).Val())
 }
 

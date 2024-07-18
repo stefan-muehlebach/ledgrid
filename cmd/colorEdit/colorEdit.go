@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	width         = 20
+	width         = 30
 	height        = 10
     gridWidth     = 8 * width + 9
     gridHeight    = height + 7
 	termWidth     = gridWidth + 10
 	termHeight    = gridHeight + 40
-	defHost       = "raspi-2"
+	defHost       = "raspi-3"
 	defPort       = 5333
 	KEY_SUP       = 0x151 /* Shifted up arrow */
 	KEY_SDOWN     = 0x150 /* Shifted down arrow */

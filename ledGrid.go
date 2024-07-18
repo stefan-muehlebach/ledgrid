@@ -16,21 +16,12 @@ const (
 )
 
 var (
-	framesPerSecond int
-	frameRefresh    time.Duration
-	frameRefreshMs  int64
-	frameRefreshSec float64
-    defectPosList = []image.Point{
-        {6, 3},
-    }
+	framesPerSecond int           = defFramesPerSec
+	frameRefresh    time.Duration = time.Second / time.Duration(framesPerSecond)
+	defectPosList                 = []image.Point{
+		{6, 3},
+	}
 )
-
-func init() {
-	framesPerSecond = defFramesPerSec
-	frameRefresh = time.Second / time.Duration(framesPerSecond)
-	frameRefreshMs = frameRefresh.Microseconds()
-	frameRefreshSec = frameRefresh.Seconds()
-}
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.
 // Implementiert die Interfaces image.Image und draw.Image, also die Methoden
@@ -55,9 +46,9 @@ func NewLedGrid(size image.Point) *LedGrid {
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
 	layout := NewModuleLayout(g.Rect.Size())
 	g.idxMap = layout.IndexMap()
-    for _, defectPos := range defectPosList {
-        g.idxMap.MarkDefect(defectPos)
-    }
+	for _, defectPos := range defectPosList {
+		g.idxMap.MarkDefect(defectPos)
+	}
 	return g
 }
 

@@ -5,8 +5,6 @@ import (
 	gocolor "image/color"
 	"log"
 	"strconv"
-
-	"github.com/stefan-muehlebach/gg/color"
 )
 
 var (
@@ -103,7 +101,7 @@ func (c LedColor) RGB() (r, g, b uint8) {
 // Berechnet eine RGB-Farbe, welche 'zwischen' den Farben c1 und c2 liegt,
 // so dass bei t=0 der Farbwert c1 und bei t=1 der Farbwert c2 retourniert
 // wird. t wird vorgaengig auf das Interval [0,1] eingeschraenkt.
-func (c1 LedColor) Interpolate(c2 color.Color, t float64) color.Color {
+func (c1 LedColor) Interpolate(c2 LedColor, t float64) LedColor {
 	t = max(min(t, 1.0), 0.0)
 	if t == 0.0 {
 		return c1
@@ -111,15 +109,15 @@ func (c1 LedColor) Interpolate(c2 color.Color, t float64) color.Color {
 	if t == 1.0 {
 		return c2
 	}
-	if c3, ok := c2.(LedColor); ok {
-		r := interp(float64(c1.R), float64(c3.R), t)
-		g := interp(float64(c1.G), float64(c3.G), t)
-		b := interp(float64(c1.B), float64(c3.B), t)
-		a := interp(float64(c1.A), float64(c3.A), t)
-		return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
-	} else {
-		return LedColor{}
-	}
+	// if c3, ok := c2.(LedColor); ok {
+	r := interp(float64(c1.R), float64(c2.R), t)
+	g := interp(float64(c1.G), float64(c2.G), t)
+	b := interp(float64(c1.B), float64(c2.B), t)
+	a := interp(float64(c1.A), float64(c2.A), t)
+	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+	// } else {
+	// return LedColor{}
+	// }
 }
 
 // Mit folgenden Konstanten kann das Verfahren bestimmt werden, welches beim
@@ -183,16 +181,15 @@ func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 	return LedColor{}
 }
 
-func (c LedColor) Alpha(a float64) color.Color {
+func (c LedColor) Alpha(a float64) LedColor {
 	return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
 }
 
-func (c LedColor) Bright(t float64) color.Color {
-
+func (c LedColor) Bright(t float64) LedColor {
 	return c
 }
 
-func (c LedColor) Dark(t float64) color.Color {
+func (c LedColor) Dark(t float64) LedColor {
 	return c
 }
 

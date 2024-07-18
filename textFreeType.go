@@ -10,9 +10,16 @@ import (
 	"time"
 
 	"github.com/golang/freetype"
+    	"github.com/golang/freetype/truetype"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"golang.org/x/image/font"
+    	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/math/fixed"
+)
+
+var (
+    // freeFont = fonts.GoBold
+    freeFont, _        = truetype.Parse(gobold.TTF)
 )
 
 // Dieser Typ macht grundsaetzlich genau das gleiche wie der oben gezeigte,
@@ -45,19 +52,14 @@ func NewTextFreeType(lg *LedGrid, txt string, pal ColorSource) *TextFreeType {
 
 	t.params = make([]Parameter, 3)
 	t.params[0] = NewFloatParameter("Font Size", textBaseFontSize, textBaseFontSize/2.0, 2.0*textBaseFontSize, 1.0)
-	t.params[1] = NewFloatParameter("Baseline", float64(lg.Bounds().Max.Y), 0.0, float64(2*lg.Bounds().Max.Y), 1.0)
+	t.params[1] = NewFloatParameter("Baseline", float64(lg.Bounds().Max.Y-1), 0.0, float64(2*lg.Bounds().Max.Y), 1.0)
 	t.params[2] = NewStringParameter("Message", txt)
-
-	// t.params = make([]*Bounded[float64], 2)
-	// t.params[0] = NewBounded("Font Size", textBaseFontSize, textBaseFontSize/2.0, 2.0*textBaseFontSize, 1.0)
-	// t.params[1] = NewBounded("Baseline", float64(lg.Bounds().Max.Y), 0.0, float64(2*lg.Bounds().Max.Y), 1.0)
 
 	t.txt = txt
 	t.startPos = coord2fix(textImgFactorFloat*(float64(lg.Bounds().Max.X)+1.0), textImgFactorFloat*t.params[1].(FloatParameter).Val())
 	t.endPos = t.startPos
 	t.pos = t.startPos
     	t.pal = NewPaletteParameter("Color", NewPaletteFader(pal))
-	// t.pal = NewPaletteFader(pal)
 
 	t.params[0].SetCallback(func(p Parameter) {
 		v := t.params[0].(FloatParameter).Val()

@@ -2,13 +2,11 @@ package ledgrid
 
 import (
 	"image"
-    gocolor "image/color"
+	gocolor "image/color"
 	"log"
 	"math"
 	"slices"
 	"time"
-
-	"github.com/stefan-muehlebach/gg/color"
 )
 
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
@@ -139,7 +137,7 @@ func (p *GradientPalette) Color(t float64) (c LedColor) {
 		}
 	}
 	t = (t - p.stops[i].Pos) / (p.stops[i+1].Pos - p.stops[i].Pos)
-	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, t).(LedColor)
+	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, t)
 	return c
 }
 
@@ -177,10 +175,10 @@ type UniformPalette struct {
 }
 
 // Erstellt eine neue einfarbige Farbquelle mit gegebenem namen.
-func NewUniformPalette(name string, color color.Color) *UniformPalette {
+func NewUniformPalette(name string, color LedColor) *UniformPalette {
 	p := &UniformPalette{}
 	p.NameableEmbed.Init(name)
-	p.Col = LedColorModel.Convert(color).(LedColor)
+	p.Col = color
 	return p
 }
 
@@ -198,11 +196,11 @@ func (p *UniformPalette) Bounds() image.Rectangle {
 	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
 }
 
-func (p *UniformPalette) At(x, y int) color.Color {
+func (p *UniformPalette) At(x, y int) LedColor {
 	return p.Col
 }
 
-func (p *UniformPalette) Set(x, y int, c color.Color) {}
+func (p *UniformPalette) Set(x, y int, c LedColor) {}
 
 // Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
 // anderen realisiert werden.
@@ -261,7 +259,7 @@ func (p *PaletteFader) Color(v float64) (c LedColor) {
 	c = p.Pals[0].Color(v)
 	if p.t > 0 {
 		c2 := p.Pals[1].Color(v)
-		c = c.Interpolate(c2, p.t).(LedColor)
+		c = c.Interpolate(c2, p.t)
 	}
 	return c
 }

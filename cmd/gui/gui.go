@@ -28,7 +28,7 @@ var (
 )
 
 var (
-	width              = 20
+	width              = 30
 	height             = 10
 	gridSize           = image.Point{width, height}
 	defLocal           = false
@@ -72,7 +72,7 @@ func main() {
 
 	var bgList, fgList []ledgrid.Visual
 	var bgNameList, fgNameList []string
-	var paletteNameList, colorNameList []string
+	// var paletteNameList, colorNameList []string
 
 	var blinken *ledgrid.BlinkenFile
 	var blinkenAnim *ledgrid.ImageAnimation
@@ -118,12 +118,12 @@ func main() {
 	bgList = []ledgrid.Visual{
 		transpVisual,
 		ledgrid.NewShader(pixGrid, ledgrid.ExperimentalShader, ledgrid.PaletteMap["Hipster"]),
-		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, ledgrid.PaletteMap["Hipster"]),
+		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, ledgrid.PaletteMap["Nightspell"]),
 		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, ledgrid.PaletteMap["Hipster"]),
 		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, ledgrid.PaletteMap["Hipster"]),
 		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, ledgrid.PaletteMap["Hipster"]),
 		ledgrid.NewFire(pixGrid),
-		// ledgrid.NewCamera(pixGrid),
+		ledgrid.NewCamera(pixGrid),
 	}
 	bgNameList = make([]string, len(bgList))
 	for i, anim := range bgList {
@@ -132,7 +132,7 @@ func main() {
 
 	fgList = []ledgrid.Visual{
 		transpVisual,
-		ledgrid.NewTextNative(pixGrid, "Benedict", ledgrid.ColorMap["SkyBlue"]),
+		//ledgrid.NewTextNative(pixGrid, "Beni und Stefan haben Ferien", ledgrid.ColorMap["GreenYellow"]),
 		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.ColorMap["SkyBlue"]),
 		ledgrid.NewImageFromFile(pixGrid, "image.png"),
 		ledgrid.NewImageFromFile(pixGrid, "gradient.png"),
@@ -149,13 +149,13 @@ func main() {
 		fgNameList[i] = anim.Name()
 	}
 
-	paletteNameList = ledgrid.PaletteNames
+	// paletteNameList = ledgrid.PaletteNames
 	// paletteNameList = make([]string, len(ledgrid.PaletteList))
 	// for i, palette := range ledgrid.PaletteList {
 	// 	paletteNameList[i] = palette.Name()
 	// }
 
-	colorNameList = ledgrid.ColorNames
+	// colorNameList = ledgrid.ColorNames
 	// colorNameList = make([]string, len(ledgrid.ColorList))
 	// for i, palette := range ledgrid.ColorList {
 	// 	colorNameList[i] = palette.Name()
@@ -188,12 +188,12 @@ func main() {
 			}
 			switch pal.(type) {
 			case *ledgrid.UniformPalette:
-				selection = widget.NewSelect(colorNameList, func(s string) {
+				selection = widget.NewSelect(ledgrid.ColorNames, func(s string) {
 					pal := ledgrid.ColorMap[s]
 					obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
 				})
 			default:
-				selection = widget.NewSelect(paletteNameList, func(s string) {
+				selection = widget.NewSelect(ledgrid.PaletteNames, func(s string) {
 					pal := ledgrid.PaletteMap[s]
 					obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
 				})
