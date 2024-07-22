@@ -24,6 +24,7 @@ var (
 	gammaValue       = 3.0
 	refreshRate      = 30 * time.Millisecond
 	backAlpha        = 1.0
+	defLocal         = false
 
 	AnimCtrl Animator
 )
@@ -624,18 +625,18 @@ func GlowingPixels(ctrl *Canvas) {
 
 func MovingText(c *Canvas) {
 	pos1 := ConvertPos(geom.Point{0, 15})
-    pos2 := ConvertPos(geom.Point{30, -6})
+	pos2 := ConvertPos(geom.Point{30, -6})
 
 	t := NewText(pos1, "Beni", colornames.LightSeaGreen)
 	c.Add(t)
 
-    aPos := NewPositionAnimation(&t.Pos, pos2, 4*time.Second)
-    aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
-    aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
-    // aColor.AutoReverse = true
-    aGrp := NewGroup(aPos, aAngle, aColor)
-    aGrp.RepeatCount = AnimationRepeatForever
-    aGrp.Start()
+	aPos := NewPositionAnimation(&t.Pos, pos2, 4*time.Second)
+	aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
+	aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
+	// aColor.AutoReverse = true
+	aGrp := NewGroup(aPos, aAngle, aColor)
+	aGrp.RepeatCount = AnimationRepeatForever
+	aGrp.Start()
 
 	// aAngle := NewFloatAnimation(&t.Angle, 2*math.Pi, 4*time.Second)
 	// aSize := NewFloatAnimation(&t.FontSize, ConvertLen(16.0), 5*time.Second)
@@ -652,7 +653,7 @@ func GlowingGridPixels(g *Grid) {
 	for y := range g.ledGrid.Rect.Dy() {
 		for x := range g.ledGrid.Rect.Dx() {
 			pos := image.Point{x, y}
-            t := rand.Float64()
+			t := rand.Float64()
 			col := colornames.DimGray.Interpolate(colornames.DarkGrey, t)
 			pix := NewGridPixel(pos, col)
 			g.Add(pix)
@@ -677,8 +678,8 @@ func GlowingGridPixels(g *Grid) {
 		}
 	}
 
-    txt := NewGridText(gridSize.Div(2), colornames.OrangeRed, "SWARM")
-    g.Add(txt)
+	txt := NewGridText(gridSize.Div(2), colornames.OrangeRed, "SWARM")
+	g.Add(txt)
 
 	aTimel := NewTimeline(40 * time.Second)
 	aTimel.Add(10*time.Second, aGrpPurple)
@@ -766,7 +767,10 @@ func main() {
 	var sceneId int
 	var input string
 	var runInteractive bool
+	var local bool
+	var pixCtrl ledgrid.PixelClient
 
+	flag.BoolVar(&local, "local", defLocal, "Run on PixelController host")
 	flag.StringVar(&input, "scene", input, "no menu: direct play")
 	flag.BoolVar(&doLog, "log", doLog, "enable logging")
 	flag.Parse()
@@ -802,7 +806,13 @@ func main() {
 		{"Walking pixel", WalkingPixelOnGrid},
 	}
 
-	pixCtrl := ledgrid.NewNetPixelClient(pixelHost, pixelPort)
+	if local {
+		pixCtrl = ledgrid.NewLocalPixelClient(5333, "/dev/spidev0.0", 2_000_000)
+	} else {
+		pixCtrl = ledgrid.NewNetPixelClient(pixelHost, pixelPort)
+	}
+
+	// pixCtrl := ledgrid.NewNetPixelClient(pixelHost, pixelPort)
 	pixCtrl.SetGamma(gammaValue, gammaValue, gammaValue)
 	pixCtrl.SetMaxBright(255, 255, 255)
 
