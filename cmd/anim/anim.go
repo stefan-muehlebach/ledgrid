@@ -582,7 +582,7 @@ func GlowingPixels(ctrl *Canvas) {
 
 		pix := NewPixel(pos, col)
 		pixField[idx] = pix
-   		ctrl.Add(pix)
+		ctrl.Add(pix)
 
 		dur := time.Second + rand.N(400*time.Millisecond)
 		aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
@@ -623,52 +623,62 @@ func GlowingPixels(ctrl *Canvas) {
 }
 
 func MovingText(c *Canvas) {
-	tPos := ConvertPos(geom.Point{14.5, 4.5})
+	pos1 := ConvertPos(geom.Point{0, 15})
+    pos2 := ConvertPos(geom.Point{30, -6})
 
-	t := NewText(tPos, "Beni", colornames.OrangeRed)
-
-	aAngle := NewFloatAnimation(&t.Angle, 2*math.Pi, 4*time.Second)
-	aAngle.RepeatCount = AnimationRepeatForever
-
+	t := NewText(pos1, "Beni", colornames.LightSeaGreen)
 	c.Add(t)
-	aAngle.Start()
+
+    aPos := NewPositionAnimation(&t.Pos, pos2, 4*time.Second)
+    aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
+    aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
+    // aColor.AutoReverse = true
+    aGrp := NewGroup(aPos, aAngle, aColor)
+    aGrp.RepeatCount = AnimationRepeatForever
+    aGrp.Start()
+
+	// aAngle := NewFloatAnimation(&t.Angle, 2*math.Pi, 4*time.Second)
+	// aSize := NewFloatAnimation(&t.FontSize, ConvertLen(16.0), 5*time.Second)
+	// aSeq := NewSequence(aAngle, aSize)
+
+	// aSize.Start()
 }
 
 func GlowingGridPixels(g *Grid) {
-	for y := range g.ledGrid.Rect.Dy() {
-		for x := range g.ledGrid.Rect.Dx() {
-			pos := image.Point{x, y}
-			col := colornames.DimGray.Interpolate(colornames.DarkGrey, rand.Float64())
-			pix := NewGridPixel(pos, col)
-			g.Add(pix)
-
-        		dur := time.Second + rand.N(400*time.Millisecond)
-        		aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
-        		aAlpha.AutoReverse = true
-        		aAlpha.RepeatCount = AnimationRepeatForever
-        		aAlpha.Start()
-        }
-    }
-
 	aGrpPurple := NewGroup()
 	aGrpYellow := NewGroup()
 	aGrpGreen := NewGroup()
 
-    for _, obj := range g.ObjList {
-        if pix, ok := obj.(*GridPixel); ok {
-        		aColor := NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, rand.Float64()), 3*time.Second)
-        		aColor.AutoReverse = true
-        		aGrpPurple.Add(aColor)
+	for y := range g.ledGrid.Rect.Dy() {
+		for x := range g.ledGrid.Rect.Dx() {
+			pos := image.Point{x, y}
+            t := rand.Float64()
+			col := colornames.DimGray.Interpolate(colornames.DarkGrey, t)
+			pix := NewGridPixel(pos, col)
+			g.Add(pix)
 
-        		aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, rand.Float64()), 3*time.Second)
-        		aColor.AutoReverse = true
-        		aGrpYellow.Add(aColor)
+			dur := time.Second + rand.N(400*time.Millisecond)
+			aAlpha := NewAlphaAnimation(&pix.Color.A, 192, dur)
+			aAlpha.AutoReverse = true
+			aAlpha.RepeatCount = AnimationRepeatForever
+			aAlpha.Start()
 
-        		aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, rand.Float64()), 3*time.Second)
-        		aColor.AutoReverse = true
-        		aGrpGreen.Add(aColor)
-        }
+			aColor := NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, t), 3*time.Second)
+			aColor.AutoReverse = true
+			aGrpPurple.Add(aColor)
+
+			aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, t), 3*time.Second)
+			aColor.AutoReverse = true
+			aGrpYellow.Add(aColor)
+
+			aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, t), 3*time.Second)
+			aColor.AutoReverse = true
+			aGrpGreen.Add(aColor)
+		}
 	}
+
+    txt := NewGridText(gridSize.Div(2), colornames.OrangeRed, "SWARM")
+    g.Add(txt)
 
 	aTimel := NewTimeline(40 * time.Second)
 	aTimel.Add(10*time.Second, aGrpPurple)
@@ -698,19 +708,20 @@ func RandomGridPixels(g *Grid) {
 }
 
 func TextOnGrid(g *Grid) {
-	basePt := image.Point{10, 9}
+	basePt := image.Point{0, 5}
 	baseColor1 := colornames.SkyBlue
 
-    pix := NewGridPixel(basePt, colornames.OrangeRed)
-	txt := NewGridText(basePt, baseColor1, " ")
-	g.Add(txt, pix)
+	// pix := NewGridPixel(basePt, colornames.OrangeRed)
+	txt1 := NewGridText(basePt, baseColor1, "Stefan")
+	txt2 := NewGridText(basePt.Add(image.Point{0, 5}), baseColor1, "und Beni")
+	g.Add(txt1, txt2)
 
-	go func() {
-		for ch := 0x20; ch < 0x7f; ch++ {
-			txt.Text = fmt.Sprintf("%c", ch)
-			time.Sleep(1 * time.Second)
-		}
-	}()
+	// go func() {
+	// 	for ch := 0x20; ch < 0x7f; ch++ {
+	// 		txt.Text = fmt.Sprintf("%c", ch)
+	// 		time.Sleep(1 * time.Second)
+	// 	}
+	// }()
 }
 
 func WalkingPixelOnGrid(g *Grid) {
@@ -719,16 +730,16 @@ func WalkingPixelOnGrid(g *Grid) {
 	pix := NewGridPixel(pos, col)
 	g.Add(pix)
 
-    go func() {
-        idx := 0
-        for {
-            col := idx % width
-            row := idx / width
-            pix.Pos = image.Point{col, row}
-            time.Sleep(time.Second / 5)
-            idx++
-        }
-    }()
+	go func() {
+		idx := 0
+		for {
+			col := idx % width
+			row := idx / width
+			pix.Pos = image.Point{col, row}
+			time.Sleep(time.Second / 5)
+			idx++
+		}
+	}()
 }
 
 //----------------------------------------------------------------------------
@@ -795,11 +806,11 @@ func main() {
 	pixCtrl.SetGamma(gammaValue, gammaValue, gammaValue)
 	pixCtrl.SetMaxBright(255, 255, 255)
 
-    // modLayout := ledgrid.ModuleLayout{
-    //     {ledgrid.Module{ledgrid.ModLR, ledgrid.Rot270}},
-    //     {ledgrid.Module{ledgrid.ModLR, ledgrid.Rot270}},
-    //     {ledgrid.Module{ledgrid.ModRL, ledgrid.Rot000}},
-    // }
+	// modLayout := ledgrid.ModuleLayout{
+	//     {ledgrid.Module{ledgrid.ModLR, ledgrid.Rot270}},
+	//     {ledgrid.Module{ledgrid.ModLR, ledgrid.Rot270}},
+	//     {ledgrid.Module{ledgrid.ModRL, ledgrid.Rot000}},
+	// }
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 	canvas := NewCanvas(pixCtrl, ledGrid)
 	canvas.Stop()

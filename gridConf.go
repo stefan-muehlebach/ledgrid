@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"log"
@@ -13,7 +14,7 @@ import (
 // korrekte Verkabelung von groesseren LED-Panels ein wenig "proebeln".
 // Urspruenglich war vorgesehen, diese Konfiguration durch ein aufrufendes
 // Programm, resp. einen Benutzer vornehmen zu lassen. Mittlerweile ist klar,
-// dass die gesamte Konfiguration automatisch erstellt werden kann und muss!
+// dass die optimale Anordnung der Module automatisch erstellt werden sollte.
 // Trotzdem muss ein Anwender die Idee hinter dieser Konfiguration verstehen -
 // schliesslich ist er für die Erstellung der Module und deren Verkabelung
 // zustaendig.
@@ -34,18 +35,46 @@ import (
 //
 // Man benoetigt zwei Modultypen, die mit "LR", resp. "RL" bezeichnet werden.
 // Bei LR" beginnt die Verkabelung links oben und endet rechts oben; bei "RL"
-// beginnt die Verkabelung rechts oben und endet links oben. Jedes Modul kann
-// in 4 Positionen (0, 90, 180, 270 Grad) ausgerichtet werden.
+// beginnt die Verkabelung rechts oben und endet links oben. Mit 'I' und 'O'
+// sind Input und Output der Lichterkette gekennzeichnet.
+//
+//   +--------+   +--------+
+//   |I      O|   |O      I|
+//   |   LR   |   |   RL   |
+//   |        |   |        |
+//   +--------+   +--------+
+//
+// Jedes Modul kann in 4 Positionen (0, 90, 180, 270 Grad) ausgerichtet werden.
 // Grundzustand ist 0 Grad, d.h. Anfang und Ende der Lichterkette sind oben.
 // Die Drehungen sind in math. positiver Richtung zu verstehen.
 //
-// Die oben gezeigte Konfiguration laesst sich damit wie folgt darstellen:
+//   +--------+   +--------+
+//   |O       |   |        |
+//   |  LR:90 |   | RL:180 |
+//   |I       |   |I      O|
+//   +--------+   +--------+
 //
-//    LR:0   LR:0   RL:90
-//    LR:180 LR:180 RL:90
-//    LR:0   LR:0   RL:90
+// Eine rechteckige, flaechig deckende und beliebig vergroesserbare
+// Konfiguration der Module erhaelt man nach folgendem Muster.
+//
+//   +--------+--------+...+--------+
+//   |I      O|I      O|   |I       |
+//   |  LR:0  |  LR:0  |   |  RL:90 |
+//   |        |        |   |O       |
+//   +--------+--------+...+--------+
+//   |        |        |   |I       |
+//   | LR:180 | LR:180 |   |  RL:90 |
+//   |O      I|O      I|   |O       |
+//   +--------+--------+...+--------+
+//   |I      O|I      O|   |I       |
+//   |  LR:0  |  LR:0  |   |  RL:90 |
+//   |        |        |   |O       |
+//   +--------+--------+...+--------+
+//                         .        .
 
-// Die Anzahl LED's pro Modul in Breite und Hoehe.
+// Die Anzahl LED's pro Modul in Breite und Hoehe (nicht quadratische Module
+// sind theoretisch moeglich, wurden jedoch noch nie gebaut und folglich nicht
+// getestet).
 var (
 	ModuleSize = image.Point{10, 10}
 )
@@ -121,8 +150,8 @@ func (r *RotationType) Set(v string) error {
 	return nil
 }
 
-// Ein konkretes Modul besteht aus einem Modul-Typ (LR oder RL) der sich in
-// einer bestimmten Lage (Rotation) befindet.
+// Ein konkretes Modul wird durch den Modul-Typ (LR oder RL) und die Rotation
+// beschrieben.
 type Module struct {
 	Type ModuleType
 	Rot  RotationType
@@ -135,19 +164,126 @@ func (m Module) String() string {
 	return fmt.Sprintf("%v:%v", m.Type, m.Rot)
 }
 
-// Module implementier das Scanner-Interface, ist also in der Lage, via
+// Module implementiert das Scanner-Interface, ist also in der Lage, via
 // Funktion aus der Scanf-Familie eine konkrete Modul-Spezifikation zu lesen.
 func (m *Module) Scan(state fmt.ScanState, verb rune) error {
-	//log.Printf("In Module.Scan()")
 	tok, err := state.Token(true, nil)
 	if err != nil {
 		return err
 	}
-	//log.Printf("   tokens: %s", tok)
 	slc := strings.Split(string(tok), ":")
 	m.Type.Set(slc[0])
 	m.Rot.Set(slc[1])
 	return nil
+}
+
+// Mit diesem Typ wird festgehalten, welches Modul (Typ und Ausrichtung) sich
+// an welcher Stelle (Col, Row) innerhalb des gesamten Panels befindet.
+type ModulePosition struct {
+	Col, Row int
+	Mod      Module
+}
+
+// Der Typ ModuleConfig schliesslich dient dazu, eine komplette
+// Modul-Konfiguration zu speichern. Die Reihenfolge der Module ist relevant
+// und entspricht der Verkabelung (d.h. die Einspeisung beginnt beim Modul
+// an Position [0], geht dann zum Modul an Position [1] weiter, etc.)
+type ModuleConfig []ModulePosition
+
+func DefaultModuleConfig(size image.Point) ModuleConfig {
+	var col, row int
+	var conf ModuleConfig
+	var mod Module
+	var err error
+
+	if size.X < ModuleSize.X || size.Y < ModuleSize.Y ||
+		size.X%ModuleSize.X != 0 || size.Y%ModuleSize.Y != 0 {
+		log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleSize)
+	}
+	cols, rows := size.X/ModuleSize.X, size.Y/ModuleSize.Y
+	conf = make([]ModulePosition, 0)
+
+	for row = range rows {
+		for i := range cols {
+			if row%2 == 0 {
+				col = i
+				mod = Module{ModLR, Rot000}
+			} else {
+				col = cols - i - 1
+				mod = Module{ModLR, Rot180}
+			}
+			if col == cols-1 {
+				mod = Module{ModRL, Rot090}
+			}
+			conf, err = conf.Append(col, row, mod)
+			if err != nil {
+				log.Fatalf("Couldn't append module: %v", err)
+			}
+		}
+	}
+	return conf
+}
+
+// Fuegt der Modul-Konfiguration hinter c ein weiteres Modul hinzu und (falls
+// erfolgreich) retourniert die neue Modul-Konfiguration. Falls ein Fehler
+// erkannt wird, wird die alte Modul-Konfiguration retourniert und der zweite
+// Rueckgabewert beschreibt die Art des Fehlers.
+func (conf ModuleConfig) Append(col, row int, mod Module) (ModuleConfig, error) {
+	modPos := ModulePosition{col, row, mod}
+	if len(conf) != 0 {
+		for _, pos := range conf {
+			if pos.Col == col && pos.Row == row {
+				return conf, errors.New(fmt.Sprintf("Position (%d,%d) is already occupied", col, row))
+			}
+		}
+		lastModPos := conf[len(conf)-1]
+		if abs(lastModPos.Col-col)+abs(lastModPos.Row-row) != 1 {
+			return conf, errors.New(fmt.Sprintf("Module %v is not adjacent to last module %v", modPos, lastModPos))
+		}
+	}
+	return append(conf, modPos), nil
+}
+
+// Retourniert die Groesse des gesamten Panels als Anzahl Module in X-, resp.
+// Y-Richtung.
+func (conf ModuleConfig) Size() image.Point {
+	size := image.Point{}
+	for _, pos := range conf {
+		size.X = max(size.X, pos.Col+1)
+		size.Y = max(size.Y, pos.Row+1)
+	}
+	return size
+}
+
+// Mit dieser Struktur wird die Koordinate einer LED auf dem Panel auf den
+// Index dieser LED innerhalb der Lichterkette gemappt.
+type IndexMap [][]int
+
+// Erstellt ein Feld (Slice of slice) fuer die direkte Uebersetzung von
+// Pixel-Koordinaten zur Position (Index) innerhalb der Lichterkette.
+func (conf ModuleConfig) IndexMap() IndexMap {
+	var idxMap IndexMap
+
+	size := conf.Size()
+	idxMap = make([][]int, size.X*ModuleSize.X)
+	for col := range idxMap {
+		idxMap[col] = make([]int, size.Y*ModuleSize.Y)
+	}
+	idx := 0
+	for _, pos := range conf {
+		pt := image.Point{pos.Col * ModuleSize.X, pos.Row * ModuleSize.Y}
+		mod := pos.Mod
+		idx = idxMap.Append(mod, pt, idx)
+	}
+	return idxMap
+}
+
+func abs[T ~int|~float64](i T) T {
+	if i < 0 {
+		return -i
+	} else {
+		return i
+	}
 }
 
 // Das Zusamenfuehren von mehreren Modulen zu einem LED-Grid wird ueber den
@@ -190,10 +326,6 @@ func DefaultModuleLayout(size image.Point) ModuleLayout {
 	}
 	return layout
 }
-
-// Mit dieser Struktur wird die Koordinate einer LED auf dem Panel auf den
-// Index dieser LED innerhalb der Lichterkette gemappt.
-type IndexMap [][]int
 
 // Erstellt ein Feld (Slice of slice) fuer die direkte Uebersetzung von
 // Pixel-Koordinaten zur Position (Index) innerhalb der Lichterkette.

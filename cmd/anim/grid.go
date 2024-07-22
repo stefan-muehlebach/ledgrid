@@ -31,6 +31,7 @@ type Grid struct {
 	animPit                          time.Time
 	logFile                          io.Writer
 	animWatch, paintWatch, sendWatch *Stopwatch
+	numThreads                       int
 }
 
 func NewGrid(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Grid {
@@ -125,12 +126,14 @@ func (c *Grid) Continue() {
 // Hier sind wichtige aber private Methoden, darum in Kleinbuchstaben und
 // darum noch sehr wenig Kommentare.
 func (c *Grid) backgroundThread() {
-	numCores := runtime.NumCPU()
-	animChan := make(chan int, queueSize)
-	doneChan := make(chan bool, queueSize)
+	c.numThreads = runtime.NumCPU()
+	// animChan := make(chan int, queueSize)
+	startChan := make(chan int) //, queueSize)
+	doneChan := make(chan bool) //, queueSize)
 
-	for range numCores {
-		go c.animationThread(animChan, doneChan)
+	for range c.numThreads {
+		// go c.animationThread(animChan, doneChan)
+		go c.animationUpdater(startChan, doneChan)
 	}
 
 	lastPit := time.Now()
@@ -143,21 +146,29 @@ func (c *Grid) backgroundThread() {
 		if c.quit {
 			break
 		}
+
 		c.animWatch.Start()
-		numAnims := 0
-		c.animMutex.RLock()
-		for i, anim := range c.AnimList {
-			if anim == nil || anim.IsStopped() {
-				continue
-			}
-			numAnims++
-			animChan <- i
+		for id := range c.numThreads {
+			startChan <- id
 		}
-		c.animMutex.RUnlock()
-		for range numAnims {
+		for range c.numThreads {
 			<-doneChan
 		}
 		c.animWatch.Stop()
+
+		// numAnims := 0
+		// c.animMutex.RLock()
+		// for i, anim := range c.AnimList {
+		// 	if anim == nil || anim.IsStopped() {
+		// 		continue
+		// 	}
+		// 	numAnims++
+		// 	animChan <- i
+		// }
+		// c.animMutex.RUnlock()
+		// for range numAnims {
+		// 	<-doneChan
+		// }
 
 		c.paintWatch.Start()
 		c.ledGrid.Clear(colornames.Black)
@@ -173,15 +184,30 @@ func (c *Grid) backgroundThread() {
 		c.sendWatch.Stop()
 	}
 	close(doneChan)
-	close(animChan)
+	close(startChan)
 }
 
-func (c *Grid) animationThread(animChan <-chan int, doneChan chan<- bool) {
-	for animId := range animChan {
-		c.AnimList[animId].Update(c.animPit)
-		// if !c.AnimList[animId].Update(c.animPit) {
-		//     c.AnimList[animId] = nil
-		// }
+// func (c *Grid) animationThread(animChan <-chan int, doneChan chan<- bool) {
+// 	for animId := range animChan {
+// 		c.AnimList[animId].Update(c.animPit)
+// 		// if !c.AnimList[animId].Update(c.animPit) {
+// 		//     c.AnimList[animId] = nil
+// 		// }
+// 		doneChan <- true
+// 	}
+// }
+
+func (c *Grid) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
+	for id := range startChan {
+		c.animMutex.RLock()
+		for i := id; i < len(c.AnimList); i += c.numThreads {
+			anim := c.AnimList[i]
+			if anim == nil || anim.IsStopped() {
+				continue
+			}
+			anim.Update(c.animPit)
+		}
+		c.animMutex.RUnlock()
 		doneChan <- true
 	}
 }
@@ -224,19 +250,23 @@ type GridText struct {
 	// Alpha  float64
 	Text   string
 	drawer *font.Drawer
+	rect   fixed.Rectangle26_6
+	dp     fixed.Point26_6
 }
 
 func NewGridText(pos image.Point, col ledgrid.LedColor, text string) *GridText {
 	t := &GridText{Pos: pos, Color: col, Text: text}
 	t.drawer = &font.Drawer{
-		Face: ledgrid.Face5x7,
+		Face: ledgrid.Face3x5,
 	}
+	t.rect, _ = t.drawer.BoundString(text)
+	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
 	return t
 }
 
 func (t *GridText) Draw(lg *ledgrid.LedGrid) {
 	t.drawer.Dst = lg
 	t.drawer.Src = image.NewUniform(t.Color)
-	t.drawer.Dot = fixed.P(t.Pos.X, t.Pos.Y)
+	t.drawer.Dot = fixed.P(t.Pos.X, t.Pos.Y).Sub(t.dp)
 	t.drawer.DrawString(t.Text)
 }

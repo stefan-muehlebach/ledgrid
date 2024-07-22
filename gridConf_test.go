@@ -72,6 +72,72 @@ func TestIndexMap(t *testing.T) {
     }
 }
 
+func TestDefaultModuleConfig(t *testing.T) {
+    conf := DefaultModuleConfig(image.Point{20, 20})
+    t.Logf("module config: %v", conf)
+    idxMap := conf.IndexMap()
+    t.Logf("  idx( 0, 0): %d", idxMap[0][0]/3)
+    t.Logf("  idx(19, 0): %d", idxMap[19][0]/3)
+    t.Logf("  idx(19,19): %d", idxMap[19][19]/3)
+    t.Logf("  idx( 0,19): %d", idxMap[0][19]/3)
+}
+
+func TestModuleConfig(t *testing.T) {
+    var modConf ModuleConfig
+    var err error
+
+    modConf, err = modConf.Append(0, 0, Module{ModLR, Rot000})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(1, 0, Module{ModLR, Rot000})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(2, 0, Module{ModLR, Rot000})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(3, 0, Module{ModRL, Rot090})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(3, 1, Module{ModRL, Rot090})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(2, 1, Module{ModLR, Rot180})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(1, 1, Module{ModLR, Rot180})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(0, 1, Module{ModLR, Rot180})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(0, 2, Module{ModLR, Rot000})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(1, 2, Module{ModLR, Rot000})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(2, 2, Module{ModLR, Rot000})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+    modConf, err = modConf.Append(3, 2, Module{ModRL, Rot090})
+    if err != nil {
+        t.Errorf("%v", err)
+    }
+
+    t.Logf("module configuration: %v", modConf)
+}
+
 // func TestPixOffset(t *testing.T) {
 // 	for _, rec := range coordList {
 // 		pt := rec.coord

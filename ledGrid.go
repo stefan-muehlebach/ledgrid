@@ -35,7 +35,7 @@ type LedGrid struct {
 
 // Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
 // Panels.
-func NewLedGrid(size image.Point, layout ModuleLayout) *LedGrid {
+func NewLedGrid(size image.Point, modConf ModuleConfig) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = image.Rectangle{Max: size}
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
@@ -53,11 +53,11 @@ func NewLedGrid(size image.Point, layout ModuleLayout) *LedGrid {
     // }
 
     // Autom. Formatwahl
-    if layout == nil {
-        layout = DefaultModuleLayout(g.Rect.Size())
+    if modConf == nil {
+        modConf = DefaultModuleConfig(g.Rect.Size())
     }
 
-	g.idxMap = layout.IndexMap()
+	g.idxMap = modConf.IndexMap()
 	for _, defectPos := range defectPosList {
 		g.idxMap.MarkDefect(defectPos)
 	}

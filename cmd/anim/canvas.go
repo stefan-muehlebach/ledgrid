@@ -19,7 +19,6 @@ import (
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
 	"golang.org/x/image/draw"
-	"golang.org/x/image/font"
 )
 
 var (
@@ -64,6 +63,7 @@ type Canvas struct {
 	animPit                          time.Time
 	logFile                          io.Writer
 	animWatch, paintWatch, sendWatch *Stopwatch
+	numThreads                       int
 }
 
 func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
@@ -76,7 +76,7 @@ func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
 	c.gc = gg.NewContextForRGBA(c.canvas)
 	c.ObjList = make([]CanvasObject, 0)
 	c.objMutex = &sync.RWMutex{}
-	c.scaler = draw.BiLinear.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
+	c.scaler = draw.CatmullRom.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
 	c.ticker = time.NewTicker(refreshRate)
 	c.AnimList = make([]Animation, 0)
 	c.animMutex = &sync.RWMutex{}
@@ -199,13 +199,16 @@ func (c *Canvas) Read(r io.Reader) {
 // Hier sind wichtige aber private Methoden, darum in Kleinbuchstaben und
 // darum noch sehr wenig Kommentare.
 func (c *Canvas) backgroundThread() {
-	backColor := colornames.Black
-	numCores := runtime.NumCPU()
-	animChan := make(chan int, queueSize)
-	doneChan := make(chan bool, queueSize)
+	// backColor := colornames.Black
+	c.numThreads = runtime.NumCPU()
+	startChan := make(chan int) //, queueSize)
+	doneChan := make(chan bool) //, queueSize)
+	// numCores := runtime.NumCPU()
+	// animChan := make(chan int, queueSize)
+	// doneChan := make(chan bool, queueSize)
 
-	for range numCores {
-		go c.animationThread(animChan, doneChan)
+	for range c.numThreads {
+		go c.animationUpdater(startChan, doneChan)
 	}
 
 	lastPit := time.Now()
@@ -218,50 +221,76 @@ func (c *Canvas) backgroundThread() {
 		if c.quit {
 			break
 		}
-		c.animWatch.Start()
-		numAnims := 0
-		c.animMutex.RLock()
-		for i, anim := range c.AnimList {
-			if anim == nil || anim.IsStopped() {
-				continue
-			}
-			numAnims++
-			animChan <- i
+
+    		c.animWatch.Start()
+		for id := range c.numThreads {
+			startChan <- id
 		}
-		c.animMutex.RUnlock()
-		for range numAnims {
+		for range c.numThreads {
 			<-doneChan
 		}
 		c.animWatch.Stop()
 
+		// c.animWatch.Start()
+		// numAnims := 0
+		// c.animMutex.RLock()
+		// for i, anim := range c.AnimList {
+		// 	if anim == nil || anim.IsStopped() {
+		// 		continue
+		// 	}
+		// 	numAnims++
+		// 	animChan <- i
+		// }
+		// c.animMutex.RUnlock()
+		// for range numAnims {
+		// 	<-doneChan
+		// }
+		// c.animWatch.Stop()
+
 		c.paintWatch.Start()
-		c.gc.SetFillColor(backColor)
+		c.gc.SetFillColor(colornames.Black)
 		c.gc.Clear()
 		c.objMutex.RLock()
 		for _, obj := range c.ObjList {
 			obj.Draw(c.gc)
 		}
 		c.objMutex.RUnlock()
+		c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
 		c.paintWatch.Stop()
 
 		c.sendWatch.Start()
-		c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
 		c.pixCtrl.Draw(c.ledGrid)
 		c.sendWatch.Stop()
 	}
 	close(doneChan)
-	close(animChan)
+	close(startChan)
 }
 
-func (c *Canvas) animationThread(animChan <-chan int, doneChan chan<- bool) {
-	for animId := range animChan {
-		c.AnimList[animId].Update(c.animPit)
-		// if !c.AnimList[animId].Update(c.animPit) {
-		//     c.AnimList[animId] = nil
-		// }
+// func (c *Canvas) animationThread(animChan <-chan int, doneChan chan<- bool) {
+// 	for animId := range animChan {
+// 		c.AnimList[animId].Update(c.animPit)
+// 		// if !c.AnimList[animId].Update(c.animPit) {
+// 		//     c.AnimList[animId] = nil
+// 		// }
+// 		doneChan <- true
+// 	}
+// }
+
+func (c *Canvas) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
+	for id := range startChan {
+		c.animMutex.RLock()
+		for i := id; i < len(c.AnimList); i += c.numThreads {
+			anim := c.AnimList[i]
+			if anim == nil || anim.IsStopped() {
+				continue
+			}
+			anim.Update(c.animPit)
+		}
+		c.animMutex.RUnlock()
 		doneChan <- true
 	}
 }
+
 
 // Damit werden die jeweiligen Graphik-Objekte beim Package gob registriert,
 // um sie binaer zu exportieren.
@@ -305,21 +334,27 @@ type CanvasObject interface {
 }
 
 var (
-	defFont     = fonts.Seaford
-	defFontSize = ConvertLen(10.0)
+	defFont     = fonts.SeafordBold
+	defFontSize = ConvertLen(12.0)
 )
 
 type Text struct {
-	Pos   geom.Point
-	Angle float64
-	Color ledgrid.LedColor
-	Face  font.Face
-	text  string
+	Pos      geom.Point
+	Angle    float64
+	Color    ledgrid.LedColor
+	Font     *fonts.Font
+	FontSize float64
+	// FontFace font.Face
+	Text string
+	// drawer   *font.Drawer
 }
 
 func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
-	t := &Text{Pos: pos, Color: color, Face: fonts.NewFace(defFont, defFontSize),
-		text: text}
+	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
+		Text: text}
+	// t.drawer = &font.Drawer{
+	//     Face: fonts.NewFace(defFont, defFontSize),
+	// }
 	return t
 }
 
@@ -330,9 +365,41 @@ func (t *Text) Draw(gc *gg.Context) {
 		defer gc.Pop()
 	}
 	gc.SetStrokeColor(t.Color)
-	gc.SetFontFace(t.Face)
-	gc.DrawStringAnchored(t.text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
+	gc.SetFontFace(fonts.NewFace(t.Font, t.FontSize))
+	gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
+
+	// rect, _ := t.drawer.BoundString(t.Text)
+	// dp := rect.Max.Sub(rect.Min).Div(fixed.I(2))
+	// dp.Y = -dp.Y
+
+	// t.drawer.Dst = gc.Image().(*image.RGBA)
+	// t.drawer.Src = image.NewUniform(t.Color)
+	// t.drawer.Dot = coord2fix(t.Pos.X, t.Pos.Y).Sub(dp)
+	// t.drawer.DrawString(t.Text)
 }
+
+// Es folgen Hilfsfunktionen fuer die schnelle Umrechnung zwischen Fliess-
+// und Fixkommazahlen sowie den geometrischen Typen, die auf Fixkommazahlen
+// aufgebaut sind.
+// func rect2fix(r image.Rectangle) fixed.Rectangle26_6 {
+// 	return fixed.R(r.Min.X, r.Min.Y, r.Max.X, r.Max.Y)
+// }
+
+// func coord2fix(x, y float64) fixed.Point26_6 {
+// 	return fixed.Point26_6{X: float2fix(x), Y: float2fix(y)}
+// }
+
+// func fix2coord(p fixed.Point26_6) (x, y float64) {
+// 	return fix2float(p.X), fix2float(p.Y)
+// }
+
+// func float2fix(x float64) fixed.Int26_6 {
+// 	return fixed.Int26_6(math.Round(x * 64))
+// }
+
+// func fix2float(x fixed.Int26_6) float64 {
+// 	return float64(x) / 64.0
+// }
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
 // Position des Mittelpunktes und mit Size ist die Breite und Hoehe des
