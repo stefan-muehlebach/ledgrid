@@ -124,8 +124,6 @@ func ReadGroupTest(ctrl *Canvas) {
 }
 
 func SequenceTest(ctrl *Canvas) {
-	// ctrl.Stop()
-
 	rPos := ConvertPos(geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5))
 	rSize1 := ConvertSize(geom.NewPointIMG(gridSize).SubXY(1, 1))
 	rSize2 := ConvertSize(geom.Point{5.0, 3.0})
@@ -136,19 +134,18 @@ func SequenceTest(ctrl *Canvas) {
 	aSize1 := NewSizeAnimation(&r.Size, rSize2, time.Second)
 	aColor1 := NewColorAnimation(&r.BorderColor, colornames.OrangeRed, time.Second/2)
 	aColor1.AutoReverse = true
-	aColor1.RepeatCount = 2
-	aColor2 := NewColorAnimation(&r.BorderColor, colornames.OrangeRed, time.Second/2)
+	aColor2 := NewColorAnimation(&r.BorderColor, colornames.Crimson, time.Second/2)
+	aColor2.AutoReverse = true
+	aColor3 := NewColorAnimation(&r.BorderColor, colornames.Coral, time.Second/2)
+	aColor3.AutoReverse = true
+	aColor4 := NewColorAnimation(&r.BorderColor, colornames.FireBrick, time.Second/2)
 	aSize2 := NewSizeAnimation(&r.Size, rSize1, time.Second)
 	aSize2.Cont = true
-	aColor3 := NewColorAnimation(&r.BorderColor, colornames.SkyBlue, time.Second)
-	aColor3.Cont = true
+	aColor5 := NewColorAnimation(&r.BorderColor, colornames.SkyBlue, time.Second)
+	aColor5.Cont = true
 
-	aSeq := NewSequence(aSize1, aColor1, aColor2, aSize2, aColor3)
-	// aSeq.duration = 8 * time.Second
+	aSeq := NewSequence(aSize1, aColor1, aColor2, aColor3, aColor4, aSize2, aColor5)
 	aSeq.RepeatCount = AnimationRepeatForever
-
-	// ctrl.Save("gobs/SequenceTest.gob")
-	// ctrl.Continue()
 	aSeq.Start()
 }
 
@@ -169,10 +166,6 @@ func TimelineTest(ctrl *Canvas) {
 	aAngle2 := NewFloatAnimation(&r1.Angle, 0.0, time.Second)
 	aAngle2.Cont = true
 
-	aAngle3 := NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
-	aAngle4 := NewFloatAnimation(&r3.Angle, 0.0, time.Second)
-	aAngle4.Cont = true
-
 	aColor1 := NewColorAnimation(&r1.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
 	aColor1.AutoReverse = true
 	aColor1.RepeatCount = 3
@@ -180,27 +173,46 @@ func TimelineTest(ctrl *Canvas) {
 	aColor3 := NewColorAnimation(&r1.BorderColor, colornames.GreenYellow, 500*time.Millisecond)
 	aColor3.Cont = true
 
-	aColor4 := NewColorAnimation(&r3.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
+    aPos1 := NewPositionAnimation(&r1.Pos, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+    aPos1.AutoReverse = true
+
+    aAngle3 := NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
+	aAngle4 := NewFloatAnimation(&r3.Angle, 0.0, time.Second)
+	aAngle4.Cont = true
+
+	aColor4 := NewColorAnimation(&r3.BorderColor, colornames.DarkOrange, 200*time.Millisecond)
 	aColor4.AutoReverse = true
 	aColor4.RepeatCount = 3
 	aColor5 := NewColorAnimation(&r3.BorderColor, colornames.Purple, 500*time.Millisecond)
 	aColor6 := NewColorAnimation(&r3.BorderColor, colornames.SkyBlue, 500*time.Millisecond)
 	aColor6.Cont = true
 
+    aPos2 := NewPositionAnimation(&r3.Pos, r2.Pos.AddXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+    aPos2.AutoReverse = true
+
+    aColor7 := NewColorAnimation(&r2.BorderColor, colornames.Cornsilk, 500*time.Millisecond)
+    aColor7.AutoReverse = true
+    aBorder := NewFloatAnimation(&r2.BorderWidth, ConvertLen(3.0), 500*time.Millisecond)
+    aBorder.AutoReverse = true
+
 	tl := NewTimeline(5 * time.Second)
 	tl.RepeatCount = AnimationRepeatForever
+
 	// Timeline positions for the first rectangle
 	tl.Add(300*time.Millisecond, aColor1)
 	tl.Add(1800*time.Millisecond, aAngle1)
-	tl.Add(2300*time.Millisecond, aColor2)
+	tl.Add(2300*time.Millisecond, aColor2, aPos1)
 	tl.Add(2900*time.Millisecond, aAngle2)
 	tl.Add(3400*time.Millisecond, aColor3)
+
 	// Timeline positions for the second rectangle
 	tl.Add(500*time.Millisecond, aColor4)
 	tl.Add(2000*time.Millisecond, aAngle3)
-	tl.Add(2500*time.Millisecond, aColor5)
+	tl.Add(2500*time.Millisecond, aColor5, aPos2)
 	tl.Add(3100*time.Millisecond, aAngle4)
 	tl.Add(3600*time.Millisecond, aColor6)
+
+    tl.Add(2400*time.Millisecond, aColor7, aBorder)
 
 	tl.Start()
 }
@@ -609,20 +621,68 @@ func GlowingPixels(ctrl *Canvas) {
 	aTimel.Start()
 }
 
+var (
+    pts = []geom.Point{
+        ConvertPos(geom.Point{0, 0}),
+        ConvertPos(geom.Point{0, height}),
+        ConvertPos(geom.Point{width, height}),
+        ConvertPos(geom.Point{width, 0}),
+        // ConvertPos(geom.Point{-11, -6}),
+        // ConvertPos(geom.Point{-11, height+1}),
+        // ConvertPos(geom.Point{width+10, height+1}),
+        // ConvertPos(geom.Point{width+10, -6}),
+    }
+    lastP0 = 0
+)
+
+func randPoint() geom.Point {
+    p0 := rand.IntN(len(pts))
+    for p0 == lastP0 {
+        p0 = rand.IntN(len(pts))
+    }
+    lastP0 = p0
+    p1 := (p0 + 1) % len(pts)
+
+    return pts[p0].Interpolate(pts[p1], rand.Float64())
+}
+
 func MovingText(c *Canvas) {
-	pos1 := ConvertPos(geom.Point{0, height+5.0})
-	pos2 := ConvertPos(geom.Point{width, -6})
 
-	t := NewText(pos1, "Beni", colornames.LightSeaGreen)
-	c.Add(t)
+	t1 := NewText(randPoint(), "Beni", colornames.LightSeaGreen)
+    t2 := NewText(randPoint(), "Stefan", colornames.YellowGreen)
+	c.Add(t1, t2)
 
-	aPos := NewPositionAnimation(&t.Pos, pos2, 4*time.Second)
-	aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
-	aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
+	aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 4*time.Second)
+    aPos1.ValFunc = randPoint
+    aPos1.RepeatCount = AnimationRepeatForever
+    aPos1.Cont = true
+
+    	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
+    aPos2.ValFunc = randPoint
+    aPos2.RepeatCount = AnimationRepeatForever
+    aPos2.Cont = true
+
+    aAngle1 := NewFloatAnimation(&t1.Angle, 0.0, 3*time.Second)
+    aAngle1.ValFunc = RandFloat(math.Pi/2.0, math.Pi)
+    aAngle1.AutoReverse = true
+    aAngle1.RepeatCount = AnimationRepeatForever
+
+    aAngle2 := NewFloatAnimation(&t2.Angle, 0.0, 4*time.Second)
+    aAngle2.ValFunc = RandFloat(math.Pi/6.0, math.Pi/2.0)
+    aAngle2.AutoReverse = true
+    aAngle2.RepeatCount = AnimationRepeatForever
+
+    aAngle1.Start()
+    aAngle2.Start()
+    aPos1.Start()
+    aPos2.Start()
+
+	// aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
+	// aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
 	// aColor.AutoReverse = true
-	aGrp := NewGroup(aPos, aAngle, aColor)
-	aGrp.RepeatCount = AnimationRepeatForever
-	aGrp.Start()
+	// aGrp := NewGroup(aPos) //, aAngle, aColor)
+	// aGrp.RepeatCount = AnimationRepeatForever
+	// aGrp.Start()
 
 	// aAngle := NewFloatAnimation(&t.Angle, 2*math.Pi, 4*time.Second)
 	// aSize := NewFloatAnimation(&t.FontSize, ConvertLen(16.0), 5*time.Second)

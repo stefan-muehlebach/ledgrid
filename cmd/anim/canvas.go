@@ -1,6 +1,7 @@
 package main
 
 import (
+	"golang.org/x/image/font"
 	"encoding/gob"
 	"fmt"
 	"image"
@@ -222,7 +223,7 @@ func (c *Canvas) backgroundThread() {
 			break
 		}
 
-    		c.animWatch.Start()
+		c.animWatch.Start()
 		for id := range c.numThreads {
 			startChan <- id
 		}
@@ -291,7 +292,6 @@ func (c *Canvas) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
 	}
 }
 
-
 // Damit werden die jeweiligen Graphik-Objekte beim Package gob registriert,
 // um sie binaer zu exportieren.
 func init() {
@@ -345,12 +345,14 @@ type Text struct {
 	Color    ledgrid.LedColor
 	Font     *fonts.Font
 	FontSize float64
-	Text string
+	Text     string
+    fontFace font.Face
 }
 
 func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
 		Text: text}
+    t.fontFace = fonts.NewFace(t.Font, t.FontSize)
 	return t
 }
 
@@ -361,7 +363,7 @@ func (t *Text) Draw(gc *gg.Context) {
 		defer gc.Pop()
 	}
 	gc.SetStrokeColor(t.Color)
-	gc.SetFontFace(fonts.NewFace(t.Font, t.FontSize))
+	gc.SetFontFace(t.fontFace)
 	gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
 }
 
