@@ -338,23 +338,19 @@ var (
 	defFontSize = ConvertLen(12.0)
 )
 
+// Zur Darstellung von beliebigem Text.
 type Text struct {
 	Pos      geom.Point
 	Angle    float64
 	Color    ledgrid.LedColor
 	Font     *fonts.Font
 	FontSize float64
-	// FontFace font.Face
 	Text string
-	// drawer   *font.Drawer
 }
 
 func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
 		Text: text}
-	// t.drawer = &font.Drawer{
-	//     Face: fonts.NewFace(defFont, defFontSize),
-	// }
 	return t
 }
 
@@ -367,15 +363,6 @@ func (t *Text) Draw(gc *gg.Context) {
 	gc.SetStrokeColor(t.Color)
 	gc.SetFontFace(fonts.NewFace(t.Font, t.FontSize))
 	gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
-
-	// rect, _ := t.drawer.BoundString(t.Text)
-	// dp := rect.Max.Sub(rect.Min).Div(fixed.I(2))
-	// dp.Y = -dp.Y
-
-	// t.drawer.Dst = gc.Image().(*image.RGBA)
-	// t.drawer.Src = image.NewUniform(t.Color)
-	// t.drawer.Dot = coord2fix(t.Pos.X, t.Pos.Y).Sub(dp)
-	// t.drawer.DrawString(t.Text)
 }
 
 // Es folgen Hilfsfunktionen fuer die schnelle Umrechnung zwischen Fliess-
