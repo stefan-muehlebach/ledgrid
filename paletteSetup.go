@@ -16,6 +16,7 @@ type JsonPalette struct {
 	ID       int
 	Name     string `json:"Title"`
 	IsCyclic bool
+        IsSlice  bool
     // Colors []color.Color
 	Colors   []LedColor
 	Stops    []ColorStop
@@ -73,9 +74,15 @@ func ReadJsonPalette(fileName string) {
 	for _, rec := range colorListJson {
 		// log.Printf("%+v", rec)
 		if len(rec.Colors) > 0 {
-			pal := NewGradientPaletteByList(rec.Name, rec.IsCyclic, rec.Colors...)
-			PaletteNames = append(PaletteNames, rec.Name)
-			PaletteMap[rec.Name] = pal
+                        if rec.IsSlice {
+			    pal := NewSlicePalette(rec.Name, rec.Colors...)
+			    PaletteNames = append(PaletteNames, rec.Name)
+			    PaletteMap[rec.Name] = pal
+                        } else {
+			    pal := NewGradientPaletteByList(rec.Name, rec.IsCyclic, rec.Colors...)
+			    PaletteNames = append(PaletteNames, rec.Name)
+			    PaletteMap[rec.Name] = pal
+                        }
 			// PaletteList = append(PaletteList, pal)
 		} else if len(rec.Stops) > 0 {
 			pal := NewGradientPalette(rec.Name, rec.Stops...)

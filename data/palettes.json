@@ -301,6 +301,7 @@
     "ID": 219,
 	"Title": "Pico08",
     "IsCyclic": false,
+    "IsSlice": true,
     "Colors": [
 		"000000",
 		"1d2b53",
