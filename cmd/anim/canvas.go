@@ -9,12 +9,12 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
-	"github.com/stefan-muehlebach/gg/fonts"
-
 	"github.com/stefan-muehlebach/gg"
+	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
@@ -52,6 +52,8 @@ var (
 type Canvas struct {
 	ObjList                          []CanvasObject
 	AnimList                         []Animation
+	objMutex                         *sync.RWMutex
+	animMutex                        *sync.RWMutex
 	pixCtrl                          ledgrid.PixelClient
 	ledGrid                          *ledgrid.LedGrid
 	canvas                           *image.RGBA
@@ -59,7 +61,6 @@ type Canvas struct {
 	scaler                           draw.Scaler
 	ticker                           *time.Ticker
 	quit                             bool
-	animMutex                        *sync.Mutex
 	animPit                          time.Time
 	logFile                          io.Writer
 	animWatch, paintWatch, sendWatch *Stopwatch
@@ -74,10 +75,11 @@ func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
 	c.canvas = image.NewRGBA(image.Rectangle{Max: c.ledGrid.Rect.Max.Mul(int(oversize))})
 	c.gc = gg.NewContextForRGBA(c.canvas)
 	c.ObjList = make([]CanvasObject, 0)
+	c.objMutex = &sync.RWMutex{}
 	c.scaler = draw.BiLinear.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
 	c.ticker = time.NewTicker(refreshRate)
 	c.AnimList = make([]Animation, 0)
-	c.animMutex = &sync.Mutex{}
+	c.animMutex = &sync.RWMutex{}
 	if doLog {
 		c.logFile, err = os.Create("canvas.log")
 		if err != nil {
@@ -100,12 +102,16 @@ func (c *Canvas) Close() {
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
 func (c *Canvas) Add(objs ...CanvasObject) {
+	c.objMutex.Lock()
 	c.ObjList = append(c.ObjList, objs...)
+	c.objMutex.Unlock()
 }
 
 // Loescht alle Objekte von der Zeichenflaeche.
 func (c *Canvas) DelAll() {
+	c.objMutex.Lock()
 	c.ObjList = c.ObjList[:0]
+	c.objMutex.Unlock()
 }
 
 // Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
@@ -117,22 +123,22 @@ func (c *Canvas) AddAnim(anims ...Animation) {
 	c.animMutex.Unlock()
 }
 
+// Loescht eine einzelne Animation.
+func (c *Canvas) DelAnim(anim Animation) {
+	c.animMutex.Lock()
+	defer c.animMutex.Unlock()
+	for idx, obj := range c.AnimList {
+		if obj == anim {
+			c.AnimList = slices.Delete(c.AnimList, idx, idx+1)
+			return
+		}
+	}
+}
+
 // Loescht alle Animationen.
 func (c *Canvas) DelAllAnim() {
 	c.animMutex.Lock()
 	c.AnimList = c.AnimList[:0]
-	c.animMutex.Unlock()
-}
-
-// Loescht eine einzelne Animation.
-func (c *Canvas) DelAnim(anim Animation) {
-	c.animMutex.Lock()
-	for i, a := range c.AnimList {
-		if a == anim {
-			c.AnimList[i] = nil
-			return
-		}
-	}
 	c.animMutex.Unlock()
 }
 
@@ -214,6 +220,7 @@ func (c *Canvas) backgroundThread() {
 		}
 		c.animWatch.Start()
 		numAnims := 0
+		c.animMutex.RLock()
 		for i, anim := range c.AnimList {
 			if anim == nil || anim.IsStopped() {
 				continue
@@ -221,6 +228,7 @@ func (c *Canvas) backgroundThread() {
 			numAnims++
 			animChan <- i
 		}
+		c.animMutex.RUnlock()
 		for range numAnims {
 			<-doneChan
 		}
@@ -229,9 +237,11 @@ func (c *Canvas) backgroundThread() {
 		c.paintWatch.Start()
 		c.gc.SetFillColor(backColor)
 		c.gc.Clear()
+		c.objMutex.RLock()
 		for _, obj := range c.ObjList {
 			obj.Draw(c.gc)
 		}
+		c.objMutex.RUnlock()
 		c.paintWatch.Stop()
 
 		c.sendWatch.Start()
@@ -283,7 +293,7 @@ func ConvertLen(l float64) float64 {
 type ColorConvertFunc func(ledgrid.LedColor) ledgrid.LedColor
 
 func ApplyAlpha(c ledgrid.LedColor) ledgrid.LedColor {
-    alpha := float64(c.A)/255.0
+	alpha := float64(c.A) / 255.0
 	return c.Alpha(alpha * fillAlpha)
 }
 
@@ -399,24 +409,24 @@ func (r *Rectangle) Draw(gc *gg.Context) {
 }
 
 type RegularPolygon struct {
-    Pos, Size geom.Point
-    Angle float64
-    BorderWidth float64
+	Pos, Size              geom.Point
+	Angle                  float64
+	BorderWidth            float64
 	BorderColor, FillColor ledgrid.LedColor
 	FillColorFnc           ColorConvertFunc
-    numPoints int
+	numPoints              int
 }
 
 func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor ledgrid.LedColor) *RegularPolygon {
-    p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: ConvertLen(1.0),
-        BorderColor: borderColor, FillColorFnc: ApplyAlpha, numPoints: numPoints}
-    return p
+	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: ConvertLen(1.0),
+		BorderColor: borderColor, FillColorFnc: ApplyAlpha, numPoints: numPoints}
+	return p
 }
 
 func (p *RegularPolygon) Draw(gc *gg.Context) {
-    gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
-    gc.SetStrokeWidth(p.BorderWidth)
-    gc.SetStrokeColor(p.BorderColor)
+	gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
+	gc.SetStrokeWidth(p.BorderWidth)
+	gc.SetStrokeColor(p.BorderColor)
 	if p.FillColorFnc != nil {
 		gc.SetFillColor(p.FillColorFnc(p.BorderColor))
 	} else {
@@ -451,18 +461,15 @@ func (l *Line) Draw(gc *gg.Context) {
 type Pixel struct {
 	Pos   geom.Point
 	Color ledgrid.LedColor
-	Alpha float64
 }
 
 func NewPixel(pos geom.Point, col ledgrid.LedColor) *Pixel {
-	p := &Pixel{Pos: pos, Color: col, Alpha: 1.0}
+	p := &Pixel{Pos: pos, Color: col}
 	return p
 }
 
 func (p *Pixel) Draw(gc *gg.Context) {
-	gc.SetFillColor(p.Color.Alpha(p.Alpha))
+	gc.SetFillColor(p.Color)
 	gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
 	gc.Fill()
 }
-
-

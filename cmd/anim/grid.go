@@ -1,40 +1,33 @@
 package main
 
 import (
-	"github.com/stefan-muehlebach/ledgrid/colornames"
 	"fmt"
+	"image"
 	"io"
 	"log"
 	"os"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
+
 	"github.com/stefan-muehlebach/ledgrid"
+	"github.com/stefan-muehlebach/ledgrid/colornames"
 )
 
-type Cell struct {
-	Color ledgrid.LedColor
-    Alpha float64
-}
-
-func (c *Cell) LedColor() ledgrid.LedColor {
-    r := uint8(c.Alpha * float64(c.Color.R))
-    g := uint8(c.Alpha * float64(c.Color.G))
-    b := uint8(c.Alpha * float64(c.Color.B))
-    a := uint8(c.Alpha * 255.0)
-    return ledgrid.LedColor{r, g, b, a}
-}
-
 type Grid struct {
-	Cells                            []*Cell
+	ObjList                          []GridObject
 	AnimList                         []Animation
 	width, height                    int
 	pixCtrl                          ledgrid.PixelClient
 	ledGrid                          *ledgrid.LedGrid
 	ticker                           *time.Ticker
 	quit                             bool
-	animMutex                        *sync.Mutex
+	objMutex                         *sync.RWMutex
+	animMutex                        *sync.RWMutex
 	animPit                          time.Time
 	logFile                          io.Writer
 	animWatch, paintWatch, sendWatch *Stopwatch
@@ -46,15 +39,13 @@ func NewGrid(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Grid {
 	c := &Grid{}
 	c.pixCtrl = pixCtrl
 	c.ledGrid = ledGrid
-    c.width = ledGrid.Rect.Dx()
-    c.height = ledGrid.Rect.Dy()
-	c.Cells = make([]*Cell, c.width * c.height)
-	for idx := range c.Cells {
-		c.Cells[idx] = &Cell{Color: colornames.Red, Alpha: 1.0}
-	}
+	c.width = ledGrid.Rect.Dx()
+	c.height = ledGrid.Rect.Dy()
+	c.ObjList = make([]GridObject, 0)
+	c.objMutex = &sync.RWMutex{}
 	c.ticker = time.NewTicker(refreshRate)
 	c.AnimList = make([]Animation, 0)
-	c.animMutex = &sync.Mutex{}
+	c.animMutex = &sync.RWMutex{}
 	if doLog {
 		c.logFile, err = os.Create("grid.log")
 		if err != nil {
@@ -70,7 +61,23 @@ func NewGrid(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Grid {
 
 func (c *Grid) Close() {
 	c.DelAllAnim()
+	c.DelAll()
 	c.quit = true
+}
+
+// Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
+// entsprechenden Slice wird nicht synchronisiert.
+func (c *Grid) Add(objs ...GridObject) {
+	c.objMutex.Lock()
+	c.ObjList = append(c.ObjList, objs...)
+	c.objMutex.Unlock()
+}
+
+// Loescht alle Objekte von der Zeichenflaeche.
+func (c *Grid) DelAll() {
+	c.objMutex.Lock()
+	c.ObjList = c.ObjList[:0]
+	c.objMutex.Unlock()
 }
 
 // Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
@@ -92,13 +99,13 @@ func (c *Grid) DelAllAnim() {
 // Loescht eine einzelne Animation.
 func (c *Grid) DelAnim(anim Animation) {
 	c.animMutex.Lock()
-	for i, a := range c.AnimList {
-		if a == anim {
-			c.AnimList[i] = nil
+	defer c.animMutex.Unlock()
+	for idx, obj := range c.AnimList {
+		if obj == anim {
+			c.AnimList = slices.Delete(c.AnimList, idx, idx+1)
 			return
 		}
 	}
-	c.animMutex.Unlock()
 }
 
 // Mit Stop koennen die Animationen und die Darstellung auf der Hardware
@@ -138,6 +145,7 @@ func (c *Grid) backgroundThread() {
 		}
 		c.animWatch.Start()
 		numAnims := 0
+		c.animMutex.RLock()
 		for i, anim := range c.AnimList {
 			if anim == nil || anim.IsStopped() {
 				continue
@@ -145,18 +153,19 @@ func (c *Grid) backgroundThread() {
 			numAnims++
 			animChan <- i
 		}
+		c.animMutex.RUnlock()
 		for range numAnims {
 			<-doneChan
 		}
 		c.animWatch.Stop()
 
 		c.paintWatch.Start()
-		for y := range c.height {
-			for x := range c.width {
-                idx := y*c.width + x
-				c.ledGrid.SetLedColor(x, y, c.Cells[idx].LedColor())
-			}
+		c.ledGrid.Clear(colornames.Black)
+		c.objMutex.RLock()
+		for _, obj := range c.ObjList {
+			obj.Draw(c.ledGrid)
 		}
+		c.objMutex.RUnlock()
 		c.paintWatch.Stop()
 
 		c.sendWatch.Start()
@@ -175,4 +184,59 @@ func (c *Grid) animationThread(animChan <-chan int, doneChan chan<- bool) {
 		// }
 		doneChan <- true
 	}
+}
+
+// Alle Objekte, die durch den Controller auf dem LED-Grid dargestellt werden
+// sollen, muessen im Minimum die Methode Draw implementieren, durch welche
+// sie auf einem gg-Kontext gezeichnet werden.
+type GridObject interface {
+	Draw(lg *ledgrid.LedGrid)
+}
+
+// Will man ein einzelnes Pixel zeichnen, so eignet sich dieser Typ. Er wird
+// ueber die Zeichenfunktion DrawPoint im gg-Kontext realisiert und hat einen
+// Radius von 0.5*sqrt(2).
+type GridPixel struct {
+	Pos   image.Point
+	Color ledgrid.LedColor
+}
+
+func NewGridPixel(pos image.Point, col ledgrid.LedColor) *GridPixel {
+	p := &GridPixel{Pos: pos, Color: col}
+	return p
+}
+
+func (p *GridPixel) Draw(lg *ledgrid.LedGrid) {
+	// lg.Set(p.Pos.X, p.Pos.Y, p.Color.Alpha(p.Alpha))
+	// r := uint8(p.Alpha * float64(p.Color.R))
+	// g := uint8(p.Alpha * float64(p.Color.G))
+	// b := uint8(p.Alpha * float64(p.Color.B))
+	// a := uint8(p.Alpha * 255.0)
+	lg.SetLedColor(p.Pos.X, p.Pos.Y, p.Color.Mix(lg.LedColorAt(p.Pos.X, p.Pos.Y), ledgrid.Blend))
+}
+
+// Fuer das direkte Zeichnen von Text auf dem LED-Grid, existieren einige
+// 'fixed size' Bitmap-Schriften, die ohne Rastern und Rendern sehr schnell
+// dargestellt werden koennen.
+type GridText struct {
+	Pos   image.Point
+	Color ledgrid.LedColor
+	// Alpha  float64
+	Text   string
+	drawer *font.Drawer
+}
+
+func NewGridText(pos image.Point, col ledgrid.LedColor, text string) *GridText {
+	t := &GridText{Pos: pos, Color: col, Text: text}
+	t.drawer = &font.Drawer{
+		Face: ledgrid.Face5x7,
+	}
+	return t
+}
+
+func (t *GridText) Draw(lg *ledgrid.LedGrid) {
+	t.drawer.Dst = lg
+	t.drawer.Src = image.NewUniform(t.Color)
+	t.drawer.Dot = fixed.P(t.Pos.X, t.Pos.Y)
+	t.drawer.DrawString(t.Text)
 }

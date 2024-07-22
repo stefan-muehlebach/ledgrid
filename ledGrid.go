@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-// Fuer das gesamte Package gueltige Variablen, resp. Konstanten.
-var (
-// OutsideColor = BlackColor
-)
-
 const (
 	defFramesPerSec = 30
 )
@@ -40,11 +35,28 @@ type LedGrid struct {
 
 // Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
 // Panels.
-func NewLedGrid(size image.Point) *LedGrid {
+func NewLedGrid(size image.Point, layout ModuleLayout) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = image.Rectangle{Max: size}
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
-	layout := NewModuleLayout(g.Rect.Size())
+
+    // 30x10 Querformat
+    // layout := ModuleLayout{
+    //     {Module{ModLR, Rot000}, Module{ModLR, Rot000}, Module{ModRL, Rot090}},
+    // }
+
+    // 10x30 Hochformat
+    // layout := ModuleLayout{
+    //     {Module{ModLR, Rot270}},
+    //     {Module{ModLR, Rot270}},
+    //     {Module{ModRL, Rot000}},
+    // }
+
+    // Autom. Formatwahl
+    if layout == nil {
+        layout = DefaultModuleLayout(g.Rect.Size())
+    }
+
 	g.idxMap = layout.IndexMap()
 	for _, defectPos := range defectPosList {
 		g.idxMap.MarkDefect(defectPos)

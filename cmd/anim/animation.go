@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"math"
 	"math/rand/v2"
+	"slices"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -59,6 +60,7 @@ func AnimationEaseInOutNew(t float64) float64 {
 type ColorFuncType func() ledgrid.LedColor
 type PointFuncType func() geom.Point
 type FloatFuncType func() float64
+type AlphaFuncType func() uint8
 
 func RandColor() ColorFuncType {
 	return func() ledgrid.LedColor {
@@ -72,6 +74,16 @@ func RandPoint(r geom.Rectangle) PointFuncType {
 		return r.RelPos(fx, fy)
 	}
 }
+func RandPointTrunc(r geom.Rectangle, t float64) PointFuncType {
+	return func() geom.Point {
+		fx := rand.Float64()
+		fy := rand.Float64()
+		p := r.RelPos(fx, fy)
+		p.X = t * math.Round(p.X/t)
+		p.Y = t * math.Round(p.Y/t)
+		return p
+	}
+}
 func RandSize(s1, s2 geom.Point) PointFuncType {
 	return func() geom.Point {
 		t := rand.Float64()
@@ -81,6 +93,11 @@ func RandSize(s1, s2 geom.Point) PointFuncType {
 func RandFloat(a, b float64) FloatFuncType {
 	return func() float64 {
 		return a + (b-a)*rand.Float64()
+	}
+}
+func RandAlpha(a, b uint8) AlphaFuncType {
+	return func() uint8 {
+		return a + uint8(rand.UintN(uint(b-a)))
 	}
 }
 
@@ -93,7 +110,7 @@ func init() {
 	gob.Register(&AnimationEmbed{})
 	gob.Register(&ColorAnimation{})
 	gob.Register(&PaletteAnimation{})
-	gob.Register(&PositionAnimation{})
+	// gob.Register(&PositionAnimation{})
 	gob.Register(&FloatAnimation{})
 	gob.Register(&PathAnimation{})
 }
@@ -101,15 +118,17 @@ func init() {
 // Dieses Interface ist von allen Typen zu implementieren, welche
 // Animationen ausfuehren sollen.
 type Animator interface {
-    AddAnim(anims ...Animation)
-    DelAllAnim()
-    DelAnim(anim Animation)
-    Stop()
-    Continue()
+	AddAnim(anims ...Animation)
+	DelAnim(anim Animation)
+	DelAllAnim()
+	Stop()
+	Continue()
 }
 
 // Das Interface fuer jede Art von Animation (bis jetzt zumindest).
 type Animation interface {
+	Duration() time.Duration
+	SetDuration(dur time.Duration)
 	Start()
 	Stop()
 	Continue()
@@ -124,25 +143,44 @@ type Animation interface {
 // Endlos-Animationen sein, da sonst die Laufzeit der Gruppe ebenfalls
 // unendlich wird.
 type Group struct {
-	// Gibt die gesamte Laufzeit der Gruppe an.
-	Duration time.Duration
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
 
+	duration         time.Duration
 	animList         []Animation
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
 }
 
-// Erstellt eine neue Gruppe welche die Animationen in [anims] zusammen startet.
-func NewGroup(d time.Duration, anims ...Animation) *Group {
+// Erstellt eine neue Gruppe, welche die Animationen in [anims] zusammen
+// startet. Per Default ist die Laufzeit der Gruppe gleich der laengsten
+// Laufzeit der hinzugefuegten Animationen.
+func NewGroup(anims ...Animation) *Group {
 	a := &Group{}
-	a.Duration = d
+	a.duration = 0
 	a.RepeatCount = 0
-    a.Add(anims...)
+	a.Add(anims...)
 	AnimCtrl.AddAnim(a)
 	return a
+}
+
+// Fuegt der Gruppe weitere Animationen hinzu.
+func (a *Group) Add(anims ...Animation) {
+	for _, anim := range anims {
+		if anim.Duration() > a.duration {
+			a.duration = anim.Duration()
+		}
+		a.animList = append(a.animList, anim)
+	}
+}
+
+func (a *Group) Duration() time.Duration {
+	return a.duration
+}
+
+func (a *Group) SetDuration(dur time.Duration) {
+	a.duration = dur
 }
 
 // Startet die Gruppe.
@@ -151,7 +189,7 @@ func (a *Group) Start() {
 		return
 	}
 	a.start = time.Now()
-	a.end = a.start.Add(a.Duration)
+	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
 	for _, anim := range a.animList {
@@ -184,18 +222,6 @@ func (a *Group) IsStopped() bool {
 	return !a.running
 }
 
-// Fuegt der Gruppe weitere Animationen hinzu.
-func (a *Group) Add(anims ...Animation) {
-    for _, anim := range anims {
-        if obj, ok := anim.(*AnimationEmbed); ok {
-            if obj.Duration > a.Duration {
-                a.Duration = obj.Duration
-            }
-        }
-        	a.animList = append(a.animList, anim)
-    }
-}
-
 func (a *Group) Update(t time.Time) bool {
 	for _, anim := range a.animList {
 		if !anim.IsStopped() {
@@ -210,7 +236,7 @@ func (a *Group) Update(t time.Time) bool {
 			a.repeatsLeft--
 		}
 		a.start = a.end
-		a.end = a.start.Add(a.Duration)
+		a.end = a.start.Add(a.duration)
 		for _, anim := range a.animList {
 			anim.Start()
 		}
@@ -222,11 +248,10 @@ func (a *Group) Update(t time.Time) bool {
 // ausfuehren. Dabei wird eine nachfolgende Animation erst dann gestartet,
 // wenn die vorangehende beendet wurde.
 type Sequence struct {
-	// Gibt die gesamte Laufzeit der Sequenz an.
-	Duration time.Duration
 	// Gibt an, wie oft diese Sequenz wiederholt werden soll.
 	RepeatCount int
 
+	duration         time.Duration
 	animList         []Animation
 	currAnim         int
 	start, stop, end time.Time
@@ -236,13 +261,29 @@ type Sequence struct {
 
 // Erstellt eine neue Sequenz welche die Animationen in [anims] hintereinander
 // ausfuehrt.
-func NewSequence(d time.Duration, anims ...Animation) *Sequence {
+func NewSequence(anims ...Animation) *Sequence {
 	a := &Sequence{}
-	a.Duration = d
+	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
 	AnimCtrl.AddAnim(a)
 	return a
+}
+
+// Fuegt der Sequenz weitere Animationen hinzu.
+func (a *Sequence) Add(anims ...Animation) {
+	for _, anim := range anims {
+		a.duration = a.duration + anim.Duration()
+		a.animList = append(a.animList, anim)
+	}
+}
+
+func (a *Sequence) Duration() time.Duration {
+	return a.duration
+}
+
+func (a *Sequence) SetDuration(dur time.Duration) {
+	a.duration = dur
 }
 
 // Startet die Sequenz.
@@ -251,7 +292,7 @@ func (a *Sequence) Start() {
 		return
 	}
 	a.start = time.Now()
-	a.end = a.start.Add(a.Duration)
+	a.end = a.start.Add(a.duration)
 	a.currAnim = 0
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
@@ -283,16 +324,6 @@ func (a *Sequence) IsStopped() bool {
 	return !a.running
 }
 
-// Fuegt der Sequenz weitere Animationen hinzu.
-func (a *Sequence) Add(anims ...Animation) {
-    for _, anim := range anims {
-        if obj, ok := anim.(*AnimationEmbed); ok {
-            a.Duration = a.Duration + obj.Duration
-        }
-        	a.animList = append(a.animList, anim)
-    }
-}
-
 // Wird durch den Controller periodisch aufgerufen, prueft ob Animationen
 // dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
 func (a *Sequence) Update(t time.Time) bool {
@@ -311,7 +342,7 @@ func (a *Sequence) Update(t time.Time) bool {
 				a.repeatsLeft--
 			}
 			a.start = a.end
-			a.end = a.start.Add(a.Duration)
+			a.end = a.start.Add(a.duration)
 			a.currAnim = 0
 			a.animList[a.currAnim].Start()
 		}
@@ -326,13 +357,10 @@ func (a *Sequence) Update(t time.Time) bool {
 // der Timeline selber zu verstehen. Nach dem Start werden die Animationen
 // nicht mehr weiter kontrolliert.
 type Timeline struct {
-	// Gibt die gesamte Laufzeit der Timeline an. Falls Animationen
-	// hinzugefuegt werden, deren Ausfuehrungszeitpunkt nach dieser Dauer
-	// liegen, wird Duration automatisch angepasst.
-	Duration time.Duration
 	// Gibt an, wie oft diese Timeline wiederholt werden soll.
 	RepeatCount int
 
+	duration         time.Duration
 	posList          []*timelinePos
 	nextPos          int
 	start, stop, end time.Time
@@ -352,11 +380,42 @@ type timelinePos struct {
 // Ausfuehrungszeitpunkt der hinterlegten Animationen.
 func NewTimeline(d time.Duration) *Timeline {
 	a := &Timeline{}
-	a.Duration = d
+	a.duration = d
 	a.RepeatCount = 0
 	a.posList = make([]*timelinePos, 0)
 	AnimCtrl.AddAnim(a)
 	return a
+}
+
+// Fuegt der Timeline die Animation anim hinzu mit Ausfuehrungszeitpunkt
+// dt nach Start der Timeline. Im Moment muessen die Animationen noch in
+// der Reihenfolge ihres Ausfuehrungszeitpunktes hinzugefuegt werden.
+func (a *Timeline) Add(pit time.Duration, anims ...Animation) {
+	var i int
+
+	if pit > a.duration {
+		a.duration = pit
+	}
+
+	for i = 0; i < len(a.posList); i++ {
+		pos := a.posList[i]
+		if pos.dt == pit {
+			pos.anims = append(pos.anims, anims...)
+			return
+		}
+		if pos.dt > pit {
+			break
+		}
+	}
+	a.posList = slices.Insert(a.posList, i, &timelinePos{pit, anims})
+}
+
+func (a *Timeline) Duration() time.Duration {
+	return a.duration
+}
+
+func (a *Timeline) SetDuration(dur time.Duration) {
+	a.duration = dur
 }
 
 // Startet die Timeline.
@@ -365,7 +424,7 @@ func (a *Timeline) Start() {
 		return
 	}
 	a.start = time.Now()
-	a.end = a.start.Add(a.Duration)
+	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.nextPos = 0
 	a.running = true
@@ -396,16 +455,6 @@ func (a *Timeline) IsStopped() bool {
 	return !a.running
 }
 
-// Fuegt der Timeline die Animation anim hinzu mit Ausfuehrungszeitpunkt
-// dt nach Start der Timeline. Im Moment muessen die Animationen noch in
-// der Reihenfolge ihres Ausfuehrungszeitpunktes hinzugefuegt werden.
-func (a *Timeline) Add(dt time.Duration, anims ...Animation) {
-	if dt > a.Duration {
-		a.Duration = dt
-	}
-	a.posList = append(a.posList, &timelinePos{dt, anims})
-}
-
 // Wird periodisch durch den Controller aufgerufen und aktualisiert die
 // Timeline.
 func (a *Timeline) Update(t time.Time) bool {
@@ -418,7 +467,7 @@ func (a *Timeline) Update(t time.Time) bool {
 				a.repeatsLeft--
 			}
 			a.start = a.end
-			a.end = a.start.Add(a.Duration)
+			a.end = a.start.Add(a.duration)
 			a.nextPos = 0
 		}
 		return true
@@ -443,11 +492,10 @@ type AnimationEmbed struct {
 	// Verlauf der Animation erlaubt (Beschleunigung am Anfang, Abbremsen
 	// gegen Schluss, etc).
 	Curve AnimationCurve
-	// Bezeichnet die gesamte Laufzet der Animation.
-	Duration time.Duration
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
 	RepeatCount int
 
+	duration         time.Duration
 	wrapper          Animation
 	reverse          bool
 	start, stop, end time.Time
@@ -458,22 +506,32 @@ type AnimationEmbed struct {
 	init             func()
 }
 
-// func (a *AnimationEmbed) ExtendAnimation(wrapper Animation) {
-//     a.wrapper = wrapper
-// }
-
 // Muss beim Erstellen einer Animation aufgerufen werden, welche dieses
 // Embeddable einbindet.
-func (a *AnimationEmbed) Init(wrapper Animation, d time.Duration) {
+func (a *AnimationEmbed) ExtendAnimation(wrapper Animation) {
 	a.AutoReverse = false
-	a.Curve = AnimationEaseInOutNew
-	a.Duration = d
+	a.Curve = AnimationEaseInOut
 	a.RepeatCount = 0
 	a.wrapper = wrapper
 	a.running = false
 	a.tick = wrapper.(AnimationImpl).Tick
 	a.init = wrapper.(AnimationImpl).Init
 	AnimCtrl.AddAnim(wrapper)
+}
+
+func (a *AnimationEmbed) Duration() time.Duration {
+	factor := 1
+	if a.RepeatCount > 0 {
+		factor += a.RepeatCount
+	}
+	if a.AutoReverse {
+		factor *= 2
+	}
+	return time.Duration(factor) * a.duration
+}
+
+func (a *AnimationEmbed) SetDuration(dur time.Duration) {
+	a.duration = dur
 }
 
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
@@ -484,7 +542,7 @@ func (a *AnimationEmbed) Start() {
 		return
 	}
 	a.start = time.Now()
-	a.end = a.start.Add(a.Duration)
+	a.end = a.start.Add(a.duration)
 	a.total = a.end.Sub(a.start).Seconds()
 	a.repeatsLeft = a.RepeatCount
 	a.reverse = false
@@ -548,7 +606,7 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 			}
 		}
 		a.start = a.end
-		a.end = a.start.Add(a.Duration)
+		a.end = a.start.Add(a.duration)
 		a.init()
 		return true
 	}
@@ -567,7 +625,7 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 // Interface AnimationImpl implementieren.
 type AnimationImpl interface {
 	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
-	// gestartet wird. Wichtig: Wiederholgungen und Umkehrungen (AutoReverse)
+	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
 	// zaehlen nicht als Start!
 	Init()
 	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
@@ -588,7 +646,8 @@ type ColorAnimation struct {
 
 func NewColorAnimation(valPtr *ledgrid.LedColor, val2 ledgrid.LedColor, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
-	a.AnimationEmbed.Init(a, dur)
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
 	a.Val2 = val2
@@ -605,7 +664,43 @@ func (a *ColorAnimation) Init() {
 }
 
 func (a *ColorAnimation) Tick(t float64) {
+    alpha := (*a.ValPtr).A
 	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
+    (*a.ValPtr).A = alpha
+}
+
+// Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
+// veraendern und kennt beispielsweise die Farbe selber gar nicht, dann ist
+// die AlphaAnimation genau das Richtige.
+type AlphaAnimation struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *uint8
+	Val1, Val2 uint8
+	ValFunc    AlphaFuncType
+}
+
+func NewAlphaAnimation(valPtr *uint8, val2 uint8, dur time.Duration) *AlphaAnimation {
+	a := &AlphaAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *AlphaAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+	if a.ValFunc != nil {
+		a.Val2 = a.ValFunc()
+	}
+}
+
+func (a *AlphaAnimation) Tick(t float64) {
+	*a.ValPtr = uint8((1.0-t)*float64(a.Val1) + t*float64(a.Val2))
 }
 
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
@@ -617,7 +712,8 @@ type PaletteAnimation struct {
 
 func NewPaletteAnimation(valPtr *ledgrid.LedColor, pal ledgrid.ColorSource, dur time.Duration) *PaletteAnimation {
 	a := &PaletteAnimation{}
-	a.AnimationEmbed.Init(a, dur)
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
 	a.Curve = AnimationLinear
 	a.ValPtr = valPtr
 	a.pal = pal
@@ -631,56 +727,55 @@ func (a *PaletteAnimation) Tick(t float64) {
 }
 
 // Animation fuer einen Wechsel der Position, resp. Veraenderung der Groesse.
-type PositionAnimation struct {
-	AnimationEmbed
-	Cont       bool
-	ValPtr     *geom.Point
-	Val1, Val2 geom.Point
-	ValFunc    PointFuncType
-}
+// type PositionAnimation struct {
+// 	AnimationEmbed
+// 	Cont       bool
+// 	ValPtr     *geom.Point
+// 	Val1, Val2 geom.Point
+// 	ValFunc    PointFuncType
+// }
 
-func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PositionAnimation {
-	a := &PositionAnimation{}
-	a.AnimationEmbed.Init(a, dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
+// func NewPositionAnimationOld(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PositionAnimation {
+// 	a := &PositionAnimation{}
+// 	a.AnimationEmbed.ExtendAnimation(a)
+//     a.SetDuration(dur)
+// 	a.ValPtr = valPtr
+// 	a.Val1 = *valPtr
+// 	a.Val2 = val2
+// 	return a
+// }
 
-func (a *PositionAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-	if a.ValFunc != nil {
-		a.Val2 = a.ValFunc()
-	}
-}
+// func (a *PositionAnimation) Init() {
+// 	if a.Cont {
+// 		a.Val1 = *a.ValPtr
+// 	}
+// 	if a.ValFunc != nil {
+// 		a.Val2 = a.ValFunc()
+// 	}
+// }
 
-func (a *PositionAnimation) Tick(t float64) {
-	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
-}
+// func (a *PositionAnimation) Tick(t float64) {
+// 	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
+// }
 
 // Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
 // werden (geom.Point), ist die Animation einer Groesse und einer Position
 // im Wesentlichen das gleiche. Die Funktion NewSizeAnimation ist als
 // syntaktische Vereinfachung zu verstehen.
-var (
-	NewSizeAnimation = NewPositionAnimation
-)
 
 // Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen.
 type FloatAnimation struct {
 	AnimationEmbed
-	Cont    bool
-	ValPtr      *float64
-	Val1, Val2  float64
-	ValFunc FloatFuncType
+	Cont       bool
+	ValPtr     *float64
+	Val1, Val2 float64
+	ValFunc    FloatFuncType
 }
 
 func NewFloatAnimation(valPtr *float64, val2 float64, dur time.Duration) *FloatAnimation {
 	a := &FloatAnimation{}
-	a.AnimationEmbed.Init(a, dur)
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
 	a.Val2 = val2
@@ -704,35 +799,76 @@ func (a *FloatAnimation) Tick(t float64) {
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnimation struct {
 	AnimationEmbed
-	Cont    bool
-	pp      *geom.Point
-	startPt geom.Point
-	size    geom.Point
-	fnc     PathFunctionType
+	Cont       bool
+	ValPtr     *geom.Point
+	Val1, Val2 geom.Point
+	Size       geom.Point
+	ValFunc    PointFuncType
+	PathFunc   PathFunctionType
 }
 
-func NewPathAnimation(pp *geom.Point, fnc PathFunctionType, size geom.Point, d time.Duration) *PathAnimation {
+func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.Init(a, d)
-	a.pp = pp
-	a.startPt = *a.pp
-	a.size = size
-	a.fnc = fnc
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Size = size
+	a.PathFunc = pathFunc
 	return a
 }
 
+func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
+	a := &PathAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+    a.Val2 = val2
+	a.PathFunc = LinearPath
+	return a
+}
+
+var (
+	NewSizeAnimation = NewPositionAnimation
+)
+
 func (a *PathAnimation) Init() {
 	if a.Cont {
-		a.startPt = *a.pp
+		a.Val1 = *a.ValPtr
+	}
+	if a.ValFunc != nil {
+        if !a.Size.Eq(geom.Point{}) {
+            a.Size = a.ValFunc()
+        } else {
+		    a.Val2 = a.ValFunc()
+        }
 	}
 }
 
 func (a *PathAnimation) Tick(t float64) {
-	dp := a.fnc(t).Scale(a.size)
-	*a.pp = a.startPt.Add(dp)
+    var dp geom.Point
+
+    if !a.Size.Eq(geom.Point{}) {
+        dp = a.PathFunc(t).Scale(a.Size)
+    } else {
+        	dp = a.PathFunc(t).Scale(a.Val2.Sub(a.Val1))
+    }
+	*a.ValPtr = a.Val1.Add(dp)
 }
 
 //----------------------------------------------------------------------------
+
+func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
+	a := &PathAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Size = geom.Point{1, 1}
+	a.PathFunc = polyPath.RelPoint
+	return a
+}
 
 // Neben den vorhandenen Pfaden (Kreise, Halbkreise, Viertelkreise) koennen
 // Positions-Animationen auch entlang komplett frei definierten Pfaden
@@ -749,23 +885,20 @@ type polygonStop struct {
 
 // Erstellt ein neues PolygonPath-Objekt und verwendet die Punkte in points
 // als Eckpunkte eines offenen Polygons. Punkte koennen nur beim Erstellen
-// angegeben werden. Wichtig: die hier angegebenen Punkte (resp. ihre
-// Koordinaten) muessen in einem umschliessenden Rechteck Platz haben, dessen
-// Breite, resp. Hoehe nicht groesser als 1.0 sein darf.
+// angegeben werden.
 func NewPolygonPath(points ...geom.Point) *PolygonPath {
-	var origin geom.Point
-
 	p := &PolygonPath{}
 	p.stopList = make([]polygonStop, len(points))
 
+	origin := geom.Point{}
 	for i, point := range points {
 		if i == 0 {
 			origin = point
-			p.stopList[i] = polygonStop{0.0, geom.Point{}}
+			p.stopList[i] = polygonStop{0.0, geom.Point{0, 0}}
 			continue
 		}
 		pt := point.Sub(origin)
-		len := pt.Distance(p.stopList[i-1].pos) + p.stopList[i-1].len
+		len := p.stopList[i-1].len + pt.Distance(p.stopList[i-1].pos)
 		p.stopList[i] = polygonStop{len, pt}
 
 		p.rect.Min = p.rect.Min.Min(pt)
@@ -796,6 +929,11 @@ func (p *PolygonPath) RelPoint(t float64) geom.Point {
 //  3. max(f(t).X) - min(f(t).X) = 1.0 und
 //     max(f(t).Y) - min(f(t).Y) = 1.0
 type PathFunctionType func(t float64) geom.Point
+
+// Beschreibt eine Gerade
+func LinearPath(t float64) geom.Point {
+	return geom.Point{t, t}
+}
 
 // Beschreibt ein Rechteck im Uhrzeigersinn.
 // Startpunkt ist auf 12 Uhr.

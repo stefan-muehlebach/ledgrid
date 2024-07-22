@@ -163,32 +163,32 @@ type ModuleLayout [][]Module
 // die Variable ModuleSize, welche die Groesse eines einzelnen Moduls angibt.
 // Es koennen nur LED-Grids erstellt werden, deren Groesse ein Vielfaches der
 // Modul-Groesse ist.
-func NewModuleLayout(size image.Point) ModuleLayout {
-    if size.X < ModuleSize.X || size.Y < ModuleSize.Y ||
-            size.X % ModuleSize.X != 0 || size.Y % ModuleSize.Y != 0 {
-        log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleSize)
-    }
-    cols, rows := size.X / ModuleSize.X, size.Y / ModuleSize.Y
-    layout := make([][]Module, rows)
-    for row := range rows {
-        layout[row] = make([]Module, cols)
-    }
+func DefaultModuleLayout(size image.Point) ModuleLayout {
+	if size.X < ModuleSize.X || size.Y < ModuleSize.Y ||
+		size.X%ModuleSize.X != 0 || size.Y%ModuleSize.Y != 0 {
+		log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleSize)
+	}
+	cols, rows := size.X/ModuleSize.X, size.Y/ModuleSize.Y
+	layout := make([][]Module, rows)
+	for row := range rows {
+		layout[row] = make([]Module, cols)
+	}
 
-    for row := range rows {
-        for i := range cols {
-            col := cols - i - 1
-            if i == 0 {
-                layout[row][col] = Module{ModRL, Rot090}
-            } else {
-                if row % 2 == 0 {
-                    layout[row][col] = Module{ModLR, Rot000}
-                } else {
-                    layout[row][col] = Module{ModLR, Rot180}
-                }
-            }
-        }
-    }
-    return layout
+	for row := range rows {
+		for i := range cols {
+			col := cols - i - 1
+			if i == 0 {
+				layout[row][col] = Module{ModRL, Rot090}
+			} else {
+				if row%2 == 0 {
+					layout[row][col] = Module{ModLR, Rot000}
+				} else {
+					layout[row][col] = Module{ModLR, Rot180}
+				}
+			}
+		}
+	}
+	return layout
 }
 
 // Mit dieser Struktur wird die Koordinate einer LED auf dem Panel auf den
@@ -198,12 +198,12 @@ type IndexMap [][]int
 // Erstellt ein Feld (Slice of slice) fuer die direkte Uebersetzung von
 // Pixel-Koordinaten zur Position (Index) innerhalb der Lichterkette.
 func (layout ModuleLayout) IndexMap() IndexMap {
-    var idxMap IndexMap
+	var idxMap IndexMap
 
-    idxMap = make([][]int, len(layout[0]) * ModuleSize.X)
-    for col := range idxMap {
-        idxMap[col] = make([]int, len(layout) * ModuleSize.Y)
-    }
+	idxMap = make([][]int, len(layout[0])*ModuleSize.X)
+	for col := range idxMap {
+		idxMap[col] = make([]int, len(layout)*ModuleSize.Y)
+	}
 	idx := 0
 	for row, moduleRow := range layout {
 		for j := range len(moduleRow) {
@@ -216,7 +216,7 @@ func (layout ModuleLayout) IndexMap() IndexMap {
 			idx = idxMap.Append(mod, pt, idx)
 		}
 	}
-    return idxMap
+	return idxMap
 }
 
 // Mit dieser Methode kann eine bestimmte Position im LED-Panel als 'defekt'
@@ -224,18 +224,18 @@ func (layout ModuleLayout) IndexMap() IndexMap {
 // d.h. die entsprechende LED entfernt und die Anschlusskabel direkt
 // miteinander verbunden.
 func (idxMap IndexMap) MarkDefect(pos image.Point) {
-    idxDefect := idxMap[pos.X][pos.Y]
-    cols := len(idxMap)
-    rows := len(idxMap[0])
-    for col := range cols {
-        for row := range rows {
-            if idxMap[col][row] > idxDefect {
-                idxMap[col][row] -= 3
-            }
-        }
-    }
-    idxSpare := 3 * (cols * rows - 1)
-    idxMap[pos.X][pos.Y] = idxSpare
+	idxDefect := idxMap[pos.X][pos.Y]
+	cols := len(idxMap)
+	rows := len(idxMap[0])
+	for col := range cols {
+		for row := range rows {
+			if idxMap[col][row] > idxDefect {
+				idxMap[col][row] -= 3
+			}
+		}
+	}
+	idxSpare := 3 * (cols*rows - 1)
+	idxMap[pos.X][pos.Y] = idxSpare
 }
 
 // Diese Methode ergaenzt den Slice idxMap um die Koordinaten und Indizes des
@@ -258,7 +258,20 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					} else {
 						idx = (col * ModuleSize.Y) + (ModuleSize.Y - row - 1)
 					}
-					idxMap[x][y] = baseIdx + 3 * idx
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot090:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + (ModuleSize.Y - col - 1)
+					} else {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + col
+					}
+					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
 		case Rot180:
@@ -271,7 +284,20 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					} else {
 						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + (ModuleSize.Y - row - 1)
 					}
-					idxMap[x][y] = baseIdx + 3 * idx
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot270:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = (row * ModuleSize.Y) + (ModuleSize.Y - col - 1)
+					} else {
+						idx = (row * ModuleSize.Y) + col
+					}
+					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
 		default:
@@ -279,23 +305,61 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 		}
 	case ModRL:
 		switch m.Rot {
+		case Rot000:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if col%2 == 0 {
+						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + (ModuleSize.Y - row - 1)
+					} else {
+						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + row
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
 		case Rot090:
 			for row := range ModuleSize.Y {
 				y := basePt.Y + row
 				for col := range ModuleSize.X {
 					x := basePt.X + col
 					if row%2 == 0 {
-						idx = (row * ModuleSize.X) + col
+						idx = (row * ModuleSize.Y) + col
 					} else {
-						idx = (row * ModuleSize.X) + (ModuleSize.X - col - 1)
+						idx = (row * ModuleSize.Y) + (ModuleSize.X - col - 1)
 					}
-					idxMap[x][y] = baseIdx + 3 * idx
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot180:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if col%2 == 0 {
+						idx = (col * ModuleSize.Y) + (ModuleSize.Y - row - 1)
+					} else {
+						idx = (col * ModuleSize.Y) + row
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot270:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + col
+					} else {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + (ModuleSize.X - col - 1)
+					}
+					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
 		default:
 			log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
 		}
 	}
-	return baseIdx + 3 * ModuleSize.X * ModuleSize.Y
+	return baseIdx + 3*ModuleSize.X*ModuleSize.Y
 }
-

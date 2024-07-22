@@ -31,64 +31,67 @@ var (
 //----------------------------------------------------------------------------
 
 func RegularPolygonTest(c *Canvas) {
-    posList := []geom.Point{
-        ConvertPos(geom.Point{-5.5, 4.5}),
-        ConvertPos(geom.Point{34.5, 4.5}),
-    }
-    posCenter := ConvertPos(geom.Point{14.5, 4.5})
-    smallSize := ConvertSize(geom.Point{9.0, 9.0})
-    largeSize := ConvertSize(geom.Point{80.0, 80.0})
+	posList := []geom.Point{
+		ConvertPos(geom.Point{-5.5, 4.5}),
+		ConvertPos(geom.Point{34.5, 4.5}),
+	}
+	posCenter := ConvertPos(geom.Point{14.5, 4.5})
+	smallSize := ConvertSize(geom.Point{9.0, 9.0})
+	largeSize := ConvertSize(geom.Point{80.0, 80.0})
 
-    polyList := make([]*RegularPolygon, 9)
+	polyList := make([]*RegularPolygon, 9)
 
-    aSeq := NewSequence(0.0)
-    for n := 3; n <= 8; n++ {
-        col := colornames.RandColor()
-        polyList[n] = NewRegularPolygon(n, posList[n%2], smallSize, col)
-        c.Add(polyList[n])
-        dur := 2*time.Second + rand.N(time.Second)
-        sign := []float64{+1.0, -1.0}[n%2]
-        angle := sign * 2 * math.Pi
-        animPos := NewPositionAnimation(&polyList[n].Pos, posCenter, dur)
-        animAngle := NewFloatAnimation(&polyList[n].Angle, angle, dur)
-        animSize := NewSizeAnimation(&polyList[n].Size, largeSize, 4*time.Second)
-        animSize.Cont = true
-        animFade := NewColorAnimation(&polyList[n].BorderColor, col.Alpha(0.0), time.Second)
+	aSeq := NewSequence()
+	for n := 3; n <= 8; n++ {
+		col := colornames.RandColor()
+		polyList[n] = NewRegularPolygon(n, posList[n%2], smallSize, col)
+		c.Add(polyList[n])
+		dur := 2*time.Second + rand.N(time.Second)
+		sign := []float64{+1.0, -1.0}[n%2]
+		angle := sign * 2 * math.Pi
+		animPos := NewPositionAnimation(&polyList[n].Pos, posCenter, dur)
+		animAngle := NewFloatAnimation(&polyList[n].Angle, angle, dur)
+		animSize := NewSizeAnimation(&polyList[n].Size, largeSize, 4*time.Second)
+		animSize.Cont = true
+		animFade := NewColorAnimation(&polyList[n].BorderColor, col.Alpha(0.0), time.Second)
 
-        aGrp := NewGroup(dur, animPos, animAngle)
-        aObjSeq := NewSequence(0, aGrp, animSize, animFade)
-        aSeq.Add(aObjSeq)
-    }
-    aSeq.RepeatCount = AnimationRepeatForever
-    aSeq.Start()
+		aGrp := NewGroup(animPos, animAngle)
+		aGrp.duration = dur
+		aObjSeq := NewSequence(aGrp, animSize, animFade)
+		aSeq.Add(aObjSeq)
+	}
+	aSeq.RepeatCount = AnimationRepeatForever
+	aSeq.Start()
 }
 
 func GroupTest(ctrl *Canvas) {
-	ctrl.Stop()
+	// ctrl.Stop()
 
 	rPos1 := ConvertPos(geom.Point{4.5, 4.5})
 	rPos2 := ConvertPos(geom.Point{27.5, 4.5})
 	rSize1 := ConvertSize(geom.Point{7.0, 7.0})
 	rSize2 := ConvertSize(geom.Point{1.0, 1.0})
+	rColor1 := colornames.SkyBlue
+	rColor2 := colornames.GreenYellow
 
-	r := NewRectangle(rPos1, rSize1, colornames.SkyBlue)
+	r := NewRectangle(rPos1, rSize1, rColor1)
+	ctrl.Add(r)
 
 	aPos := NewPositionAnimation(&r.Pos, rPos2, time.Second)
 	aPos.AutoReverse = true
 	aSize := NewSizeAnimation(&r.Size, rSize2, time.Second)
 	aSize.AutoReverse = true
-	aColor := NewColorAnimation(&r.BorderColor, colornames.GreenYellow, time.Second)
+	aColor := NewColorAnimation(&r.BorderColor, rColor2, time.Second)
 	aColor.AutoReverse = true
 	aAngle := NewFloatAnimation(&r.Angle, math.Pi, time.Second)
 	aAngle.AutoReverse = true
 
-	aGroup := NewGroup(4*time.Second, aPos, aSize, aColor, aAngle)
+	aGroup := NewGroup(aPos, aSize, aColor, aAngle)
+	// aGroup.Duration = 4*time.Second
 	aGroup.RepeatCount = AnimationRepeatForever
 
-	ctrl.Add(r)
-
-	ctrl.Save("gobs/GroupTest.gob")
-	ctrl.Continue()
+	// ctrl.Save("gobs/GroupTest.gob")
+	// ctrl.Continue()
 	aGroup.Start()
 }
 
@@ -117,13 +120,14 @@ func ReadGroupTest(ctrl *Canvas) {
 }
 
 func SequenceTest(ctrl *Canvas) {
-	ctrl.Stop()
+	// ctrl.Stop()
 
 	rPos := ConvertPos(geom.Point{14.5, 4.5})
 	rSize1 := ConvertSize(geom.Point{29.0, 9.0})
 	rSize2 := ConvertSize(geom.Point{1.0, 1.0})
 
 	r := NewRectangle(rPos, rSize1, colornames.SkyBlue)
+	ctrl.Add(r)
 
 	aSize1 := NewSizeAnimation(&r.Size, rSize2, time.Second)
 	aColor1 := NewColorAnimation(&r.BorderColor, colornames.OrangeRed, time.Second/2)
@@ -135,18 +139,17 @@ func SequenceTest(ctrl *Canvas) {
 	aColor3 := NewColorAnimation(&r.BorderColor, colornames.SkyBlue, 3*time.Second/2)
 	aColor3.Cont = true
 
-	aSeq := NewSequence(8*time.Second, aSize1, aColor1, aColor2, aSize2, aColor3)
+	aSeq := NewSequence(aSize1, aColor1, aColor2, aSize2, aColor3)
+	aSeq.duration = 8 * time.Second
 	aSeq.RepeatCount = AnimationRepeatForever
 
-	ctrl.Add(r)
-
-	ctrl.Save("gobs/SequenceTest.gob")
-	ctrl.Continue()
+	// ctrl.Save("gobs/SequenceTest.gob")
+	// ctrl.Continue()
 	aSeq.Start()
 }
 
 func TimelineTest(ctrl *Canvas) {
-	ctrl.Stop()
+	// ctrl.Stop()
 
 	r3Pos1 := ConvertPos(geom.Point{6.5, 4.5})
 	r3Size1 := ConvertSize(geom.Point{9.0, 5.0})
@@ -155,227 +158,268 @@ func TimelineTest(ctrl *Canvas) {
 
 	r3 := NewRectangle(r3Pos1, r3Size1, colornames.GreenYellow)
 	r4 := NewRectangle(r4Pos1, r4Size1, colornames.SkyBlue)
+	ctrl.Add(r3, r4)
 
-	aAngle1 := NewFloatAnimation(&r3.Angle, math.Pi, 2*time.Second)
-	aAngle2 := NewFloatAnimation(&r4.Angle, -math.Pi, 2*time.Second)
-	aAngle3 := NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
-	aAngle4 := NewFloatAnimation(&r4.Angle, math.Pi, time.Second)
+	aAngle1 := NewFloatAnimation(&r3.Angle, math.Pi, time.Second)
+	aAngle2 := NewFloatAnimation(&r3.Angle, 0.0, time.Second)
+	aAngle2.Cont = true
 
-	r3Color := NewColorAnimation(&r3.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
-	r3Color.AutoReverse = true
-	r4Color := NewColorAnimation(&r4.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
-	r4Color.AutoReverse = true
+	aAngle3 := NewFloatAnimation(&r4.Angle, -math.Pi, time.Second)
+	aAngle4 := NewFloatAnimation(&r4.Angle, 0.0, time.Second)
+	aAngle4.Cont = true
+
+	aColor1 := NewColorAnimation(&r3.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
+	aColor1.AutoReverse = true
+	aColor1.RepeatCount = 3
+	aColor2 := NewColorAnimation(&r3.BorderColor, colornames.Purple, 500*time.Millisecond)
+	aColor3 := NewColorAnimation(&r3.BorderColor, colornames.GreenYellow, 500*time.Millisecond)
+	aColor3.Cont = true
+
+	aColor4 := NewColorAnimation(&r4.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
+	aColor4.AutoReverse = true
+	aColor4.RepeatCount = 3
+	aColor5 := NewColorAnimation(&r4.BorderColor, colornames.Purple, 500*time.Millisecond)
+	aColor6 := NewColorAnimation(&r4.BorderColor, colornames.SkyBlue, 500*time.Millisecond)
+	aColor6.Cont = true
 
 	tl := NewTimeline(5 * time.Second)
 	tl.RepeatCount = AnimationRepeatForever
-	tl.Add(0*time.Millisecond, aAngle1, aAngle2)
-	tl.Add(2200*time.Millisecond, r3Color)
-	tl.Add(2400*time.Millisecond, r4Color)
-	tl.Add(2600*time.Millisecond, aAngle3)
-	tl.Add(2900*time.Millisecond, aAngle4)
+	// Timeline positions for the first rectangle
+	tl.Add(300*time.Millisecond, aColor1)
+	tl.Add(1800*time.Millisecond, aAngle1)
+	tl.Add(2300*time.Millisecond, aColor2)
+	tl.Add(2900*time.Millisecond, aAngle2)
+	tl.Add(3400*time.Millisecond, aColor3)
+	// Timeline positions for the second rectangle
+	tl.Add(500*time.Millisecond, aColor4)
+	tl.Add(2000*time.Millisecond, aAngle3)
+	tl.Add(2500*time.Millisecond, aColor5)
+	tl.Add(3100*time.Millisecond, aAngle4)
+	tl.Add(3600*time.Millisecond, aColor6)
 
-	ctrl.Add(r3, r4)
+	// for i, pos := range tl.posList {
+	// 	log.Printf("[%d]: %+v", i, pos)
+	// }
 
-	ctrl.Save("gobs/TimelineTest.gob")
-	ctrl.Continue()
+	// ctrl.Save("gobs/TimelineTest.gob")
+	// ctrl.Continue()
 	tl.Start()
-
 }
 
 func PathTest(ctrl *Canvas) {
-	ctrl.Stop()
+	// ctrl.Stop()
+	duration := 4 * time.Second
+	pathA := FullCirclePathA
+	pathB := FullCirclePathB
 
-	pos1 := ConvertPos(geom.Point{1.0, 4.0})
-	pos2 := ConvertPos(geom.Point{14.0, 1.0})
-	pos3 := ConvertPos(geom.Point{27.0, 4.0})
-	pos4 := ConvertPos(geom.Point{14.0, 7.0})
-	cSize := ConvertSize(geom.Point{2.0, 2.0})
+	pos1 := ConvertPos(geom.Point{1.5, 4.5})
+	pos2 := ConvertPos(geom.Point{14.5, 1.5})
+	pos3 := ConvertPos(geom.Point{27.5, 4.5})
+	pos4 := ConvertPos(geom.Point{14.5, 7.5})
+	cSize := ConvertSize(geom.Point{3.0, 3.0})
 
 	c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
 	c2 := NewEllipse(pos2, cSize, colornames.MediumSeaGreen)
 	c3 := NewEllipse(pos3, cSize, colornames.SkyBlue)
 	c4 := NewEllipse(pos4, cSize, colornames.Gold)
-
-	c1Path := NewPathAnimation(&c1.Pos, HalfCirclePathB, ConvertSize(geom.Point{26.0, 3.0}), 2*time.Second)
-	c1Path.AutoReverse = true
-	// c1Path.Cont = true
-	c3Path := NewPathAnimation(&c3.Pos, HalfCirclePathB, ConvertSize(geom.Point{-26.0, -3.0}), 2*time.Second)
-	c3Path.AutoReverse = true
-	// c3Path.Cont = true
-
-	c2Path := NewPathAnimation(&c2.Pos, HalfCirclePathA, ConvertSize(geom.Point{-3.0, 6.0}), 2*time.Second)
-	c2Path.AutoReverse = true
-	// c2Path.Cont = true
-	c4Path := NewPathAnimation(&c4.Pos, HalfCirclePathA, ConvertSize(geom.Point{3.0, -6.0}), 2*time.Second)
-	c4Path.AutoReverse = true
-	// c4Path.Cont = true
-
-	aGrp := NewGroup(5*time.Second, c1Path, c2Path, c3Path, c4Path)
-	aGrp.RepeatCount = AnimationRepeatForever
-
 	ctrl.Add(c1, c2, c3, c4)
 
-	ctrl.Save("gobs/PathTest.gob")
-	ctrl.Continue()
+	c1Path := NewPathAnimation(&c1.Pos, pathB, ConvertSize(geom.Point{26.0, 6.0}), duration)
+	c1Path.AutoReverse = true
+	c3Path := NewPathAnimation(&c3.Pos, pathB, ConvertSize(geom.Point{-26.0, -6.0}), duration)
+	c3Path.AutoReverse = true
+
+	c2Path := NewPathAnimation(&c2.Pos, pathA, ConvertSize(geom.Point{10.0, 6.0}), duration)
+	c2Path.AutoReverse = true
+	c4Path := NewPathAnimation(&c4.Pos, pathA, ConvertSize(geom.Point{-10.0, -6.0}), duration)
+	c4Path.AutoReverse = true
+
+	aGrp := NewGroup(c1Path, c2Path, c3Path, c4Path)
+	// aGrp.SetDuration(5 * time.Second)
+	aGrp.RepeatCount = AnimationRepeatForever
+
+	// ctrl.Save("gobs/PathTest.gob")
+	// ctrl.Continue()
 	aGrp.Start()
 }
 
 func PolygonPathTest(ctrl *Canvas) {
-	ctrl.Stop()
+	// ctrl.Stop()
 
 	cPos := ConvertPos(geom.Point{1, 1})
 	cSize := ConvertSize(geom.Point{2, 2})
 
-	polyPath := NewPolygonPath(
-		geom.Point{0, 0},
-		geom.Point{1, 0},
-		geom.Point{1, 1},
-		geom.Point{0, 1},
-		geom.Point{0, 2.0 / 7.0},
-		geom.Point{1.0 - 2.0/7.0, 2.0 / 7.0},
-		geom.Point{1.0 - 2.0/7.0, 1.0 - 2.0/7.0},
-		geom.Point{2.0 / 7.0, 1.0 - 2.0/7.0},
+	polyPath1 := NewPolygonPath(
+		ConvertPos(geom.Point{1, 1}),
+		ConvertPos(geom.Point{28, 1}),
+		ConvertPos(geom.Point{28, 8}),
+		ConvertPos(geom.Point{1, 8}),
+
+		ConvertPos(geom.Point{1, 2}),
+		ConvertPos(geom.Point{27, 2}),
+		ConvertPos(geom.Point{27, 7}),
+		ConvertPos(geom.Point{2, 7}),
+
+		ConvertPos(geom.Point{2, 3}),
+		ConvertPos(geom.Point{26, 3}),
+		ConvertPos(geom.Point{26, 6}),
+		ConvertPos(geom.Point{3, 6}),
+
+		ConvertPos(geom.Point{3, 4}),
+		ConvertPos(geom.Point{25, 4}),
+		ConvertPos(geom.Point{25, 5}),
+		ConvertPos(geom.Point{4, 5}),
+	)
+
+	polyPath2 := NewPolygonPath(
+		ConvertPos(geom.Point{1, 1}),
+		ConvertPos(geom.Point{4, 8}),
+		ConvertPos(geom.Point{7, 2}),
+		ConvertPos(geom.Point{10, 7}),
+		ConvertPos(geom.Point{13, 3}),
+		ConvertPos(geom.Point{16, 6}),
+		ConvertPos(geom.Point{19, 4}),
+		ConvertPos(geom.Point{22, 5}),
 	)
 
 	c1 := NewEllipse(cPos, cSize, colornames.GreenYellow)
-
-	aPath := NewPathAnimation(&c1.Pos, polyPath.RelPoint,
-		ConvertSize(geom.Point{27, 7}), 7*time.Second)
-	aPath.AutoReverse = true
-	aPath.RepeatCount = AnimationRepeatForever
-
 	ctrl.Add(c1)
-	ctrl.Save("gobs/PolygonPathTest.gob")
-	ctrl.Continue()
 
-	aPath.Start()
-	// fmt.Printf("PolygonPath: %+v\n", polyPath)
-	// fmt.Printf("Point at 0.0: %v\n", polyPath.RelPoint(0.0))
-	// fmt.Printf("Point at 0.25: %v\n", polyPath.RelPoint(0.25))
-	// fmt.Printf("Point at 0.5: %v\n", polyPath.RelPoint(0.5))
-	// fmt.Printf("Point at 0.75: %v\n", polyPath.RelPoint(0.75))
-	// fmt.Printf("Point at 1.0: %v\n", polyPath.RelPoint(1.0))
+	aPath1 := NewPolyPathAnimation(&c1.Pos, polyPath1, 7*time.Second)
+	aPath1.AutoReverse = true
+
+	aPath2 := NewPolyPathAnimation(&c1.Pos, polyPath2, 7*time.Second)
+	aPath2.AutoReverse = true
+
+	seq := NewSequence(aPath1, aPath2)
+	seq.RepeatCount = AnimationRepeatForever
+
+	seq.Start()
 }
 
 func RandomWalk(ctrl *Canvas) {
-	ctrl.Stop()
+	// ctrl.Stop()
 
 	rect := geom.Rectangle{Min: ConvertPos(geom.Point{1.0, 1.0}), Max: ConvertPos(geom.Point{28.0, 8.0})}
 	pos1 := ConvertPos(geom.Point{1.0, 1.0})
 	pos2 := ConvertPos(geom.Point{18.0, 8.0})
-	cSize := ConvertSize(geom.Point{3.0, 3.0})
+	size1 := ConvertSize(geom.Point{2.0, 2.0})
+	size2 := ConvertSize(geom.Point{4.0, 4.0})
 
-	c1 := NewEllipse(pos1, cSize, colornames.SkyBlue)
-	c2 := NewEllipse(pos2, cSize, colornames.GreenYellow)
+	c1 := NewEllipse(pos1, size1, colornames.SkyBlue)
+	c2 := NewEllipse(pos2, size2, colornames.GreenYellow)
+	ctrl.Add(c1, c2)
 
 	aPos1 := NewPositionAnimation(&c1.Pos, geom.Point{}, 1300*time.Millisecond)
-	aPos1.Curve = AnimationLinear
 	aPos1.Cont = true
-	aPos1.ValFunc = RandPoint(rect)
+	aPos1.ValFunc = RandPointTrunc(rect, 1.0)
 	aPos1.RepeatCount = AnimationRepeatForever
 
 	aPos2 := NewPositionAnimation(&c2.Pos, geom.Point{}, 901*time.Millisecond)
-	aPos1.Curve = AnimationLinear
 	aPos2.Cont = true
 	aPos2.ValFunc = RandPoint(rect)
 	aPos2.RepeatCount = AnimationRepeatForever
 
-	ctrl.Add(c1, c2)
-	ctrl.Save("gobs/RandomWalk.gob")
-	ctrl.Continue()
+	// ctrl.Save("gobs/RandomWalk.gob")
+	// ctrl.Continue()
 
 	aPos1.Start()
 	aPos2.Start()
 }
 
 func Piiiiixels(ctrl *Canvas) {
+	dPosX := ConvertSize(geom.Point{2.0, 0.0})
+	dPosY := ConvertSize(geom.Point{0.0, 2.0})
 	p1Pos1 := ConvertPos(geom.Point{1.0, 1.0})
-	// p1Pos2 := ConvertPos(geom.Point{18.0, 1.0})
-	p2Pos1 := ConvertPos(geom.Point{9.0, 1.0})
-	p2Range := ConvertSize(geom.Point{18.0, 7.0})
-	// p2Pos2 := ConvertPos(geom.Point{1.0, 8.0})
 
-	p1 := NewPixel(p1Pos1, colornames.OrangeRed)
-	p2 := NewPixel(p2Pos1, colornames.Lime)
+	aGrp := NewGroup()
+	aGrp.RepeatCount = AnimationRepeatForever
+	for i := range 5 {
+		for j := range 5 {
+			palName := ledgrid.PaletteNames[5*i+j]
+			pos := p1Pos1.Add(dPosX.Mul(float64(j)).Add(dPosY.Mul(float64(i))))
+			pix := NewPixel(pos, colornames.OrangeRed)
+			ctrl.Add(pix)
 
-	// p1pos := NewPositionAnimation(&p1.Pos, p1Pos2, 3*time.Second)
-	// p1pos.AutoReverse = true
-	// p1pos.RepeatCount = AnimationRepeatForever
-
-	p1color := NewPaletteAnimation(&p1.Color, ledgrid.PaletteMap["Pastell"], 2*time.Second)
-	p1color.RepeatCount = AnimationRepeatForever
-
-	p2pos := NewPathAnimation(&p2.Pos, FullCirclePathA, p2Range, 3*time.Second)
-	p2pos.Curve = AnimationLinear
-	p2pos.RepeatCount = AnimationRepeatForever
-
-	// p2pos := NewPositionAnimation(&p2.Pos, p2Pos2, 3*time.Second)
-	// p2pos.AutoReverse = true
-	// p2pos.RepeatCount = AnimationRepeatForever
-
-	ctrl.Add(p1, p2)
-
-	// p1pos.Start()
-	p1color.Start()
-	p2pos.Start()
+			pixColor := NewPaletteAnimation(&pix.Color, ledgrid.PaletteMap[palName], 4*time.Second)
+			aGrp.Add(pixColor)
+		}
+	}
+	aGrp.Start()
 }
 
 func CirclingCircles(ctrl *Canvas) {
 	pos1 := ConvertPos(geom.Point{2.0, 2.0})
-	pos2 := ConvertPos(geom.Point{7.0, 7.0})
-	pos3 := ConvertPos(geom.Point{12.0, 2.0})
-	pos4 := ConvertPos(geom.Point{17.0, 7.0})
+	pos2 := ConvertPos(geom.Point{8.0, 7.0})
+	pos3 := ConvertPos(geom.Point{14.0, 2.0})
+	pos4 := ConvertPos(geom.Point{20.0, 7.0})
+	pos5 := ConvertPos(geom.Point{26.0, 2.0})
 	cSize := ConvertSize(geom.Point{2.0, 2.0})
 
 	c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
 	c2 := NewEllipse(pos2, cSize, colornames.MediumSeaGreen)
 	c3 := NewEllipse(pos3, cSize, colornames.SkyBlue)
 	c4 := NewEllipse(pos4, cSize, colornames.Gold)
+	c5 := NewEllipse(pos5, cSize, colornames.YellowGreen)
 
-	c1Path1 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, ConvertSize(geom.Point{5.0, 5.0}), time.Second)
+	stepRD := ConvertSize(geom.Point{6.0, 5.0})
+	stepLU := stepRD.Neg()
+	stepRU := ConvertSize(geom.Point{6.0, -5.0})
+	stepLD := stepRU.Neg()
+
+	c1Path1 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepRD, time.Second)
 	c1Path1.Cont = true
-	c1Path2 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, ConvertSize(geom.Point{5.0, -5.0}), time.Second)
+	c1Path2 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepRU, time.Second)
 	c1Path2.Cont = true
-	c1Path3 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, ConvertSize(geom.Point{5.0, 5.0}), time.Second)
+	c1Path3 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepLD, time.Second)
 	c1Path3.Cont = true
+	c1Path4 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepLU, time.Second)
+	c1Path4.Cont = true
 
-	c2Path1 := NewPathAnimation(&c2.Pos, QuarterCirclePathA, ConvertSize(geom.Point{-5.0, -5.0}), time.Second)
+	c2Path1 := NewPathAnimation(&c2.Pos, QuarterCirclePathA, stepLU, time.Second)
 	c2Path1.Cont = true
-	c2Path2 := NewPathAnimation(&c2.Pos, QuarterCirclePathA, ConvertSize(geom.Point{5.0, 5.0}), time.Second)
+	c2Path2 := NewPathAnimation(&c2.Pos, QuarterCirclePathA, stepRD, time.Second)
 	c2Path2.Cont = true
 
-	c3Path1 := NewPathAnimation(&c3.Pos, QuarterCirclePathA, ConvertSize(geom.Point{-5.0, 5.0}), time.Second)
+	c3Path1 := NewPathAnimation(&c3.Pos, QuarterCirclePathA, stepLD, time.Second)
 	c3Path1.Cont = true
-	c3Path2 := NewPathAnimation(&c3.Pos, QuarterCirclePathA, ConvertSize(geom.Point{5.0, -5.0}), time.Second)
+	c3Path2 := NewPathAnimation(&c3.Pos, QuarterCirclePathA, stepRU, time.Second)
 	c3Path2.Cont = true
 
-	c4Path1 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, ConvertSize(geom.Point{-5.0, -5.0}), time.Second)
+	c4Path1 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, stepLU, time.Second)
 	c4Path1.Cont = true
-	c4Path2 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, ConvertSize(geom.Point{-5.0, 5.0}), time.Second)
+	c4Path2 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, stepRD, time.Second)
 	c4Path2.Cont = true
-	c4Path3 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, ConvertSize(geom.Point{-5.0, -5.0}), time.Second)
-	c4Path3.Cont = true
 
-	aGrp1 := NewGroup(0, c1Path1, c2Path1)
-	aGrp2 := NewGroup(0, c1Path2, c3Path1)
-	aGrp3 := NewGroup(0, c1Path3, c4Path1)
-	aGrp4 := NewGroup(0, c4Path2, c3Path2)
-	aGrp5 := NewGroup(0, c4Path3, c2Path2)
-	aSeq := NewSequence(0, aGrp1, aGrp2, aGrp3, aGrp4, aGrp5)
+	c5Path1 := NewPathAnimation(&c5.Pos, QuarterCirclePathA, stepLD, time.Second)
+	c5Path1.Cont = true
+	c5Path2 := NewPathAnimation(&c5.Pos, QuarterCirclePathA, stepRU, time.Second)
+	c5Path2.Cont = true
 
-	ctrl.Add(c1, c2, c3, c4)
+	aGrp1 := NewGroup(c1Path1, c2Path1)
+	aGrp2 := NewGroup(c1Path2, c3Path1)
+	aGrp3 := NewGroup(c1Path1, c4Path1)
+	aGrp4 := NewGroup(c1Path2, c5Path1)
+	aGrp5 := NewGroup(c1Path3, c5Path2)
+	aGrp6 := NewGroup(c1Path4, c4Path2)
+	aGrp7 := NewGroup(c1Path3, c3Path2)
+	aGrp8 := NewGroup(c1Path4, c2Path2)
+	aSeq := NewSequence(aGrp1, aGrp2, aGrp3, aGrp4, aGrp5, aGrp6, aGrp7, aGrp8)
+	aSeq.RepeatCount = AnimationRepeatForever
+
+	ctrl.Add(c1, c2, c3, c4, c5)
 	aSeq.Start()
 }
 
 func ChasingCircles(ctrl *Canvas) {
-	c1Pos1 := ConvertPos(geom.Point{16.5, 4.5})
+	c1Pos1 := ConvertPos(geom.Point{26.5, 4.5})
 	c1Size1 := ConvertSize(geom.Point{10.0, 10.0})
 	c1Size2 := ConvertSize(geom.Point{3.0, 3.0})
-	c1PosSize := ConvertSize(geom.Point{-14.0, -5.0})
+	c1PosSize := ConvertSize(geom.Point{-24.0, -5.0})
 	c2Pos := ConvertPos(geom.Point{2.5, 4.5})
 	c2Size1 := ConvertSize(geom.Point{5.0, 5.0})
 	c2Size2 := ConvertSize(geom.Point{3.0, 3.0})
-	c2PosSize := ConvertSize(geom.Point{14.0, 7.0})
+	c2PosSize := ConvertSize(geom.Point{24.0, 7.0})
 
 	pal := ledgrid.NewGradientPaletteByList("Palette", true,
 		ledgrid.LedColorModel.Convert(colornames.DeepSkyBlue).(ledgrid.LedColor),
@@ -529,74 +573,40 @@ func pixCoord(idx int) (x, y int) {
 func GlowingPixels(ctrl *Canvas) {
 	var pixField []*Pixel
 
-	ctrl.Stop()
-
 	pixField = make([]*Pixel, 10*30)
 
-	for _, idx := range rand.Perm(300) {
+	for idx, _ := range pixField {
 		x, y := pixCoord(idx)
 		pos := ConvertPos(geom.Point{float64(x), float64(y)})
-
-		// Farbschema 1: alle Pixel haben zufaellige Farben aus dem
-		// gesamten Farbvorrat.
-		// idx := rand.IntN(len(colornames.Names))
-		// col := colornames.Map[colornames.Names[idx]]
-
-		// Farbschema 2: jeweils zwei nebeneinanderliegende Spalten
-		// erhalten zufaellig gewaehlte Farben, die jedoch aus der gleichen
-		// Farbgruppe stammen.
-		// grpIdx := ledgrid.LedColorGroup(x/2) % colornames.NumColorGroups
-		// col := colornames.RandGroupColor(grpIdx)
-
-		// Farbschema 3: alle Pixel haben die gleiche Farbe. Damit laesst
-		// sich die Farbanimation besonders gut beobachten. Die Animation
-		// verringert den Alpha-Wert (laesst die Farben etwas transparenter
-		// werden), von daher sind helle Farben etwas geeigneter.
-		// col := colornames.DodgerBlue
-
-		// Farbschema 4: es werden zwei Farben ausgewaehlt und jedes Pixel
-		// erhaelt eine zufaellige Interpolation zwischen diesen beiden
-		// Farben.
 		col := colornames.DimGray.Interpolate(colornames.DarkGray, rand.Float64())
-		// col := colornames.SeaGreen.Interpolate(colornames.SteelBlue, rand.Float64()).Dark(0.2 * rand.Float64())
-		// col := colornames.BlueViolet.Interpolate(colornames.DarkMagenta, rand.Float64())
-		// col := colornames.Purple.Interpolate(colornames.Indigo, rand.Float64())
 
 		pix := NewPixel(pos, col)
 		pixField[idx] = pix
-		ctrl.Add(pix)
+   		ctrl.Add(pix)
 
 		dur := time.Second + rand.N(400*time.Millisecond)
-		aAlpha := NewFloatAnimation(&pix.Alpha, 0.5, dur)
+		aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
 		aAlpha.AutoReverse = true
 		aAlpha.RepeatCount = AnimationRepeatForever
 		aAlpha.Start()
 	}
 
-	aGrpPurple := NewGroup(0)
-	aGrpYellow := NewGroup(0)
-	aGrpGreen := NewGroup(0)
-	// aGrpGray := NewGroup(0)
+	aGrpPurple := NewGroup()
+	aGrpYellow := NewGroup()
+	aGrpGreen := NewGroup()
 
 	for _, pix := range pixField {
 		aColor := NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, rand.Float64()), 3*time.Second)
-		// aColor.Cont = true
 		aColor.AutoReverse = true
 		aGrpPurple.Add(aColor)
 
 		aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, rand.Float64()), 3*time.Second)
-		// aColor.Cont = true
 		aColor.AutoReverse = true
 		aGrpYellow.Add(aColor)
 
 		aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, rand.Float64()), 3*time.Second)
-		// aColor.Cont = true
 		aColor.AutoReverse = true
 		aGrpGreen.Add(aColor)
-
-		// aColor = NewColorAnimation(&pix.Color, colornames.DimGray.Interpolate(colornames.DarkGray, rand.Float64()), 3*time.Second)
-		// aColor.Cont = true
-		// aGrpGray.Add(aColor)
 	}
 
 	aTimel := NewTimeline(40 * time.Second)
@@ -606,8 +616,8 @@ func GlowingPixels(ctrl *Canvas) {
 	// aTimel.Add(40*time.Second, aGrpGray)
 	aTimel.RepeatCount = AnimationRepeatForever
 
-	ctrl.Save("gobs/GlowingPixels.gob")
-	ctrl.Continue()
+	// ctrl.Save("gobs/GlowingPixels.gob")
+	// ctrl.Continue()
 
 	aTimel.Start()
 }
@@ -624,44 +634,40 @@ func MovingText(c *Canvas) {
 	aAngle.Start()
 }
 
-/*
-Canvas statistics:
-  animation: 1460 calls; 574.805478ms in total; 393.702µs per call
-  painting : 1460 calls; 11.590908618s in total; 7.938978ms per call
-  sending  : 1460 calls; 2.62475604s in total; 1.797778ms per call
+func GlowingGridPixels(g *Grid) {
+	for y := range g.ledGrid.Rect.Dy() {
+		for x := range g.ledGrid.Rect.Dx() {
+			pos := image.Point{x, y}
+			col := colornames.DimGray.Interpolate(colornames.DarkGrey, rand.Float64())
+			pix := NewGridPixel(pos, col)
+			g.Add(pix)
 
-Grid statistics:
-  animation: 1291 calls; 534.033261ms in total; 413.658µs per call
-  painting : 1291 calls; 18.301573ms in total; 14.176µs per call
-  sending  : 1291 calls; 40.68729ms in total; 31.516µs per call
-*/
+        		dur := time.Second + rand.N(400*time.Millisecond)
+        		aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
+        		aAlpha.AutoReverse = true
+        		aAlpha.RepeatCount = AnimationRepeatForever
+        		aAlpha.Start()
+        }
+    }
 
-func GridTest(g *Grid) {
-	for _, cell := range g.Cells {
-		cell.Color = colornames.DimGray.Interpolate(colornames.DarkGray, rand.Float64())
-		dur := time.Second + rand.N(400*time.Millisecond)
-		aAlpha := NewFloatAnimation(&cell.Alpha, 0.7, dur)
-		aAlpha.AutoReverse = true
-		aAlpha.RepeatCount = AnimationRepeatForever
-		aAlpha.Start()
-	}
+	aGrpPurple := NewGroup()
+	aGrpYellow := NewGroup()
+	aGrpGreen := NewGroup()
 
-    	aGrpPurple := NewGroup(0)
-	aGrpYellow := NewGroup(0)
-	aGrpGreen := NewGroup(0)
+    for _, obj := range g.ObjList {
+        if pix, ok := obj.(*GridPixel); ok {
+        		aColor := NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, rand.Float64()), 3*time.Second)
+        		aColor.AutoReverse = true
+        		aGrpPurple.Add(aColor)
 
-	for _, cell := range g.Cells {
-		aColor := NewColorAnimation(&cell.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aGrpPurple.Add(aColor)
+        		aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, rand.Float64()), 3*time.Second)
+        		aColor.AutoReverse = true
+        		aGrpYellow.Add(aColor)
 
-		aColor = NewColorAnimation(&cell.Color, colornames.Gold.Interpolate(colornames.Khaki, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aGrpYellow.Add(aColor)
-
-		aColor = NewColorAnimation(&cell.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aGrpGreen.Add(aColor)
+        		aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, rand.Float64()), 3*time.Second)
+        		aColor.AutoReverse = true
+        		aGrpGreen.Add(aColor)
+        }
 	}
 
 	aTimel := NewTimeline(40 * time.Second)
@@ -671,6 +677,58 @@ func GridTest(g *Grid) {
 	aTimel.RepeatCount = AnimationRepeatForever
 
 	aTimel.Start()
+}
+
+func RandomGridPixels(g *Grid) {
+	for y := range g.ledGrid.Rect.Dy() {
+		for x := range g.ledGrid.Rect.Dx() {
+			pos := image.Pt(x, y)
+			colorGrp1 := colornames.ColorGroup(x/3) % colornames.NumColorGroups
+			colorGrp2 := (colorGrp1 + 1) % colornames.NumColorGroups
+			col := colornames.RandGroupColor(colorGrp1)
+			pix := NewGridPixel(pos, col)
+			g.Add(pix)
+			dur := time.Second
+			aColor := NewColorAnimation(&pix.Color, colornames.RandGroupColor(colorGrp2), dur)
+			aColor.AutoReverse = true
+			aColor.RepeatCount = AnimationRepeatForever
+			aColor.Start()
+		}
+	}
+}
+
+func TextOnGrid(g *Grid) {
+	basePt := image.Point{10, 9}
+	baseColor1 := colornames.SkyBlue
+
+    pix := NewGridPixel(basePt, colornames.OrangeRed)
+	txt := NewGridText(basePt, baseColor1, " ")
+	g.Add(txt, pix)
+
+	go func() {
+		for ch := 0x20; ch < 0x7f; ch++ {
+			txt.Text = fmt.Sprintf("%c", ch)
+			time.Sleep(1 * time.Second)
+		}
+	}()
+}
+
+func WalkingPixelOnGrid(g *Grid) {
+	pos := image.Point{0, 0}
+	col := colornames.GreenYellow
+	pix := NewGridPixel(pos, col)
+	g.Add(pix)
+
+    go func() {
+        idx := 0
+        for {
+            col := idx % width
+            row := idx / width
+            pix.Pos = image.Point{col, row}
+            time.Sleep(time.Second / 5)
+            idx++
+        }
+    }()
 }
 
 //----------------------------------------------------------------------------
@@ -709,7 +767,7 @@ func main() {
 	}
 
 	canvasSceneList := []canvasSceneRecord{
-        {"(Regular) Polygon test", RegularPolygonTest},
+		{"(Regular) Polygon test", RegularPolygonTest},
 		{"Group test", GroupTest},
 		// {"Group test (from saved program)", ReadGroupTest},
 		{"Sequence test", SequenceTest},
@@ -727,14 +785,22 @@ func main() {
 	}
 
 	gridSceneList := []gridSceneRecord{
-		{"Grid Test", GridTest},
+		{"Glowing Pixels (Grid)", GlowingGridPixels},
+		{"Random Pixels", RandomGridPixels},
+		{"Text on a grid", TextOnGrid},
+		{"Walking pixel", WalkingPixelOnGrid},
 	}
 
 	pixCtrl := ledgrid.NewNetPixelClient(pixelHost, pixelPort)
 	pixCtrl.SetGamma(gammaValue, gammaValue, gammaValue)
 	pixCtrl.SetMaxBright(255, 255, 255)
 
-	ledGrid := ledgrid.NewLedGrid(gridSize)
+    // modLayout := ledgrid.ModuleLayout{
+    //     {ledgrid.Module{ledgrid.ModLR, ledgrid.Rot270}},
+    //     {ledgrid.Module{ledgrid.ModLR, ledgrid.Rot270}},
+    //     {ledgrid.Module{ledgrid.ModRL, ledgrid.Rot000}},
+    // }
+	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 	canvas := NewCanvas(pixCtrl, ledGrid)
 	canvas.Stop()
 	grid := NewGrid(pixCtrl, ledGrid)
@@ -780,6 +846,7 @@ func main() {
 				}
 				AnimCtrl = canvas
 				AnimCtrl.Continue()
+				canvas.DelAll()
 				canvasSceneList[sceneId].fnc(canvas)
 			}
 			if input[0] >= 'A' && input[0] <= 'Z' {
@@ -793,6 +860,7 @@ func main() {
 				}
 				AnimCtrl = grid
 				AnimCtrl.Continue()
+				grid.DelAll()
 				gridSceneList[sceneId].fnc(grid)
 			}
 		}

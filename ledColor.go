@@ -16,44 +16,6 @@ var (
 	Transparent = LedColor{0x00, 0x00, 0x00, 0x00}
 )
 
-// // Damit verschiedene Interpolationsfunktionen verwendet werden koennen,
-// // ist das Profil als Typ definiert. Jede Interp.funktion realisiert eine
-// // (wie auch immer geartete) Interpolation zwischen den Werten a und b in
-// // Abhaengigkeit von t, wobei t in [0, 1] ist. Es muss gelten:
-// //
-// //   - f(a, b, 0.0) = a
-// //   - f(a, b, 1.0) = b
-// //
-// // TO DO: aktuell wird keine Fehlererkennung gemacht. Wenn beispielsweise
-// // t nicht in [0, 1] liegt, erzeugen die Funktionen ggf. unsinnige Werte.
-// type InterpolFuncType func(a, b, t float64) float64
-
-// var (
-// 	ColorInterpol = PolynomInterpol
-// )
-
-// // Realisiert die klassische lineare Interpolation zwischen den Werten a und b.
-// func LinearInterpol(a, b, t float64) float64 {
-// 	return (1-t)*a + t*b
-// }
-
-// // Realisiert eine kubische Interpolation.
-// func PolynomInterpol(a, b, t float64) float64 {
-// 	t = 3*t*t - 2*t*t*t
-// 	return LinearInterpol(a, b, t)
-// }
-
-// // Woher diese Interpolation stammt, kann ich auch nicht mehr mit Bestimmtheit
-// // sagen. Sicher ist, dass sie nicht mehr funktioniert, wenn a oder b negativ
-// // sind: dann gelten die oben genannte Bedingungen nicht mehr.
-// func SqrtInterpol(a, b, t float64) float64 {
-// 	return math.Sqrt((1-t)*a*a + t*b*b)
-// }
-
-func interp(a, b, t float64) float64 {
-	return (1-t)*a + t*b
-}
-
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
 // gesendet werden. Die Daten sind _nicht_ gamma-korrigiert, dies wird erst
 // auf dem Panel-Empfaenger gemacht (pixelcontroller-slave). LedColor
@@ -109,15 +71,40 @@ func (c1 LedColor) Interpolate(c2 LedColor, t float64) LedColor {
 	if t == 1.0 {
 		return c2
 	}
-	// if c3, ok := c2.(LedColor); ok {
-	r := interp(float64(c1.R), float64(c2.R), t)
-	g := interp(float64(c1.G), float64(c2.G), t)
-	b := interp(float64(c1.B), float64(c2.B), t)
-	a := interp(float64(c1.A), float64(c2.A), t)
+	r := (1.0-t)*float64(c1.R) + t*float64(c2.R)
+	g := (1.0-t)*float64(c1.G) + t*float64(c2.G)
+	b := (1.0-t)*float64(c1.B) + t*float64(c2.B)
+	a := (1.0-t)*float64(c1.A) + t*float64(c2.A)
 	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
-	// } else {
-	// return LedColor{}
-	// }
+}
+
+func (c LedColor) Alpha(a float64) LedColor {
+	return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
+}
+
+func (c LedColor) Bright(t float64) LedColor {
+	return c
+}
+
+func (c LedColor) Dark(t float64) LedColor {
+	return c
+}
+
+func (c LedColor) String() string {
+	return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B, c.A)
+}
+
+func (c *LedColor) UnmarshalText(text []byte) error {
+	hexStr := string(text)
+	hexVal, err := strconv.ParseUint(hexStr, 16, 32)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.R = uint8((hexVal & 0xff0000) >> 16)
+	c.G = uint8((hexVal & 0x00ff00) >> 8)
+	c.B = uint8((hexVal & 0x0000ff))
+	c.A = 0xff
+	return nil
 }
 
 // Mit folgenden Konstanten kann das Verfahren bestimmt werden, welches beim
@@ -179,35 +166,6 @@ func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 		log.Fatalf("Unknown mixing function: '%d'", mix)
 	}
 	return LedColor{}
-}
-
-func (c LedColor) Alpha(a float64) LedColor {
-	return LedColor{c.R, c.G, c.B, uint8(255.0 * a)}
-}
-
-func (c LedColor) Bright(t float64) LedColor {
-	return c
-}
-
-func (c LedColor) Dark(t float64) LedColor {
-	return c
-}
-
-func (c LedColor) String() string {
-	return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B, c.A)
-}
-
-func (c *LedColor) UnmarshalText(text []byte) error {
-	hexStr := string(text)
-	hexVal, err := strconv.ParseUint(hexStr, 16, 32)
-	if err != nil {
-		log.Fatal(err)
-	}
-	c.R = uint8((hexVal & 0xff0000) >> 16)
-	c.G = uint8((hexVal & 0x00ff00) >> 8)
-	c.B = uint8((hexVal & 0x0000ff))
-	c.A = 0xff
-	return nil
 }
 
 // Das zum Typ LedColor zugehoerende ColorModel.
