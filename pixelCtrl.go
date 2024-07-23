@@ -198,9 +198,9 @@ func (p *PixelServer) ToggleTestPattern() {
 				p.buffer[3*(idx-1)+1] = 0x63
 				p.buffer[3*(idx-1)+2] = 0x00
 			} else {
-				p.buffer[3*(idx-1)+0] = 0xbf
-				p.buffer[3*(idx-1)+1] = 0xbf
-				p.buffer[3*(idx-1)+2] = 0xbf
+				p.buffer[3*(idx-1)+0] = 0x8f
+				p.buffer[3*(idx-1)+1] = 0x8f
+				p.buffer[3*(idx-1)+2] = 0x8f
 			}
 			if p.onRaspi {
 				for i := 0; i < bufferSize; i += p.maxTxSize {
