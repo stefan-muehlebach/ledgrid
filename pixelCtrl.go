@@ -208,7 +208,7 @@ func (p *PixelServer) DrawTestPattern() {
 						log.Fatalf("Couldn't send data: %v", err)
 					}
 				}
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(250 * time.Millisecond)
 			} else {
 				log.Printf("Received %d bytes", bufferSize)
 			}
