@@ -170,32 +170,32 @@ func (p *PixelServer) Draw(lg *LedGrid) {
 }
 
 func (p *PixelServer) DrawTestPattern() {
-    if p.drawTestPattern {
-        p.drawTestPattern = false
-        return
-    } else {
-        	p.drawTestPattern = true
-    }
+	if p.drawTestPattern {
+		p.drawTestPattern = false
+		return
+	} else {
+		p.drawTestPattern = true
+	}
 
 	bufferSize := 3 * 20 * 20
 	go func() {
 		idx := 0
 		for p.drawTestPattern {
-            if idx == 0 {
-                for i := range bufferSize {
-                    p.buffer[i] = 0x00
-                }
-			} else if idx%5 == 0 {
-				p.buffer[3*(idx-1)+0] = 0x00
-				p.buffer[3*(idx-1)+1] = 0x63
+			if idx == 0 {
+				for i := range bufferSize {
+					p.buffer[i] = 0x00
+				}
+			} else if idx%100 == 0 {
+				p.buffer[3*(idx-1)+0] = 0xff
+				p.buffer[3*(idx-1)+1] = 0x3f
 				p.buffer[3*(idx-1)+2] = 0x00
 			} else if idx%10 == 0 {
 				p.buffer[3*(idx-1)+0] = 0x00
 				p.buffer[3*(idx-1)+1] = 0x8f
 				p.buffer[3*(idx-1)+2] = 0x8f
-			} else if idx%100 == 0 {
-				p.buffer[3*(idx-1)+0] = 0xff
-				p.buffer[3*(idx-1)+1] = 0x3f
+			} else if idx%5 == 0 {
+				p.buffer[3*(idx-1)+0] = 0x00
+				p.buffer[3*(idx-1)+1] = 0x63
 				p.buffer[3*(idx-1)+2] = 0x00
 			} else {
 				p.buffer[3*(idx-1)+0] = 0xbf
@@ -213,7 +213,7 @@ func (p *PixelServer) DrawTestPattern() {
 			} else {
 				log.Printf("Received %d bytes", bufferSize)
 			}
-            idx = (idx+1) % (400)
+			idx = (idx + 1) % (400)
 		}
 	}()
 }
