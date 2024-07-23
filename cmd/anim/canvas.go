@@ -253,7 +253,7 @@ func (c *Canvas) backgroundThread() {
 		c.gc.Clear()
 		c.objMutex.RLock()
 		for _, obj := range c.ObjList {
-			obj.Draw(c.gc)
+			obj.Draw(c)
 		}
 		c.objMutex.RUnlock()
 		c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
@@ -330,13 +330,40 @@ func ApplyAlpha(c ledgrid.LedColor) ledgrid.LedColor {
 // sollen, muessen im Minimum die Methode Draw implementieren, durch welche
 // sie auf einem gg-Kontext gezeichnet werden.
 type CanvasObject interface {
-	Draw(gc *gg.Context)
+	Draw(c *Canvas)
 }
 
 var (
 	defFont     = fonts.SeafordBold
 	defFontSize = ConvertLen(12.0)
 )
+
+type Image struct {
+    Pos, Size geom.Point
+    Angle float64
+    img image.Image
+}
+
+func NewImage(pos geom.Point, fileName string) *Image {
+    i := &Image{Pos: pos, Angle: 0.0}
+    fh, err := os.Open(fileName)
+    if err != nil {
+        log.Fatalf("Couldn't open file: %v", err)
+    }
+    defer fh.Close()
+    i.img, _, err = image.Decode(fh)
+    if err != nil {
+        log.Fatalf("Couldn't decode image: %v", err)
+    }
+    i.Size = geom.NewPointIMG(i.img.Bounds().Size().Mul(int(oversize)))
+    return i
+}
+
+func (i *Image) Draw(c *Canvas) {
+    rect := geom.Rectangle{Max: i.Size}
+    refPt := i.Pos.Sub(i.Size.Div(2.0))
+    draw.CatmullRom.Scale(c.canvas, rect.Add(refPt).Int(), i.img, i.img.Bounds(), draw.Over, nil)
+}
 
 // Zur Darstellung von beliebigem Text.
 type Text struct {
@@ -356,39 +383,16 @@ func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	return t
 }
 
-func (t *Text) Draw(gc *gg.Context) {
+func (t *Text) Draw(c *Canvas) {
 	if t.Angle != 0.0 {
-		gc.Push()
-		gc.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
-		defer gc.Pop()
+		c.gc.Push()
+		c.gc.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
+		defer c.gc.Pop()
 	}
-	gc.SetStrokeColor(t.Color)
-	gc.SetFontFace(t.fontFace)
-	gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
+	c.gc.SetStrokeColor(t.Color)
+	c.gc.SetFontFace(t.fontFace)
+	c.gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
 }
-
-// Es folgen Hilfsfunktionen fuer die schnelle Umrechnung zwischen Fliess-
-// und Fixkommazahlen sowie den geometrischen Typen, die auf Fixkommazahlen
-// aufgebaut sind.
-// func rect2fix(r image.Rectangle) fixed.Rectangle26_6 {
-// 	return fixed.R(r.Min.X, r.Min.Y, r.Max.X, r.Max.Y)
-// }
-
-// func coord2fix(x, y float64) fixed.Point26_6 {
-// 	return fixed.Point26_6{X: float2fix(x), Y: float2fix(y)}
-// }
-
-// func fix2coord(p fixed.Point26_6) (x, y float64) {
-// 	return fix2float(p.X), fix2float(p.Y)
-// }
-
-// func float2fix(x float64) fixed.Int26_6 {
-// 	return fixed.Int26_6(math.Round(x * 64))
-// }
-
-// func fix2float(x fixed.Int26_6) float64 {
-// 	return float64(x) / 64.0
-// }
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
 // Position des Mittelpunktes und mit Size ist die Breite und Hoehe des
@@ -414,21 +418,21 @@ func NewEllipse(pos, size geom.Point, borderColor ledgrid.LedColor) *Ellipse {
 	return e
 }
 
-func (e *Ellipse) Draw(gc *gg.Context) {
+func (e *Ellipse) Draw(c *Canvas) {
 	if e.Angle != 0.0 {
-		gc.Push()
-		gc.RotateAbout(e.Angle, e.Pos.X, e.Pos.Y)
-		defer gc.Pop()
+		c.gc.Push()
+		c.gc.RotateAbout(e.Angle, e.Pos.X, e.Pos.Y)
+		defer c.gc.Pop()
 	}
-	gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
-	gc.SetStrokeWidth(e.BorderWidth)
-	gc.SetStrokeColor(e.BorderColor)
+	c.gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
+	c.gc.SetStrokeWidth(e.BorderWidth)
+	c.gc.SetStrokeColor(e.BorderColor)
 	if e.FillColor == ledgrid.Transparent {
-		gc.SetFillColor(e.FillColorFnc(e.BorderColor))
+		c.gc.SetFillColor(e.FillColorFnc(e.BorderColor))
 	} else {
-		gc.SetFillColor(e.FillColor)
+		c.gc.SetFillColor(e.FillColor)
 	}
-	gc.FillStroke()
+	c.gc.FillStroke()
 }
 
 // Rectangle ist fuer alle rechteckigen Objekte vorgesehen. Pos bezeichnet
@@ -447,23 +451,24 @@ func NewRectangle(pos, size geom.Point, borderColor ledgrid.LedColor) *Rectangle
 	return r
 }
 
-func (r *Rectangle) Draw(gc *gg.Context) {
+func (r *Rectangle) Draw(c *Canvas) {
 	if r.Angle != 0.0 {
-		gc.Push()
-		gc.RotateAbout(r.Angle, r.Pos.X, r.Pos.Y)
-		defer gc.Pop()
+		c.gc.Push()
+		c.gc.RotateAbout(r.Angle, r.Pos.X, r.Pos.Y)
+		defer c.gc.Pop()
 	}
-	gc.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
-	gc.SetStrokeWidth(r.BorderWidth)
-	gc.SetStrokeColor(r.BorderColor)
+	c.gc.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
+	c.gc.SetStrokeWidth(r.BorderWidth)
+	c.gc.SetStrokeColor(r.BorderColor)
 	if r.FillColorFnc != nil {
-		gc.SetFillColor(r.FillColorFnc(r.BorderColor))
+		c.gc.SetFillColor(r.FillColorFnc(r.BorderColor))
 	} else {
-		gc.SetFillColor(r.FillColor)
+		c.gc.SetFillColor(r.FillColor)
 	}
-	gc.FillStroke()
+	c.gc.FillStroke()
 }
 
+// Auch gleichmaessige Polygone duerfen nicht fehlen.
 type RegularPolygon struct {
 	Pos, Size              geom.Point
 	Angle                  float64
@@ -479,16 +484,16 @@ func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor ledgrid.
 	return p
 }
 
-func (p *RegularPolygon) Draw(gc *gg.Context) {
-	gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
-	gc.SetStrokeWidth(p.BorderWidth)
-	gc.SetStrokeColor(p.BorderColor)
+func (p *RegularPolygon) Draw(c *Canvas) {
+	c.gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
+	c.gc.SetStrokeWidth(p.BorderWidth)
+	c.gc.SetStrokeColor(p.BorderColor)
 	if p.FillColorFnc != nil {
-		gc.SetFillColor(p.FillColorFnc(p.BorderColor))
+		c.gc.SetFillColor(p.FillColorFnc(p.BorderColor))
 	} else {
-		gc.SetFillColor(p.FillColor)
+		c.gc.SetFillColor(p.FillColor)
 	}
-	gc.FillStroke()
+	c.gc.FillStroke()
 }
 
 // Fuer Geraden ist dieser Datentyp vorgesehen, der von Pos1 nach Pos2
@@ -504,11 +509,11 @@ func NewLine(pos1, pos2 geom.Point, col ledgrid.LedColor) *Line {
 	return l
 }
 
-func (l *Line) Draw(gc *gg.Context) {
-	gc.SetStrokeWidth(l.Width)
-	gc.SetStrokeColor(l.Color)
-	gc.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
-	gc.Stroke()
+func (l *Line) Draw(c *Canvas) {
+	c.gc.SetStrokeWidth(l.Width)
+	c.gc.SetStrokeColor(l.Color)
+	c.gc.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
+	c.gc.Stroke()
 }
 
 // Will man ein einzelnes Pixel zeichnen, so eignet sich dieser Typ. Er wird
@@ -524,8 +529,8 @@ func NewPixel(pos geom.Point, col ledgrid.LedColor) *Pixel {
 	return p
 }
 
-func (p *Pixel) Draw(gc *gg.Context) {
-	gc.SetFillColor(p.Color)
-	gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
-	gc.Fill()
+func (p *Pixel) Draw(c *Canvas) {
+	c.gc.SetFillColor(p.Color)
+	c.gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
+	c.gc.Fill()
 }

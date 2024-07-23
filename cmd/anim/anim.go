@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	width            = 40
-	height           = 10
+	width  = 30
+	height = 10
 )
 
 var (
@@ -72,7 +72,7 @@ func GroupTest(ctrl *Canvas) {
 	// ctrl.Stop()
 
 	rPos1 := ConvertPos(geom.Point{4.5, 4.5})
-	rPos2 := ConvertPos(geom.Point{width-1.5, 4.5})
+	rPos2 := ConvertPos(geom.Point{width - 1.5, 4.5})
 	rSize1 := ConvertSize(geom.Point{7.0, 7.0})
 	rSize2 := ConvertSize(geom.Point{1.0, 1.0})
 	rColor1 := colornames.SkyBlue
@@ -150,15 +150,15 @@ func SequenceTest(ctrl *Canvas) {
 }
 
 func TimelineTest(ctrl *Canvas) {
-	r1Pos := ConvertPos(geom.Point{6.5, (height-1.0)/2.0})
+	r1Pos := ConvertPos(geom.Point{6.5, (height - 1.0) / 2.0})
 	r1Size := ConvertSize(geom.Point{9.0, 5.0})
-    r2Pos := ConvertPos(geom.Point{(width-1.0)/2.0, (height-1.0)/2.0})
-    r2Size := ConvertSize(geom.Point{11.0, 7.0})
-	r3Pos := ConvertPos(geom.Point{width-7.5, (height-1.0)/2.0})
+	r2Pos := ConvertPos(geom.Point{(width - 1.0) / 2.0, (height - 1.0) / 2.0})
+	r2Size := ConvertSize(geom.Point{11.0, 7.0})
+	r3Pos := ConvertPos(geom.Point{width - 7.5, (height - 1.0) / 2.0})
 	r3Size := ConvertSize(geom.Point{9.0, 5.0})
 
 	r1 := NewRectangle(r1Pos, r1Size, colornames.GreenYellow)
-    r2 := NewRectangle(r2Pos, r2Size, colornames.Gold)
+	r2 := NewRectangle(r2Pos, r2Size, colornames.Gold)
 	r3 := NewRectangle(r3Pos, r3Size, colornames.SkyBlue)
 	ctrl.Add(r1, r2, r3)
 
@@ -173,10 +173,10 @@ func TimelineTest(ctrl *Canvas) {
 	aColor3 := NewColorAnimation(&r1.BorderColor, colornames.GreenYellow, 500*time.Millisecond)
 	aColor3.Cont = true
 
-    aPos1 := NewPositionAnimation(&r1.Pos, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
-    aPos1.AutoReverse = true
+	aPos1 := NewPositionAnimation(&r1.Pos, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+	aPos1.AutoReverse = true
 
-    aAngle3 := NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
+	aAngle3 := NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
 	aAngle4 := NewFloatAnimation(&r3.Angle, 0.0, time.Second)
 	aAngle4.Cont = true
 
@@ -187,13 +187,13 @@ func TimelineTest(ctrl *Canvas) {
 	aColor6 := NewColorAnimation(&r3.BorderColor, colornames.SkyBlue, 500*time.Millisecond)
 	aColor6.Cont = true
 
-    aPos2 := NewPositionAnimation(&r3.Pos, r2.Pos.AddXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
-    aPos2.AutoReverse = true
+	aPos2 := NewPositionAnimation(&r3.Pos, r2.Pos.AddXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+	aPos2.AutoReverse = true
 
-    aColor7 := NewColorAnimation(&r2.BorderColor, colornames.Cornsilk, 500*time.Millisecond)
-    aColor7.AutoReverse = true
-    aBorder := NewFloatAnimation(&r2.BorderWidth, ConvertLen(3.0), 500*time.Millisecond)
-    aBorder.AutoReverse = true
+	aColor7 := NewColorAnimation(&r2.BorderColor, colornames.Cornsilk, 500*time.Millisecond)
+	aColor7.AutoReverse = true
+	aBorder := NewFloatAnimation(&r2.BorderWidth, ConvertLen(3.0), 500*time.Millisecond)
+	aBorder.AutoReverse = true
 
 	tl := NewTimeline(5 * time.Second)
 	tl.RepeatCount = AnimationRepeatForever
@@ -212,7 +212,7 @@ func TimelineTest(ctrl *Canvas) {
 	tl.Add(3100*time.Millisecond, aAngle4)
 	tl.Add(3600*time.Millisecond, aColor6)
 
-    tl.Add(2400*time.Millisecond, aColor7, aBorder)
+	tl.Add(2400*time.Millisecond, aColor7, aBorder)
 
 	tl.Start()
 }
@@ -222,10 +222,10 @@ func PathTest(ctrl *Canvas) {
 	pathA := FullCirclePathA
 	pathB := FullCirclePathB
 
-	pos1 := ConvertPos(geom.Point{1.5, (height-1.0)/2.0})
-	pos2 := ConvertPos(geom.Point{(width-1.0)/2.0, 1.5})
-	pos3 := ConvertPos(geom.Point{(width-1.0)-1.5, (height-1.0)/2.0})
-	pos4 := ConvertPos(geom.Point{(width-1.0)/2.0, (height-1.0)-1.5})
+	pos1 := ConvertPos(geom.Point{1.5, (height - 1.0) / 2.0})
+	pos2 := ConvertPos(geom.Point{(width - 1.0) / 2.0, 1.5})
+	pos3 := ConvertPos(geom.Point{(width - 1.0) - 1.5, (height - 1.0) / 2.0})
+	pos4 := ConvertPos(geom.Point{(width - 1.0) / 2.0, (height - 1.0) - 1.5})
 	cSize := ConvertSize(geom.Point{3.0, 3.0})
 
 	c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
@@ -234,14 +234,14 @@ func PathTest(ctrl *Canvas) {
 	c4 := NewEllipse(pos4, cSize, colornames.Gold)
 	ctrl.Add(c1, c2, c3, c4)
 
-	c1Path := NewPathAnimation(&c1.Pos, pathB, ConvertSize(geom.Point{width-4.0, 6.0}), duration)
+	c1Path := NewPathAnimation(&c1.Pos, pathB, ConvertSize(geom.Point{width - 4.0, 6.0}), duration)
 	c1Path.AutoReverse = true
-	c3Path := NewPathAnimation(&c3.Pos, pathB, ConvertSize(geom.Point{-(width-4.0), -6.0}), duration)
+	c3Path := NewPathAnimation(&c3.Pos, pathB, ConvertSize(geom.Point{-(width - 4.0), -6.0}), duration)
 	c3Path.AutoReverse = true
 
-	c2Path := NewPathAnimation(&c2.Pos, pathA, ConvertSize(geom.Point{width/3.0, 6.0}), duration)
+	c2Path := NewPathAnimation(&c2.Pos, pathA, ConvertSize(geom.Point{width / 3.0, 6.0}), duration)
 	c2Path.AutoReverse = true
-	c4Path := NewPathAnimation(&c4.Pos, pathA, ConvertSize(geom.Point{-width/3.0, -6.0}), duration)
+	c4Path := NewPathAnimation(&c4.Pos, pathA, ConvertSize(geom.Point{-width / 3.0, -6.0}), duration)
 	c4Path.AutoReverse = true
 
 	aGrp := NewGroup(c1Path, c2Path, c3Path, c4Path)
@@ -257,24 +257,24 @@ func PolygonPathTest(ctrl *Canvas) {
 
 	polyPath1 := NewPolygonPath(
 		ConvertPos(geom.Point{1, 1}),
-		ConvertPos(geom.Point{width-2, 1}),
-		ConvertPos(geom.Point{width-2, height-2}),
-		ConvertPos(geom.Point{1, height-2}),
+		ConvertPos(geom.Point{width - 2, 1}),
+		ConvertPos(geom.Point{width - 2, height - 2}),
+		ConvertPos(geom.Point{1, height - 2}),
 
 		ConvertPos(geom.Point{1, 2}),
-		ConvertPos(geom.Point{width-3, 2}),
-		ConvertPos(geom.Point{width-3, height-3}),
-		ConvertPos(geom.Point{2, height-3}),
+		ConvertPos(geom.Point{width - 3, 2}),
+		ConvertPos(geom.Point{width - 3, height - 3}),
+		ConvertPos(geom.Point{2, height - 3}),
 
 		ConvertPos(geom.Point{2, 3}),
-		ConvertPos(geom.Point{width-4, 3}),
-		ConvertPos(geom.Point{width-4, height-4}),
-		ConvertPos(geom.Point{3, height-4}),
+		ConvertPos(geom.Point{width - 4, 3}),
+		ConvertPos(geom.Point{width - 4, height - 4}),
+		ConvertPos(geom.Point{3, height - 4}),
 
 		ConvertPos(geom.Point{3, 4}),
-		ConvertPos(geom.Point{width-5, 4}),
-		ConvertPos(geom.Point{width-5, height-5}),
-		ConvertPos(geom.Point{4, height-5}),
+		ConvertPos(geom.Point{width - 5, 4}),
+		ConvertPos(geom.Point{width - 5, height - 5}),
+		ConvertPos(geom.Point{4, height - 5}),
 	)
 
 	polyPath2 := NewPolygonPath(
@@ -304,7 +304,7 @@ func PolygonPathTest(ctrl *Canvas) {
 }
 
 func RandomWalk(ctrl *Canvas) {
-	rect := geom.Rectangle{Min: ConvertPos(geom.Point{1.0, 1.0}), Max: ConvertPos(geom.Point{width-1.0, height-1.0})}
+	rect := geom.Rectangle{Min: ConvertPos(geom.Point{1.0, 1.0}), Max: ConvertPos(geom.Point{width - 1.0, height - 1.0})}
 	pos1 := ConvertPos(geom.Point{1.0, 1.0})
 	pos2 := ConvertPos(geom.Point{18.0, 8.0})
 	size1 := ConvertSize(geom.Point{2.0, 2.0})
@@ -518,14 +518,14 @@ func CircleAnimation(ctrl *Canvas) {
 }
 
 func PushingRectangles(ctrl *Canvas) {
-	rSize1 := ConvertSize(geom.Point{width-3.0, 1.0})
-	rSize2 := ConvertSize(geom.Point{1.0, height-1.0})
+	rSize1 := ConvertSize(geom.Point{width - 3.0, 1.0})
+	rSize2 := ConvertSize(geom.Point{1.0, height - 1.0})
 
-	r1Pos1 := ConvertPos(geom.Point{0.5, (height-1.0)/2.0})
-	r1Pos2 := ConvertPos(geom.Point{0.5 + (width-3.0)/2.0, (height-1.0)/2.0})
+	r1Pos1 := ConvertPos(geom.Point{0.5, (height - 1.0) / 2.0})
+	r1Pos2 := ConvertPos(geom.Point{0.5 + (width-3.0)/2.0, (height - 1.0) / 2.0})
 
-	r2Pos1 := ConvertPos(geom.Point{(width-1.0)-0.5, (height-1.0)/2.0})
-	r2Pos2 := ConvertPos(geom.Point{(width-1.0)-0.5 - (width-3.0)/2.0, (height-1.0)/2.0})
+	r2Pos1 := ConvertPos(geom.Point{(width - 1.0) - 0.5, (height - 1.0) / 2.0})
+	r2Pos2 := ConvertPos(geom.Point{(width - 1.0) - 0.5 - (width-3.0)/2.0, (height - 1.0) / 2.0})
 	duration := 2 * time.Second
 
 	r1 := NewRectangle(r1Pos1, rSize2, colornames.Crimson)
@@ -576,7 +576,7 @@ func pixCoord(idx int) (x, y int) {
 func GlowingPixels(ctrl *Canvas) {
 	var pixField []*Pixel
 
-	pixField = make([]*Pixel, width * height)
+	pixField = make([]*Pixel, width*height)
 
 	for idx, _ := range pixField {
 		x, y := pixCoord(idx)
@@ -622,60 +622,60 @@ func GlowingPixels(ctrl *Canvas) {
 }
 
 var (
-    pts = []geom.Point{
-        ConvertPos(geom.Point{0, 0}),
-        ConvertPos(geom.Point{0, height}),
-        ConvertPos(geom.Point{width, height}),
-        ConvertPos(geom.Point{width, 0}),
-        // ConvertPos(geom.Point{-11, -6}),
-        // ConvertPos(geom.Point{-11, height+1}),
-        // ConvertPos(geom.Point{width+10, height+1}),
-        // ConvertPos(geom.Point{width+10, -6}),
-    }
-    lastP0 = 0
+	pts = []geom.Point{
+		ConvertPos(geom.Point{0, 0}),
+		ConvertPos(geom.Point{0, height}),
+		ConvertPos(geom.Point{width, height}),
+		ConvertPos(geom.Point{width, 0}),
+		// ConvertPos(geom.Point{-11, -6}),
+		// ConvertPos(geom.Point{-11, height+1}),
+		// ConvertPos(geom.Point{width+10, height+1}),
+		// ConvertPos(geom.Point{width+10, -6}),
+	}
+	lastP0 = 0
 )
 
 func randPoint() geom.Point {
-    p0 := rand.IntN(len(pts))
-    for p0 == lastP0 {
-        p0 = rand.IntN(len(pts))
-    }
-    lastP0 = p0
-    p1 := (p0 + 1) % len(pts)
+	p0 := rand.IntN(len(pts))
+	for p0 == lastP0 {
+		p0 = rand.IntN(len(pts))
+	}
+	lastP0 = p0
+	p1 := (p0 + 1) % len(pts)
 
-    return pts[p0].Interpolate(pts[p1], rand.Float64())
+	return pts[p0].Interpolate(pts[p1], rand.Float64())
 }
 
 func MovingText(c *Canvas) {
 
 	t1 := NewText(randPoint(), "Beni", colornames.LightSeaGreen)
-    t2 := NewText(randPoint(), "Stefan", colornames.YellowGreen)
+	t2 := NewText(randPoint(), "Stefan", colornames.YellowGreen)
 	c.Add(t1, t2)
 
 	aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 4*time.Second)
-    aPos1.ValFunc = randPoint
-    aPos1.RepeatCount = AnimationRepeatForever
-    aPos1.Cont = true
+	aPos1.ValFunc = randPoint
+	aPos1.RepeatCount = AnimationRepeatForever
+	aPos1.Cont = true
 
-    	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
-    aPos2.ValFunc = randPoint
-    aPos2.RepeatCount = AnimationRepeatForever
-    aPos2.Cont = true
+	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
+	aPos2.ValFunc = randPoint
+	aPos2.RepeatCount = AnimationRepeatForever
+	aPos2.Cont = true
 
-    aAngle1 := NewFloatAnimation(&t1.Angle, 0.0, 3*time.Second)
-    aAngle1.ValFunc = RandFloat(math.Pi/2.0, math.Pi)
-    aAngle1.AutoReverse = true
-    aAngle1.RepeatCount = AnimationRepeatForever
+	aAngle1 := NewFloatAnimation(&t1.Angle, 0.0, 3*time.Second)
+	aAngle1.ValFunc = RandFloat(math.Pi/2.0, math.Pi)
+	aAngle1.AutoReverse = true
+	aAngle1.RepeatCount = AnimationRepeatForever
 
-    aAngle2 := NewFloatAnimation(&t2.Angle, 0.0, 4*time.Second)
-    aAngle2.ValFunc = RandFloat(math.Pi/6.0, math.Pi/2.0)
-    aAngle2.AutoReverse = true
-    aAngle2.RepeatCount = AnimationRepeatForever
+	aAngle2 := NewFloatAnimation(&t2.Angle, 0.0, 4*time.Second)
+	aAngle2.ValFunc = RandFloat(math.Pi/6.0, math.Pi/2.0)
+	aAngle2.AutoReverse = true
+	aAngle2.RepeatCount = AnimationRepeatForever
 
-    aAngle1.Start()
-    aAngle2.Start()
-    aPos1.Start()
-    aPos2.Start()
+	aAngle1.Start()
+	aAngle2.Start()
+	aPos1.Start()
+	aPos2.Start()
 
 	// aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
 	// aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
@@ -689,6 +689,37 @@ func MovingText(c *Canvas) {
 	// aSeq := NewSequence(aAngle, aSize)
 
 	// aSize.Start()
+}
+
+func FlyingImages(c *Canvas) {
+	pos1 := ConvertPos(geom.Point{-7.5, 4.5})
+	pos2 := ConvertPos(geom.Point{14.5, 4.5})
+	// pos3 := ConvertPos(geom.Point{24.5, 4.5})
+	// dp := ConvertSize(geom.Point{15, 0})
+
+	// t1 := NewText(pos1, "Hallo", colornames.Gold)
+
+	// i1 := NewImage(pos1, "images/05.png")
+	// i1.Size = ConvertSize(geom.Point{10, 10})
+	// i2 := NewImage(pos1, "images/13.png")
+	// i2.Size = ConvertSize(geom.Point{10, 10})
+	// i3 := NewImage(pos1, "images/test.png")
+	// i3.Size = ConvertSize(geom.Point{13.3, 10.0})
+	i4 := NewImage(pos1, "images/lorem.png")
+	i4.Size = ConvertSize(geom.Point{16.0, 3.0})
+	c.Add(i4)
+
+    aPos1 := NewPositionAnimation(&i4.Pos, pos2, 4 * time.Second)
+    aSize1 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{633.0, 118.0}), 4 * time.Second)
+    aPos2 := NewPositionAnimation(&i4.Pos, pos2.Add(geom.Point{250.0, 0.0}), 6 * time.Second)
+    aPos2.Cont = true
+    aSize2 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{16.0, 3.0}), 4 * time.Second)
+    aSize2.Cont = true
+    aPos3 := NewPositionAnimation(&i4.Pos, pos1, 3 * time.Second)
+    aPos3.Cont = true
+
+    aSeq := NewSequence(aPos1, aSize1, aPos2, aSize2)
+    aSeq.Start()
 }
 
 func GlowingGridPixels(g *Grid) {
@@ -815,11 +846,17 @@ func main() {
 	var sceneId int
 	var runInteractive bool
 	var pixCtrl ledgrid.PixelClient
+	// var modConf ledgrid.ModuleConfig
 
 	flag.BoolVar(&local, "local", defLocal, "Run on PixelController host")
 	flag.StringVar(&input, "scene", input, "play one single scene (no menu)")
 	flag.BoolVar(&doLog, "log", doLog, "enable logging")
 	flag.Parse()
+
+	// modConf, _ = modConf.Append(0, 0, ledgrid.Module{ledgrid.ModLR, ledgrid.Rot000})
+	// modConf, _ = modConf.Append(1, 0, ledgrid.Module{ledgrid.ModLR, ledgrid.Rot000})
+	// modConf, _ = modConf.Append(2, 0, ledgrid.Module{ledgrid.ModRL, ledgrid.Rot090})
+	// modConf, _ = modConf.Append(2, 1, ledgrid.Module{ledgrid.ModLR, ledgrid.Rot000})
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -843,6 +880,7 @@ func main() {
 		{"Pushing Rectangles", PushingRectangles},
 		{"Glowing Pixels (Canvas)", GlowingPixels},
 		{"Moving Text", MovingText},
+		{"Flying images", FlyingImages},
 	}
 
 	gridSceneList := []gridSceneRecord{

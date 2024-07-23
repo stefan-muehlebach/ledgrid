@@ -20,27 +20,28 @@ import (
 )
 
 const (
-    // Dies ist die Groesse des Buffers, welcher fuer den Empfang der
-    // LED-Daten zur Verfuegung steht. Er ist bewusst extrem grosszuegig
-    // dimensioniert... ;-)
+	// Dies ist die Groesse des Buffers, welcher fuer den Empfang der
+	// LED-Daten zur Verfuegung steht. Er ist bewusst extrem grosszuegig
+	// dimensioniert... ;-)
 	bufferSize = 320 * 240 * 3
 )
 
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist.
 type PixelServer struct {
-	onRaspi     bool
-	udpAddr     *net.UDPAddr
-	udpConn     *net.UDPConn
-	tcpAddr     *net.TCPAddr
-	tcpListener *net.TCPListener
-	spiPort     spi.PortCloser
-	spiConn     spi.Conn
-	buffer      []byte
-	maxTxSize   int
-	gammaValue  [3]float64
-	maxValue    [3]uint8
-	gamma       [3][256]byte
+	onRaspi         bool
+	udpAddr         *net.UDPAddr
+	udpConn         *net.UDPConn
+	tcpAddr         *net.TCPAddr
+	tcpListener     *net.TCPListener
+	spiPort         spi.PortCloser
+	spiConn         spi.Conn
+	buffer          []byte
+	maxTxSize       int
+	gammaValue      [3]float64
+	maxValue        [3]uint8
+	gamma           [3][256]byte
+	drawTestPattern bool
 }
 
 // Damit wird eine neue Instanz eines PixelServers erzeugt. Mit port wird
@@ -68,7 +69,7 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	spiFs.Close()
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
-    // maximale Helligkeit erstellt.
+	// maximale Helligkeit erstellt.
 	p.gammaValue = [3]float64{1.0, 1.0, 1.0}
 	p.maxValue = [3]uint8{255, 255, 255}
 	p.updateGammaTable()
@@ -166,6 +167,48 @@ func (p *PixelServer) Draw(lg *LedGrid) {
 	} else {
 		log.Printf("Received %d bytes", bufferSize)
 	}
+}
+
+func (p *PixelServer) DrawTestPattern() {
+	bufferSize := 3 * 20 * 20
+    for i := range bufferSize {
+        p.buffer[i] = 0x00
+    }
+	p.drawTestPattern = true
+	go func() {
+		idx := 0
+		for p.drawTestPattern {
+			if idx%5 == 0 {
+				p.buffer[3*idx+0] = 0x00
+				p.buffer[3*idx+1] = 0x63
+				p.buffer[3*idx+2] = 0x00
+			} else if idx%10 == 0 {
+				p.buffer[3*idx+0] = 0x00
+				p.buffer[3*idx+1] = 0x8f
+				p.buffer[3*idx+2] = 0x8f
+			} else if idx%100 == 0 {
+				p.buffer[3*idx+0] = 0xff
+				p.buffer[3*idx+1] = 0x3f
+				p.buffer[3*idx+2] = 0x00
+			} else {
+				p.buffer[3*idx+0] = 0xbf
+				p.buffer[3*idx+1] = 0xbf
+				p.buffer[3*idx+2] = 0xbf
+			}
+			if p.onRaspi {
+				for i := 0; i < bufferSize; i += p.maxTxSize {
+					txSize := min(p.maxTxSize, bufferSize-i)
+					if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
+						log.Fatalf("Couldn't send data: %v", err)
+					}
+				}
+				time.Sleep(500 * time.Millisecond)
+			} else {
+				log.Printf("Received %d bytes", bufferSize)
+			}
+            idx++
+		}
+	}()
 }
 
 // Dies ist die zentrale Verarbeitungs-Funktion des Pixel-Controllers. In ihr
@@ -281,8 +324,8 @@ type PixelClient interface {
 	Draw(lg *LedGrid)
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
-    MaxBright() (r, g, b uint8)
-    SetMaxBright(r, g, b uint8)
+	MaxBright() (r, g, b uint8)
+	SetMaxBright(r, g, b uint8)
 }
 
 // Falls die Software zur Erzeugung der Bilder auf dem gleichen Node laeuft
@@ -409,7 +452,7 @@ func (p *DummyPixelClient) SetGamma(r, g, b float64) {
 }
 
 func (p *DummyPixelClient) MaxBright() (r, g, b uint8) {
-    return 0xff, 0xff, 0xff
+	return 0xff, 0xff, 0xff
 }
 
 func (p *DummyPixelClient) SetMaxBright(r, g, b uint8) {
