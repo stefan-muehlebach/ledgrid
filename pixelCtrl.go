@@ -170,11 +170,17 @@ func (p *PixelServer) Draw(lg *LedGrid) {
 }
 
 func (p *PixelServer) DrawTestPattern() {
+    if p.drawTestPattern {
+        p.drawTestPattern = false
+        return
+    } else {
+        	p.drawTestPattern = true
+    }
+
 	bufferSize := 3 * 20 * 20
     for i := range bufferSize {
         p.buffer[i] = 0x00
     }
-	p.drawTestPattern = true
 	go func() {
 		idx := 0
 		for p.drawTestPattern {
