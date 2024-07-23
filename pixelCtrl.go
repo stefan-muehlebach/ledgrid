@@ -211,10 +211,25 @@ func (p *PixelServer) DrawTestPattern() {
 				}
 				time.Sleep(250 * time.Millisecond)
 			} else {
-				log.Printf("Received %d bytes", bufferSize)
+				log.Printf("Sending %d bytes", bufferSize)
 			}
 			idx = (idx + 1) % (400)
 		}
+		for i := range bufferSize {
+			p.buffer[i] = 0x00
+		}
+		if p.onRaspi {
+			for i := 0; i < bufferSize; i += p.maxTxSize {
+				txSize := min(p.maxTxSize, bufferSize-i)
+				if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
+					log.Fatalf("Couldn't send data: %v", err)
+				}
+			}
+			time.Sleep(250 * time.Millisecond)
+		} else {
+			log.Printf("Sending %d bytes", bufferSize)
+		}
+
 	}()
 }
 
