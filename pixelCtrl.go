@@ -169,7 +169,7 @@ func (p *PixelServer) Draw(lg *LedGrid) {
 	}
 }
 
-func (p *PixelServer) DrawTestPattern() {
+func (p *PixelServer) ToggleTestPattern() {
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return
@@ -209,7 +209,7 @@ func (p *PixelServer) DrawTestPattern() {
 						log.Fatalf("Couldn't send data: %v", err)
 					}
 				}
-				time.Sleep(250 * time.Millisecond)
+				time.Sleep(150 * time.Millisecond)
 			} else {
 				log.Printf("Sending %d bytes", bufferSize)
 			}
@@ -225,7 +225,7 @@ func (p *PixelServer) DrawTestPattern() {
 					log.Fatalf("Couldn't send data: %v", err)
 				}
 			}
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(20 * time.Microsecond)
 		} else {
 			log.Printf("Sending %d bytes", bufferSize)
 		}

@@ -40,11 +40,10 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
             log.Printf("You signalled a HUP - which isn't implemented by now")
         case syscall.SIGUSR1:
             log.Printf("You signalled a USR1 - which isn't implemented by now")
-            pixelServer.DrawTestPattern()
+            pixelServer.ToggleTestPattern()
         }
     }
 }
-
 
 func main() {
 	var port uint
