@@ -204,13 +204,13 @@ const (
 	TestBufferSize = 3 * NumTestLeds
 )
 
-func (p *PixelServer) ToggleTestPattern() {
+func (p *PixelServer) ToggleTestPattern() bool {
 	var modus int
 	var idx int
 
 	if p.drawTestPattern {
 		p.drawTestPattern = false
-		return
+		return false
 	} else {
 		p.drawTestPattern = true
 		modus = TestClear
@@ -284,6 +284,8 @@ func (p *PixelServer) ToggleTestPattern() {
 		}
 		p.SPISendBuffer(p.buffer, len(p.buffer))
 	}()
+
+    return true
 }
 
 // Dies ist die zentrale Verarbeitungs-Funktion des Pixel-Controllers. In ihr
