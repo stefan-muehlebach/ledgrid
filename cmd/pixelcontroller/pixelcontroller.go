@@ -40,6 +40,8 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
             log.Printf("Server Statistics:")
             num, total, avg := pixelServer.SendWatch.Stats()
             log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
+            log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
+            log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
         case syscall.SIGUSR1:
             log.Printf("Toggle drawing of a test pattern.")
             pixelServer.ToggleTestPattern()

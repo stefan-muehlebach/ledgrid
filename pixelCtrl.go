@@ -42,7 +42,9 @@ type PixelServer struct {
 	maxValue        [3]uint8
 	gamma           [3][256]byte
 	drawTestPattern bool
-	SendWatch       *Stopwatch
+	// Statistics
+	SendWatch            *Stopwatch
+	RecvBytes, SentBytes int
 }
 
 // Damit wird eine neue Instanz eines PixelServers erzeugt. Mit port wird
@@ -75,7 +77,7 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	p.maxValue = [3]uint8{255, 255, 255}
 	p.updateGammaTable()
 
-    p.SendWatch = NewStopwatch()
+	p.SendWatch = NewStopwatch()
 
 	// Dann wird der SPI-Bus initialisiert.
 	if p.onRaspi {
@@ -253,7 +255,8 @@ func (p *PixelServer) Handle() {
 			}
 			log.Fatal(err)
 		}
-        p.SendWatch.Start()
+        p.RecvBytes += bufferSize
+		p.SendWatch.Start()
 		for i := 0; i < bufferSize; i += 3 {
 			p.buffer[i+0] = p.gamma[0][p.buffer[i+0]]
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
@@ -266,11 +269,12 @@ func (p *PixelServer) Handle() {
 					log.Fatalf("Couldn't send data: %v", err)
 				}
 			}
+            p.SentBytes += bufferSize
 			time.Sleep(20 * time.Microsecond)
 		} else {
 			log.Printf("Received %d bytes", bufferSize)
 		}
-        p.SendWatch.Stop()
+		p.SendWatch.Stop()
 	}
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
@@ -283,6 +287,7 @@ func (p *PixelServer) Handle() {
 		if err = p.spiConn.Tx(p.buffer, nil); err != nil {
 			log.Printf("Error during communication via SPI: %v\n", err)
 		}
+        p.SentBytes += len(p.buffer)
 	} else {
 		log.Printf("Turning all LEDs off.")
 	}
