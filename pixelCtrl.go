@@ -200,8 +200,8 @@ const (
 	TestMagenta
 	TestCyan
 
-    NumTestLeds = 400
-    TestBufferSize = 3 * NumTestLeds
+	NumTestLeds    = 400
+	TestBufferSize = 3 * NumTestLeds
 )
 
 func (p *PixelServer) ToggleTestPattern() {
@@ -223,7 +223,7 @@ func (p *PixelServer) ToggleTestPattern() {
 				for i := range TestBufferSize {
 					p.buffer[i] = 0x00
 				}
-				modus++
+				modus = TestStrip
 				idx = 0
 			case TestStrip:
 				p.buffer[3*idx+0] = 0x3f
@@ -231,7 +231,7 @@ func (p *PixelServer) ToggleTestPattern() {
 				p.buffer[3*idx+2] = 0x3f
 				idx++
 				if idx >= NumTestLeds {
-					modus++
+					modus = TestRed
 				}
 			case TestRed:
 				for i := range NumTestLeds {
@@ -239,47 +239,45 @@ func (p *PixelServer) ToggleTestPattern() {
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = 0x00
 				}
-				modus++
+				modus = TestGreen
 			case TestGreen:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = 0xff
 					p.buffer[3*i+2] = 0x00
 				}
-				modus++
+				modus = TestBlue
 			case TestBlue:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = 0xff
 				}
-				modus++
+				modus = TestYellow
 			case TestYellow:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0xff
 					p.buffer[3*i+1] = 0xff
 					p.buffer[3*i+2] = 0x00
 				}
-				modus++
+				modus = TestMagenta
 			case TestMagenta:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0xff
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = 0xff
 				}
-				modus++
+				modus = TestCyan
 			case TestCyan:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = 0xff
 					p.buffer[3*i+2] = 0xff
 				}
-				modus++
+				modus = TestClear
 			}
 			p.SPISendBuffer(p.buffer, bufferSize)
-            if modus != TestStrip {
-			    time.Sleep(80 * time.Millisecond)
-            }
+			time.Sleep(80 * time.Millisecond)
 		}
 		for i := range bufferSize {
 			p.buffer[i] = 0x00
