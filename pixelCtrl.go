@@ -214,7 +214,7 @@ func (p *PixelServer) ToggleTestPattern() {
 						log.Fatalf("Couldn't send data: %v", err)
 					}
 				}
-				time.Sleep(150 * time.Millisecond)
+				time.Sleep(80 * time.Millisecond)
 			} else {
 				log.Printf("Sending %d bytes", bufferSize)
 			}
