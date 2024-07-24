@@ -6,6 +6,11 @@ import (
 	"image"
 	"log"
 	"strings"
+
+	"github.com/stefan-muehlebach/gg"
+	"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg/fonts"
+	"github.com/stefan-muehlebach/gg/geom"
 )
 
 // Es zeichnet sich ab, dass groessere LED-Panels aus quadratischen Modulen
@@ -278,8 +283,129 @@ func (conf ModuleConfig) IndexMap() IndexMap {
 	return idxMap
 }
 
+// Fuer die graphische Ausgabe des Verkabelungsplanes werden viele Konstanten
+// verwendet.
+
+var (
+	marginSize = 100.0
+
+	moduleSize        = 400.0
+	moduleBorderWidth = 3.0
+	moduleBorderColor = color.Black
+	moduleFillColor   = color.Beige
+
+	ledFieldSize       = moduleSize / float64(ModuleSize.X)
+	ledSize            = ledFieldSize - 15.0
+	ledInputFieldColor = color.SkyBlue
+	ledBorderWidth     = 1.0
+	ledBorderColor     = color.Black
+	ledFillColor       = color.White
+)
+
+func (conf ModuleConfig) Plot(fileName string) {
+	size := conf.Size()
+	gc := gg.NewContext(size.X*int(moduleSize)+2*int(marginSize),
+		size.Y*int(moduleSize)+2*int(marginSize))
+	gc.SetFillColor(color.White)
+	gc.Clear()
+
+	p0 := geom.Point{marginSize, marginSize}
+	for i, modPos := range conf {
+		pt := p0.Add(geom.Point{float64(modPos.Col), float64(modPos.Row)}.Mul(moduleSize))
+
+		// Feldfuellung fuer das Modul
+		gc.DrawRectangle(pt.X, pt.Y, moduleSize, moduleSize)
+		gc.SetFillColor(moduleFillColor)
+		gc.Fill()
+
+		// Index in der Mitte des Feldes plus Bezeichnung des Modules und
+        // seiner Ausrichtung.
+		gc.SetFontFace(fonts.NewFace(fonts.GoBold, 200.0))
+		gc.SetStrokeColor(color.Gainsboro)
+		gc.DrawStringAnchored(fmt.Sprintf("%d", i), pt.X+moduleSize/2, pt.Y+moduleSize/2, 0.5, 0.5)
+
+		gc.SetFontFace(fonts.NewFace(fonts.GoBold, 60.0))
+		gc.SetStrokeColor(color.Gainsboro)
+		gc.DrawStringAnchored(fmt.Sprintf("%v", modPos.Mod), pt.X+moduleSize/2, pt.Y+5.0*moduleSize/6.0, 0.5, 0.5)
+
+		// Linie, welche die Verkabelungsrichtung andeutet. Zuerst
+		// durchgezogen...
+		mp := pt.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
+		gc.SetStrokeWidth(10.0)
+		gc.SetStrokeColor(color.Gainsboro)
+		gc.DrawLine(mp.X, mp.Y, mp.X, mp.Y+5*ledFieldSize)
+		gc.Stroke()
+		// ... anschliessend gestrichelt.
+		gc.SetDash(10, 15)
+		gc.MoveTo(mp.X, mp.Y+5*ledFieldSize)
+		gc.LineTo(mp.X, mp.Y+9*ledFieldSize)
+		gc.LineTo(mp.X+ledFieldSize, mp.Y+9*ledFieldSize)
+		gc.LineTo(mp.X+ledFieldSize, mp.Y+4*ledFieldSize)
+		gc.Stroke()
+		gc.SetDash()
+
+		// Farbliche Kennzeichnung des Anfangs, resp. Endes der Kette.
+		gc.DrawRectangle(pt.X, pt.Y, 40.0, 40.0)
+		gc.SetFillColor(color.SkyBlue)
+		gc.Fill()
+
+		// Ein paar verirrte LED-Kreise zur Orientierung.
+		for range 6 {
+			gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
+			gc.SetStrokeWidth(ledBorderWidth)
+			gc.SetStrokeColor(ledBorderColor)
+			gc.SetFillColor(ledFillColor)
+			gc.FillStroke()
+			mp = mp.Add(geom.Point{0, ledFieldSize})
+		}
+
+		// Linie, welche die Verkabelungsrichtung andeutet. Zuerst
+		// durchgezogen...
+		mp = pt.AddXY(moduleSize-ledFieldSize/2.0, ledFieldSize/2.0)
+		gc.SetStrokeWidth(10.0)
+		gc.SetStrokeColor(color.Gainsboro)
+		gc.DrawLine(mp.X, mp.Y, mp.X, mp.Y+5*ledFieldSize)
+		gc.Stroke()
+		// ... anschliessend gestrichelt.
+		gc.SetDash(10, 15)
+		gc.MoveTo(mp.X, mp.Y+5*ledFieldSize)
+		gc.LineTo(mp.X, mp.Y+9*ledFieldSize)
+		gc.LineTo(mp.X-ledFieldSize, mp.Y+9*ledFieldSize)
+		gc.LineTo(mp.X-ledFieldSize, mp.Y+4*ledFieldSize)
+		gc.Stroke()
+		gc.SetDash()
+
+		// Farbliche Kennzeichnung des Anfangs, resp. Endes der Kette.
+        // gc.DrawCircle(pt.X+moduleSize-ledFieldSize/2.0, pt.Y+ledFieldSize/2.0, 20.0)
+		// gc.SetFillColor(color.SkyBlue)
+		// gc.Fill()
+
+		// Ein paar verirrte LED-Kreise zur Orientierung.
+		for range 6 {
+			gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
+			gc.SetStrokeWidth(ledBorderWidth)
+			gc.SetStrokeColor(ledBorderColor)
+			gc.SetFillColor(ledFillColor)
+			gc.FillStroke()
+			mp = mp.Add(geom.Point{0, ledFieldSize})
+		}
+
+		// Abschliessend die Modul-Umrahmung.
+		gc.DrawRectangle(pt.X, pt.Y, moduleSize, moduleSize)
+		gc.SetStrokeWidth(moduleBorderWidth)
+		gc.SetStrokeColor(moduleBorderColor)
+		gc.Stroke()
+
+	}
+
+	err := gc.SavePNG(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't save configuration: %v", err)
+	}
+}
+
 // Hilfsfunktioenchen (sogar generisch!)
-func abs[T ~int|~float64](i T) T {
+func abs[T ~int | ~float64](i T) T {
 	if i < 0 {
 		return -i
 	} else {
@@ -368,8 +494,8 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
-		// default:
-		// 	log.Fatalf("Module type '%s' is only configured with a rotation of 0 and 180 degrees", m.Type)
+			// default:
+			// 	log.Fatalf("Module type '%s' is only configured with a rotation of 0 and 180 degrees", m.Type)
 		}
 	case ModRL:
 		switch m.Rot {
@@ -425,8 +551,8 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
-		// default:
-		// 	log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
+			// default:
+			// 	log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
 		}
 	}
 	return baseIdx + 3*ModuleSize.X*ModuleSize.Y

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"image/jpeg"
 	"bytes"
 	"context"
 	"encoding/gob"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"io"
 	"log"
 	"math"
@@ -327,18 +327,19 @@ type Camera struct {
 	Pos, Size geom.Point
 	dev       *device.Device
 	img       image.Image
+	cut       image.Rectangle
 	cancel    context.CancelFunc
-    running bool
+	running   bool
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
-	c := &Camera{Pos: pos, Size: size}
-    AnimCtrl.AddAnim(c)
+	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
+	AnimCtrl.AddAnim(c)
 	return c
 }
 
 func (c *Camera) Duration() time.Duration {
-    return time.Duration(0)
+	return time.Duration(0)
 }
 
 func (c *Camera) SetDuration(dur time.Duration) {}
@@ -347,10 +348,13 @@ func (c *Camera) Start() {
 	var ctx context.Context
 	var err error
 
+	if c.running {
+		return
+	}
 	c.dev, err = device.Open(camDevName,
 		device.WithIOType(v4l2.IOTypeMMAP),
 		device.WithPixFormat(v4l2.PixFormat{
-			PixelFormat: v4l2.PixelFmtJPEG,
+			PixelFormat: v4l2.PixelFmtMJPEG,
 			Width:       camWidth,
 			Height:      camHeight,
 		}),
@@ -364,18 +368,21 @@ func (c *Camera) Start() {
 	if err = c.dev.Start(ctx); err != nil {
 		log.Fatalf("failed to start stream: %v", err)
 	}
-    c.running = true
+	c.running = true
 }
 
 func (c *Camera) Stop() {
-    var err error
+	var err error
 
+	if !c.running {
+		return
+	}
 	c.cancel()
 	if err = c.dev.Close(); err != nil {
 		log.Fatalf("failed to close device: %v", err)
 	}
 	c.dev = nil
-    c.running = false
+	c.running = false
 }
 
 func (c *Camera) Continue() {}
@@ -391,7 +398,7 @@ func (c *Camera) Update(pit time.Time) bool {
 
 	if frame, ok = <-c.dev.GetOutput(); !ok {
 		log.Printf("no frame to process")
-		return false
+		return true
 	}
 	reader := bytes.NewReader(frame)
 	c.img, err = jpeg.Decode(reader)
@@ -402,12 +409,12 @@ func (c *Camera) Update(pit time.Time) bool {
 }
 
 func (c *Camera) Draw(canv *Canvas) {
-    if c.img == nil {
-        return
-    }
+	if c.img == nil {
+		return
+	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.canvas, rect.Add(refPt).Int(), c.img, c.img.Bounds(), draw.Over, nil)
+	draw.CatmullRom.Scale(canv.canvas, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
 }
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
