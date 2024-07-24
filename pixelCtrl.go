@@ -151,11 +151,9 @@ func (p *PixelServer) updateGammaTable() {
 	}
 }
 
-func (p *PixelServer) SPISendBuffer(buffer []byte) {
-    var bufferSize int
+func (p *PixelServer) SPISendBuffer(buffer []byte, bufferSize int) {
     var err error
 
-    bufferSize = len(buffer)
 	if p.onRaspi {
 		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
 			txSize := min(p.maxTxSize, bufferSize-idx)
@@ -225,7 +223,7 @@ func (p *PixelServer) ToggleTestPattern() {
 				p.buffer[3*(idx-1)+1] = 0x8f
 				p.buffer[3*(idx-1)+2] = 0x8f
 			}
-            p.SPISendBuffer(p.buffer[:bufferSize])
+            p.SPISendBuffer(p.buffer, bufferSize)
 			// if p.onRaspi {
 			// 	for i := 0; i < bufferSize; i += p.maxTxSize {
 			// 		txSize := min(p.maxTxSize, bufferSize-i)
@@ -242,7 +240,7 @@ func (p *PixelServer) ToggleTestPattern() {
 		for i := range bufferSize {
 			p.buffer[i] = 0x00
 		}
-        p.SPISendBuffer(p.buffer)
+        p.SPISendBuffer(p.buffer, len(p.buffer))
 		// if p.onRaspi {
 		// 	for i := 0; i < bufferSize; i += p.maxTxSize {
 		// 		txSize := min(p.maxTxSize, bufferSize-i)
@@ -282,7 +280,7 @@ func (p *PixelServer) Handle() {
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
-        p.SPISendBuffer(p.buffer[:bufferSize])
+        p.SPISendBuffer(p.buffer, bufferSize)
         p.SentBytes += bufferSize
 		// if p.onRaspi {
 		// 	for idx := 0; idx < bufferSize; idx += p.maxTxSize {
@@ -304,7 +302,7 @@ func (p *PixelServer) Handle() {
 	for i := range p.buffer {
 		p.buffer[i] = 0x00
 	}
-    p.SPISendBuffer(p.buffer)
+    p.SPISendBuffer(p.buffer, len(p.buffer))
     p.SentBytes += len(p.buffer)
 	// if p.onRaspi {
 	// 	if err = p.spiConn.Tx(p.buffer, nil); err != nil {
