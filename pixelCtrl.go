@@ -152,7 +152,7 @@ func (p *PixelServer) updateGammaTable() {
 }
 
 func (p *PixelServer) SPISendBuffer(buffer []byte, bufferSize int) {
-    var err error
+	var err error
 
 	if p.onRaspi {
 		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
@@ -167,80 +167,122 @@ func (p *PixelServer) SPISendBuffer(buffer []byte, bufferSize int) {
 	}
 }
 
-func (p *PixelServer) Draw(lg *LedGrid) {
-	var bufferSize int
-	var err error
+// func (p *PixelServer) Draw(lg *LedGrid) {
+// 	var bufferSize int
+// 	var err error
 
-	bufferSize = len(lg.Pix)
-	for i := 0; i < bufferSize; i += 3 {
-		p.buffer[i+0] = p.gamma[0][lg.Pix[i+0]]
-		p.buffer[i+1] = p.gamma[1][lg.Pix[i+1]]
-		p.buffer[i+2] = p.gamma[2][lg.Pix[i+2]]
-	}
-	if p.onRaspi {
-		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-			txSize := min(p.maxTxSize, bufferSize-idx)
-			if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
-				log.Fatalf("Couldn't send data: %v", err)
-			}
-		}
-		time.Sleep(20 * time.Microsecond)
-	} else {
-		log.Printf("Received %d bytes", bufferSize)
-	}
-}
+// 	bufferSize = len(lg.Pix)
+// 	for i := 0; i < bufferSize; i += 3 {
+// 		p.buffer[i+0] = p.gamma[0][lg.Pix[i+0]]
+// 		p.buffer[i+1] = p.gamma[1][lg.Pix[i+1]]
+// 		p.buffer[i+2] = p.gamma[2][lg.Pix[i+2]]
+// 	}
+// 	if p.onRaspi {
+// 		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
+// 			txSize := min(p.maxTxSize, bufferSize-idx)
+// 			if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
+// 				log.Fatalf("Couldn't send data: %v", err)
+// 			}
+// 		}
+// 		time.Sleep(20 * time.Microsecond)
+// 	} else {
+// 		log.Printf("Received %d bytes", bufferSize)
+// 	}
+// }
+
+const (
+	TestClear = iota
+	TestStrip
+	TestRed
+	TestGreen
+	TestBlue
+	TestYellow
+	TestMagenta
+	TestCyan
+
+    NumTestLeds = 400
+    TestBufferSize = 3 * NumTestLeds
+)
 
 func (p *PixelServer) ToggleTestPattern() {
+	var modus int
+	var idx int
+
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return
 	} else {
 		p.drawTestPattern = true
+		modus = TestClear
 	}
 
-	bufferSize := 3 * 20 * 20
 	go func() {
-		idx := 0
 		for p.drawTestPattern {
-			if idx == 0 {
-				for i := range bufferSize {
+			switch modus {
+			case TestClear:
+				for i := range TestBufferSize {
 					p.buffer[i] = 0x00
 				}
-			} else {
-				p.buffer[3*(idx-1)+0] = 0x3f
-				p.buffer[3*(idx-1)+1] = 0x3f
-				p.buffer[3*(idx-1)+2] = 0x3f
+				modus++
+				idx = 0
+			case TestStrip:
+				p.buffer[3*idx+0] = 0x3f
+				p.buffer[3*idx+1] = 0x3f
+				p.buffer[3*idx+2] = 0x3f
+				idx++
+				if idx >= NumTestLeds {
+					modus++
+				}
+			case TestRed:
+				for i := range NumTestLeds {
+					p.buffer[3*i+0] = 0xff
+					p.buffer[3*i+1] = 0x00
+					p.buffer[3*i+2] = 0x00
+				}
+				modus++
+			case TestGreen:
+				for i := range NumTestLeds {
+					p.buffer[3*i+0] = 0x00
+					p.buffer[3*i+1] = 0xff
+					p.buffer[3*i+2] = 0x00
+				}
+				modus++
+			case TestBlue:
+				for i := range NumTestLeds {
+					p.buffer[3*i+0] = 0x00
+					p.buffer[3*i+1] = 0x00
+					p.buffer[3*i+2] = 0xff
+				}
+				modus++
+			case TestYellow:
+				for i := range NumTestLeds {
+					p.buffer[3*i+0] = 0xff
+					p.buffer[3*i+1] = 0xff
+					p.buffer[3*i+2] = 0x00
+				}
+				modus++
+			case TestMagenta:
+				for i := range NumTestLeds {
+					p.buffer[3*i+0] = 0xff
+					p.buffer[3*i+1] = 0x00
+					p.buffer[3*i+2] = 0xff
+				}
+				modus++
+			case TestCyan:
+				for i := range NumTestLeds {
+					p.buffer[3*i+0] = 0x00
+					p.buffer[3*i+1] = 0xff
+					p.buffer[3*i+2] = 0xff
+				}
+				modus++
 			}
-            p.SPISendBuffer(p.buffer, bufferSize)
-			// if p.onRaspi {
-			// 	for i := 0; i < bufferSize; i += p.maxTxSize {
-			// 		txSize := min(p.maxTxSize, bufferSize-i)
-			// 		if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
-			// 			log.Fatalf("Couldn't send data: %v", err)
-			// 		}
-			// 	}
+			p.SPISendBuffer(p.buffer, bufferSize)
 			time.Sleep(80 * time.Millisecond)
-			// } else {
-			// 	log.Printf("Sending %d bytes", bufferSize)
-			// }
-			idx = (idx + 1) % (400)
 		}
 		for i := range bufferSize {
 			p.buffer[i] = 0x00
 		}
-        p.SPISendBuffer(p.buffer, len(p.buffer))
-		// if p.onRaspi {
-		// 	for i := 0; i < bufferSize; i += p.maxTxSize {
-		// 		txSize := min(p.maxTxSize, bufferSize-i)
-		// 		if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
-		// 			log.Fatalf("Couldn't send data: %v", err)
-		// 		}
-		// 	}
-		// 	time.Sleep(20 * time.Microsecond)
-		// } else {
-		// 	log.Printf("Sending %d bytes", bufferSize)
-		// }
-
+		p.SPISendBuffer(p.buffer, len(p.buffer))
 	}()
 }
 
@@ -261,45 +303,25 @@ func (p *PixelServer) Handle() {
 			}
 			log.Fatal(err)
 		}
-        p.RecvBytes += bufferSize
+		p.RecvBytes += bufferSize
 		p.SendWatch.Start()
 		for i := 0; i < bufferSize; i += 3 {
 			p.buffer[i+0] = p.gamma[0][p.buffer[i+0]]
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
-        p.SPISendBuffer(p.buffer, bufferSize)
-        p.SentBytes += bufferSize
-		// if p.onRaspi {
-		// 	for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-		// 		txSize := min(p.maxTxSize, bufferSize-idx)
-		// 		if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
-		// 			log.Fatalf("Couldn't send data: %v", err)
-		// 		}
-		// 	}
-		// 	time.Sleep(20 * time.Microsecond)
-		// } else {
-		// 	log.Printf("Received %d bytes", bufferSize)
-		// }
+		p.SPISendBuffer(p.buffer, bufferSize)
+		p.SentBytes += bufferSize
 		p.SendWatch.Stop()
 	}
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
 	// damit das Panel dunkel wird.
-	//
 	for i := range p.buffer {
 		p.buffer[i] = 0x00
 	}
-    p.SPISendBuffer(p.buffer, len(p.buffer))
-    p.SentBytes += len(p.buffer)
-	// if p.onRaspi {
-	// 	if err = p.spiConn.Tx(p.buffer, nil); err != nil {
-	// 		log.Printf("Error during communication via SPI: %v\n", err)
-	// 	}
-	// } else {
-	// 	log.Printf("Turning all LEDs off.")
-	// }
-
+	p.SPISendBuffer(p.buffer, len(p.buffer))
+	p.SentBytes += len(p.buffer)
 	if p.onRaspi {
 		p.spiPort.Close()
 	}
@@ -371,12 +393,12 @@ type PixelClient interface {
 // Falls die Software zur Erzeugung der Bilder auf dem gleichen Node laeuft
 // an dem auch das LED-Grid angeschlossen ist, dient der PixelServer auch
 // gleich als Client.
-type LocalPixelClient PixelServer
+// type LocalPixelClient PixelServer
 
-func NewLocalPixelClient(port uint, spiDev string, baud int) PixelClient {
-	p := NewPixelServer(port, spiDev, baud)
-	return p
-}
+// func NewLocalPixelClient(port uint, spiDev string, baud int) PixelClient {
+// 	p := NewPixelServer(port, spiDev, baud)
+// 	return p
+// }
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type NetPixelClient struct {
