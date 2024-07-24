@@ -151,6 +151,24 @@ func (p *PixelServer) updateGammaTable() {
 	}
 }
 
+func (p *PixelServer) SPISendBuffer(buffer []byte) {
+    var bufferSize int
+    var err error
+
+    bufferSize = len(buffer)
+	if p.onRaspi {
+		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
+			txSize := min(p.maxTxSize, bufferSize-idx)
+			if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
+				log.Fatalf("Couldn't send data: %v", err)
+			}
+		}
+		time.Sleep(20 * time.Microsecond)
+	} else {
+		log.Printf("Sent %d bytes to the SPI bus", bufferSize)
+	}
+}
+
 func (p *PixelServer) Draw(lg *LedGrid) {
 	var bufferSize int
 	var err error
@@ -207,33 +225,35 @@ func (p *PixelServer) ToggleTestPattern() {
 				p.buffer[3*(idx-1)+1] = 0x8f
 				p.buffer[3*(idx-1)+2] = 0x8f
 			}
-			if p.onRaspi {
-				for i := 0; i < bufferSize; i += p.maxTxSize {
-					txSize := min(p.maxTxSize, bufferSize-i)
-					if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
-						log.Fatalf("Couldn't send data: %v", err)
-					}
-				}
-				time.Sleep(80 * time.Millisecond)
-			} else {
-				log.Printf("Sending %d bytes", bufferSize)
-			}
+            p.SPISendBuffer(p.buffer[:bufferSize])
+			// if p.onRaspi {
+			// 	for i := 0; i < bufferSize; i += p.maxTxSize {
+			// 		txSize := min(p.maxTxSize, bufferSize-i)
+			// 		if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
+			// 			log.Fatalf("Couldn't send data: %v", err)
+			// 		}
+			// 	}
+			// 	time.Sleep(80 * time.Millisecond)
+			// } else {
+			// 	log.Printf("Sending %d bytes", bufferSize)
+			// }
 			idx = (idx + 1) % (400)
 		}
 		for i := range bufferSize {
 			p.buffer[i] = 0x00
 		}
-		if p.onRaspi {
-			for i := 0; i < bufferSize; i += p.maxTxSize {
-				txSize := min(p.maxTxSize, bufferSize-i)
-				if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
-					log.Fatalf("Couldn't send data: %v", err)
-				}
-			}
-			time.Sleep(20 * time.Microsecond)
-		} else {
-			log.Printf("Sending %d bytes", bufferSize)
-		}
+        p.SPISendBuffer(p.buffer)
+		// if p.onRaspi {
+		// 	for i := 0; i < bufferSize; i += p.maxTxSize {
+		// 		txSize := min(p.maxTxSize, bufferSize-i)
+		// 		if err := p.spiConn.Tx(p.buffer[i:i+txSize], nil); err != nil {
+		// 			log.Fatalf("Couldn't send data: %v", err)
+		// 		}
+		// 	}
+		// 	time.Sleep(20 * time.Microsecond)
+		// } else {
+		// 	log.Printf("Sending %d bytes", bufferSize)
+		// }
 
 	}()
 }

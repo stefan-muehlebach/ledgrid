@@ -1,14 +1,13 @@
-
 package main
 
 import (
-	"syscall"
 	"flag"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/stefan-muehlebach/ledgrid"
 )
@@ -29,24 +28,24 @@ const (
 )
 
 func SignalHandler(pixelServer *ledgrid.PixelServer) {
-    sigChan := make(chan os.Signal)
-    signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
-    for sig := range sigChan {
-        switch sig {
-        case os.Interrupt:
-            pixelServer.Close()
-            return
-        case syscall.SIGHUP:
-            log.Printf("Server Statistics:")
-            num, total, avg := pixelServer.SendWatch.Stats()
-            log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
-            log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
-            log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
-        case syscall.SIGUSR1:
-            log.Printf("Toggle drawing of a test pattern.")
-            pixelServer.ToggleTestPattern()
-        }
-    }
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+	for sig := range sigChan {
+		switch sig {
+		case os.Interrupt:
+			pixelServer.Close()
+			return
+		case syscall.SIGHUP:
+			log.Printf("Server Statistics:")
+			num, total, avg := pixelServer.SendWatch.Stats()
+			log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
+			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
+			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+		case syscall.SIGUSR1:
+			log.Printf("Toggle drawing of a test pattern.")
+			pixelServer.ToggleTestPattern()
+		}
+	}
 }
 
 func main() {
@@ -77,7 +76,7 @@ func main() {
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
-    go SignalHandler(pixelServer)
+	go SignalHandler(pixelServer)
 	//
 	// go func() {
 	// 	sigChan := make(chan os.Signal)

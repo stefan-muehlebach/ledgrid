@@ -63,7 +63,7 @@ type Canvas struct {
 	quit                             bool
 	animPit                          time.Time
 	logFile                          io.Writer
-	animWatch, paintWatch, sendWatch *Stopwatch
+	animWatch, paintWatch, sendWatch *ledgrid.Stopwatch
 	numThreads                       int
 }
 
@@ -87,9 +87,9 @@ func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
 			log.Fatalf("Couldn't create logfile: %v", err)
 		}
 	}
-	c.animWatch = NewStopwatch()
-	c.paintWatch = NewStopwatch()
-	c.sendWatch = NewStopwatch()
+	c.animWatch = ledgrid.NewStopwatch()
+	c.paintWatch = ledgrid.NewStopwatch()
+	c.sendWatch = ledgrid.NewStopwatch()
 	go c.backgroundThread()
 	return c
 }

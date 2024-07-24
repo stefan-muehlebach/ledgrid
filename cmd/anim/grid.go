@@ -30,7 +30,7 @@ type Grid struct {
 	animMutex                        *sync.RWMutex
 	animPit                          time.Time
 	logFile                          io.Writer
-	animWatch, paintWatch, sendWatch *Stopwatch
+	animWatch, paintWatch, sendWatch *ledgrid.Stopwatch
 	numThreads                       int
 }
 
@@ -53,9 +53,9 @@ func NewGrid(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Grid {
 			log.Fatalf("Couldn't create logfile: %v", err)
 		}
 	}
-	c.animWatch = NewStopwatch()
-	c.paintWatch = NewStopwatch()
-	c.sendWatch = NewStopwatch()
+	c.animWatch = ledgrid.NewStopwatch()
+	c.paintWatch = ledgrid.NewStopwatch()
+	c.sendWatch = ledgrid.NewStopwatch()
 	go c.backgroundThread()
 	return c
 }
