@@ -9,6 +9,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/rthornton128/goncurses v0.0.0-20231014161942-82671379df88
 	github.com/stefan-muehlebach/gg v1.3.4
+	github.com/vladimirvivien/go4vl v0.0.5
 	gocv.io/x/gocv v0.37.0
 	golang.org/x/image v0.18.0
 	golang.org/x/term v0.22.0

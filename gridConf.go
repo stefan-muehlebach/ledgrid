@@ -244,7 +244,7 @@ func (conf ModuleConfig) Append(col, row int, mod Module) (ModuleConfig, error) 
 	return append(conf, modPos), nil
 }
 
-// Bestimmt die Groesse des gesamten Panels in Anzahl Module in X-, resp.
+// Bestimmt die Groesse des gesamten Panels in Anzahl Modulen in X-, resp.
 // Y-Richtung.
 func (conf ModuleConfig) Size() image.Point {
 	size := image.Point{}

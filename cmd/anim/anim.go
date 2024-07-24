@@ -348,18 +348,12 @@ func (b *BouncingEllipse) Update(pit time.Time) bool {
 	deltaVel := b.Acc.Mul(0.3)
 	b.Vel = b.Vel.Add(deltaVel)
 	b.Pos = b.Pos.Add(b.Vel)
-	if !b.Pos.In(b.Field) {
-		newPos := b.Field.SetInside(b.Pos)
-		diff := b.Pos.Sub(newPos)
-		if diff.X != 0.0 {
-			b.Vel.X = -b.Vel.X
-		} else if diff.Y != 0.0 {
-			b.Vel.Y = -b.Vel.Y
-		}
-		// log.Printf("diff: %v", diff)
-		b.Pos = newPos
-		// b.Vel = b.Vel.Neg()
-	}
+    if b.Pos.X < b.Field.Min.X || b.Pos.X >= b.Field.Max.X {
+        b.Vel.X = -b.Vel.X
+    }
+    if b.Pos.Y < b.Field.Min.Y || b.Pos.Y >= b.Field.Max.Y {
+        b.Vel.Y = -b.Vel.Y
+    }
 	return true
 }
 
@@ -375,17 +369,22 @@ func (b *BouncingEllipse) IsStopped() bool {
 }
 
 func BounceAround(c *Canvas) {
-	pos := ConvertPos(geom.Point{2.0, 2.0})
+	pos1 := ConvertPos(geom.Point{2.0, 2.0})
+    pos2 := ConvertPos(geom.Point{37.0, 7.0})
 	size := ConvertSize(geom.Point{4.0, 4.0})
-	vel := ConvertSize(geom.Point{0.5, 0.25})
-	acc := ConvertSize(geom.Point{0, 0.1})
+	vel1 := geom.Point{1.5, 0.75}
+    vel2 := geom.Point{-3.5, -2.5}
+	// acc := ConvertSize(geom.Point{0, 0.1})
 
-	be := NewBouncingEllipse(pos, size, colornames.GreenYellow)
-	be.Vel = vel
-	be.Acc = acc
-	be.Field = geom.NewRectangleIMG(c.canvas.Bounds())
-	c.Add(be)
-	AnimCtrl.AddAnim(be)
+	obj1 := NewBouncingEllipse(pos1, size, colornames.GreenYellow)
+	obj1.Vel = vel1
+	obj1.Field = geom.NewRectangleIMG(c.canvas.Bounds())
+	obj2 := NewBouncingEllipse(pos2, size, colornames.LightSeaGreen)
+	obj2.Vel = vel2
+	obj2.Field = geom.NewRectangleIMG(c.canvas.Bounds())
+
+	c.Add(obj1, obj2)
+	AnimCtrl.AddAnim(obj1, obj2)
 }
 
 //----------------------------------------------------------------------------
@@ -784,6 +783,16 @@ func FlyingImages(c *Canvas) {
 	aSeq.Start()
 }
 
+func CameraTest(c *Canvas) {
+    pos := ConvertPos(geom.Point{width/2.0, height/2.0})
+    size := ConvertSize(geom.Point{width, height})
+
+    cam := NewCamera(pos, size)
+    c.Add(cam)
+
+    cam.Start()
+}
+
 //-----------------------------------------------------------------------------
 
 func GlowingGridPixels(g *Grid) {
@@ -796,7 +805,7 @@ func GlowingGridPixels(g *Grid) {
 		for x := range g.ledGrid.Rect.Dx() {
 			pos := image.Point{x, y}
 			t := rand.Float64()
-			col := (colornames.DimGray.Dark(0.5)).Interpolate((colornames.DarkGrey.Dark(0.6)), t)
+			col := (colornames.DimGray.Dark(0.2)).Interpolate((colornames.DarkGrey.Dark(0.2)), t)
 			pix := NewGridPixel(pos, col)
 			g.Add(pix)
 
@@ -828,13 +837,13 @@ func GlowingGridPixels(g *Grid) {
 	}
 
 	txt1 := NewGridText(gridSize.Div(2), colornames.GreenYellow.Alpha(0.0), "REDEN")
-	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 1*time.Second)
+	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
 	aTxt1.AutoReverse = true
 	txt2 := NewGridText(gridSize.Div(2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
-	aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 1*time.Second)
+	aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
 	aTxt2.AutoReverse = true
 	txt3 := NewGridText(gridSize.Div(2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
-	aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 1*time.Second)
+	aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
 	aTxt3.AutoReverse = true
 	g.Add(txt1, txt2, txt3)
 
@@ -929,14 +938,12 @@ type gridSceneRecord struct {
 }
 
 func main() {
-	var local bool
 	var input string
 	var sceneId int
 	var runInteractive bool
 	var pixCtrl ledgrid.PixelClient
 	// var modConf ledgrid.ModuleConfig
 
-	flag.BoolVar(&local, "local", defLocal, "Run on PixelController host")
 	flag.StringVar(&input, "scene", input, "play one single scene (no menu)")
 	flag.BoolVar(&doLog, "log", doLog, "enable logging")
 	flag.Parse()
@@ -969,6 +976,7 @@ func main() {
 		{"Glowing Pixels (Canvas)", GlowingPixels},
 		{"Moving Text", MovingText},
 		{"Flying images", FlyingImages},
+        {"Hidden or visible camera", CameraTest},
 	}
 
 	gridSceneList := []gridSceneRecord{
@@ -978,11 +986,7 @@ func main() {
 		{"Walking pixel", WalkingPixelOnGrid},
 	}
 
-	if local {
-		pixCtrl = ledgrid.NewLocalPixelClient(pixelPort, "/dev/spidev0.0", 2_000_000)
-	} else {
-		pixCtrl = ledgrid.NewNetPixelClient(pixelHost, pixelPort)
-	}
+	pixCtrl = ledgrid.NewNetPixelClient(pixelHost, pixelPort)
 	pixCtrl.SetGamma(gammaValue, gammaValue, gammaValue)
 	pixCtrl.SetMaxBright(255, 255, 255)
 

@@ -1,7 +1,9 @@
 package main
 
 import (
-	"golang.org/x/image/font"
+	"image/jpeg"
+	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"image"
@@ -14,11 +16,15 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/image/font"
+
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
+	"github.com/vladimirvivien/go4vl/device"
+	"github.com/vladimirvivien/go4vl/v4l2"
 	"golang.org/x/image/draw"
 )
 
@@ -232,22 +238,6 @@ func (c *Canvas) backgroundThread() {
 		}
 		c.animWatch.Stop()
 
-		// c.animWatch.Start()
-		// numAnims := 0
-		// c.animMutex.RLock()
-		// for i, anim := range c.AnimList {
-		// 	if anim == nil || anim.IsStopped() {
-		// 		continue
-		// 	}
-		// 	numAnims++
-		// 	animChan <- i
-		// }
-		// c.animMutex.RUnlock()
-		// for range numAnims {
-		// 	<-doneChan
-		// }
-		// c.animWatch.Stop()
-
 		c.paintWatch.Start()
 		c.gc.SetFillColor(colornames.Black)
 		c.gc.Clear()
@@ -266,16 +256,6 @@ func (c *Canvas) backgroundThread() {
 	close(doneChan)
 	close(startChan)
 }
-
-// func (c *Canvas) animationThread(animChan <-chan int, doneChan chan<- bool) {
-// 	for animId := range animChan {
-// 		c.AnimList[animId].Update(c.animPit)
-// 		// if !c.AnimList[animId].Update(c.animPit) {
-// 		//     c.AnimList[animId] = nil
-// 		// }
-// 		doneChan <- true
-// 	}
-// }
 
 func (c *Canvas) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
 	for id := range startChan {
@@ -333,39 +313,139 @@ type CanvasObject interface {
 	Draw(c *Canvas)
 }
 
+// Dient dazu, ein Live-Bild ab einer beliebigen, aber ansprechbaren Kamera
+// auf dem LED-Grid darzustellen.
+const (
+	camDevName    = "/dev/video0"
+	camWidth      = 320
+	camHeight     = 240
+	camFrameRate  = 30
+	camBufferSize = 4
+)
+
+type Camera struct {
+	Pos, Size geom.Point
+	dev       *device.Device
+	img       image.Image
+	cancel    context.CancelFunc
+    running bool
+}
+
+func NewCamera(pos, size geom.Point) *Camera {
+	c := &Camera{Pos: pos, Size: size}
+    AnimCtrl.AddAnim(c)
+	return c
+}
+
+func (c *Camera) Duration() time.Duration {
+    return time.Duration(0)
+}
+
+func (c *Camera) SetDuration(dur time.Duration) {}
+
+func (c *Camera) Start() {
+	var ctx context.Context
+	var err error
+
+	c.dev, err = device.Open(camDevName,
+		device.WithIOType(v4l2.IOTypeMMAP),
+		device.WithPixFormat(v4l2.PixFormat{
+			PixelFormat: v4l2.PixelFmtMJPEG,
+			Width:       camWidth,
+			Height:      camHeight,
+		}),
+		device.WithFPS(camFrameRate),
+		device.WithBufferSize(camBufferSize),
+	)
+	if err != nil {
+		log.Fatalf("failed to open device: %v", err)
+	}
+	ctx, c.cancel = context.WithCancel(context.TODO())
+	if err = c.dev.Start(ctx); err != nil {
+		log.Fatalf("failed to start stream: %v", err)
+	}
+    c.running = true
+}
+
+func (c *Camera) Stop() {
+    var err error
+
+	c.cancel()
+	if err = c.dev.Close(); err != nil {
+		log.Fatalf("failed to close device: %v", err)
+	}
+	c.dev = nil
+    c.running = false
+}
+
+func (c *Camera) Continue() {}
+
+func (c *Camera) IsStopped() bool {
+	return !c.running
+}
+
+func (c *Camera) Update(pit time.Time) bool {
+	var err error
+	var frame []byte
+	var ok bool
+
+	if frame, ok = <-c.dev.GetOutput(); !ok {
+		log.Printf("no frame to process")
+		return false
+	}
+	reader := bytes.NewReader(frame)
+	c.img, err = jpeg.Decode(reader)
+	if err != nil {
+		log.Fatalf("failed to decode data: %v", err)
+	}
+	return true
+}
+
+func (c *Camera) Draw(canv *Canvas) {
+    if c.img == nil {
+        return
+    }
+	rect := geom.Rectangle{Max: c.Size}
+	refPt := c.Pos.Sub(c.Size.Div(2.0))
+	draw.CatmullRom.Scale(canv.canvas, rect.Add(refPt).Int(), c.img, c.img.Bounds(), draw.Over, nil)
+}
+
+// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
+// Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
+// skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
+type Image struct {
+	Pos, Size geom.Point
+	Angle     float64
+	img       image.Image
+}
+
+func NewImage(pos geom.Point, fileName string) *Image {
+	i := &Image{Pos: pos, Angle: 0.0}
+	fh, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't open file: %v", err)
+	}
+	defer fh.Close()
+	i.img, _, err = image.Decode(fh)
+	if err != nil {
+		log.Fatalf("Couldn't decode image: %v", err)
+	}
+	i.Size = geom.NewPointIMG(i.img.Bounds().Size().Mul(int(oversize)))
+	return i
+}
+
+func (i *Image) Draw(c *Canvas) {
+	rect := geom.Rectangle{Max: i.Size}
+	refPt := i.Pos.Sub(i.Size.Div(2.0))
+	draw.CatmullRom.Scale(c.canvas, rect.Add(refPt).Int(), i.img, i.img.Bounds(), draw.Over, nil)
+}
+
+// Zur Darstellung von beliebigem Text.
 var (
 	defFont     = fonts.SeafordBold
 	defFontSize = ConvertLen(12.0)
 )
 
-type Image struct {
-    Pos, Size geom.Point
-    Angle float64
-    img image.Image
-}
-
-func NewImage(pos geom.Point, fileName string) *Image {
-    i := &Image{Pos: pos, Angle: 0.0}
-    fh, err := os.Open(fileName)
-    if err != nil {
-        log.Fatalf("Couldn't open file: %v", err)
-    }
-    defer fh.Close()
-    i.img, _, err = image.Decode(fh)
-    if err != nil {
-        log.Fatalf("Couldn't decode image: %v", err)
-    }
-    i.Size = geom.NewPointIMG(i.img.Bounds().Size().Mul(int(oversize)))
-    return i
-}
-
-func (i *Image) Draw(c *Canvas) {
-    rect := geom.Rectangle{Max: i.Size}
-    refPt := i.Pos.Sub(i.Size.Div(2.0))
-    draw.CatmullRom.Scale(c.canvas, rect.Add(refPt).Int(), i.img, i.img.Bounds(), draw.Over, nil)
-}
-
-// Zur Darstellung von beliebigem Text.
 type Text struct {
 	Pos      geom.Point
 	Angle    float64
@@ -373,13 +453,13 @@ type Text struct {
 	Font     *fonts.Font
 	FontSize float64
 	Text     string
-    fontFace font.Face
+	fontFace font.Face
 }
 
 func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
 		Text: text}
-    t.fontFace = fonts.NewFace(t.Font, t.FontSize)
+	t.fontFace = fonts.NewFace(t.Font, t.FontSize)
 	return t
 }
 
