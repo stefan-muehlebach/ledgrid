@@ -206,22 +206,10 @@ func (p *PixelServer) ToggleTestPattern() {
 				for i := range bufferSize {
 					p.buffer[i] = 0x00
 				}
-			} else if idx%100 == 0 {
-				p.buffer[3*(idx-1)+0] = 0xff
-				p.buffer[3*(idx-1)+1] = 0x3f
-				p.buffer[3*(idx-1)+2] = 0x00
-			} else if idx%10 == 0 {
-				p.buffer[3*(idx-1)+0] = 0x00
-				p.buffer[3*(idx-1)+1] = 0x8f
-				p.buffer[3*(idx-1)+2] = 0x8f
-			} else if idx%5 == 0 {
-				p.buffer[3*(idx-1)+0] = 0x00
-				p.buffer[3*(idx-1)+1] = 0x63
-				p.buffer[3*(idx-1)+2] = 0x00
 			} else {
-				p.buffer[3*(idx-1)+0] = 0x8f
-				p.buffer[3*(idx-1)+1] = 0x8f
-				p.buffer[3*(idx-1)+2] = 0x8f
+				p.buffer[3*(idx-1)+0] = 0x3f
+				p.buffer[3*(idx-1)+1] = 0x3f
+				p.buffer[3*(idx-1)+2] = 0x3f
 			}
             p.SPISendBuffer(p.buffer, bufferSize)
 			// if p.onRaspi {
@@ -231,7 +219,7 @@ func (p *PixelServer) ToggleTestPattern() {
 			// 			log.Fatalf("Couldn't send data: %v", err)
 			// 		}
 			// 	}
-			// 	time.Sleep(80 * time.Millisecond)
+			time.Sleep(80 * time.Millisecond)
 			// } else {
 			// 	log.Printf("Sending %d bytes", bufferSize)
 			// }
