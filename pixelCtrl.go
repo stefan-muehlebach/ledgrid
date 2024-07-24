@@ -282,18 +282,19 @@ func (p *PixelServer) Handle() {
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
-		if p.onRaspi {
-			for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-				txSize := min(p.maxTxSize, bufferSize-idx)
-				if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
-					log.Fatalf("Couldn't send data: %v", err)
-				}
-			}
-            p.SentBytes += bufferSize
-			time.Sleep(20 * time.Microsecond)
-		} else {
-			log.Printf("Received %d bytes", bufferSize)
-		}
+        p.SPISendBuffer(p.buffer[:bufferSize])
+        p.SentBytes += bufferSize
+		// if p.onRaspi {
+		// 	for idx := 0; idx < bufferSize; idx += p.maxTxSize {
+		// 		txSize := min(p.maxTxSize, bufferSize-idx)
+		// 		if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
+		// 			log.Fatalf("Couldn't send data: %v", err)
+		// 		}
+		// 	}
+		// 	time.Sleep(20 * time.Microsecond)
+		// } else {
+		// 	log.Printf("Received %d bytes", bufferSize)
+		// }
 		p.SendWatch.Stop()
 	}
 
@@ -303,14 +304,15 @@ func (p *PixelServer) Handle() {
 	for i := range p.buffer {
 		p.buffer[i] = 0x00
 	}
-	if p.onRaspi {
-		if err = p.spiConn.Tx(p.buffer, nil); err != nil {
-			log.Printf("Error during communication via SPI: %v\n", err)
-		}
-        p.SentBytes += len(p.buffer)
-	} else {
-		log.Printf("Turning all LEDs off.")
-	}
+    p.SPISendBuffer(p.buffer)
+    p.SentBytes += len(p.buffer)
+	// if p.onRaspi {
+	// 	if err = p.spiConn.Tx(p.buffer, nil); err != nil {
+	// 		log.Printf("Error during communication via SPI: %v\n", err)
+	// 	}
+	// } else {
+	// 	log.Printf("Turning all LEDs off.")
+	// }
 
 	if p.onRaspi {
 		p.spiPort.Close()
