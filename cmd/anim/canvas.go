@@ -350,7 +350,7 @@ func (c *Camera) Start() {
 	c.dev, err = device.Open(camDevName,
 		device.WithIOType(v4l2.IOTypeMMAP),
 		device.WithPixFormat(v4l2.PixFormat{
-			PixelFormat: v4l2.PixelFmtMJPEG,
+			PixelFormat: v4l2.PixelFmtJPEG,
 			Width:       camWidth,
 			Height:      camHeight,
 		}),
