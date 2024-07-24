@@ -127,12 +127,10 @@ func (c *Grid) Continue() {
 // darum noch sehr wenig Kommentare.
 func (c *Grid) backgroundThread() {
 	c.numThreads = runtime.NumCPU()
-	// animChan := make(chan int, queueSize)
-	startChan := make(chan int) //, queueSize)
-	doneChan := make(chan bool) //, queueSize)
+	startChan := make(chan int)
+	doneChan := make(chan bool)
 
 	for range c.numThreads {
-		// go c.animationThread(animChan, doneChan)
 		go c.animationUpdater(startChan, doneChan)
 	}
 
@@ -156,20 +154,6 @@ func (c *Grid) backgroundThread() {
 		}
 		c.animWatch.Stop()
 
-		// numAnims := 0
-		// c.animMutex.RLock()
-		// for i, anim := range c.AnimList {
-		// 	if anim == nil || anim.IsStopped() {
-		// 		continue
-		// 	}
-		// 	numAnims++
-		// 	animChan <- i
-		// }
-		// c.animMutex.RUnlock()
-		// for range numAnims {
-		// 	<-doneChan
-		// }
-
 		c.paintWatch.Start()
 		c.ledGrid.Clear(colornames.Black)
 		c.objMutex.RLock()
@@ -186,16 +170,6 @@ func (c *Grid) backgroundThread() {
 	close(doneChan)
 	close(startChan)
 }
-
-// func (c *Grid) animationThread(animChan <-chan int, doneChan chan<- bool) {
-// 	for animId := range animChan {
-// 		c.AnimList[animId].Update(c.animPit)
-// 		// if !c.AnimList[animId].Update(c.animPit) {
-// 		//     c.AnimList[animId] = nil
-// 		// }
-// 		doneChan <- true
-// 	}
-// }
 
 func (c *Grid) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
 	for id := range startChan {
@@ -233,11 +207,6 @@ func NewGridPixel(pos image.Point, col ledgrid.LedColor) *GridPixel {
 }
 
 func (p *GridPixel) Draw(lg *ledgrid.LedGrid) {
-	// lg.Set(p.Pos.X, p.Pos.Y, p.Color.Alpha(p.Alpha))
-	// r := uint8(p.Alpha * float64(p.Color.R))
-	// g := uint8(p.Alpha * float64(p.Color.G))
-	// b := uint8(p.Alpha * float64(p.Color.B))
-	// a := uint8(p.Alpha * 255.0)
 	lg.SetLedColor(p.Pos.X, p.Pos.Y, p.Color.Mix(lg.LedColorAt(p.Pos.X, p.Pos.Y), ledgrid.Blend))
 }
 
@@ -247,26 +216,34 @@ func (p *GridPixel) Draw(lg *ledgrid.LedGrid) {
 type GridText struct {
 	Pos   image.Point
 	Color ledgrid.LedColor
-	// Alpha  float64
-	Text   string
+	text   string
 	drawer *font.Drawer
 	rect   fixed.Rectangle26_6
 	dp     fixed.Point26_6
 }
 
 func NewGridText(pos image.Point, col ledgrid.LedColor, text string) *GridText {
-	t := &GridText{Pos: pos, Color: col, Text: text}
+	t := &GridText{Pos: pos, Color: col}
 	t.drawer = &font.Drawer{
 		Face: ledgrid.Face3x5,
 	}
+    t.SetText(text)
+	return t
+}
+
+func (t *GridText) Text() string {
+    return t.text
+}
+
+func (t *GridText) SetText(text string) {
+    t.text = text
 	t.rect, _ = t.drawer.BoundString(text)
 	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
-	return t
 }
 
 func (t *GridText) Draw(lg *ledgrid.LedGrid) {
 	t.drawer.Dst = lg
 	t.drawer.Src = image.NewUniform(t.Color)
 	t.drawer.Dot = fixed.P(t.Pos.X, t.Pos.Y).Sub(t.dp)
-	t.drawer.DrawString(t.Text)
+	t.drawer.DrawString(t.text)
 }

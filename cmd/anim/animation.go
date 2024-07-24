@@ -116,7 +116,7 @@ func init() {
 }
 
 // Dieses Interface ist von allen Typen zu implementieren, welche
-// Animationen ausfuehren sollen.
+// Animationen ausfuehren sollen/wollen.
 type Animator interface {
 	AddAnim(anims ...Animation)
 	DelAnim(anim Animation)
@@ -136,6 +136,32 @@ type Animation interface {
 	Update(t time.Time) bool
 }
 
+// Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
+// Interface AnimationImpl implementieren.
+type AnimationImpl interface {
+	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
+	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
+	// zaehlen nicht als Start!
+	Init()
+	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
+	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
+	// t=0: Animation wurde eben gestartet
+	// t=1: Die Animation ist fertig gelaufen.
+	Tick(t float64)
+}
+
+type DurationEmbed struct {
+    duration time.Duration
+}
+
+func (d *DurationEmbed) Duration() time.Duration {
+	return d.duration
+}
+
+func (d *DurationEmbed) SetDuration(dur time.Duration) {
+	d.duration = dur
+}
+
 // Eine Gruppe dient dazu, eine Anzahl von Animationen gleichzeitig zu starten.
 // Die Laufzeit der Gruppe ist gleich der laengsten Laufzeit ihrer Animationen
 // oder einer festen Dauer (je nach dem was groesser ist).
@@ -143,10 +169,10 @@ type Animation interface {
 // Endlos-Animationen sein, da sonst die Laufzeit der Gruppe ebenfalls
 // unendlich wird.
 type Group struct {
+    DurationEmbed
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
 
-	duration         time.Duration
 	animList         []Animation
 	start, stop, end time.Time
 	repeatsLeft      int
@@ -173,14 +199,6 @@ func (a *Group) Add(anims ...Animation) {
 		}
 		a.animList = append(a.animList, anim)
 	}
-}
-
-func (a *Group) Duration() time.Duration {
-	return a.duration
-}
-
-func (a *Group) SetDuration(dur time.Duration) {
-	a.duration = dur
 }
 
 // Startet die Gruppe.
@@ -248,10 +266,10 @@ func (a *Group) Update(t time.Time) bool {
 // ausfuehren. Dabei wird eine nachfolgende Animation erst dann gestartet,
 // wenn die vorangehende beendet wurde.
 type Sequence struct {
+    DurationEmbed
 	// Gibt an, wie oft diese Sequenz wiederholt werden soll.
 	RepeatCount int
 
-	duration         time.Duration
 	animList         []Animation
 	currAnim         int
 	start, stop, end time.Time
@@ -276,14 +294,6 @@ func (a *Sequence) Add(anims ...Animation) {
 		a.duration = a.duration + anim.Duration()
 		a.animList = append(a.animList, anim)
 	}
-}
-
-func (a *Sequence) Duration() time.Duration {
-	return a.duration
-}
-
-func (a *Sequence) SetDuration(dur time.Duration) {
-	a.duration = dur
 }
 
 // Startet die Sequenz.
@@ -357,10 +367,10 @@ func (a *Sequence) Update(t time.Time) bool {
 // der Timeline selber zu verstehen. Nach dem Start werden die Animationen
 // nicht mehr weiter kontrolliert.
 type Timeline struct {
+    DurationEmbed
 	// Gibt an, wie oft diese Timeline wiederholt werden soll.
 	RepeatCount int
 
-	duration         time.Duration
 	posList          []*timelinePos
 	nextPos          int
 	start, stop, end time.Time
@@ -408,14 +418,6 @@ func (a *Timeline) Add(pit time.Duration, anims ...Animation) {
 		}
 	}
 	a.posList = slices.Insert(a.posList, i, &timelinePos{pit, anims})
-}
-
-func (a *Timeline) Duration() time.Duration {
-	return a.duration
-}
-
-func (a *Timeline) SetDuration(dur time.Duration) {
-	a.duration = dur
 }
 
 // Startet die Timeline.
@@ -485,6 +487,7 @@ func (a *Timeline) Update(t time.Time) bool {
 // Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
 // Erleichert das Erstellen von neuen Animationen gewaltig.
 type AnimationEmbed struct {
+    DurationEmbed
 	// Falls true, wird die Animation einmal vorwaerts und einmal rueckwerts
 	// abgespielt.
 	AutoReverse bool
@@ -495,7 +498,7 @@ type AnimationEmbed struct {
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
 	RepeatCount int
 
-	duration         time.Duration
+	// duration         time.Duration
 	wrapper          Animation
 	reverse          bool
 	start, stop, end time.Time
@@ -530,9 +533,9 @@ func (a *AnimationEmbed) Duration() time.Duration {
 	return time.Duration(factor) * a.duration
 }
 
-func (a *AnimationEmbed) SetDuration(dur time.Duration) {
-	a.duration = dur
-}
+// func (a *AnimationEmbed) SetDuration(dur time.Duration) {
+// 	a.duration = dur
+// }
 
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
 // aktuell sind. Ist die Animaton bereits am Laufen ist diese Methode
@@ -619,20 +622,6 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 		a.tick(a.Curve(val))
 	}
 	return true
-}
-
-// Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
-// Interface AnimationImpl implementieren.
-type AnimationImpl interface {
-	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
-	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
-	// zaehlen nicht als Start!
-	Init()
-	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
-	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
-	// t=0: Animation wurde eben gestartet
-	// t=1: Die Animation ist fertig gelaufen.
-	Tick(t float64)
 }
 
 // Animation fuer einen Verlauf zwischen zwei Farben.

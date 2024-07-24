@@ -42,6 +42,7 @@ type PixelServer struct {
 	maxValue        [3]uint8
 	gamma           [3][256]byte
 	drawTestPattern bool
+	SendWatch       *Stopwatch
 }
 
 // Damit wird eine neue Instanz eines PixelServers erzeugt. Mit port wird
@@ -73,6 +74,8 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	p.gammaValue = [3]float64{1.0, 1.0, 1.0}
 	p.maxValue = [3]uint8{255, 255, 255}
 	p.updateGammaTable()
+
+    p.SendWatch = NewStopwatch()
 
 	// Dann wird der SPI-Bus initialisiert.
 	if p.onRaspi {
@@ -250,6 +253,7 @@ func (p *PixelServer) Handle() {
 			}
 			log.Fatal(err)
 		}
+        p.SendWatch.Start()
 		for i := 0; i < bufferSize; i += 3 {
 			p.buffer[i+0] = p.gamma[0][p.buffer[i+0]]
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
@@ -266,6 +270,7 @@ func (p *PixelServer) Handle() {
 		} else {
 			log.Printf("Received %d bytes", bufferSize)
 		}
+        p.SendWatch.Stop()
 	}
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet

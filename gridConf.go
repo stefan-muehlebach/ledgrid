@@ -244,7 +244,7 @@ func (conf ModuleConfig) Append(col, row int, mod Module) (ModuleConfig, error) 
 	return append(conf, modPos), nil
 }
 
-// Retourniert die Groesse des gesamten Panels als Anzahl Module in X-, resp.
+// Bestimmt die Groesse des gesamten Panels in Anzahl Module in X-, resp.
 // Y-Richtung.
 func (conf ModuleConfig) Size() image.Point {
 	size := image.Point{}
@@ -278,6 +278,7 @@ func (conf ModuleConfig) IndexMap() IndexMap {
 	return idxMap
 }
 
+// Hilfsfunktioenchen (sogar generisch!)
 func abs[T ~int|~float64](i T) T {
 	if i < 0 {
 		return -i
@@ -286,75 +287,10 @@ func abs[T ~int|~float64](i T) T {
 	}
 }
 
-// Das Zusamenfuehren von mehreren Modulen zu einem LED-Grid wird ueber den
-// Typ ModuleLayout realisiert. Die Organisation der Module ist zeilenbasiert,
-// d.h. ueber eine Variable des Typs ModuleLayout (layout) und der Zeile,
-// resp. Spalte (row, col) wird mit layout[row][col] auf das entsprechende
-// Modul zugegriffen.
-type ModuleLayout [][]Module
-
-// Erstellt aufgrund der vorgegebenen Groesse der LED-Grids eine Modul-
-// Konfiguration, welche die Flaeche lueckenlos deckt, beim Pixel (0,0) (d.h.
-// links oben beginnt) und eine minimale Kabellaenge aufweist. Zentral ist
-// die Variable ModuleSize, welche die Groesse eines einzelnen Moduls angibt.
-// Es koennen nur LED-Grids erstellt werden, deren Groesse ein Vielfaches der
-// Modul-Groesse ist.
-func DefaultModuleLayout(size image.Point) ModuleLayout {
-	if size.X < ModuleSize.X || size.Y < ModuleSize.Y ||
-		size.X%ModuleSize.X != 0 || size.Y%ModuleSize.Y != 0 {
-		log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleSize)
-	}
-	cols, rows := size.X/ModuleSize.X, size.Y/ModuleSize.Y
-	layout := make([][]Module, rows)
-	for row := range rows {
-		layout[row] = make([]Module, cols)
-	}
-
-	for row := range rows {
-		for i := range cols {
-			col := cols - i - 1
-			if i == 0 {
-				layout[row][col] = Module{ModRL, Rot090}
-			} else {
-				if row%2 == 0 {
-					layout[row][col] = Module{ModLR, Rot000}
-				} else {
-					layout[row][col] = Module{ModLR, Rot180}
-				}
-			}
-		}
-	}
-	return layout
-}
-
-// Erstellt ein Feld (Slice of slice) fuer die direkte Uebersetzung von
-// Pixel-Koordinaten zur Position (Index) innerhalb der Lichterkette.
-func (layout ModuleLayout) IndexMap() IndexMap {
-	var idxMap IndexMap
-
-	idxMap = make([][]int, len(layout[0])*ModuleSize.X)
-	for col := range idxMap {
-		idxMap[col] = make([]int, len(layout)*ModuleSize.Y)
-	}
-	idx := 0
-	for row, moduleRow := range layout {
-		for j := range len(moduleRow) {
-			col := j
-			if row%2 == 1 {
-				col = (len(moduleRow) - 1) - j
-			}
-			mod := moduleRow[col]
-			pt := image.Point{col * ModuleSize.X, row * ModuleSize.Y}
-			idx = idxMap.Append(mod, pt, idx)
-		}
-	}
-	return idxMap
-}
-
 // Mit dieser Methode kann eine bestimmte Position im LED-Panel als 'defekt'
 // markiert werden. In der Lichterkette muss diese Position ueberbrueckt,
 // d.h. die entsprechende LED entfernt und die Anschlusskabel direkt
-// miteinander verbunden.
+// miteinander verbunden werden.
 func (idxMap IndexMap) MarkDefect(pos image.Point) {
 	idxDefect := idxMap[pos.X][pos.Y]
 	cols := len(idxMap)
@@ -432,8 +368,8 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
-		default:
-			log.Fatalf("Module type '%s' is only configured with a rotation of 0 and 180 degrees", m.Type)
+		// default:
+		// 	log.Fatalf("Module type '%s' is only configured with a rotation of 0 and 180 degrees", m.Type)
 		}
 	case ModRL:
 		switch m.Rot {
@@ -489,8 +425,8 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
-		default:
-			log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
+		// default:
+		// 	log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
 		}
 	}
 	return baseIdx + 3*ModuleSize.X*ModuleSize.Y

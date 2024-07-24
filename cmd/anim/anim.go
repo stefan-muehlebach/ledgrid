@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	width  = 30
+	width  = 40
 	height = 10
 )
 
@@ -327,6 +327,68 @@ func RandomWalk(ctrl *Canvas) {
 	aPos1.Start()
 	aPos2.Start()
 }
+
+//----------------------------------------------------------------------------
+
+type BouncingEllipse struct {
+	Ellipse
+	Vel, Acc geom.Point
+	Field    geom.Rectangle
+}
+
+func NewBouncingEllipse(pos, size geom.Point, col ledgrid.LedColor) *BouncingEllipse {
+	b := &BouncingEllipse{}
+	b.Ellipse = *NewEllipse(pos, size, col)
+	b.Vel = geom.Point{}
+	b.Acc = geom.Point{}
+	return b
+}
+
+func (b *BouncingEllipse) Update(pit time.Time) bool {
+	deltaVel := b.Acc.Mul(0.3)
+	b.Vel = b.Vel.Add(deltaVel)
+	b.Pos = b.Pos.Add(b.Vel)
+	if !b.Pos.In(b.Field) {
+		newPos := b.Field.SetInside(b.Pos)
+		diff := b.Pos.Sub(newPos)
+		if diff.X != 0.0 {
+			b.Vel.X = -b.Vel.X
+		} else if diff.Y != 0.0 {
+			b.Vel.Y = -b.Vel.Y
+		}
+		// log.Printf("diff: %v", diff)
+		b.Pos = newPos
+		// b.Vel = b.Vel.Neg()
+	}
+	return true
+}
+
+func (b *BouncingEllipse) Duration() time.Duration {
+	return time.Duration(0)
+}
+func (b *BouncingEllipse) SetDuration(dur time.Duration) {}
+func (b *BouncingEllipse) Start()                        {}
+func (b *BouncingEllipse) Stop()                         {}
+func (b *BouncingEllipse) Continue()                     {}
+func (b *BouncingEllipse) IsStopped() bool {
+	return false
+}
+
+func BounceAround(c *Canvas) {
+	pos := ConvertPos(geom.Point{2.0, 2.0})
+	size := ConvertSize(geom.Point{4.0, 4.0})
+	vel := ConvertSize(geom.Point{0.5, 0.25})
+	acc := ConvertSize(geom.Point{0, 0.1})
+
+	be := NewBouncingEllipse(pos, size, colornames.GreenYellow)
+	be.Vel = vel
+	be.Acc = acc
+	be.Field = geom.NewRectangleIMG(c.canvas.Bounds())
+	c.Add(be)
+	AnimCtrl.AddAnim(be)
+}
+
+//----------------------------------------------------------------------------
 
 func Piiiiixels(ctrl *Canvas) {
 	dPosX := ConvertSize(geom.Point{2.0, 0.0})
@@ -709,59 +771,85 @@ func FlyingImages(c *Canvas) {
 	i4.Size = ConvertSize(geom.Point{16.0, 3.0})
 	c.Add(i4)
 
-    aPos1 := NewPositionAnimation(&i4.Pos, pos2, 4 * time.Second)
-    aSize1 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{633.0, 118.0}), 4 * time.Second)
-    aPos2 := NewPositionAnimation(&i4.Pos, pos2.Add(geom.Point{250.0, 0.0}), 6 * time.Second)
-    aPos2.Cont = true
-    aSize2 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{16.0, 3.0}), 4 * time.Second)
-    aSize2.Cont = true
-    aPos3 := NewPositionAnimation(&i4.Pos, pos1, 3 * time.Second)
-    aPos3.Cont = true
+	aPos1 := NewPositionAnimation(&i4.Pos, pos2, 4*time.Second)
+	aSize1 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{633.0, 118.0}), 4*time.Second)
+	aPos2 := NewPositionAnimation(&i4.Pos, pos2.Add(geom.Point{250.0, 0.0}), 6*time.Second)
+	aPos2.Cont = true
+	aSize2 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{16.0, 3.0}), 4*time.Second)
+	aSize2.Cont = true
+	aPos3 := NewPositionAnimation(&i4.Pos, pos1, 3*time.Second)
+	aPos3.Cont = true
 
-    aSeq := NewSequence(aPos1, aSize1, aPos2, aSize2)
-    aSeq.Start()
+	aSeq := NewSequence(aPos1, aSize1, aPos2, aSize2)
+	aSeq.Start()
 }
+
+//-----------------------------------------------------------------------------
 
 func GlowingGridPixels(g *Grid) {
 	aGrpPurple := NewGroup()
 	aGrpYellow := NewGroup()
 	aGrpGreen := NewGroup()
+	aGrpGrey := NewGroup()
 
 	for y := range g.ledGrid.Rect.Dy() {
 		for x := range g.ledGrid.Rect.Dx() {
 			pos := image.Point{x, y}
 			t := rand.Float64()
-			col := colornames.DimGray.Interpolate(colornames.DarkGrey, t)
+			col := (colornames.DimGray.Dark(0.5)).Interpolate((colornames.DarkGrey.Dark(0.6)), t)
 			pix := NewGridPixel(pos, col)
 			g.Add(pix)
 
-			dur := time.Second + rand.N(400*time.Millisecond)
-			aAlpha := NewAlphaAnimation(&pix.Color.A, 192, dur)
+			dur := time.Second + rand.N(time.Second)
+			aAlpha := NewAlphaAnimation(&pix.Color.A, 200, dur)
 			aAlpha.AutoReverse = true
 			aAlpha.RepeatCount = AnimationRepeatForever
 			aAlpha.Start()
 
-			aColor := NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, t), 3*time.Second)
-			aColor.AutoReverse = true
+			aColor := NewColorAnimation(&pix.Color, col, 1*time.Second)
+			aColor.Cont = true
+			aGrpGrey.Add(aColor)
+
+			aColor = NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, t), 5*time.Second)
+			aColor.Cont = true
+			// aColor.AutoReverse = true
 			aGrpPurple.Add(aColor)
 
-			aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, t), 3*time.Second)
-			aColor.AutoReverse = true
+			aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, t), 5*time.Second)
+			aColor.Cont = true
+			// aColor.AutoReverse = true
 			aGrpYellow.Add(aColor)
 
-			aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, t), 3*time.Second)
-			aColor.AutoReverse = true
+			aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, t), 5*time.Second)
+			aColor.Cont = true
+			// aColor.AutoReverse = true
 			aGrpGreen.Add(aColor)
 		}
 	}
 
-	txt := NewGridText(gridSize.Div(2), colornames.OrangeRed, "SWARM")
-	g.Add(txt)
+	txt1 := NewGridText(gridSize.Div(2), colornames.GreenYellow.Alpha(0.0), "REDEN")
+	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 1*time.Second)
+	aTxt1.AutoReverse = true
+	txt2 := NewGridText(gridSize.Div(2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
+	aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 1*time.Second)
+	aTxt2.AutoReverse = true
+	txt3 := NewGridText(gridSize.Div(2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
+	aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 1*time.Second)
+	aTxt3.AutoReverse = true
+	g.Add(txt1, txt2, txt3)
 
-	aTimel := NewTimeline(40 * time.Second)
-	aTimel.Add(10*time.Second, aGrpPurple)
-	aTimel.Add(20*time.Second, aGrpYellow)
-	aTimel.Add(30*time.Second, aGrpGreen)
+	aTimel := NewTimeline(42 * time.Second)
+	aTimel.Add(7*time.Second, aGrpPurple)
+	aTimel.Add(12*time.Second, aTxt1)
+	aTimel.Add(13*time.Second, aGrpGrey)
+
+	aTimel.Add(22*time.Second, aGrpYellow)
+	aTimel.Add(27*time.Second, aTxt2)
+	aTimel.Add(28*time.Second, aGrpGrey)
+
+	aTimel.Add(35*time.Second, aGrpGreen)
+	aTimel.Add(40*time.Second, aTxt3)
+	aTimel.Add(41*time.Second, aGrpGrey)
 	aTimel.RepeatCount = AnimationRepeatForever
 
 	aTimel.Start()
@@ -867,12 +955,12 @@ func main() {
 	canvasSceneList := []canvasSceneRecord{
 		{"(Regular) Polygon test", RegularPolygonTest},
 		{"Group test", GroupTest},
-		// {"Group test (from saved program)", ReadGroupTest},
 		{"Sequence test", SequenceTest},
 		{"Timeline test", TimelineTest},
 		{"Path test", PathTest},
 		{"PolygonPath Test", PolygonPathTest},
 		{"Random walk", RandomWalk},
+		{"Let's bounce around", BounceAround},
 		{"Piiiiixels", Piiiiixels},
 		{"Circling Circles", CirclingCircles},
 		{"Chasing Circles", ChasingCircles},

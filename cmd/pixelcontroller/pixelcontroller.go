@@ -37,9 +37,11 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
             pixelServer.Close()
             return
         case syscall.SIGHUP:
-            log.Printf("You signalled a HUP - which isn't implemented by now")
+            log.Printf("Server Statistics:")
+            num, total, avg := pixelServer.SendWatch.Stats()
+            log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
         case syscall.SIGUSR1:
-            log.Printf("You signalled a USR1 - which isn't implemented by now")
+            log.Printf("Toggle drawing of a test pattern.")
             pixelServer.ToggleTestPattern()
         }
     }

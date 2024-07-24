@@ -83,11 +83,11 @@ func (c LedColor) Alpha(a float64) LedColor {
 }
 
 func (c LedColor) Bright(t float64) LedColor {
-	return c
+	return c.Interpolate(White, t)
 }
 
 func (c LedColor) Dark(t float64) LedColor {
-	return c
+	return c.Interpolate(Black, t)
 }
 
 func (c LedColor) String() string {
