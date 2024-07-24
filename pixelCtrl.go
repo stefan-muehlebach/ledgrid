@@ -277,7 +277,9 @@ func (p *PixelServer) ToggleTestPattern() {
 				modus++
 			}
 			p.SPISendBuffer(p.buffer, bufferSize)
-			time.Sleep(80 * time.Millisecond)
+            if modus != TestStrip {
+			    time.Sleep(80 * time.Millisecond)
+            }
 		}
 		for i := range bufferSize {
 			p.buffer[i] = 0x00
