@@ -7,6 +7,8 @@ import (
 	"slices"
 	"time"
 
+	"golang.org/x/image/math/fixed"
+
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
@@ -151,7 +153,7 @@ type AnimationImpl interface {
 }
 
 type DurationEmbed struct {
-    duration time.Duration
+	duration time.Duration
 }
 
 func (d *DurationEmbed) Duration() time.Duration {
@@ -169,7 +171,7 @@ func (d *DurationEmbed) SetDuration(dur time.Duration) {
 // Endlos-Animationen sein, da sonst die Laufzeit der Gruppe ebenfalls
 // unendlich wird.
 type Group struct {
-    DurationEmbed
+	DurationEmbed
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
 
@@ -266,7 +268,7 @@ func (a *Group) Update(t time.Time) bool {
 // ausfuehren. Dabei wird eine nachfolgende Animation erst dann gestartet,
 // wenn die vorangehende beendet wurde.
 type Sequence struct {
-    DurationEmbed
+	DurationEmbed
 	// Gibt an, wie oft diese Sequenz wiederholt werden soll.
 	RepeatCount int
 
@@ -367,7 +369,7 @@ func (a *Sequence) Update(t time.Time) bool {
 // der Timeline selber zu verstehen. Nach dem Start werden die Animationen
 // nicht mehr weiter kontrolliert.
 type Timeline struct {
-    DurationEmbed
+	DurationEmbed
 	// Gibt an, wie oft diese Timeline wiederholt werden soll.
 	RepeatCount int
 
@@ -487,7 +489,7 @@ func (a *Timeline) Update(t time.Time) bool {
 // Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
 // Erleichert das Erstellen von neuen Animationen gewaltig.
 type AnimationEmbed struct {
-    DurationEmbed
+	DurationEmbed
 	// Falls true, wird die Animation einmal vorwaerts und einmal rueckwerts
 	// abgespielt.
 	AutoReverse bool
@@ -653,9 +655,9 @@ func (a *ColorAnimation) Init() {
 }
 
 func (a *ColorAnimation) Tick(t float64) {
-    alpha := (*a.ValPtr).A
+	alpha := (*a.ValPtr).A
 	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
-    (*a.ValPtr).A = alpha
+	(*a.ValPtr).A = alpha
 }
 
 // Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
@@ -784,6 +786,39 @@ func (a *FloatAnimation) Tick(t float64) {
 	*a.ValPtr = (1-t)*a.Val1 + t*a.Val2
 }
 
+// Animation fuer eine Positionsveraenderung mit Hilfe des fixed Datentyps
+// Point26_6.
+type FixedPosAnimation struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *fixed.Point26_6
+	Val1, Val2 fixed.Point26_6
+}
+
+func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
+	a := &FixedPosAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *FixedPosAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+}
+
+func (a *FixedPosAnimation) Tick(t float64) {
+	*a.ValPtr = a.Val1.Mul(float2fix(1.0 - t)).Add(a.Val2.Mul(float2fix(t)))
+}
+
+func float2fix(x float64) fixed.Int26_6 {
+	return fixed.Int26_6(math.Round(x * 64))
+}
+
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnimation struct {
@@ -813,7 +848,7 @@ func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
-    a.Val2 = val2
+	a.Val2 = val2
 	a.PathFunc = LinearPath
 	return a
 }
@@ -827,22 +862,22 @@ func (a *PathAnimation) Init() {
 		a.Val1 = *a.ValPtr
 	}
 	if a.ValFunc != nil {
-        if !a.Size.Eq(geom.Point{}) {
-            a.Size = a.ValFunc()
-        } else {
-		    a.Val2 = a.ValFunc()
-        }
+		if !a.Size.Eq(geom.Point{}) {
+			a.Size = a.ValFunc()
+		} else {
+			a.Val2 = a.ValFunc()
+		}
 	}
 }
 
 func (a *PathAnimation) Tick(t float64) {
-    var dp geom.Point
+	var dp geom.Point
 
-    if !a.Size.Eq(geom.Point{}) {
-        dp = a.PathFunc(t).Scale(a.Size)
-    } else {
-        	dp = a.PathFunc(t).Scale(a.Val2.Sub(a.Val1))
-    }
+	if !a.Size.Eq(geom.Point{}) {
+		dp = a.PathFunc(t).Scale(a.Size)
+	} else {
+		dp = a.PathFunc(t).Scale(a.Val2.Sub(a.Val1))
+	}
 	*a.ValPtr = a.Val1.Add(dp)
 }
 

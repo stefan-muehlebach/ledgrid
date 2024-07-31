@@ -214,29 +214,30 @@ func (p *GridPixel) Draw(lg *ledgrid.LedGrid) {
 // 'fixed size' Bitmap-Schriften, die ohne Rastern und Rendern sehr schnell
 // dargestellt werden koennen.
 type GridText struct {
-	Pos   image.Point
-	Color ledgrid.LedColor
+	// Pos   image.Point
+	Pos    fixed.Point26_6
+	Color  ledgrid.LedColor
 	text   string
 	drawer *font.Drawer
 	rect   fixed.Rectangle26_6
 	dp     fixed.Point26_6
 }
 
-func NewGridText(pos image.Point, col ledgrid.LedColor, text string) *GridText {
+func NewGridText(pos fixed.Point26_6, col ledgrid.LedColor, text string) *GridText {
 	t := &GridText{Pos: pos, Color: col}
 	t.drawer = &font.Drawer{
 		Face: ledgrid.Face3x5,
 	}
-    t.SetText(text)
+	t.SetText(text)
 	return t
 }
 
 func (t *GridText) Text() string {
-    return t.text
+	return t.text
 }
 
 func (t *GridText) SetText(text string) {
-    t.text = text
+	t.text = text
 	t.rect, _ = t.drawer.BoundString(text)
 	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
 }
@@ -244,6 +245,6 @@ func (t *GridText) SetText(text string) {
 func (t *GridText) Draw(lg *ledgrid.LedGrid) {
 	t.drawer.Dst = lg
 	t.drawer.Src = image.NewUniform(t.Color)
-	t.drawer.Dot = fixed.P(t.Pos.X, t.Pos.Y).Sub(t.dp)
+	t.drawer.Dot = t.Pos.Sub(t.dp)
 	t.drawer.DrawString(t.text)
 }

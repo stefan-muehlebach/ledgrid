@@ -13,9 +13,6 @@ const (
 var (
 	framesPerSecond int           = defFramesPerSec
 	frameRefresh    time.Duration = time.Second / time.Duration(framesPerSecond)
-	defectPosList                 = []image.Point{
-		{6, 3},
-	}
 )
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.
@@ -40,27 +37,12 @@ func NewLedGrid(size image.Point, modConf ModuleConfig) *LedGrid {
 	g.Rect = image.Rectangle{Max: size}
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
 
-    // 30x10 Querformat
-    // layout := ModuleLayout{
-    //     {Module{ModLR, Rot000}, Module{ModLR, Rot000}, Module{ModRL, Rot090}},
-    // }
-
-    // 10x30 Hochformat
-    // layout := ModuleLayout{
-    //     {Module{ModLR, Rot270}},
-    //     {Module{ModLR, Rot270}},
-    //     {Module{ModRL, Rot000}},
-    // }
-
     // Autom. Formatwahl
     if modConf == nil {
         modConf = DefaultModuleConfig(g.Rect.Size())
     }
 
 	g.idxMap = modConf.IndexMap()
-	for _, defectPos := range defectPosList {
-		g.idxMap.MarkDefect(defectPos)
-	}
 	return g
 }
 
@@ -121,4 +103,8 @@ func (g *LedGrid) Clear(c LedColor) {
 		slc[1] = c.G
 		slc[2] = c.B
 	}
+}
+
+func (g *LedGrid) MarkDefect(pos image.Point) {
+    g.idxMap.MarkDefect(pos)
 }

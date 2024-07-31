@@ -26,18 +26,74 @@ const (
 	bufferSize = 320 * 240 * 3
 )
 
+type Displayer interface {
+    Close()
+	Send(bufffer []byte)
+}
+
+type SPIBus struct {
+	spiPort   spi.PortCloser
+	spiConn   spi.Conn
+	maxTxSize int
+}
+
+func OpenSPIBus(spiDev string, baud int) *SPIBus {
+	var err error
+	p := &SPIBus{}
+
+	_, err = host.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spiFs, _ := sysfs.NewSPI(0, 0)
+	p.maxTxSize = spiFs.MaxTxSize()
+	spiFs.Close()
+
+	p.spiPort, err = spireg.Open(spiDev)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p.spiConn, err = p.spiPort.Connect(physic.Frequency(baud)*physic.Hertz,
+		spi.Mode0, 8)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return p
+}
+
+func (p *SPIBus) Close() {
+	p.spiPort.Close()
+}
+
+func (p *SPIBus) Send(buffer []byte) {
+	var err error
+	var bufferSize int
+
+	bufferSize = len(buffer)
+	for idx := 0; idx < bufferSize; idx += p.maxTxSize {
+		txSize := min(p.maxTxSize, bufferSize-idx)
+		if err = p.spiConn.Tx(buffer[idx:idx+txSize], nil); err != nil {
+			log.Fatalf("Couldn't send data: %v", err)
+		}
+	}
+	time.Sleep(20 * time.Microsecond)
+}
+
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist.
 type PixelServer struct {
+	Disp            Displayer
 	onRaspi         bool
 	udpAddr         *net.UDPAddr
 	udpConn         *net.UDPConn
 	tcpAddr         *net.TCPAddr
 	tcpListener     *net.TCPListener
-	spiPort         spi.PortCloser
-	spiConn         spi.Conn
+	// spiPort         spi.PortCloser
+	// spiConn         spi.Conn
 	buffer          []byte
-	maxTxSize       int
+	// maxTxSize       int
 	gammaValue      [3]float64
 	maxValue        [3]uint8
 	gamma           [3][256]byte
@@ -56,10 +112,11 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	var addrPort netip.AddrPort
 
 	p := &PixelServer{}
-	_, err = host.Init()
-	if err != nil {
-		log.Fatal(err)
-	}
+    p.Disp = OpenSPIBus(spiDev, baud)
+	// _, err = host.Init()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	if rpi.Present() {
 		p.onRaspi = true
 	}
@@ -67,9 +124,9 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und oeffnen die Verbindung zum LED-Grid via SPI.
 	p.buffer = make([]byte, bufferSize)
-	spiFs, _ := sysfs.NewSPI(0, 0)
-	p.maxTxSize = spiFs.MaxTxSize()
-	spiFs.Close()
+	// spiFs, _ := sysfs.NewSPI(0, 0)
+	// p.maxTxSize = spiFs.MaxTxSize()
+	// spiFs.Close()
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
 	// maximale Helligkeit erstellt.
@@ -80,17 +137,17 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	p.SendWatch = NewStopwatch()
 
 	// Dann wird der SPI-Bus initialisiert.
-	if p.onRaspi {
-		p.spiPort, err = spireg.Open(spiDev)
-		if err != nil {
-			log.Fatal(err)
-		}
-		p.spiConn, err = p.spiPort.Connect(physic.Frequency(baud)*physic.Hertz,
-			spi.Mode0, 8)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	// if p.onRaspi {
+	// 	p.spiPort, err = spireg.Open(spiDev)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	p.spiConn, err = p.spiPort.Connect(physic.Frequency(baud)*physic.Hertz,
+	// 		spi.Mode0, 8)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt.
@@ -151,42 +208,21 @@ func (p *PixelServer) updateGammaTable() {
 	}
 }
 
-func (p *PixelServer) SPISendBuffer(buffer []byte, bufferSize int) {
-	var err error
-
-	if p.onRaspi {
-		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-			txSize := min(p.maxTxSize, bufferSize-idx)
-			if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
-				log.Fatalf("Couldn't send data: %v", err)
-			}
-		}
-		time.Sleep(20 * time.Microsecond)
-	} else {
-		log.Printf("Sent %d bytes to the SPI bus", bufferSize)
-	}
-}
-
-// func (p *PixelServer) Draw(lg *LedGrid) {
-// 	var bufferSize int
+// func (p *PixelServer) SPISendBuffer(buffer []byte) {
 // 	var err error
+// 	var bufferSize int
 
-// 	bufferSize = len(lg.Pix)
-// 	for i := 0; i < bufferSize; i += 3 {
-// 		p.buffer[i+0] = p.gamma[0][lg.Pix[i+0]]
-// 		p.buffer[i+1] = p.gamma[1][lg.Pix[i+1]]
-// 		p.buffer[i+2] = p.gamma[2][lg.Pix[i+2]]
-// 	}
+// 	bufferSize = len(buffer)
 // 	if p.onRaspi {
 // 		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
 // 			txSize := min(p.maxTxSize, bufferSize-idx)
-// 			if err = p.spiConn.Tx(p.buffer[idx:idx+txSize], nil); err != nil {
+// 			if err = p.spiConn.Tx(buffer[idx:idx+txSize], nil); err != nil {
 // 				log.Fatalf("Couldn't send data: %v", err)
 // 			}
 // 		}
 // 		time.Sleep(20 * time.Microsecond)
 // 	} else {
-// 		log.Printf("Received %d bytes", bufferSize)
+// 		log.Printf("Sent %d bytes to the SPI bus", bufferSize)
 // 	}
 // }
 
@@ -276,16 +312,16 @@ func (p *PixelServer) ToggleTestPattern() bool {
 				}
 				modus = TestClear
 			}
-			p.SPISendBuffer(p.buffer, bufferSize)
+			p.Disp.Send(p.buffer[:bufferSize])
 			time.Sleep(80 * time.Millisecond)
 		}
 		for i := range bufferSize {
 			p.buffer[i] = 0x00
 		}
-		p.SPISendBuffer(p.buffer, len(p.buffer))
+		p.Disp.Send(p.buffer)
 	}()
 
-    return true
+	return true
 }
 
 // Dies ist die zentrale Verarbeitungs-Funktion des Pixel-Controllers. In ihr
@@ -312,7 +348,7 @@ func (p *PixelServer) Handle() {
 			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
 			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
 		}
-		p.SPISendBuffer(p.buffer, bufferSize)
+		p.Disp.Send(p.buffer[:bufferSize])
 		p.SentBytes += bufferSize
 		p.SendWatch.Stop()
 	}
@@ -322,11 +358,12 @@ func (p *PixelServer) Handle() {
 	for i := range p.buffer {
 		p.buffer[i] = 0x00
 	}
-	p.SPISendBuffer(p.buffer, len(p.buffer))
+	p.Disp.Send(p.buffer)
 	p.SentBytes += len(p.buffer)
-	if p.onRaspi {
-		p.spiPort.Close()
-	}
+    p.Disp.Close()
+	// if p.onRaspi {
+	// 	p.spiPort.Close()
+	// }
 }
 
 // Die folgenden Methoden koennen via RPC vom Client aufgerufen werden.
@@ -339,13 +376,14 @@ func (p *PixelServer) RPCDraw(grid *LedGrid, reply *int) error {
 	for i := 0; i < len(grid.Pix); i++ {
 		grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
 	}
-	if p.onRaspi {
-		if err = p.spiConn.Tx(grid.Pix, nil); err != nil {
-			log.Printf("Error during communication via SPI: %v.", err)
-		}
-	} else {
-		log.Printf("Drawing grid.")
-	}
+    p.Disp.Send(grid.Pix)
+	// if p.onRaspi {
+	// 	if err = p.spiConn.Tx(grid.Pix, nil); err != nil {
+	// 		log.Printf("Error during communication via SPI: %v.", err)
+	// 	}
+	// } else {
+	// 	log.Printf("Drawing grid.")
+	// }
 	return err
 }
 

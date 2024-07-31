@@ -33,7 +33,7 @@ var (
 	gridSize           = image.Point{width, height}
 	defLocal           = false
 	defDummy           = false
-	defHost            = "raspi-3"
+	defHost            = "localhost"
 	defPort       uint = 5333
 	defGammaValue      = 3.0
 	blinkenFiles       = []string{
@@ -90,11 +90,7 @@ func main() {
 	if dummy {
 		pixCtrl = ledgrid.NewDummyPixelClient()
 	} else {
-		if local {
-			pixCtrl = ledgrid.NewLocalPixelClient(5333, "/dev/spidev0.0", 2_000_000)
-		} else {
-			pixCtrl = ledgrid.NewNetPixelClient(host, port)
-		}
+		pixCtrl = ledgrid.NewNetPixelClient(host, port)
 	}
 	pixGrid = ledgrid.NewLedGrid(gridSize, nil)
 	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)

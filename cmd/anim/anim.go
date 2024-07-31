@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"time"
 
+	"golang.org/x/image/math/fixed"
+
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
@@ -21,13 +23,16 @@ const (
 )
 
 var (
-	gridSize         = image.Point{width, height}
-	pixelHost        = "raspi-3"
-	pixelPort   uint = 5333
-	gammaValue       = 3.0
-	refreshRate      = 30 * time.Millisecond
-	backAlpha        = 1.0
-	defLocal         = false
+	gridSize           = image.Point{width, height}
+	pixelHost          = "raspi-3"
+	pixelPort     uint = 5333
+	gammaValue         = 3.0
+	refreshRate        = 30 * time.Millisecond
+	backAlpha          = 1.0
+	defLocal           = false
+	defectPosList      = []image.Point{
+		{6, 3},
+	}
 
 	AnimCtrl Animator
 )
@@ -348,12 +353,12 @@ func (b *BouncingEllipse) Update(pit time.Time) bool {
 	deltaVel := b.Acc.Mul(0.3)
 	b.Vel = b.Vel.Add(deltaVel)
 	b.Pos = b.Pos.Add(b.Vel)
-    if b.Pos.X < b.Field.Min.X || b.Pos.X >= b.Field.Max.X {
-        b.Vel.X = -b.Vel.X
-    }
-    if b.Pos.Y < b.Field.Min.Y || b.Pos.Y >= b.Field.Max.Y {
-        b.Vel.Y = -b.Vel.Y
-    }
+	if b.Pos.X < b.Field.Min.X || b.Pos.X >= b.Field.Max.X {
+		b.Vel.X = -b.Vel.X
+	}
+	if b.Pos.Y < b.Field.Min.Y || b.Pos.Y >= b.Field.Max.Y {
+		b.Vel.Y = -b.Vel.Y
+	}
 	return true
 }
 
@@ -370,10 +375,10 @@ func (b *BouncingEllipse) IsStopped() bool {
 
 func BounceAround(c *Canvas) {
 	pos1 := ConvertPos(geom.Point{2.0, 2.0})
-    pos2 := ConvertPos(geom.Point{37.0, 7.0})
+	pos2 := ConvertPos(geom.Point{37.0, 7.0})
 	size := ConvertSize(geom.Point{4.0, 4.0})
 	vel1 := geom.Point{1.5, 0.75}
-    vel2 := geom.Point{-3.5, -2.5}
+	vel2 := geom.Point{-3.5, -2.5}
 	// acc := ConvertSize(geom.Point{0, 0.1})
 
 	obj1 := NewBouncingEllipse(pos1, size, colornames.GreenYellow)
@@ -784,16 +789,18 @@ func FlyingImages(c *Canvas) {
 }
 
 func CameraTest(c *Canvas) {
-    pos := ConvertPos(geom.Point{width/2.0, height/2.0})
-    size := ConvertSize(geom.Point{width, height})
+	pos := ConvertPos(geom.Point{width / 2.0, height / 2.0})
+	size := ConvertSize(geom.Point{width, height})
 
-    cam := NewCamera(pos, size)
-    c.Add(cam)
+	cam := NewCamera(pos, size)
+	c.Add(cam)
 
-    cam.Start()
+	cam.Start()
 }
 
 //-----------------------------------------------------------------------------
+// Folgende Animationen sind mit dem wesentlich schnelleren aber graphisch
+// etwas eingeschraenkteren Grid-Typ erstellt.
 
 func GlowingGridPixels(g *Grid) {
 	aGrpPurple := NewGroup()
@@ -836,13 +843,13 @@ func GlowingGridPixels(g *Grid) {
 		}
 	}
 
-	txt1 := NewGridText(gridSize.Div(2), colornames.GreenYellow.Alpha(0.0), "REDEN")
+	txt1 := NewGridText(fixed.P(width/2, height/2), colornames.GreenYellow.Alpha(0.0), "REDEN")
 	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
 	aTxt1.AutoReverse = true
-	txt2 := NewGridText(gridSize.Div(2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
+	txt2 := NewGridText(fixed.P(width/2, height/2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
 	aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
 	aTxt2.AutoReverse = true
-	txt3 := NewGridText(gridSize.Div(2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
+	txt3 := NewGridText(fixed.P(width/2, height/2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
 	aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
 	aTxt3.AutoReverse = true
 	g.Add(txt1, txt2, txt3)
@@ -883,13 +890,18 @@ func RandomGridPixels(g *Grid) {
 }
 
 func TextOnGrid(g *Grid) {
-	basePt := image.Point{0, 5}
+	basePt := fixed.P(0, 5)
 	baseColor1 := colornames.SkyBlue
 
 	// pix := NewGridPixel(basePt, colornames.OrangeRed)
-	txt1 := NewGridText(basePt, baseColor1, "Stefan")
-	txt2 := NewGridText(basePt.Add(image.Point{0, 5}), baseColor1, "und Beni")
-	g.Add(txt1, txt2)
+	txt1 := NewGridText(basePt, baseColor1, "STEFAN")
+	// txt2 := NewGridText(basePt.Add(image.Point{0, 5}), baseColor1, "und Beni")
+	g.Add(txt1)
+
+	aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
+	aPos.AutoReverse = true
+	aPos.RepeatCount = AnimationRepeatForever
+	aPos.Start()
 
 	// go func() {
 	// 	for ch := 0x20; ch < 0x7f; ch++ {
@@ -944,14 +956,11 @@ func main() {
 	var pixCtrl ledgrid.PixelClient
 	// var modConf ledgrid.ModuleConfig
 
+	flag.StringVar(&pixelHost, "host", pixelHost, "Controller hostname")
+	flag.UintVar(&pixelPort, "port", pixelPort, "Controller port")
 	flag.StringVar(&input, "scene", input, "play one single scene (no menu)")
 	flag.BoolVar(&doLog, "log", doLog, "enable logging")
 	flag.Parse()
-
-	// modConf, _ = modConf.Append(0, 0, ledgrid.Module{ledgrid.ModLR, ledgrid.Rot000})
-	// modConf, _ = modConf.Append(1, 0, ledgrid.Module{ledgrid.ModLR, ledgrid.Rot000})
-	// modConf, _ = modConf.Append(2, 0, ledgrid.Module{ledgrid.ModRL, ledgrid.Rot090})
-	// modConf, _ = modConf.Append(2, 1, ledgrid.Module{ledgrid.ModLR, ledgrid.Rot000})
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -976,7 +985,7 @@ func main() {
 		{"Glowing Pixels (Canvas)", GlowingPixels},
 		{"Moving Text", MovingText},
 		{"Flying images", FlyingImages},
-        {"Hidden or visible camera", CameraTest},
+		{"Hidden or visible camera", CameraTest},
 	}
 
 	gridSceneList := []gridSceneRecord{
@@ -991,6 +1000,10 @@ func main() {
 	pixCtrl.SetMaxBright(255, 255, 255)
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
+    if pixelHost != "localhost" {
+        ledGrid.MarkDefect(defectPosList[0])
+    }
+
 	canvas := NewCanvas(pixCtrl, ledGrid)
 	canvas.Stop()
 	grid := NewGrid(pixCtrl, ledGrid)

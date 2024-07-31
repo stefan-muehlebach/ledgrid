@@ -44,6 +44,15 @@ func TestDefaultModuleConfig(t *testing.T) {
 	t.Logf("  idx( 0,19): %d", idxMap[0][19]/3)
 }
 
+func TestCoordMap(t *testing.T) {
+	conf := DefaultModuleConfig(image.Point{40, 10})
+	t.Logf("module config: %v", conf)
+	idxMap := conf.IndexMap()
+    coordMap := idxMap.CoordMap()
+	t.Logf("  idxMap: %v", idxMap)
+	t.Logf("  coordMap: %v", coordMap)
+}
+
 func TestModuleConfig(t *testing.T) {
 	var modConf ModuleConfig
 	var err error
