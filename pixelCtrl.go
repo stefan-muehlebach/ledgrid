@@ -27,7 +27,7 @@ const (
 )
 
 type Displayer interface {
-    Close()
+	Close()
 	Send(bufffer []byte)
 }
 
@@ -84,15 +84,16 @@ func (p *SPIBus) Send(buffer []byte) {
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist.
 type PixelServer struct {
-	Disp            Displayer
-	onRaspi         bool
-	udpAddr         *net.UDPAddr
-	udpConn         *net.UDPConn
-	tcpAddr         *net.TCPAddr
-	tcpListener     *net.TCPListener
+	Disp        Displayer
+	onRaspi     bool
+	udpAddr     *net.UDPAddr
+	udpConn     *net.UDPConn
+	tcpAddr     *net.TCPAddr
+	tcpListener *net.TCPListener
 	// spiPort         spi.PortCloser
 	// spiConn         spi.Conn
-	buffer          []byte
+	buffer                  []byte
+	missingList, defectList []int
 	// maxTxSize       int
 	gammaValue      [3]float64
 	maxValue        [3]uint8
@@ -112,7 +113,7 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	var addrPort netip.AddrPort
 
 	p := &PixelServer{}
-    p.Disp = OpenSPIBus(spiDev, baud)
+	p.Disp = OpenSPIBus(spiDev, baud)
 	// _, err = host.Init()
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -122,8 +123,13 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	}
 
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
-	// Daten und oeffnen die Verbindung zum LED-Grid via SPI.
+	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
+    // der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
+    // als Farbe immer Schwarz erhalten sollen).
 	p.buffer = make([]byte, bufferSize)
+    p.missingList = make([]int, 0)
+    p.defectList = make([]int, 0)
+
 	// spiFs, _ := sysfs.NewSPI(0, 0)
 	// p.maxTxSize = spiFs.MaxTxSize()
 	// spiFs.Close()
@@ -197,6 +203,14 @@ func (p *PixelServer) MaxBright() (r, g, b uint8) {
 func (p *PixelServer) SetMaxBright(r, g, b uint8) {
 	p.maxValue[0], p.maxValue[1], p.maxValue[2] = r, g, b
 	p.updateGammaTable()
+}
+
+func (p *PixelServer) SetMissingList(l []int) {
+	p.missingList = l
+}
+
+func (p *PixelServer) SetDefectList(l []int) {
+	p.defectList = l
 }
 
 func (p *PixelServer) updateGammaTable() {
@@ -330,9 +344,17 @@ func (p *PixelServer) ToggleTestPattern() bool {
 // Die genaue Konfiguration des LED-Grids (Anordnung der Lichterketten) ist
 // dem Pixel-Controller nicht bekannt.
 func (p *PixelServer) Handle() {
-	var bufferSize int
+	var bufferSize, numLEDs int
+    var missingIdx, defectIdx int
+    var dst []byte
 	var err error
 
+    if len(p.missingList) == 0 {
+        missingIdx = -1
+    }
+    if len(p.defectList) == 0 {
+        defectIdx = -1
+    }
 	for {
 		bufferSize, err = p.udpConn.Read(p.buffer)
 		if err != nil {
@@ -343,10 +365,22 @@ func (p *PixelServer) Handle() {
 		}
 		p.RecvBytes += bufferSize
 		p.SendWatch.Start()
-		for i := 0; i < bufferSize; i += 3 {
-			p.buffer[i+0] = p.gamma[0][p.buffer[i+0]]
-			p.buffer[i+1] = p.gamma[1][p.buffer[i+1]]
-			p.buffer[i+2] = p.gamma[2][p.buffer[i+2]]
+        numLEDs = bufferSize / 3
+		for idx := 0; idx < numLEDs; idx++ {
+            if missingIdx >= 0 && p.missingList[missingIdx] == idx {
+                missingIdx = (missingIdx + 1) % len(p.missingList)
+                continue
+            }
+            dst = p.buffer[3*idx : 3*idx+3 : 3*idx+3]
+            if defectIdx >= 0 && p.defectList[defectIdx] == idx {
+                defectIdx = (defectIdx + 1) % len(p.defectList)
+                dst[0] = 0x00
+                dst[1] = 0x00
+                dst[2] = 0x00
+            }
+			dst[0] = p.gamma[0][dst[0]]
+			dst[1] = p.gamma[1][dst[1]]
+			dst[2] = p.gamma[2][dst[2]]
 		}
 		p.Disp.Send(p.buffer[:bufferSize])
 		p.SentBytes += bufferSize
@@ -360,7 +394,7 @@ func (p *PixelServer) Handle() {
 	}
 	p.Disp.Send(p.buffer)
 	p.SentBytes += len(p.buffer)
-    p.Disp.Close()
+	p.Disp.Close()
 	// if p.onRaspi {
 	// 	p.spiPort.Close()
 	// }
@@ -376,7 +410,7 @@ func (p *PixelServer) RPCDraw(grid *LedGrid, reply *int) error {
 	for i := 0; i < len(grid.Pix); i++ {
 		grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
 	}
-    p.Disp.Send(grid.Pix)
+	p.Disp.Send(grid.Pix)
 	// if p.onRaspi {
 	// 	if err = p.spiConn.Tx(grid.Pix, nil); err != nil {
 	// 		log.Printf("Error during communication via SPI: %v.", err)

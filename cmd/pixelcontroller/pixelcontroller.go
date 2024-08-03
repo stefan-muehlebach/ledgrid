@@ -42,8 +42,11 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
 			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
 		case syscall.SIGUSR1:
-			log.Printf("Toggle drawing of a test pattern.")
-			pixelServer.ToggleTestPattern()
+			if pixelServer.ToggleTestPattern() {
+                log.Printf("Drawing test pattern is ON now.")
+            } else {
+                log.Printf("Drawing test pattern is OFF now.")
+            }
 		}
 	}
 }
@@ -52,6 +55,8 @@ func main() {
 	var port uint
 	var baud int
 	var gammaValues string
+    var missingIDs, defectIDs string
+    var missingList, defectList []int
 	var gammaValue [3]float64
 	var spiDevFile string = "/dev/spidev0.0"
 	var pixelServer *ledgrid.PixelServer
@@ -60,6 +65,8 @@ func main() {
 	flag.UintVar(&port, "port", defPort, "UDP port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&gammaValues, "gamma", defGammaValues, "Gamma values")
+    flag.StringVar(&missingIDs, "missing", missingIDs, "Comma separated list with IDs of missing LEDs")
+    flag.StringVar(&defectIDs, "defect", defectIDs, "Comma separated list with IDs of defect LEDs")
 	flag.Parse()
 
 	for i, str := range strings.Split(gammaValues, ",") {
@@ -69,6 +76,22 @@ func main() {
 		}
 		gammaValue[i] = val
 	}
+
+    for _, str := range strings.Split(missingIDs, ",") {
+        val, err := strconv.ParseInt(str, 10, 32)
+        if err != nil {
+            log.Fatalf("Wrong format: %s", str)
+        }
+        missingList = append(missingList, int(val))
+    }
+
+    for _, str := range strings.Split(defectIDs, ",") {
+        val, err := strconv.ParseInt(str, 10, 32)
+        if err != nil {
+            log.Fatalf("Wrong format: %s", str)
+        }
+        defectList = append(defectList, int(val))
+    }
 
 	pixelServer = ledgrid.NewPixelServer(port, spiDevFile, baud)
 	pixelServer.SetGamma(gammaValue[red], gammaValue[green], gammaValue[blue])

@@ -29,7 +29,6 @@ var (
 	gammaValue         = 3.0
 	refreshRate        = 30 * time.Millisecond
 	backAlpha          = 1.0
-	defLocal           = false
 	defectPosList      = []image.Point{
 		{6, 3},
 	}
