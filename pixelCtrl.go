@@ -355,7 +355,7 @@ func (p *PixelServer) ToggleTestPattern() bool {
 func (p *PixelServer) Handle() {
 	var bufferSize, numLEDs int
 	var missingIdx, defectIdx int
-	var dst []byte
+	var src, dst []byte
 	var err error
 
 	if len(p.missingList) == 0 {
@@ -375,21 +375,23 @@ func (p *PixelServer) Handle() {
 		p.RecvBytes += bufferSize
 		p.SendWatch.Start()
 		numLEDs = bufferSize / 3
-		for idx := 0; idx < numLEDs; idx++ {
-			if missingIdx >= 0 && p.missingList[missingIdx] == idx {
+		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
+			if missingIdx >= 0 && p.missingList[missingIdx] == srcIdx {
 				missingIdx = (missingIdx + 1) % len(p.missingList)
 				continue
 			}
-			dst = p.buffer[3*idx : 3*idx+3 : 3*idx+3]
-			if defectIdx >= 0 && p.defectList[defectIdx] == idx {
+			src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
+			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
+			if defectIdx >= 0 && p.defectList[defectIdx] == srcIdx {
 				defectIdx = (defectIdx + 1) % len(p.defectList)
 				dst[0] = 0x00
 				dst[1] = 0x00
 				dst[2] = 0x00
 			}
-			dst[0] = p.gamma[0][dst[0]]
-			dst[1] = p.gamma[1][dst[1]]
-			dst[2] = p.gamma[2][dst[2]]
+			dst[0] = p.gamma[0][src[0]]
+			dst[1] = p.gamma[1][src[1]]
+			dst[2] = p.gamma[2][src[2]]
+			dstIdx++
 		}
 		p.Disp.Send(p.buffer[:bufferSize])
 		p.SentBytes += bufferSize
