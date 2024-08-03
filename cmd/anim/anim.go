@@ -50,7 +50,7 @@ func RegularPolygonTest(c *Canvas) {
 	polyList := make([]*RegularPolygon, 9)
 
 	aSeq := NewSequence()
-	for n := 3; n <= 8; n++ {
+	for n := 3; n <= 6; n++ {
 		col := colornames.RandColor()
 		polyList[n] = NewRegularPolygon(n, posList[n%2], smallSize, col)
 		c.Add(polyList[n])
@@ -61,11 +61,14 @@ func RegularPolygonTest(c *Canvas) {
 		animAngle := NewFloatAnimation(&polyList[n].Angle, angle, dur)
 		animSize := NewSizeAnimation(&polyList[n].Size, largeSize, 4*time.Second)
 		animSize.Cont = true
-		animFade := NewColorAnimation(&polyList[n].BorderColor, col.Alpha(0.0), time.Second)
+		animFade := NewColorAnimation(&polyList[n].BorderColor, colornames.Black, 4*time.Second)
+		animFade.Cont = true
+		// animFade := NewAlphaAnimation(&polyList[n].FillColor.A, 0x00, time.Second)
 
-		aGrp := NewGroup(animPos, animAngle)
-		aGrp.duration = dur
-		aObjSeq := NewSequence(aGrp, animSize, animFade)
+		aGrpIn := NewGroup(animPos, animAngle)
+		// aGrp.duration = dur
+		aGrpOut := NewGroup(animSize, animFade)
+		aObjSeq := NewSequence(aGrpIn, aGrpOut)
 		aSeq.Add(aObjSeq)
 	}
 	aSeq.RepeatCount = AnimationRepeatForever
@@ -487,7 +490,7 @@ func ChasingCircles(ctrl *Canvas) {
 	c2Size2 := ConvertSize(geom.Point{3.0, 3.0})
 	c2PosSize := ConvertSize(geom.Point{34.0, 7.0})
 
-    aGrp := NewGroup()
+	aGrp := NewGroup()
 
 	pal := ledgrid.NewGradientPaletteByList("Palette", true,
 		ledgrid.LedColorModel.Convert(colornames.DeepSkyBlue).(ledgrid.LedColor),
@@ -510,7 +513,7 @@ func ChasingCircles(ctrl *Canvas) {
 	c1bcolor.AutoReverse = true
 	c1bcolor.RepeatCount = AnimationRepeatForever
 
-    aGrp.Add(c1pos, c1size, c1bcolor)
+	aGrp.Add(c1pos, c1size, c1bcolor)
 
 	c2 := NewEllipse(c2Pos, c2Size1, colornames.Lime)
 
@@ -526,10 +529,10 @@ func ChasingCircles(ctrl *Canvas) {
 	c2color.RepeatCount = AnimationRepeatForever
 	c2color.Curve = AnimationLinear
 
-    aGrp.Add(c2pos, c2size, c2color)
+	aGrp.Add(c2pos, c2size, c2color)
 
 	ctrl.Add(c2, c1)
-    aGrp.Start()
+	aGrp.Start()
 }
 
 func CircleAnimation(ctrl *Canvas) {
@@ -911,6 +914,7 @@ type gridSceneRecord struct {
 
 func main() {
 	var input string
+	var ch byte
 	var sceneId int
 	var runInteractive bool
 	var pixCtrl ledgrid.PixelClient
@@ -924,6 +928,7 @@ func main() {
 
 	if len(input) > 0 {
 		runInteractive = false
+		ch = input[0]
 	} else {
 		runInteractive = true
 	}
@@ -960,9 +965,9 @@ func main() {
 	pixCtrl.SetMaxBright(255, 255, 255)
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
-    //if pixelHost != "localhost" {
-    //    ledGrid.MarkDefect(defectPosList[0])
-    //}
+	//if pixelHost != "localhost" {
+	//    ledGrid.MarkDefect(defectPosList[0])
+	//}
 
 	canvas := NewCanvas(pixCtrl, ledGrid)
 	canvas.Stop()
@@ -974,8 +979,10 @@ func main() {
 		for {
 			fmt.Printf("Animations:\n")
 			fmt.Printf("---------------------------------------\n")
+			fmt.Printf("Canvas based\n")
+			fmt.Printf("---------------------------------------\n")
 			for i, scene := range canvasSceneList {
-				if i == sceneId {
+				if ch >= 'a' && ch <= 'z' && i == sceneId {
 					fmt.Printf("> ")
 				} else {
 					fmt.Printf("  ")
@@ -983,8 +990,10 @@ func main() {
 				fmt.Printf("[%c] %s\n", 'a'+i, scene.name)
 			}
 			fmt.Printf("---------------------------------------\n")
+			fmt.Printf("Grid based\n")
+			fmt.Printf("---------------------------------------\n")
 			for i, scene := range gridSceneList {
-				if i == sceneId {
+				if ch >= 'A' && ch <= 'Z' && i == sceneId {
 					fmt.Printf("> ")
 				} else {
 					fmt.Printf("  ")
@@ -995,11 +1004,12 @@ func main() {
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
 			fmt.Scanf("%s\n", &input)
-			if input[0] == '0' {
+			ch = input[0]
+			if ch == '0' {
 				break
 			}
-			if input[0] >= 'a' && input[0] <= 'z' {
-				sceneId = int(input[0] - 'a')
+			if ch >= 'a' && ch <= 'z' {
+				sceneId = int(ch - 'a')
 				if sceneId < 0 || sceneId >= len(canvasSceneList) {
 					continue
 				}
@@ -1012,8 +1022,8 @@ func main() {
 				canvas.DelAll()
 				canvasSceneList[sceneId].fnc(canvas)
 			}
-			if input[0] >= 'A' && input[0] <= 'Z' {
-				sceneId = int(input[0] - 'A')
+			if ch >= 'A' && ch <= 'Z' {
+				sceneId = int(ch - 'A')
 				if sceneId < 0 || sceneId >= len(gridSceneList) {
 					continue
 				}
@@ -1028,15 +1038,15 @@ func main() {
 			}
 		}
 	} else {
-		if input[0] >= 'a' && input[0] <= 'z' {
-			sceneId = int(input[0] - 'a')
+		if ch >= 'a' && ch <= 'z' {
+			sceneId = int(ch - 'a')
 			if sceneId >= 0 && sceneId < len(canvasSceneList) {
 				AnimCtrl = canvas
 				canvasSceneList[sceneId].fnc(canvas)
 			}
 		}
-		if input[0] >= 'A' && input[0] <= 'Z' {
-			sceneId = int(input[0] - 'A')
+		if ch >= 'A' && ch <= 'Z' {
+			sceneId = int(ch - 'A')
 			if sceneId >= 0 && sceneId < len(gridSceneList) {
 				AnimCtrl = grid
 				gridSceneList[sceneId].fnc(grid)
