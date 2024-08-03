@@ -90,6 +90,14 @@ type PixelServerConf struct {
 	MissingIDs, DefectIDs []int
 }
 
+type PixelStatusType byte
+
+const (
+	PixelFine PixelStatusType = iota
+	PixelMissing
+	PixelDefect
+)
+
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist.
 type PixelServer struct {
@@ -103,6 +111,7 @@ type PixelServer struct {
 	// spiConn         spi.Conn
 	buffer                  []byte
 	missingList, defectList []int
+	statusList              []PixelStatusType
 	// maxTxSize       int
 	gammaValue      [3]float64
 	maxValue        [3]uint8
@@ -136,6 +145,8 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
 	// als Farbe immer Schwarz erhalten sollen).
 	p.buffer = make([]byte, bufferSize)
+    p.statusList = make([]PixelStatusType, bufferSize/3)
+
 	p.missingList = make([]int, 0)
 	p.defectList = make([]int, 0)
 
@@ -215,11 +226,15 @@ func (p *PixelServer) SetMaxBright(r, g, b uint8) {
 }
 
 func (p *PixelServer) SetMissingList(l []int) {
-	p.missingList = l
+    for _, idx := range l {
+        p.statusList[idx] = PixelMissing
+    }
 }
 
 func (p *PixelServer) SetDefectList(l []int) {
-	p.defectList = l
+    for _, idx := range l {
+        p.statusList[idx] = PixelDefect
+    }
 }
 
 func (p *PixelServer) updateGammaTable() {
@@ -354,16 +369,17 @@ func (p *PixelServer) ToggleTestPattern() bool {
 // dem Pixel-Controller nicht bekannt.
 func (p *PixelServer) Handle() {
 	var bufferSize, numLEDs int
-	var missingIdx, defectIdx int
+	// var missingIdx, defectIdx int
 	var src, dst []byte
 	var err error
 
-	if len(p.missingList) == 0 {
-		missingIdx = -1
-	}
-	if len(p.defectList) == 0 {
-		defectIdx = -1
-	}
+	// if len(p.missingList) == 0 {
+	// 	missingIdx = -1
+	// }
+	// if len(p.defectList) == 0 {
+	// 	defectIdx = -1
+	// }
+
 	for {
 		bufferSize, err = p.udpConn.Read(p.buffer)
 		if err != nil {
@@ -376,23 +392,21 @@ func (p *PixelServer) Handle() {
 		p.SendWatch.Start()
 		numLEDs = bufferSize / 3
 		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
-			if missingIdx >= 0 && p.missingList[missingIdx] == srcIdx {
-				missingIdx = (missingIdx + 1) % len(p.missingList)
-				continue
-			}
 			src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
 			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
-			if defectIdx >= 0 && p.defectList[defectIdx] == srcIdx {
-				defectIdx = (defectIdx + 1) % len(p.defectList)
-				dst[0] = 0x00
-				dst[1] = 0x00
-				dst[2] = 0x00
-			} else {
+            switch p.statusList[srcIdx] {
+            case PixelFine:
 				dst[0] = p.gamma[0][src[0]]
 				dst[1] = p.gamma[1][src[1]]
 				dst[2] = p.gamma[2][src[2]]
-			}
-			dstIdx++
+            case PixelMissing:
+                continue
+            case PixelDefect:
+				dst[0] = 0x00
+				dst[1] = 0x00
+				dst[2] = 0x00
+            }
+            dstIdx++
 		}
 		p.Disp.Send(p.buffer[:bufferSize])
 		p.SentBytes += bufferSize

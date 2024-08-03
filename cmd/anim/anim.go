@@ -41,9 +41,9 @@ var (
 func RegularPolygonTest(c *Canvas) {
 	posList := []geom.Point{
 		ConvertPos(geom.Point{-5.5, 4.5}),
-		ConvertPos(geom.Point{34.5, 4.5}),
+		ConvertPos(geom.Point{44.5, 4.5}),
 	}
-	posCenter := ConvertPos(geom.Point{14.5, 4.5})
+	posCenter := ConvertPos(geom.Point{19.5, 4.5})
 	smallSize := ConvertSize(geom.Point{9.0, 9.0})
 	largeSize := ConvertSize(geom.Point{80.0, 80.0})
 
@@ -415,11 +415,11 @@ func Piiiiixels(ctrl *Canvas) {
 }
 
 func CirclingCircles(ctrl *Canvas) {
-	pos1 := ConvertPos(geom.Point{2.0, 2.0})
-	pos2 := ConvertPos(geom.Point{8.0, 7.0})
-	pos3 := ConvertPos(geom.Point{14.0, 2.0})
-	pos4 := ConvertPos(geom.Point{20.0, 7.0})
-	pos5 := ConvertPos(geom.Point{26.0, 2.0})
+	pos1 := ConvertPos(geom.Point{1.0, 1.0})
+	pos2 := ConvertPos(geom.Point{10.0, 8.0})
+	pos3 := ConvertPos(geom.Point{19.0, 1.0})
+	pos4 := ConvertPos(geom.Point{28.0, 8.0})
+	pos5 := ConvertPos(geom.Point{37.0, 1.0})
 	cSize := ConvertSize(geom.Point{2.0, 2.0})
 
 	c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
@@ -428,9 +428,9 @@ func CirclingCircles(ctrl *Canvas) {
 	c4 := NewEllipse(pos4, cSize, colornames.Gold)
 	c5 := NewEllipse(pos5, cSize, colornames.YellowGreen)
 
-	stepRD := ConvertSize(geom.Point{6.0, 5.0})
+	stepRD := ConvertSize(geom.Point{9.0, 7.0})
 	stepLU := stepRD.Neg()
-	stepRU := ConvertSize(geom.Point{6.0, -5.0})
+	stepRU := ConvertSize(geom.Point{9.0, -7.0})
 	stepLD := stepRU.Neg()
 
 	c1Path1 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepRD, time.Second)
@@ -478,24 +478,22 @@ func CirclingCircles(ctrl *Canvas) {
 }
 
 func ChasingCircles(ctrl *Canvas) {
-	c1Pos1 := ConvertPos(geom.Point{26.5, 4.5})
+	c1Pos1 := ConvertPos(geom.Point{36.5, 4.5})
 	c1Size1 := ConvertSize(geom.Point{10.0, 10.0})
 	c1Size2 := ConvertSize(geom.Point{3.0, 3.0})
-	c1PosSize := ConvertSize(geom.Point{-24.0, -5.0})
+	c1PosSize := ConvertSize(geom.Point{-34.0, -5.0})
 	c2Pos := ConvertPos(geom.Point{2.5, 4.5})
 	c2Size1 := ConvertSize(geom.Point{5.0, 5.0})
 	c2Size2 := ConvertSize(geom.Point{3.0, 3.0})
-	c2PosSize := ConvertSize(geom.Point{24.0, 7.0})
+	c2PosSize := ConvertSize(geom.Point{34.0, 7.0})
+
+    aGrp := NewGroup()
 
 	pal := ledgrid.NewGradientPaletteByList("Palette", true,
 		ledgrid.LedColorModel.Convert(colornames.DeepSkyBlue).(ledgrid.LedColor),
 		ledgrid.LedColorModel.Convert(colornames.Lime).(ledgrid.LedColor),
 		ledgrid.LedColorModel.Convert(colornames.Teal).(ledgrid.LedColor),
 		ledgrid.LedColorModel.Convert(colornames.SkyBlue).(ledgrid.LedColor),
-		// ledgrid.ColorMap["DeepSkyBlue"].Color(0),
-		// ledgrid.ColorMap["Lime"].Color(0),
-		// ledgrid.ColorMap["Teal"].Color(0),
-		// ledgrid.ColorMap["SkyBlue"].Color(0),
 	)
 
 	c1 := NewEllipse(c1Pos1, c1Size1, colornames.Gold)
@@ -503,10 +501,6 @@ func ChasingCircles(ctrl *Canvas) {
 	c1pos := NewPathAnimation(&c1.Pos, FullCirclePathB, c1PosSize, 4*time.Second)
 	c1pos.RepeatCount = AnimationRepeatForever
 	c1pos.Curve = AnimationLinear
-
-	// c1pos := NewPositionAnimation(&c1.Pos, c1Pos2, 2*time.Second)
-	// c1pos.AutoReverse = true
-	// c1pos.RepeatCount = AnimationRepeatForever
 
 	c1size := NewSizeAnimation(&c1.Size, c1Size2, time.Second)
 	c1size.AutoReverse = true
@@ -516,19 +510,13 @@ func ChasingCircles(ctrl *Canvas) {
 	c1bcolor.AutoReverse = true
 	c1bcolor.RepeatCount = AnimationRepeatForever
 
-	// c1fcolor := NewColorAnimation(&c1.FillColor, colornames.OrangeRed.Alpha(0.4), time.Second)
-	// c1fcolor.AutoReverse = true
-	// c1fcolor.RepeatCount = AnimationRepeatForever
+    aGrp.Add(c1pos, c1size, c1bcolor)
 
 	c2 := NewEllipse(c2Pos, c2Size1, colornames.Lime)
 
 	c2pos := NewPathAnimation(&c2.Pos, FullCirclePathB, c2PosSize, 4*time.Second)
 	c2pos.RepeatCount = AnimationRepeatForever
 	c2pos.Curve = AnimationLinear
-
-	// c2angle := NewFloatAnimation(&c2.Angle, ConstFloat(2*math.Pi), 4*time.Second)
-	// c2angle.RepeatCount = AnimationRepeatForever
-	// c2angle.Curve = AnimationLinear
 
 	c2size := NewSizeAnimation(&c2.Size, c2Size2, time.Second)
 	c2size.AutoReverse = true
@@ -538,28 +526,18 @@ func ChasingCircles(ctrl *Canvas) {
 	c2color.RepeatCount = AnimationRepeatForever
 	c2color.Curve = AnimationLinear
 
-	ctrl.Add(c2, c1)
+    aGrp.Add(c2pos, c2size, c2color)
 
-	c1pos.Start()
-	c1size.Start()
-	c1bcolor.Start()
-	// c1fcolor.Start()
-	c2pos.Start()
-	// c2angle.Start()
-	c2size.Start()
-	c2color.Start()
+	ctrl.Add(c2, c1)
+    aGrp.Start()
 }
 
 func CircleAnimation(ctrl *Canvas) {
 	c1Pos1 := ConvertPos(geom.Point{1.5, 4.5})
-	// c1Pos2 := ConvertPos(geom.Point{14.5, 4.5})
-	c1Pos3 := ConvertPos(geom.Point{27.5, 4.5})
+	c1Pos3 := ConvertPos(geom.Point{37.5, 4.5})
 
 	c1Size1 := ConvertSize(geom.Point{3.0, 3.0})
 	c1Size2 := ConvertSize(geom.Point{9.0, 9.0})
-
-	// c1Pos1 := ConvertPos(geom.Point{26.5, 4.5})
-	// c1Pos2 := ConvertPos(geom.Point{2.5, 4.5})
 
 	c1 := NewEllipse(c1Pos1, c1Size1, colornames.OrangeRed)
 
@@ -692,10 +670,6 @@ var (
 		ConvertPos(geom.Point{0, height}),
 		ConvertPos(geom.Point{width, height}),
 		ConvertPos(geom.Point{width, 0}),
-		// ConvertPos(geom.Point{-11, -6}),
-		// ConvertPos(geom.Point{-11, height+1}),
-		// ConvertPos(geom.Point{width+10, height+1}),
-		// ConvertPos(geom.Point{width+10, -6}),
 	}
 	lastP0 = 0
 )
@@ -741,19 +715,6 @@ func MovingText(c *Canvas) {
 	aAngle2.Start()
 	aPos1.Start()
 	aPos2.Start()
-
-	// aAngle := NewFloatAnimation(&t.Angle, math.Pi/6.0, 4*time.Second)
-	// aColor := NewColorAnimation(&t.Color, colornames.OrangeRed, 4*time.Second)
-	// aColor.AutoReverse = true
-	// aGrp := NewGroup(aPos) //, aAngle, aColor)
-	// aGrp.RepeatCount = AnimationRepeatForever
-	// aGrp.Start()
-
-	// aAngle := NewFloatAnimation(&t.Angle, 2*math.Pi, 4*time.Second)
-	// aSize := NewFloatAnimation(&t.FontSize, ConvertLen(16.0), 5*time.Second)
-	// aSeq := NewSequence(aAngle, aSize)
-
-	// aSize.Start()
 }
 
 func FlyingImages(c *Canvas) {
