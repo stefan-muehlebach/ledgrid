@@ -29,7 +29,7 @@ var (
 
 var (
 	width              = 40
-	height             = 10
+	height             = 40
 	gridSize           = image.Point{width, height}
 	defLocal           = false
 	defDummy           = false

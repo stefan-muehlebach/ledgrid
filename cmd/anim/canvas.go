@@ -422,28 +422,32 @@ func (c *Camera) Draw(canv *Canvas) {
 type Image struct {
 	Pos, Size geom.Point
 	Angle     float64
-	img       image.Image
+	img       draw.Image
 }
 
-func NewImage(pos geom.Point, fileName string) *Image {
+func NewImageFromFile(pos geom.Point, fileName string) *Image {
+    var tmp image.Image
+
 	i := &Image{Pos: pos, Angle: 0.0}
 	fh, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Couldn't open file: %v", err)
 	}
 	defer fh.Close()
-	i.img, _, err = image.Decode(fh)
+	tmp, _, err = image.Decode(fh)
 	if err != nil {
 		log.Fatalf("Couldn't decode image: %v", err)
 	}
+    i.img = tmp.(draw.Image)
 	i.Size = geom.NewPointIMG(i.img.Bounds().Size().Mul(int(oversize)))
 	return i
 }
 
 func (i *Image) Draw(c *Canvas) {
-	rect := geom.Rectangle{Max: i.Size}
-	refPt := i.Pos.Sub(i.Size.Div(2.0))
-	draw.CatmullRom.Scale(c.canvas, rect.Add(refPt).Int(), i.img, i.img.Bounds(), draw.Over, nil)
+	// rect := geom.Rectangle{Max: i.Size}
+	// refPt := i.Pos.Sub(i.Size.Div(2.0))
+	draw.CatmullRom.Scale(c.canvas, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.img, i.img.Bounds(), draw.Over, nil)
+	// draw.CatmullRom.Scale(c.canvas, rect.Add(refPt).Int(), i.img, i.img.Bounds(), draw.Over, nil)
 }
 
 // Zur Darstellung von beliebigem Text.

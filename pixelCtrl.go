@@ -248,13 +248,13 @@ const (
 	TestYellow
 	TestMagenta
 	TestCyan
-    NumColorModes
+	NumColorModes
 )
 
 const (
-    TestDimmed = iota
-    TestFull
-    NumBrightModes
+	TestDimmed = iota
+	TestFull
+	NumBrightModes
 )
 
 const (
@@ -264,7 +264,7 @@ const (
 
 func (p *PixelServer) ToggleTestPattern() bool {
 	var colorMode, brightMode int
-    var colorValue byte
+	var colorValue byte
 
 	if p.drawTestPattern {
 		p.drawTestPattern = false
@@ -272,17 +272,17 @@ func (p *PixelServer) ToggleTestPattern() bool {
 	} else {
 		p.drawTestPattern = true
 		colorMode = TestRed
-        brightMode = TestDimmed
+		brightMode = TestDimmed
 	}
 
 	go func() {
 		for p.drawTestPattern {
-            switch brightMode {
-            case TestDimmed:
-                colorValue = 0x0f
-            case TestFull:
-                colorValue = 0xff
-            }
+			switch brightMode {
+			case TestDimmed:
+				colorValue = 0x0f
+			case TestFull:
+				colorValue = 0xff
+			}
 			switch colorMode {
 			case TestRed:
 				for i := range NumTestLeds {
@@ -322,10 +322,10 @@ func (p *PixelServer) ToggleTestPattern() bool {
 				}
 			}
 
-            brightMode = (brightMode + 1) % NumBrightModes
-            if brightMode == 0 {
-                colorMode = (colorMode + 1) % NumColorModes
-            }
+			brightMode = (brightMode + 1) % NumBrightModes
+			if brightMode == 0 {
+				colorMode = (colorMode + 1) % NumColorModes
+			}
 
 			p.Disp.Send(p.buffer[:TestBufferSize])
 			time.Sleep(time.Second)
@@ -361,19 +361,19 @@ func (p *PixelServer) Handle() {
 		p.SendWatch.Start()
 		numLEDs = bufferSize / 3
 		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
-			src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
-			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
-			switch p.statusList[srcIdx] {
-			case PixelFine:
-				dst[0] = p.gamma[0][src[0]]
-				dst[1] = p.gamma[1][src[1]]
-				dst[2] = p.gamma[2][src[2]]
-			case PixelMissing:
+			if p.statusList[srcIdx] == PixelMissing {
 				continue
-			case PixelDefect:
+			}
+			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
+			if p.statusList[srcIdx] == PixelDefect {
 				dst[0] = 0x00
 				dst[1] = 0x00
 				dst[2] = 0x00
+			} else {
+				src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
+				dst[0] = p.gamma[0][src[0]]
+				dst[1] = p.gamma[1][src[1]]
+				dst[2] = p.gamma[2][src[2]]
 			}
 			dstIdx++
 		}

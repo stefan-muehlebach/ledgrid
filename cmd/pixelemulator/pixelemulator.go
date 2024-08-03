@@ -67,8 +67,10 @@ func (e *PixelEmulator) Send(buffer []byte) {
 	var r, g, b uint8
 	var idx int
 	var src []byte
+    var needsRefresh bool
 
 	src = buffer
+    needsRefresh = false
 	for i, val := range src {
 		if i%3 == 0 {
 			r = val
@@ -80,10 +82,19 @@ func (e *PixelEmulator) Send(buffer []byte) {
 		if i%3 == 2 {
 			b = val
 			coord := e.coordMap[idx]
-			e.field[coord.X][coord.Y].FillColor = color.RGBA{R: r, G: g, B: b, A: 0xff}
+            newColor := color.RGBA{R: r, G: g, B: b, A: 0xff}
+            if !needsRefresh {
+                oldColor := e.field[coord.X][coord.Y].FillColor
+                if newColor != oldColor {
+                    needsRefresh = true
+                }
+            }
+			e.field[coord.X][coord.Y].FillColor = newColor
 		}
 	}
-	e.grid.Refresh()
+    if needsRefresh {
+	    e.grid.Refresh()
+    }
 }
 
 func SignalHandler(pixelServer *ledgrid.PixelServer) {
@@ -97,7 +108,7 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 		case syscall.SIGHUP:
 			log.Printf("Server Statistics:")
 			num, total, avg := pixelServer.SendWatch.Stats()
-			log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
+			log.Printf("   %d sends to fyne.io took %v (%v per send)", num, total, avg)
 			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
 			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
 		case syscall.SIGUSR1:

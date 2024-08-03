@@ -19,19 +19,16 @@ import (
 
 const (
 	width  = 40
-	height = 10
+	height = 40
 )
 
 var (
-	gridSize           = image.Point{width, height}
-	pixelHost          = "raspi-3"
-	pixelPort     uint = 5333
+	gridSize       = image.Point{width, height}
+	pixelHost      = "localhost"
+	pixelPort uint = 5333
 	// gammaValue         = 3.0
-	refreshRate        = 30 * time.Millisecond
-	backAlpha          = 1.0
-	defectPosList      = []image.Point{
-		{6, 3},
-	}
+	refreshRate = 30 * time.Millisecond
+	backAlpha   = 1.0
 
 	AnimCtrl Animator
 )
@@ -112,22 +109,22 @@ func GroupTest(ctrl *Canvas) {
 // 	ctrl.Load("gobs/GroupTest.gob")
 // 	ctrl.Continue()
 
-	// fh, err := os.Open("AnimationProgram.gob")
-	// if err != nil {
-	// 	log.Fatalf("Couldn't create file: %v", err)
-	// }
-	// gobDecoder := gob.NewDecoder(fh)
-	// err = gobDecoder.Decode(&c)
-	// if err != nil {
-	// 	log.Fatalf("Couldn't decode data: %v", err)
-	// }
-	// fh.Close()
+// fh, err := os.Open("AnimationProgram.gob")
+// if err != nil {
+// 	log.Fatalf("Couldn't create file: %v", err)
+// }
+// gobDecoder := gob.NewDecoder(fh)
+// err = gobDecoder.Decode(&c)
+// if err != nil {
+// 	log.Fatalf("Couldn't decode data: %v", err)
+// }
+// fh.Close()
 
-	// log.Printf("Controller : %+v\n", c)
-	// log.Printf("ObjList[0] : (%T) %+v\n", c.ObjList[0], c.ObjList[0])
-	// log.Printf("AnimList[0]: (%T) %+v\n", c.AnimList[0], c.AnimList[0])
+// log.Printf("Controller : %+v\n", c)
+// log.Printf("ObjList[0] : (%T) %+v\n", c.ObjList[0], c.ObjList[0])
+// log.Printf("AnimList[0]: (%T) %+v\n", c.AnimList[0], c.AnimList[0])
 
-	// ctrl.Continue()
+// ctrl.Continue()
 // }
 
 func SequenceTest(ctrl *Canvas) {
@@ -734,7 +731,7 @@ func FlyingImages(c *Canvas) {
 	// i2.Size = ConvertSize(geom.Point{10, 10})
 	// i3 := NewImage(pos1, "images/test.png")
 	// i3.Size = ConvertSize(geom.Point{13.3, 10.0})
-	i4 := NewImage(pos1, "images/lorem.png")
+	i4 := NewImageFromFile(pos1, "images/lorem.png")
 	i4.Size = ConvertSize(geom.Point{16.0, 3.0})
 	c.Add(i4)
 
@@ -759,6 +756,16 @@ func CameraTest(c *Canvas) {
 	c.Add(cam)
 
 	cam.Start()
+}
+
+func BlinkenAnimation(c *Canvas) {
+	pos := ConvertPos(geom.Point{0.5, 0.5})
+
+	bml := ReadBlinkenFile("mario.bml")
+	img := bml.Image(0)
+	img.Pos = pos
+
+	c.Add(img)
 }
 
 //-----------------------------------------------------------------------------
@@ -951,6 +958,7 @@ func main() {
 		{"Moving Text", MovingText},
 		{"Flying images", FlyingImages},
 		{"Hidden or visible camera", CameraTest},
+		{"Animation from a BlinkenLight file", BlinkenAnimation},
 	}
 
 	gridSceneList := []gridSceneRecord{
