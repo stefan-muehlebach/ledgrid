@@ -5,7 +5,7 @@ After=network-online.target remote-fs.target
 
 [Service]
 User=dietpi
-ExecStart=/usr/local/sbin/pixelcontroller
+ExecStart=/usr/local/sbin/pixelcontroller -missing 63 -defect 160,299
 KillSignal=INT
 
 [Install]
