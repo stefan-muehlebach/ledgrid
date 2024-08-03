@@ -267,11 +267,15 @@ const (
 	TestMagenta
 	TestCyan
     NumColorModes
+)
 
+const (
     TestDimmed = iota
     TestFull
     NumBrightModes
+)
 
+const (
 	NumTestLeds    = 400
 	TestBufferSize = 3 * NumTestLeds
 )
@@ -297,7 +301,6 @@ func (p *PixelServer) ToggleTestPattern() bool {
             case TestFull:
                 colorValue = 0xff
             }
-            brightMode = (brightMode + 1) % NumBrightModes
 			switch colorMode {
 			case TestRed:
 				for i := range NumTestLeds {
@@ -336,9 +339,12 @@ func (p *PixelServer) ToggleTestPattern() bool {
 					p.buffer[3*i+2] = colorValue
 				}
 			}
+
+            brightMode = (brightMode + 1) % NumBrightModes
             if brightMode == 0 {
                 colorMode = (colorMode + 1) % NumColorModes
             }
+
 			p.Disp.Send(p.buffer[:bufferSize])
 			time.Sleep(80 * time.Millisecond)
 		}
