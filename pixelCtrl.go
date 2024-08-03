@@ -328,7 +328,7 @@ func (p *PixelServer) ToggleTestPattern() bool {
             }
 
 			p.Disp.Send(p.buffer[:TestBufferSize])
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(time.Second)
 		}
 		for i := range TestBufferSize {
 			p.buffer[i] = 0x00
