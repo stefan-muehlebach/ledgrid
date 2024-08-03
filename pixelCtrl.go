@@ -81,15 +81,6 @@ func (p *SPIBus) Send(buffer []byte) {
 	time.Sleep(20 * time.Microsecond)
 }
 
-type PixelServerConf struct {
-	Port                  uint
-	SpiDev                string
-	SpiBaud               int
-	GammaValues           [3]float64
-	MaxBrightValues       [3]uint8
-	MissingIDs, DefectIDs []int
-}
-
 type PixelStatusType byte
 
 const (
@@ -121,12 +112,11 @@ type PixelServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
+func NewPixelServer(port uint /*, spiDev string, baud int*/) *PixelServer {
 	var err error
 	var addrPort netip.AddrPort
 
 	p := &PixelServer{}
-	p.Disp = OpenSPIBus(spiDev, baud)
 	// _, err = host.Init()
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -220,16 +210,8 @@ func (p *PixelServer) SetMaxBright(r, g, b uint8) {
 	p.updateGammaTable()
 }
 
-func (p *PixelServer) SetMissingList(l []int) {
-	for _, idx := range l {
-		p.statusList[idx] = PixelMissing
-	}
-}
-
-func (p *PixelServer) SetDefectList(l []int) {
-	for _, idx := range l {
-		p.statusList[idx] = PixelDefect
-	}
+func (p *PixelServer) SetPixelStatus(idx int, stat PixelStatusType) {
+	p.statusList[idx] = stat
 }
 
 func (p *PixelServer) updateGammaTable() {
@@ -345,10 +327,10 @@ func (p *PixelServer) ToggleTestPattern() bool {
                 colorMode = (colorMode + 1) % NumColorModes
             }
 
-			p.Disp.Send(p.buffer[:bufferSize])
-			time.Sleep(80 * time.Millisecond)
+			p.Disp.Send(p.buffer[:TestBufferSize])
+			// time.Sleep(80 * time.Millisecond)
 		}
-		for i := range bufferSize {
+		for i := range TestBufferSize {
 			p.buffer[i] = 0x00
 		}
 		p.Disp.Send(p.buffer)

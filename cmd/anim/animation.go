@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/gob"
 	"math"
 	"math/rand/v2"
 	"slices"
@@ -64,11 +63,14 @@ type PointFuncType func() geom.Point
 type FloatFuncType func() float64
 type AlphaFuncType func() uint8
 
+// Liefert bei jedem Aufruf eine zufaellig gewaehlte Farbe.
 func RandColor() ColorFuncType {
 	return func() ledgrid.LedColor {
 		return colornames.RandColor()
 	}
 }
+// Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
+// Rechtecks r.
 func RandPoint(r geom.Rectangle) PointFuncType {
 	return func() geom.Point {
 		fx := rand.Float64()
@@ -76,6 +78,8 @@ func RandPoint(r geom.Rectangle) PointFuncType {
 		return r.RelPos(fx, fy)
 	}
 }
+// Wie RandPoint, sorgt jedoch dafuer dass die Koordinaten auf ein Vielfaches
+// von t abgeschnitten werden.
 func RandPointTrunc(r geom.Rectangle, t float64) PointFuncType {
 	return func() geom.Point {
 		fx := rand.Float64()
@@ -86,17 +90,21 @@ func RandPointTrunc(r geom.Rectangle, t float64) PointFuncType {
 		return p
 	}
 }
+// Macht eine Interpolation zwischen den Groessen s1 und s2. Der Interpolations-
+// punkt wird zufaellig gewaehlt.
 func RandSize(s1, s2 geom.Point) PointFuncType {
 	return func() geom.Point {
 		t := rand.Float64()
 		return s1.Interpolate(s2, t)
 	}
 }
+// Liefert eine zufaellig gewaehlte Fliesskommazahl im Interval [a,b).
 func RandFloat(a, b float64) FloatFuncType {
 	return func() float64 {
 		return a + (b-a)*rand.Float64()
 	}
 }
+// Liefert eine zufaellig gewaehlte natuerliche Zahl im Interval [a,b).
 func RandAlpha(a, b uint8) AlphaFuncType {
 	return func() uint8 {
 		return a + uint8(rand.UintN(uint(b-a)))
@@ -105,17 +113,17 @@ func RandAlpha(a, b uint8) AlphaFuncType {
 
 // Registriert alle Animationsarten, um sie exportieren oder importieren
 // zu koennen.
-func init() {
-	gob.Register(&Group{})
-	gob.Register(&Sequence{})
-	gob.Register(&Timeline{})
-	gob.Register(&AnimationEmbed{})
-	gob.Register(&ColorAnimation{})
-	gob.Register(&PaletteAnimation{})
-	// gob.Register(&PositionAnimation{})
-	gob.Register(&FloatAnimation{})
-	gob.Register(&PathAnimation{})
-}
+// func init() {
+// 	gob.Register(&Group{})
+// 	gob.Register(&Sequence{})
+// 	gob.Register(&Timeline{})
+// 	gob.Register(&AnimationEmbed{})
+// 	gob.Register(&ColorAnimation{})
+// 	gob.Register(&PaletteAnimation{})
+// 	// gob.Register(&PositionAnimation{})
+// 	gob.Register(&FloatAnimation{})
+// 	gob.Register(&PathAnimation{})
+// }
 
 // Dieses Interface ist von allen Typen zu implementieren, welche
 // Animationen ausfuehren sollen/wollen.

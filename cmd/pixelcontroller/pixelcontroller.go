@@ -40,7 +40,7 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 		case syscall.SIGHUP:
 			log.Printf("Server Statistics:")
 			num, total, avg := pixelServer.SendWatch.Stats()
-			log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
+			log.Printf("   %d sends to the Displayer took %v (%v per send)", num, total, avg)
 			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
 			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
 		case syscall.SIGUSR1:
@@ -58,7 +58,6 @@ func main() {
 	var baud int
 	var gammaValues string
 	var missingIDs, defectIDs string
-	var missingList, defectList []int
 	var gammaValue [3]float64
 	var spiDevFile string = "/dev/spidev0.0"
 	var pixelServer *ledgrid.PixelServer
@@ -68,10 +67,11 @@ func main() {
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&gammaValues, "gamma", defGammaValues, "Gamma values")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs")
-	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs")
+	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of LEDs to black out")
 	flag.Parse()
 
-	pixelServer = ledgrid.NewPixelServer(port, spiDevFile, baud)
+	pixelServer = ledgrid.NewPixelServer(port)
+	pixelServer.Disp = ledgrid.OpenSPIBus(spiDevFile, baud)
 
 	for i, str := range strings.Split(gammaValues, ",") {
 		val, err := strconv.ParseFloat(str, 64)
@@ -88,9 +88,8 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to parse 'missing': wrong format: %s", str)
 			}
-			missingList = append(missingList, int(val))
+			pixelServer.SetPixelStatus(int(val), ledgrid.PixelMissing)
 		}
-		pixelServer.SetMissingList(missingList)
 	}
 
 	if len(defectIDs) > 0 {
@@ -99,22 +98,14 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to parse 'defect': wrong format: %s", str)
 			}
-			defectList = append(defectList, int(val))
+			pixelServer.SetPixelStatus(int(val), ledgrid.PixelDefect)
 		}
-		pixelServer.SetDefectList(defectList)
 	}
 
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
 	go SignalHandler(pixelServer)
-	//
-	// go func() {
-	// 	sigChan := make(chan os.Signal)
-	// 	signal.Notify(sigChan, os.Interrupt)
-	// 	<-sigChan
-	// 	pixelServer.Close()
-	// }()
 
 	pixelServer.Handle()
 }

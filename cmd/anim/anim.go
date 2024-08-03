@@ -26,7 +26,7 @@ var (
 	gridSize           = image.Point{width, height}
 	pixelHost          = "raspi-3"
 	pixelPort     uint = 5333
-	gammaValue         = 3.0
+	// gammaValue         = 3.0
 	refreshRate        = 30 * time.Millisecond
 	backAlpha          = 1.0
 	defectPosList      = []image.Point{
@@ -106,11 +106,11 @@ func GroupTest(ctrl *Canvas) {
 	aGroup.Start()
 }
 
-func ReadGroupTest(ctrl *Canvas) {
-	ctrl.Stop()
+// func ReadGroupTest(ctrl *Canvas) {
+// 	ctrl.Stop()
 
-	ctrl.Load("gobs/GroupTest.gob")
-	ctrl.Continue()
+// 	ctrl.Load("gobs/GroupTest.gob")
+// 	ctrl.Continue()
 
 	// fh, err := os.Open("AnimationProgram.gob")
 	// if err != nil {
@@ -128,7 +128,7 @@ func ReadGroupTest(ctrl *Canvas) {
 	// log.Printf("AnimList[0]: (%T) %+v\n", c.AnimList[0], c.AnimList[0])
 
 	// ctrl.Continue()
-}
+// }
 
 func SequenceTest(ctrl *Canvas) {
 	rPos := ConvertPos(geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5))
@@ -961,7 +961,6 @@ func main() {
 	}
 
 	pixCtrl = ledgrid.NewNetPixelClient(pixelHost, pixelPort)
-	pixCtrl.SetGamma(gammaValue, gammaValue, gammaValue)
 	pixCtrl.SetMaxBright(255, 255, 255)
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/gob"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -169,39 +168,39 @@ func (c *Canvas) Continue() {
 // verlegt werden koennen und das netzwerkbedingte "Ruckeln" der
 // Vergangenheit angehoert.
 
-func (c *Canvas) Save(fileName string) {
-	fh, err := os.Create(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't create file: %v", err)
-	}
-	c.Write(fh)
-	fh.Close()
-}
+// func (c *Canvas) Save(fileName string) {
+// 	fh, err := os.Create(fileName)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't create file: %v", err)
+// 	}
+// 	c.Write(fh)
+// 	fh.Close()
+// }
 
-func (c *Canvas) Write(w io.Writer) {
-	gobEncoder := gob.NewEncoder(w)
-	err := gobEncoder.Encode(c)
-	if err != nil {
-		log.Fatalf("Couldn't encode data: %v", err)
-	}
-}
+// func (c *Canvas) Write(w io.Writer) {
+// 	gobEncoder := gob.NewEncoder(w)
+// 	err := gobEncoder.Encode(c)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't encode data: %v", err)
+// 	}
+// }
 
-func (c *Canvas) Load(fileName string) {
-	fh, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't create file: %v", err)
-	}
-	c.Read(fh)
-	fh.Close()
-}
+// func (c *Canvas) Load(fileName string) {
+// 	fh, err := os.Open(fileName)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't create file: %v", err)
+// 	}
+// 	c.Read(fh)
+// 	fh.Close()
+// }
 
-func (c *Canvas) Read(r io.Reader) {
-	gobDecoder := gob.NewDecoder(r)
-	err := gobDecoder.Decode(c)
-	if err != nil {
-		log.Fatalf("Couldn't decode data: %v", err)
-	}
-}
+// func (c *Canvas) Read(r io.Reader) {
+// 	gobDecoder := gob.NewDecoder(r)
+// 	err := gobDecoder.Decode(c)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't decode data: %v", err)
+// 	}
+// }
 
 // Hier sind wichtige aber private Methoden, darum in Kleinbuchstaben und
 // darum noch sehr wenig Kommentare.
@@ -274,14 +273,14 @@ func (c *Canvas) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
 
 // Damit werden die jeweiligen Graphik-Objekte beim Package gob registriert,
 // um sie binaer zu exportieren.
-func init() {
-	gob.Register(ledgrid.LedColor{})
+// func init() {
+// 	gob.Register(ledgrid.LedColor{})
 
-	gob.Register(&Ellipse{})
-	gob.Register(&Rectangle{})
-	gob.Register(&Line{})
-	gob.Register(&Pixel{})
-}
+// 	gob.Register(&Ellipse{})
+// 	gob.Register(&Rectangle{})
+// 	gob.Register(&Line{})
+// 	gob.Register(&Pixel{})
+// }
 
 // Mit ConvertPos muessen alle Positionsdaten konvertiert werden.
 func ConvertPos(p geom.Point) geom.Point {

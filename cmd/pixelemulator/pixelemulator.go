@@ -1,167 +1,75 @@
 package main
 
 import (
-	"errors"
+	"flag"
 	"image"
 	"image/color"
 	"log"
-	"math"
-	"math/rand"
-	"net"
-	"net/http"
-	"net/netip"
-	"net/rpc"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"fyne.io/fyne/v2/container"
 
 	"github.com/stefan-muehlebach/ledgrid"
 
-	// "github.com/stefan-muehlebach/gg/color"
 	"fyne.io/fyne/v2/canvas"
 	_ "github.com/stefan-muehlebach/ledgrid"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
 	_ "fyne.io/fyne/v2/driver/desktop"
 )
 
 const (
-	Width      = 40
-	Height     = 10
-	PixelSize  = 50.0
-	AppWidth   = Width * PixelSize
-	AppHeight  = Height * PixelSize
-	BufferSize = Width * Height * 3
-	Port       = 5333
+	defPort        = 5333
+	defGammaValues = "1.0,1.0,1.0"
+	defWidth       = 10
+	defHeight      = 10
+	defPixelSize   = 50.0
 )
 
 var (
-	AppSize     = fyne.NewSize(AppWidth, AppHeight)
-	FieldSize   = fyne.NewSize(PixelSize, PixelSize)
-	App         fyne.App
-	Win         fyne.Window
-	Grid        *fyne.Container
-	Buffer      []byte
-	LEDField    [][]*canvas.Circle
-	CoordMap    ledgrid.CoordMap
-	udpAddr     *net.UDPAddr
-	udpConn     *net.UDPConn
-	tcpAddr     *net.TCPAddr
-	tcpListener *net.TCPListener
-	srv         PixelServer
-	gammaValue  [3]float64
-	maxValue    [3]uint8
-	gamma       [3][256]byte
+	App fyne.App
+	Win fyne.Window
 )
 
-type PixelServer struct{}
-
-// Retourniert die Gamma-Werte fuer die drei Farben.
-func (p *PixelServer) Gamma() (r, g, b float64) {
-	return gammaValue[0], gammaValue[1], gammaValue[2]
+type PixelEmulator struct {
+	grid     *fyne.Container
+	gridConf ledgrid.ModuleConfig
+	coordMap ledgrid.CoordMap
+	field    [][]*canvas.Circle
 }
 
-// Setzt die Gamma-Werte fuer die Farben und aktualisiert die Mapping-Tabelle.
-func (p *PixelServer) SetGamma(r, g, b float64) {
-	gammaValue[0], gammaValue[1], gammaValue[2] = r, g, b
-	p.updateGammaTable()
-}
-
-func (p *PixelServer) MaxBright() (r, g, b uint8) {
-	return maxValue[0], maxValue[1], maxValue[2]
-}
-
-func (p *PixelServer) SetMaxBright(r, g, b uint8) {
-	maxValue[0], maxValue[1], maxValue[2] = r, g, b
-	p.updateGammaTable()
-}
-
-func (p *PixelServer) updateGammaTable() {
-	for color, val := range gammaValue {
-		max := float64(maxValue[color])
-		for i := range 256 {
-			gamma[color][i] = byte(max * math.Pow(float64(i)/255.0, val))
+func NewPixelEmulator(width, height int) *PixelEmulator {
+	e := &PixelEmulator{}
+	e.grid = container.NewGridWithRows(height)
+	e.gridConf = ledgrid.DefaultModuleConfig(image.Point{width, height})
+	e.coordMap = e.gridConf.IndexMap().CoordMap()
+	e.field = make([][]*canvas.Circle, width)
+	for i := range e.field {
+		e.field[i] = make([]*canvas.Circle, height)
+	}
+	for col := range width {
+		for row := range height {
+			ledColor := color.White
+			led := canvas.NewCircle(ledColor)
+			e.field[col][row] = led
+			e.grid.Add(led)
 		}
 	}
+	return e
 }
 
-func (p *PixelServer) RPCDraw(grid *ledgrid.LedGrid, reply *int) error {
-	// var err error
+func (e *PixelEmulator) Close() {}
 
-	// for i := 0; i < len(grid.Pix); i++ {
-	// 	grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
-	// }
-	// if p.onRaspi {
-	// 	if err = p.spiConn.Tx(grid.Pix, nil); err != nil {
-	// 		log.Printf("Error during communication via SPI: %v.", err)
-	// 	}
-	// } else {
-	// 	log.Printf("Drawing grid.")
-	// }
-	// return err
-	return nil
-}
-
-type GammaArg struct {
-	RedVal, GreenVal, BlueVal float64
-}
-
-func (p *PixelServer) RPCSetGamma(arg GammaArg, reply *int) error {
-	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
-	return nil
-}
-
-func (p *PixelServer) RPCGamma(arg int, reply *GammaArg) error {
-	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
-	return nil
-}
-
-type BrightArg struct {
-	RedVal, GreenVal, BlueVal uint8
-}
-
-func (p *PixelServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
-	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
-	return nil
-}
-
-func (p *PixelServer) RPCMaxBright(arg int, reply *BrightArg) error {
-	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
-	return nil
-}
-
-func Handle() {
-	var bufferSize int
-	var err error
-
-	for {
-		bufferSize, err = udpConn.Read(Buffer)
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				break
-			}
-			log.Fatal(err)
-		}
-		for i := 0; i < bufferSize; i += 3 {
-			Buffer[i+0] = gamma[0][Buffer[i+0]]
-			Buffer[i+1] = gamma[1][Buffer[i+1]]
-			Buffer[i+2] = gamma[2][Buffer[i+2]]
-		}
-		UpdateField(Buffer[:bufferSize], LEDField)
-	}
-
-	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
-	// damit das Panel dunkel wird.
-	for i := range Buffer {
-		Buffer[i] = 0x00
-	}
-	UpdateField(Buffer[:bufferSize], LEDField)
-}
-
-func UpdateField(buffer []byte, field [][]*canvas.Circle) {
+func (e *PixelEmulator) Send(buffer []byte) {
 	var r, g, b uint8
 	var idx int
+	var src []byte
 
-	for i, val := range buffer {
+	src = buffer
+	for i, val := range src {
 		if i%3 == 0 {
 			r = val
 			idx = i / 3
@@ -171,81 +79,75 @@ func UpdateField(buffer []byte, field [][]*canvas.Circle) {
 		}
 		if i%3 == 2 {
 			b = val
-			coord := CoordMap[idx]
-			field[coord.X][coord.Y].FillColor = color.RGBA{R: r, G: g, B: b, A: 0xff}
+			coord := e.coordMap[idx]
+			e.field[coord.X][coord.Y].FillColor = color.RGBA{R: r, G: g, B: b, A: 0xff}
 		}
 	}
-	Grid.Refresh()
+	e.grid.Refresh()
+}
+
+func SignalHandler(pixelServer *ledgrid.PixelServer) {
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+	for sig := range sigChan {
+		switch sig {
+		case os.Interrupt:
+			pixelServer.Close()
+			return
+		case syscall.SIGHUP:
+			log.Printf("Server Statistics:")
+			num, total, avg := pixelServer.SendWatch.Stats()
+			log.Printf("   %d sends to SPI took %v (%v per send)", num, total, avg)
+			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
+			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+		case syscall.SIGUSR1:
+			if pixelServer.ToggleTestPattern() {
+				log.Printf("Drawing test pattern is ON now.")
+			} else {
+				log.Printf("Drawing test pattern is OFF now.")
+			}
+		}
+	}
 }
 
 func main() {
-	var addrPort netip.AddrPort
-	var err error
+	var width, height int
+	var port uint
+	var appWidth, appHeight float32
+    var pixelSize float64
+	var appSize fyne.Size
+	var pixelServer *ledgrid.PixelServer
+	var pixelEmulator *PixelEmulator
+
+	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.UintVar(&port, "port", defPort, "UDP port")
+    flag.Float64Var(&pixelSize, "size", defPixelSize, "Size of one LED")
+	flag.Parse()
+
+	appWidth = float32(width) * float32(pixelSize)
+	appHeight = float32(height) * float32(pixelSize)
+	appSize = fyne.NewSize(appWidth, appHeight)
 
 	App = app.New()
 	Win = App.NewWindow("LedGrid Emulator")
 
-	Buffer = make([]byte, BufferSize)
-	gridConf := ledgrid.DefaultModuleConfig(image.Point{Width, Height})
-	CoordMap = gridConf.IndexMap().CoordMap()
-
-    gammaValue = [3]float64{1.0, 1.0, 1.0}
-	maxValue = [3]uint8{255, 255, 255}
-	srv.updateGammaTable()
-
-
-	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
-	// dafuer erstellt.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(Port))
-	if !addrPort.IsValid() {
-		log.Fatalf("Invalid address or port")
-	}
-	udpAddr = net.UDPAddrFromAddrPort(addrPort)
-	udpConn, err = net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		log.Fatal("UDP listen error:", err)
-	}
-
-	// Anschliessend wird die RPC-Verbindung initiiert.
-	rpc.Register(&srv)
-	rpc.HandleHTTP()
-	tcpAddr = net.TCPAddrFromAddrPort(addrPort)
-	tcpListener, err = net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		log.Fatal("TCP listen error:", err)
-	}
-	go http.Serve(tcpListener, nil)
-
-	LEDField = make([][]*canvas.Circle, Width)
-	for i := range LEDField {
-		LEDField[i] = make([]*canvas.Circle, Height)
-	}
-
-	Grid = container.NewGridWithRows(Height)
-	for col := range Width {
-		for row := range Height {
-			ledColor := color.White
-			led := canvas.NewCircle(ledColor)
-			LEDField[col][row] = led
-			Grid.Add(led)
-		}
-	}
+	pixelServer = ledgrid.NewPixelServer(port)
+	pixelEmulator = NewPixelEmulator(width, height)
+	pixelServer.Disp = pixelEmulator
+    pixelServer.SetGamma(1.0, 1.0, 1.0)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
 		case fyne.KeyEscape, fyne.KeyQ:
 			App.Quit()
-		case fyne.KeySpace:
-			for i := range Buffer {
-				Buffer[i] = byte(rand.Intn(256))
-			}
-			UpdateField(Buffer, LEDField)
 		}
 	})
 
-	go Handle()
+	go SignalHandler(pixelServer)
+	go pixelServer.Handle()
 
-	Win.SetContent(Grid)
-	Win.Resize(AppSize)
+	Win.SetContent(pixelEmulator.grid)
+	Win.Resize(appSize)
 	Win.ShowAndRun()
 }
