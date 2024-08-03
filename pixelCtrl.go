@@ -260,91 +260,85 @@ func (p *PixelServer) updateGammaTable() {
 // }
 
 const (
-	TestClear = iota
-	// TestStrip
-	TestRed
+	TestRed = iota
 	TestGreen
 	TestBlue
 	TestYellow
 	TestMagenta
 	TestCyan
+    NumColorModes
+
+    TestDimmed = iota
+    TestFull
+    NumBrightModes
 
 	NumTestLeds    = 400
 	TestBufferSize = 3 * NumTestLeds
 )
 
 func (p *PixelServer) ToggleTestPattern() bool {
-	var modus int
-	// var idx int
+	var colorMode, brightMode int
+    var colorValue byte
 
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return false
 	} else {
 		p.drawTestPattern = true
-		modus = TestClear
+		colorMode = TestRed
+        brightMode = TestDimmed
 	}
 
 	go func() {
 		for p.drawTestPattern {
-			switch modus {
-			case TestClear:
-				for i := range TestBufferSize {
-					p.buffer[i] = 0x00
-				}
-				modus = TestRed
-				// idx = 0
-			// case TestStrip:
-			// 	p.buffer[3*idx+0] = 0x3f
-			// 	p.buffer[3*idx+1] = 0x3f
-			// 	p.buffer[3*idx+2] = 0x3f
-			// 	idx++
-			// 	if idx >= NumTestLeds {
-			// 		modus = TestRed
-			// 	}
+            switch brightMode {
+            case TestDimmed:
+                colorValue = 0x0f
+            case TestFull:
+                colorValue = 0xff
+            }
+            brightMode = (brightMode + 1) % NumBrightModes
+			switch colorMode {
 			case TestRed:
 				for i := range NumTestLeds {
-					p.buffer[3*i+0] = 0xff
+					p.buffer[3*i+0] = colorValue
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = 0x00
 				}
-				modus = TestGreen
 			case TestGreen:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0x00
-					p.buffer[3*i+1] = 0xff
+					p.buffer[3*i+1] = colorValue
 					p.buffer[3*i+2] = 0x00
 				}
-				modus = TestBlue
 			case TestBlue:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = 0x00
-					p.buffer[3*i+2] = 0xff
+					p.buffer[3*i+2] = colorValue
 				}
-				modus = TestYellow
 			case TestYellow:
 				for i := range NumTestLeds {
-					p.buffer[3*i+0] = 0xff
-					p.buffer[3*i+1] = 0xff
+					p.buffer[3*i+0] = colorValue
+					p.buffer[3*i+1] = colorValue
 					p.buffer[3*i+2] = 0x00
 				}
-				modus = TestMagenta
 			case TestMagenta:
 				for i := range NumTestLeds {
-					p.buffer[3*i+0] = 0xff
+					p.buffer[3*i+0] = colorValue
 					p.buffer[3*i+1] = 0x00
-					p.buffer[3*i+2] = 0xff
+					p.buffer[3*i+2] = colorValue
 				}
-				modus = TestCyan
 			case TestCyan:
 				for i := range NumTestLeds {
 					p.buffer[3*i+0] = 0x00
-					p.buffer[3*i+1] = 0xff
-					p.buffer[3*i+2] = 0xff
+					p.buffer[3*i+1] = colorValue
+					p.buffer[3*i+2] = colorValue
 				}
-				modus = TestClear
 			}
+            if brightMode == 0 {
+                colorMode = (colorMode + 1) % NumColorModes
+            }
 			p.Disp.Send(p.buffer[:bufferSize])
 			time.Sleep(80 * time.Millisecond)
 		}
