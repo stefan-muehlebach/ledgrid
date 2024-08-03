@@ -72,7 +72,7 @@ func main() {
 	for i, str := range strings.Split(gammaValues, ",") {
 		val, err := strconv.ParseFloat(str, 64)
 		if err != nil {
-			log.Fatalf("Wrong format: %s", str)
+			log.Fatalf("Failed to parse 'gamma': wrong format: %s", str)
 		}
 		gammaValue[i] = val
 	}
@@ -80,7 +80,7 @@ func main() {
     for _, str := range strings.Split(missingIDs, ",") {
         val, err := strconv.ParseInt(str, 10, 32)
         if err != nil {
-            log.Fatalf("Wrong format: %s", str)
+            log.Fatalf("Failed to parse 'missing': wrong format: %s", str)
         }
         missingList = append(missingList, int(val))
     }
@@ -88,7 +88,7 @@ func main() {
     for _, str := range strings.Split(defectIDs, ",") {
         val, err := strconv.ParseInt(str, 10, 32)
         if err != nil {
-            log.Fatalf("Wrong format: %s", str)
+            log.Fatalf("Failed to parse 'defect': wrong format: %s", str)
         }
         defectList = append(defectList, int(val))
     }
