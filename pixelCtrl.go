@@ -387,10 +387,11 @@ func (p *PixelServer) Handle() {
 				dst[0] = 0x00
 				dst[1] = 0x00
 				dst[2] = 0x00
+			} else {
+				dst[0] = p.gamma[0][src[0]]
+				dst[1] = p.gamma[1][src[1]]
+				dst[2] = p.gamma[2][src[2]]
 			}
-			dst[0] = p.gamma[0][src[0]]
-			dst[1] = p.gamma[1][src[1]]
-			dst[2] = p.gamma[2][src[2]]
 			dstIdx++
 		}
 		p.Disp.Send(p.buffer[:bufferSize])
