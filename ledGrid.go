@@ -105,6 +105,6 @@ func (g *LedGrid) Clear(c LedColor) {
 	}
 }
 
-func (g *LedGrid) MarkDefect(pos image.Point) {
-    g.idxMap.MarkDefect(pos)
-}
+// func (g *LedGrid) MarkDefect(pos image.Point) {
+//     g.idxMap.MarkDefect(pos)
+// }

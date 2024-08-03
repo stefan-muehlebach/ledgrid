@@ -81,6 +81,15 @@ func (p *SPIBus) Send(buffer []byte) {
 	time.Sleep(20 * time.Microsecond)
 }
 
+type PixelServerConf struct {
+	Port                  uint
+	SpiDev                string
+	SpiBaud               int
+	GammaValues           [3]float64
+	MaxBrightValues       [3]uint8
+	MissingIDs, DefectIDs []int
+}
+
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist.
 type PixelServer struct {
@@ -124,11 +133,11 @@ func NewPixelServer(port uint, spiDev string, baud int) *PixelServer {
 
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
-    // der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
-    // als Farbe immer Schwarz erhalten sollen).
+	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
+	// als Farbe immer Schwarz erhalten sollen).
 	p.buffer = make([]byte, bufferSize)
-    p.missingList = make([]int, 0)
-    p.defectList = make([]int, 0)
+	p.missingList = make([]int, 0)
+	p.defectList = make([]int, 0)
 
 	// spiFs, _ := sysfs.NewSPI(0, 0)
 	// p.maxTxSize = spiFs.MaxTxSize()
@@ -345,16 +354,16 @@ func (p *PixelServer) ToggleTestPattern() bool {
 // dem Pixel-Controller nicht bekannt.
 func (p *PixelServer) Handle() {
 	var bufferSize, numLEDs int
-    var missingIdx, defectIdx int
-    var dst []byte
+	var missingIdx, defectIdx int
+	var dst []byte
 	var err error
 
-    if len(p.missingList) == 0 {
-        missingIdx = -1
-    }
-    if len(p.defectList) == 0 {
-        defectIdx = -1
-    }
+	if len(p.missingList) == 0 {
+		missingIdx = -1
+	}
+	if len(p.defectList) == 0 {
+		defectIdx = -1
+	}
 	for {
 		bufferSize, err = p.udpConn.Read(p.buffer)
 		if err != nil {
@@ -365,19 +374,19 @@ func (p *PixelServer) Handle() {
 		}
 		p.RecvBytes += bufferSize
 		p.SendWatch.Start()
-        numLEDs = bufferSize / 3
+		numLEDs = bufferSize / 3
 		for idx := 0; idx < numLEDs; idx++ {
-            if missingIdx >= 0 && p.missingList[missingIdx] == idx {
-                missingIdx = (missingIdx + 1) % len(p.missingList)
-                continue
-            }
-            dst = p.buffer[3*idx : 3*idx+3 : 3*idx+3]
-            if defectIdx >= 0 && p.defectList[defectIdx] == idx {
-                defectIdx = (defectIdx + 1) % len(p.defectList)
-                dst[0] = 0x00
-                dst[1] = 0x00
-                dst[2] = 0x00
-            }
+			if missingIdx >= 0 && p.missingList[missingIdx] == idx {
+				missingIdx = (missingIdx + 1) % len(p.missingList)
+				continue
+			}
+			dst = p.buffer[3*idx : 3*idx+3 : 3*idx+3]
+			if defectIdx >= 0 && p.defectList[defectIdx] == idx {
+				defectIdx = (defectIdx + 1) % len(p.defectList)
+				dst[0] = 0x00
+				dst[1] = 0x00
+				dst[2] = 0x00
+			}
 			dst[0] = p.gamma[0][dst[0]]
 			dst[1] = p.gamma[1][dst[1]]
 			dst[2] = p.gamma[2][dst[2]]

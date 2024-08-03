@@ -71,6 +71,8 @@ func main() {
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs")
 	flag.Parse()
 
+	pixelServer = ledgrid.NewPixelServer(port, spiDevFile, baud)
+
 	for i, str := range strings.Split(gammaValues, ",") {
 		val, err := strconv.ParseFloat(str, 64)
 		if err != nil {
@@ -78,6 +80,7 @@ func main() {
 		}
 		gammaValue[i] = val
 	}
+	pixelServer.SetGamma(gammaValue[red], gammaValue[green], gammaValue[blue])
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {
@@ -87,6 +90,7 @@ func main() {
 			}
 			missingList = append(missingList, int(val))
 		}
+		pixelServer.SetMissingList(missingList)
 	}
 
 	if len(defectIDs) > 0 {
@@ -97,10 +101,8 @@ func main() {
 			}
 			defectList = append(defectList, int(val))
 		}
+		pixelServer.SetDefectList(defectList)
 	}
-
-	pixelServer = ledgrid.NewPixelServer(port, spiDevFile, baud)
-	pixelServer.SetGamma(gammaValue[red], gammaValue[green], gammaValue[blue])
 
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt

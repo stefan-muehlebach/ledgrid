@@ -445,20 +445,20 @@ func abs[T ~int | ~float64](i T) T {
 // markiert werden. In der Lichterkette muss diese Position ueberbrueckt,
 // d.h. die entsprechende LED entfernt und die Anschlusskabel direkt
 // miteinander verbunden werden.
-func (idxMap IndexMap) MarkDefect(pos image.Point) {
-	idxDefect := idxMap[pos.X][pos.Y]
-	cols := len(idxMap)
-	rows := len(idxMap[0])
-	for col := range cols {
-		for row := range rows {
-			if idxMap[col][row] > idxDefect {
-				idxMap[col][row] -= 3
-			}
-		}
-	}
-	idxSpare := 3 * (cols*rows - 1)
-	idxMap[pos.X][pos.Y] = idxSpare
-}
+// func (idxMap IndexMap) MarkDefect(pos image.Point) {
+// 	idxDefect := idxMap[pos.X][pos.Y]
+// 	cols := len(idxMap)
+// 	rows := len(idxMap[0])
+// 	for col := range cols {
+// 		for row := range rows {
+// 			if idxMap[col][row] > idxDefect {
+// 				idxMap[col][row] -= 3
+// 			}
+// 		}
+// 	}
+// 	idxSpare := 3 * (cols*rows - 1)
+// 	idxMap[pos.X][pos.Y] = idxSpare
+// }
 
 // Diese Methode ergaenzt den Slice idxMap um die Koordinaten und Indizes des
 // Modules m. basePt sind die Pixel-Koordinaten der linken oberen Ecke des

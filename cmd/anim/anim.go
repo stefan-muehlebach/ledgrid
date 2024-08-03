@@ -999,9 +999,9 @@ func main() {
 	pixCtrl.SetMaxBright(255, 255, 255)
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
-    if pixelHost != "localhost" {
-        ledGrid.MarkDefect(defectPosList[0])
-    }
+    //if pixelHost != "localhost" {
+    //    ledGrid.MarkDefect(defectPosList[0])
+    //}
 
 	canvas := NewCanvas(pixCtrl, ledGrid)
 	canvas.Stop()
