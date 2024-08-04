@@ -28,12 +28,9 @@ const (
 var (
 	width, height int
 	gridSize      image.Point
-	// pixelHost          = "raspi-3"
-	// pixelPort     uint = 5333
 	refreshRate        = 30 * time.Millisecond
 	backAlpha          = 1.0
-
-	AnimCtrl Animator
+	animCtrl *AnimationController
 )
 
 //----------------------------------------------------------------------------
@@ -96,37 +93,10 @@ func GroupTest(ctrl *Canvas) {
 	aAngle.AutoReverse = true
 
 	aGroup := NewGroup(aPos, aSize, aColor, aAngle)
-	// aGroup.Duration = 4*time.Second
 	aGroup.RepeatCount = AnimationRepeatForever
 
-	// ctrl.Save("gobs/GroupTest.gob")
-	// ctrl.Continue()
 	aGroup.Start()
 }
-
-// func ReadGroupTest(ctrl *Canvas) {
-// 	ctrl.Stop()
-
-// 	ctrl.Load("gobs/GroupTest.gob")
-// 	ctrl.Continue()
-
-// fh, err := os.Open("AnimationProgram.gob")
-// if err != nil {
-// 	log.Fatalf("Couldn't create file: %v", err)
-// }
-// gobDecoder := gob.NewDecoder(fh)
-// err = gobDecoder.Decode(&c)
-// if err != nil {
-// 	log.Fatalf("Couldn't decode data: %v", err)
-// }
-// fh.Close()
-
-// log.Printf("Controller : %+v\n", c)
-// log.Printf("ObjList[0] : (%T) %+v\n", c.ObjList[0], c.ObjList[0])
-// log.Printf("AnimList[0]: (%T) %+v\n", c.AnimList[0], c.AnimList[0])
-
-// ctrl.Continue()
-// }
 
 func SequenceTest(ctrl *Canvas) {
 	rPos := ConvertPos(geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5))
@@ -255,7 +225,6 @@ func PathTest(ctrl *Canvas) {
 }
 
 func PolygonPathTest(ctrl *Canvas) {
-	// ctrl.Stop()
 
 	cPos := ConvertPos(geom.Point{1, 1})
 	cSize := ConvertSize(geom.Point{2, 2})
@@ -389,7 +358,7 @@ func BounceAround(c *Canvas) {
 	obj2.Field = geom.NewRectangleIMG(c.canvas.Bounds())
 
 	c.Add(obj1, obj2)
-	AnimCtrl.AddAnim(obj1, obj2)
+	animCtrl.AddAnim(obj1, obj2)
 }
 
 //----------------------------------------------------------------------------
@@ -721,17 +690,6 @@ func MovingText(c *Canvas) {
 func FlyingImages(c *Canvas) {
 	pos1 := ConvertPos(geom.Point{-7.5, 4.5})
 	pos2 := ConvertPos(geom.Point{14.5, 4.5})
-	// pos3 := ConvertPos(geom.Point{24.5, 4.5})
-	// dp := ConvertSize(geom.Point{15, 0})
-
-	// t1 := NewText(pos1, "Hallo", colornames.Gold)
-
-	// i1 := NewImage(pos1, "images/05.png")
-	// i1.Size = ConvertSize(geom.Point{10, 10})
-	// i2 := NewImage(pos1, "images/13.png")
-	// i2.Size = ConvertSize(geom.Point{10, 10})
-	// i3 := NewImage(pos1, "images/test.png")
-	// i3.Size = ConvertSize(geom.Point{13.3, 10.0})
 	i4 := NewImageFromFile(pos1, "images/lorem.png")
 	i4.Size = ConvertSize(geom.Point{16.0, 3.0})
 	c.Add(i4)
@@ -810,12 +768,10 @@ func GlowingGridPixels(g *Grid) {
 
 			aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, t), 5*time.Second)
 			aColor.Cont = true
-			// aColor.AutoReverse = true
 			aGrpYellow.Add(aColor)
 
 			aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, t), 5*time.Second)
 			aColor.Cont = true
-			// aColor.AutoReverse = true
 			aGrpGreen.Add(aColor)
 		}
 	}
@@ -870,22 +826,13 @@ func TextOnGrid(g *Grid) {
 	basePt := fixed.P(0, 5)
 	baseColor1 := colornames.SkyBlue
 
-	// pix := NewGridPixel(basePt, colornames.OrangeRed)
 	txt1 := NewGridText(basePt, baseColor1, "STEFAN")
-	// txt2 := NewGridText(basePt.Add(image.Point{0, 5}), baseColor1, "und Beni")
 	g.Add(txt1)
 
 	aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
 	aPos.AutoReverse = true
 	aPos.RepeatCount = AnimationRepeatForever
 	aPos.Start()
-
-	// go func() {
-	// 	for ch := 0x20; ch < 0x7f; ch++ {
-	// 		txt.Text = fmt.Sprintf("%c", ch)
-	// 		time.Sleep(1 * time.Second)
-	// 	}
-	// }()
 }
 
 func WalkingPixelOnGrid(g *Grid) {
@@ -907,7 +854,6 @@ func WalkingPixelOnGrid(g *Grid) {
 }
 
 func ImagesOnGrid(g *Grid) {
-	// var aPos *PosAnim
 	pos := image.Point{5, 2}
 	size := image.Point{10, 10}
 
@@ -917,12 +863,8 @@ func ImagesOnGrid(g *Grid) {
 			img.Img.SetRGBA(col, row, color.RGBA{0x8f, 0x8f, 0x8f, 0xff})
 		}
 	}
-	// aPos = NewPosAnim(&img.Pos, pos.Mul(2), 3 * time.Second)
-	// aPos.AutoReverse = true
-	// aPos.RepeatCount = AnimationRepeatForever
 
 	g.Add(img)
-	// aPos.Start()
 }
 
 //----------------------------------------------------------------------------
@@ -1004,13 +946,13 @@ func main() {
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 
-    animCtrl := NewAnimationController(refreshRate)
+    animCtrl = NewAnimationController(refreshRate)
     animCtrl.Stop()
 
 	canvas := NewCanvas(pixCtrl, ledGrid)
-	// canvas.Stop()
 	grid := NewGrid(pixCtrl, ledGrid)
-	// grid.Stop()
+
+    animCtrl.DrawArea = canvas
 
 	if runInteractive {
 		sceneId = -1
@@ -1051,11 +993,9 @@ func main() {
 				if sceneId < 0 || sceneId >= len(canvasSceneList) {
 					continue
 				}
-				if animCtrl != nil {
-					animCtrl.Stop()
-					animCtrl.DelAllAnim()
-				}
-				// AnimCtrl = canvas
+				animCtrl.Stop()
+				animCtrl.DelAllAnim()
+				animCtrl.DrawArea = canvas
 				animCtrl.Continue()
 				canvas.DelAll()
 				canvasSceneList[sceneId].fnc(canvas)
@@ -1065,11 +1005,9 @@ func main() {
 				if sceneId < 0 || sceneId >= len(gridSceneList) {
 					continue
 				}
-				if animCtrl != nil {
-					animCtrl.Stop()
-					animCtrl.DelAllAnim()
-				}
-				// AnimCtrl = grid
+				animCtrl.Stop()
+				animCtrl.DelAllAnim()
+				animCtrl.DrawArea = grid
 				animCtrl.Continue()
 				grid.DelAll()
 				gridSceneList[sceneId].fnc(grid)
@@ -1079,14 +1017,14 @@ func main() {
 		if ch >= 'a' && ch <= 'z' {
 			sceneId = int(ch - 'a')
 			if sceneId >= 0 && sceneId < len(canvasSceneList) {
-				// AnimCtrl = canvas
+				animCtrl.DrawArea = canvas
 				canvasSceneList[sceneId].fnc(canvas)
 			}
 		}
 		if ch >= 'A' && ch <= 'Z' {
 			sceneId = int(ch - 'A')
 			if sceneId >= 0 && sceneId < len(gridSceneList) {
-				// AnimCtrl = grid
+				animCtrl.DrawArea = grid
 				gridSceneList[sceneId].fnc(grid)
 			}
 		}

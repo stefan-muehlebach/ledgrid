@@ -17,6 +17,10 @@ import (
 	"github.com/stefan-muehlebach/ledgrid/colornames"
 )
 
+var (
+    globAnimCtrl *AnimationController
+)
+
 // Fuer Animationen, die endlos wiederholt weren sollen, kann diese Konstante
 // fuer die Anzahl Wiederholungen verwendet werden.
 const (
@@ -120,20 +124,6 @@ func RandAlpha(a, b uint8) AlphaFuncType {
 	}
 }
 
-// Registriert alle Animationsarten, um sie exportieren oder importieren
-// zu koennen.
-// func init() {
-// 	gob.Register(&Group{})
-// 	gob.Register(&Sequence{})
-// 	gob.Register(&Timeline{})
-// 	gob.Register(&AnimationEmbed{})
-// 	gob.Register(&ColorAnimation{})
-// 	gob.Register(&PaletteAnimation{})
-// 	// gob.Register(&PositionAnimation{})
-// 	gob.Register(&FloatAnimation{})
-// 	gob.Register(&PathAnimation{})
-// }
-
 // Dieses Interface ist von allen Typen zu implementieren, welche
 // Animationen ausfuehren sollen/wollen.
 type Animator interface {
@@ -145,6 +135,7 @@ type Animator interface {
 }
 
 type AnimationController struct {
+    DrawArea   DrawingArea
 	AnimList   []Animation
 	animMutex  *sync.RWMutex
 	ticker     *time.Ticker
@@ -156,12 +147,16 @@ type AnimationController struct {
 }
 
 func NewAnimationController(refreshRate time.Duration) *AnimationController {
+    if globAnimCtrl != nil {
+        return globAnimCtrl
+    }
 	a := &AnimationController{}
 	a.AnimList = make([]Animation, 0)
 	a.animMutex = &sync.RWMutex{}
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = ledgrid.NewStopwatch()
 	a.numThreads = runtime.NumCPU()
+    globAnimCtrl = a
 	go a.backgroundThread()
 	return a
 }
@@ -235,6 +230,8 @@ func (a *AnimationController) backgroundThread() {
 			<-doneChan
 		}
 		a.animWatch.Stop()
+
+        a.DrawArea.Refresh()
 	}
 	close(doneChan)
 	close(startChan)
@@ -317,7 +314,7 @@ func NewGroup(anims ...Animation) *Group {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-	AnimCtrl.AddAnim(a)
+	globAnimCtrl.AddAnim(a)
 	return a
 }
 
@@ -414,8 +411,8 @@ func NewSequence(anims ...Animation) *Sequence {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-	AnimCtrl.AddAnim(a)
-	return a
+    	globAnimCtrl.AddAnim(a)
+    return a
 }
 
 // Fuegt der Sequenz weitere Animationen hinzu.
@@ -523,7 +520,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a.duration = d
 	a.RepeatCount = 0
 	a.posList = make([]*timelinePos, 0)
-	AnimCtrl.AddAnim(a)
+	globAnimCtrl.AddAnim(a)
 	return a
 }
 
@@ -628,7 +625,6 @@ type AnimationEmbed struct {
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
 	RepeatCount int
 
-	// duration         time.Duration
 	wrapper          Animation
 	reverse          bool
 	start, stop, end time.Time
@@ -649,7 +645,7 @@ func (a *AnimationEmbed) ExtendAnimation(wrapper Animation) {
 	a.running = false
 	a.tick = wrapper.(AnimationImpl).Tick
 	a.init = wrapper.(AnimationImpl).Init
-	AnimCtrl.AddAnim(wrapper)
+	globAnimCtrl.AddAnim(wrapper)
 }
 
 func (a *AnimationEmbed) Duration() time.Duration {
@@ -845,37 +841,6 @@ func (a *PaletteAnimation) Tick(t float64) {
 	*a.ValPtr = a.pal.Color(t)
 }
 
-// Animation fuer einen Wechsel der Position, resp. Veraenderung der Groesse.
-// type PositionAnimation struct {
-// 	AnimationEmbed
-// 	Cont       bool
-// 	ValPtr     *geom.Point
-// 	Val1, Val2 geom.Point
-// 	ValFunc    PointFuncType
-// }
-
-// func NewPositionAnimationOld(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PositionAnimation {
-// 	a := &PositionAnimation{}
-// 	a.AnimationEmbed.ExtendAnimation(a)
-//     a.SetDuration(dur)
-// 	a.ValPtr = valPtr
-// 	a.Val1 = *valPtr
-// 	a.Val2 = val2
-// 	return a
-// }
-
-// func (a *PositionAnimation) Init() {
-// 	if a.Cont {
-// 		a.Val1 = *a.ValPtr
-// 	}
-// 	if a.ValFunc != nil {
-// 		a.Val2 = a.ValFunc()
-// 	}
-// }
-
-// func (a *PositionAnimation) Tick(t float64) {
-// 	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
-// }
 
 // Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
 // werden (geom.Point), ist die Animation einer Groesse und einer Position

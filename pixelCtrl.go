@@ -494,7 +494,7 @@ func (p *NetPixelClient) Close() {
 	p.conn.Close()
 }
 
-// Sendet die Daten im Buffer b zum Controller.
+// Sendet die Bilddaten in der LedGrid-Struktur zum Controller.
 func (p *NetPixelClient) Draw(lg *LedGrid) {
 	var err error
 

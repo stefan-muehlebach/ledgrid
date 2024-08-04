@@ -1,16 +1,12 @@
 package main
 
 import (
-	"image/draw"
-	"fmt"
 	"image"
+	"image/draw"
 	"io"
 	"log"
 	"os"
-	"runtime"
-	"slices"
 	"sync"
-	"time"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -20,19 +16,13 @@ import (
 )
 
 type Grid struct {
-	ObjList                          []GridObject
-	AnimList                         []Animation
-	width, height                    int
-	pixCtrl                          ledgrid.PixelClient
-	ledGrid                          *ledgrid.LedGrid
-	ticker                           *time.Ticker
-	quit                             bool
-	objMutex                         *sync.RWMutex
-	animMutex                        *sync.RWMutex
-	animPit                          time.Time
-	logFile                          io.Writer
-	animWatch, paintWatch, sendWatch *ledgrid.Stopwatch
-	numThreads                       int
+	ObjList []GridObject
+	width, height int
+	pixCtrl       ledgrid.PixelClient
+	ledGrid       *ledgrid.LedGrid
+	objMutex *sync.RWMutex
+	logFile io.Writer
+	paintWatch, sendWatch *ledgrid.Stopwatch
 }
 
 func NewGrid(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Grid {
@@ -45,33 +35,29 @@ func NewGrid(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Grid {
 	c.height = ledGrid.Rect.Dy()
 	c.ObjList = make([]GridObject, 0)
 	c.objMutex = &sync.RWMutex{}
-	c.ticker = time.NewTicker(refreshRate)
-	c.AnimList = make([]Animation, 0)
-	c.animMutex = &sync.RWMutex{}
 	if doLog {
 		c.logFile, err = os.Create("grid.log")
 		if err != nil {
 			log.Fatalf("Couldn't create logfile: %v", err)
 		}
 	}
-	c.animWatch = ledgrid.NewStopwatch()
 	c.paintWatch = ledgrid.NewStopwatch()
 	c.sendWatch = ledgrid.NewStopwatch()
-	go c.backgroundThread()
 	return c
 }
 
 func (c *Grid) Close() {
-	c.DelAllAnim()
 	c.DelAll()
-	c.quit = true
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
-func (c *Grid) Add(objs ...GridObject) {
+func (c *Grid) Add(objs ...DrawableObject) {
 	c.objMutex.Lock()
-	c.ObjList = append(c.ObjList, objs...)
+	for _, tmp := range objs {
+		obj := tmp.(GridObject)
+		c.ObjList = append(c.ObjList, obj)
+	}
 	c.objMutex.Unlock()
 }
 
@@ -82,132 +68,44 @@ func (c *Grid) DelAll() {
 	c.objMutex.Unlock()
 }
 
-// Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
-// wird synchronisiert, da die Bearbeitung der Animationen durch den
-// Background-Thread ebenfalls relativ haeufig auf den Slice zugreift.
-func (c *Grid) AddAnim(anims ...Animation) {
-	c.animMutex.Lock()
-	c.AnimList = append(c.AnimList, anims...)
-	c.animMutex.Unlock()
-}
-
-// Loescht alle Animationen.
-func (c *Grid) DelAllAnim() {
-	c.animMutex.Lock()
-	c.AnimList = c.AnimList[:0]
-	c.animMutex.Unlock()
-}
-
-// Loescht eine einzelne Animation.
-func (c *Grid) DelAnim(anim Animation) {
-	c.animMutex.Lock()
-	defer c.animMutex.Unlock()
-	for idx, obj := range c.AnimList {
-		if obj == anim {
-			c.AnimList = slices.Delete(c.AnimList, idx, idx+1)
-			return
-		}
+func (c *Grid) Refresh() {
+	c.paintWatch.Start()
+	c.ledGrid.Clear(colornames.Black)
+	c.objMutex.RLock()
+	for _, obj := range c.ObjList {
+		obj.Draw(c)
 	}
-}
+	c.objMutex.RUnlock()
+	c.paintWatch.Stop()
 
-// Mit Stop koennen die Animationen und die Darstellung auf der Hardware
-// unterbunden werden.
-func (c *Grid) Stop() {
-	c.ticker.Stop()
-}
-
-// Setzt die Animationen wieder fort.
-// TO DO: Die Fortsetzung sollte fuer eine:n Beobachter:in nahtlos erfolgen.
-// Im Moment tut es das nicht - man muesste sich bei den Methoden und Ideen
-// von AnimationEmbed bedienen.
-func (c *Grid) Continue() {
-	c.ticker.Reset(refreshRate)
-}
-
-// Hier sind wichtige aber private Methoden, darum in Kleinbuchstaben und
-// darum noch sehr wenig Kommentare.
-func (c *Grid) backgroundThread() {
-	c.numThreads = runtime.NumCPU()
-	startChan := make(chan int)
-	doneChan := make(chan bool)
-
-	for range c.numThreads {
-		go c.animationUpdater(startChan, doneChan)
-	}
-
-	lastPit := time.Now()
-	for c.animPit = range c.ticker.C {
-		if doLog {
-			delay := c.animPit.Sub(lastPit)
-			lastPit = c.animPit
-			fmt.Fprintf(c.logFile, "delay: %v\n", delay)
-		}
-		if c.quit {
-			break
-		}
-
-		c.animWatch.Start()
-		for id := range c.numThreads {
-			startChan <- id
-		}
-		for range c.numThreads {
-			<-doneChan
-		}
-		c.animWatch.Stop()
-
-		c.paintWatch.Start()
-		c.ledGrid.Clear(colornames.Black)
-		c.objMutex.RLock()
-		for _, obj := range c.ObjList {
-			obj.Draw(c.ledGrid)
-		}
-		c.objMutex.RUnlock()
-		c.paintWatch.Stop()
-
-		c.sendWatch.Start()
-		c.pixCtrl.Draw(c.ledGrid)
-		c.sendWatch.Stop()
-	}
-	close(doneChan)
-	close(startChan)
-}
-
-func (c *Grid) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
-	for id := range startChan {
-		c.animMutex.RLock()
-		for i := id; i < len(c.AnimList); i += c.numThreads {
-			anim := c.AnimList[i]
-			if anim == nil || anim.IsStopped() {
-				continue
-			}
-			anim.Update(c.animPit)
-		}
-		c.animMutex.RUnlock()
-		doneChan <- true
-	}
+	c.sendWatch.Start()
+	c.pixCtrl.Draw(c.ledGrid)
+	c.sendWatch.Stop()
 }
 
 // Alle Objekte, die durch den Controller auf dem LED-Grid dargestellt werden
 // sollen, muessen im Minimum die Methode Draw implementieren, durch welche
 // sie auf einem gg-Kontext gezeichnet werden.
 type GridObject interface {
-	Draw(lg *ledgrid.LedGrid)
+	Draw(d DrawingArea)
+	// Draw(lg *ledgrid.LedGrid)
 }
 
 // Grid-Objekt fuer Images
 type GridImage struct {
-    Pos image.Point
-    Img *image.RGBA
+	Pos image.Point
+	Img *image.RGBA
 }
 
 func NewGridImage(pos image.Point, size image.Point) *GridImage {
-    i := &GridImage{Pos: pos}
-    i.Img = image.NewRGBA(image.Rectangle{Max: size})
-    return i
+	i := &GridImage{Pos: pos}
+	i.Img = image.NewRGBA(image.Rectangle{Max: size})
+	return i
 }
 
-func (i *GridImage) Draw(lg *ledgrid.LedGrid) {
-    draw.Draw(lg, i.Img.Bounds().Add(i.Pos), i.Img, image.Point{0, 0}, draw.Over)
+func (i *GridImage) Draw(d DrawingArea) {
+    g := d.(*Grid)
+	draw.Draw(g.ledGrid, i.Img.Bounds().Add(i.Pos), i.Img, image.Point{0, 0}, draw.Over)
 }
 
 // Will man ein einzelnes Pixel zeichnen, so eignet sich dieser Typ. Er wird
@@ -223,15 +121,15 @@ func NewGridPixel(pos image.Point, col ledgrid.LedColor) *GridPixel {
 	return p
 }
 
-func (p *GridPixel) Draw(lg *ledgrid.LedGrid) {
-	lg.SetLedColor(p.Pos.X, p.Pos.Y, p.Color.Mix(lg.LedColorAt(p.Pos.X, p.Pos.Y), ledgrid.Blend))
+func (p *GridPixel) Draw(d DrawingArea) {
+    g := d.(*Grid)
+	g.ledGrid.SetLedColor(p.Pos.X, p.Pos.Y, p.Color.Mix(g.ledGrid.LedColorAt(p.Pos.X, p.Pos.Y), ledgrid.Blend))
 }
 
 // Fuer das direkte Zeichnen von Text auf dem LED-Grid, existieren einige
 // 'fixed size' Bitmap-Schriften, die ohne Rastern und Rendern sehr schnell
 // dargestellt werden koennen.
 type GridText struct {
-	// Pos   image.Point
 	Pos    fixed.Point26_6
 	Color  ledgrid.LedColor
 	text   string
@@ -259,8 +157,9 @@ func (t *GridText) SetText(text string) {
 	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
 }
 
-func (t *GridText) Draw(lg *ledgrid.LedGrid) {
-	t.drawer.Dst = lg
+func (t *GridText) Draw(d DrawingArea) {
+    g := d.(*Grid)
+	t.drawer.Dst = g.ledGrid
 	t.drawer.Src = image.NewUniform(t.Color)
 	t.drawer.Dot = t.Pos.Sub(t.dp)
 	t.drawer.DrawString(t.text)

@@ -52,25 +52,29 @@ var (
 	doLog = false
 )
 
+type DrawingArea interface {
+	Add(objs ...DrawableObject)
+	DelAll()
+	Refresh()
+}
+
+type DrawableObject interface {
+	Draw(d DrawingArea)
+}
+
 // Ein Canvas ist eine animierbare Zeichenflaeche. Ihr koennen eine beliebige
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
 type Canvas struct {
-	ObjList []CanvasObject
-	// AnimList                         []Animation
-	objMutex *sync.RWMutex
-	// animMutex                        *sync.RWMutex
-	pixCtrl ledgrid.PixelClient
-	ledGrid *ledgrid.LedGrid
-	canvas  *image.RGBA
-	gc      *gg.Context
-	scaler  draw.Scaler
-	// ticker                           *time.Ticker
-	// quit                             bool
-	// animPit                          time.Time
-	logFile io.Writer
-	/*animWatch,*/ paintWatch, sendWatch *ledgrid.Stopwatch
-	// numThreads                       int
+	ObjList               []CanvasObject
+	objMutex              *sync.RWMutex
+	pixCtrl               ledgrid.PixelClient
+	ledGrid               *ledgrid.LedGrid
+	canvas                *image.RGBA
+	gc                    *gg.Context
+	scaler                draw.Scaler
+	logFile               io.Writer
+	paintWatch, sendWatch *ledgrid.Stopwatch
 }
 
 func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
@@ -84,33 +88,29 @@ func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
 	c.ObjList = make([]CanvasObject, 0)
 	c.objMutex = &sync.RWMutex{}
 	c.scaler = draw.CatmullRom.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
-	// c.ticker = time.NewTicker(refreshRate)
-	// c.AnimList = make([]Animation, 0)
-	// c.animMutex = &sync.RWMutex{}
 	if doLog {
 		c.logFile, err = os.Create("canvas.log")
 		if err != nil {
 			log.Fatalf("Couldn't create logfile: %v", err)
 		}
 	}
-	// c.animWatch = ledgrid.NewStopwatch()
 	c.paintWatch = ledgrid.NewStopwatch()
 	c.sendWatch = ledgrid.NewStopwatch()
-	// go c.backgroundThread()
 	return c
 }
 
 func (c *Canvas) Close() {
-	// c.DelAllAnim()
 	c.DelAll()
-	// c.quit = true
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
-func (c *Canvas) Add(objs ...CanvasObject) {
+func (c *Canvas) Add(objs ...DrawableObject) {
 	c.objMutex.Lock()
-	c.ObjList = append(c.ObjList, objs...)
+	for _, tmp := range objs {
+		obj := tmp.(CanvasObject)
+		c.ObjList = append(c.ObjList, obj)
+	}
 	c.objMutex.Unlock()
 }
 
@@ -120,88 +120,6 @@ func (c *Canvas) DelAll() {
 	c.ObjList = c.ObjList[:0]
 	c.objMutex.Unlock()
 }
-
-// Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
-// wird synchronisiert, da die Bearbeitung der Animationen durch den
-// Background-Thread ebenfalls relativ haeufig auf den Slice zugreift.
-// func (c *Canvas) AddAnim(anims ...Animation) {
-// 	c.animMutex.Lock()
-// 	c.AnimList = append(c.AnimList, anims...)
-// 	c.animMutex.Unlock()
-// }
-
-// Loescht eine einzelne Animation.
-// func (c *Canvas) DelAnim(anim Animation) {
-// 	c.animMutex.Lock()
-// 	defer c.animMutex.Unlock()
-// 	for idx, obj := range c.AnimList {
-// 		if obj == anim {
-// 			c.AnimList = slices.Delete(c.AnimList, idx, idx+1)
-// 			return
-// 		}
-// 	}
-// }
-
-// Loescht alle Animationen.
-// func (c *Canvas) DelAllAnim() {
-// 	c.animMutex.Lock()
-// 	c.AnimList = c.AnimList[:0]
-// 	c.animMutex.Unlock()
-// }
-
-// Mit Stop koennen die Animationen und die Darstellung auf der Hardware
-// unterbunden werden.
-// func (c *Canvas) Stop() {
-// 	c.ticker.Stop()
-// }
-
-// Setzt die Animationen wieder fort.
-// TO DO: Die Fortsetzung sollte fuer eine:n Beobachter:in nahtlos erfolgen.
-// Im Moment tut es das nicht - man muesste sich bei den Methoden und Ideen
-// von AnimationEmbed bedienen.
-// func (c *Canvas) Continue() {
-// 	c.ticker.Reset(refreshRate)
-// }
-
-// Mit den folgenden 4 Methoden verfolge ich das ambitionierte Ziel, die
-// Animationen in irgendeiner Form serialisierbar zu machen, damit in ferner
-// Zukunft die Animationen vollstaendig auf den Rechner des Pixelcontrollers
-// verlegt werden koennen und das netzwerkbedingte "Ruckeln" der
-// Vergangenheit angehoert.
-
-// func (c *Canvas) Save(fileName string) {
-// 	fh, err := os.Create(fileName)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't create file: %v", err)
-// 	}
-// 	c.Write(fh)
-// 	fh.Close()
-// }
-
-// func (c *Canvas) Write(w io.Writer) {
-// 	gobEncoder := gob.NewEncoder(w)
-// 	err := gobEncoder.Encode(c)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't encode data: %v", err)
-// 	}
-// }
-
-// func (c *Canvas) Load(fileName string) {
-// 	fh, err := os.Open(fileName)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't create file: %v", err)
-// 	}
-// 	c.Read(fh)
-// 	fh.Close()
-// }
-
-// func (c *Canvas) Read(r io.Reader) {
-// 	gobDecoder := gob.NewDecoder(r)
-// 	err := gobDecoder.Decode(c)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't decode data: %v", err)
-// 	}
-// }
 
 func (c *Canvas) Refresh() {
 	c.paintWatch.Start()
@@ -214,87 +132,11 @@ func (c *Canvas) Refresh() {
 	c.objMutex.RUnlock()
 	c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
 	c.paintWatch.Stop()
+
+	c.sendWatch.Start()
+	c.pixCtrl.Draw(c.ledGrid)
+	c.sendWatch.Stop()
 }
-
-// Hier sind wichtige aber private Methoden, darum in Kleinbuchstaben und
-// darum noch sehr wenig Kommentare.
-// func (c *Canvas) backgroundThread() {
-// 	// backColor := colornames.Black
-// 	c.numThreads = runtime.NumCPU()
-// 	startChan := make(chan int) //, queueSize)
-// 	doneChan := make(chan bool) //, queueSize)
-// 	// numCores := runtime.NumCPU()
-// 	// animChan := make(chan int, queueSize)
-// 	// doneChan := make(chan bool, queueSize)
-
-// 	for range c.numThreads {
-// 		go c.animationUpdater(startChan, doneChan)
-// 	}
-
-// 	lastPit := time.Now()
-// 	for c.animPit = range c.ticker.C {
-// 		if doLog {
-// 			delay := c.animPit.Sub(lastPit)
-// 			lastPit = c.animPit
-// 			fmt.Fprintf(c.logFile, "delay: %v\n", delay)
-// 		}
-// 		if c.quit {
-// 			break
-// 		}
-
-// 		c.animWatch.Start()
-// 		for id := range c.numThreads {
-// 			startChan <- id
-// 		}
-// 		for range c.numThreads {
-// 			<-doneChan
-// 		}
-// 		c.animWatch.Stop()
-
-// 		c.paintWatch.Start()
-// 		c.gc.SetFillColor(colornames.Black)
-// 		c.gc.Clear()
-// 		c.objMutex.RLock()
-// 		for _, obj := range c.ObjList {
-// 			obj.Draw(c)
-// 		}
-// 		c.objMutex.RUnlock()
-// 		c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
-// 		c.paintWatch.Stop()
-
-// 		c.sendWatch.Start()
-// 		c.pixCtrl.Draw(c.ledGrid)
-// 		c.sendWatch.Stop()
-// 	}
-// 	close(doneChan)
-// 	close(startChan)
-// }
-
-// func (c *Canvas) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
-// 	for id := range startChan {
-// 		c.animMutex.RLock()
-// 		for i := id; i < len(c.AnimList); i += c.numThreads {
-// 			anim := c.AnimList[i]
-// 			if anim == nil || anim.IsStopped() {
-// 				continue
-// 			}
-// 			anim.Update(c.animPit)
-// 		}
-// 		c.animMutex.RUnlock()
-// 		doneChan <- true
-// 	}
-// }
-
-// Damit werden die jeweiligen Graphik-Objekte beim Package gob registriert,
-// um sie binaer zu exportieren.
-// func init() {
-// 	gob.Register(ledgrid.LedColor{})
-
-// 	gob.Register(&Ellipse{})
-// 	gob.Register(&Rectangle{})
-// 	gob.Register(&Line{})
-// 	gob.Register(&Pixel{})
-// }
 
 // Mit ConvertPos muessen alle Positionsdaten konvertiert werden.
 func ConvertPos(p geom.Point) geom.Point {
@@ -323,7 +165,7 @@ func ApplyAlpha(c ledgrid.LedColor) ledgrid.LedColor {
 // sollen, muessen im Minimum die Methode Draw implementieren, durch welche
 // sie auf einem gg-Kontext gezeichnet werden.
 type CanvasObject interface {
-	Draw(c *Canvas)
+	Draw(d DrawingArea)
 }
 
 // Dient dazu, ein Live-Bild ab einer beliebigen, aber ansprechbaren Kamera
@@ -347,7 +189,7 @@ type Camera struct {
 
 func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
-	AnimCtrl.AddAnim(c)
+	animCtrl.AddAnim(c)
 	return c
 }
 
@@ -421,7 +263,8 @@ func (c *Camera) Update(pit time.Time) bool {
 	return true
 }
 
-func (c *Camera) Draw(canv *Canvas) {
+func (c *Camera) Draw(d DrawingArea) {
+	canv := d.(*Canvas)
 	if c.img == nil {
 		return
 	}
@@ -436,7 +279,7 @@ func (c *Camera) Draw(canv *Canvas) {
 type Image struct {
 	Pos, Size geom.Point
 	Angle     float64
-	img       draw.Image
+	Img       draw.Image
 }
 
 func NewImageFromFile(pos geom.Point, fileName string) *Image {
@@ -452,16 +295,33 @@ func NewImageFromFile(pos geom.Point, fileName string) *Image {
 	if err != nil {
 		log.Fatalf("Couldn't decode image: %v", err)
 	}
-	i.img = tmp.(draw.Image)
-	i.Size = geom.NewPointIMG(i.img.Bounds().Size().Mul(int(oversize)))
+	i.Img = tmp.(draw.Image)
+	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
 	return i
 }
 
-func (i *Image) Draw(c *Canvas) {
-	// rect := geom.Rectangle{Max: i.Size}
-	// refPt := i.Pos.Sub(i.Size.Div(2.0))
-	draw.CatmullRom.Scale(c.canvas, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.img, i.img.Bounds(), draw.Over, nil)
-	// draw.CatmullRom.Scale(c.canvas, rect.Add(refPt).Int(), i.img, i.img.Bounds(), draw.Over, nil)
+func (i *Image) Read(fileName string) {
+	var img image.Image
+
+	fh, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't open file: %v", err)
+	}
+	defer fh.Close()
+	img, _, err = image.Decode(fh)
+	if err != nil {
+		log.Fatalf("Couldn't decode image: %v", err)
+	}
+	i.Img = img.(draw.Image)
+	if i.Size.X > 0 || i.Size.Y > 0 {
+		return
+	}
+	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
+}
+
+func (i *Image) Draw(d DrawingArea) {
+	c := d.(*Canvas)
+	draw.CatmullRom.Scale(c.canvas, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.Img, i.Img.Bounds(), draw.Over, nil)
 }
 
 type BlinkenFile struct {
@@ -538,7 +398,7 @@ func (b *BlinkenFile) Image(idx int) *Image {
 	var c color.Color
 
 	i := &Image{}
-	i.img = image.NewRGBA(image.Rect(0, 0, b.Width, b.Height))
+	i.Img = image.NewRGBA(image.Rect(0, 0, b.Width, b.Height))
 	colorScale := uint8(255 / ((1 << b.Bits) - 1))
 	for row := range b.Height {
 		for col := range b.Width {
@@ -561,10 +421,10 @@ func (b *BlinkenFile) Image(idx int) *Image {
 					c = color.RGBA{r, g, b, 0xff}
 				}
 			}
-			i.img.Set(col, row, c)
+			i.Img.Set(col, row, c)
 		}
 	}
-	i.Size = ConvertSize(geom.NewPointIMG(i.img.Bounds().Size()))
+	i.Size = ConvertSize(geom.NewPointIMG(i.Img.Bounds().Size()))
 	return i
 }
 
@@ -591,7 +451,8 @@ func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	return t
 }
 
-func (t *Text) Draw(c *Canvas) {
+func (t *Text) Draw(draw DrawingArea) {
+	c := draw.(*Canvas)
 	if t.Angle != 0.0 {
 		c.gc.Push()
 		c.gc.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
@@ -626,7 +487,8 @@ func NewEllipse(pos, size geom.Point, borderColor ledgrid.LedColor) *Ellipse {
 	return e
 }
 
-func (e *Ellipse) Draw(c *Canvas) {
+func (e *Ellipse) Draw(draw DrawingArea) {
+	c := draw.(*Canvas)
 	if e.Angle != 0.0 {
 		c.gc.Push()
 		c.gc.RotateAbout(e.Angle, e.Pos.X, e.Pos.Y)
@@ -659,7 +521,8 @@ func NewRectangle(pos, size geom.Point, borderColor ledgrid.LedColor) *Rectangle
 	return r
 }
 
-func (r *Rectangle) Draw(c *Canvas) {
+func (r *Rectangle) Draw(d DrawingArea) {
+	c := d.(*Canvas)
 	if r.Angle != 0.0 {
 		c.gc.Push()
 		c.gc.RotateAbout(r.Angle, r.Pos.X, r.Pos.Y)
@@ -692,7 +555,8 @@ func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor ledgrid.
 	return p
 }
 
-func (p *RegularPolygon) Draw(c *Canvas) {
+func (p *RegularPolygon) Draw(draw DrawingArea) {
+	c := draw.(*Canvas)
 	c.gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
 	c.gc.SetStrokeWidth(p.BorderWidth)
 	c.gc.SetStrokeColor(p.BorderColor)
@@ -717,7 +581,8 @@ func NewLine(pos1, pos2 geom.Point, col ledgrid.LedColor) *Line {
 	return l
 }
 
-func (l *Line) Draw(c *Canvas) {
+func (l *Line) Draw(draw DrawingArea) {
+	c := draw.(*Canvas)
 	c.gc.SetStrokeWidth(l.Width)
 	c.gc.SetStrokeColor(l.Color)
 	c.gc.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
@@ -737,7 +602,8 @@ func NewPixel(pos geom.Point, col ledgrid.LedColor) *Pixel {
 	return p
 }
 
-func (p *Pixel) Draw(c *Canvas) {
+func (p *Pixel) Draw(draw DrawingArea) {
+	c := draw.(*Canvas)
 	c.gc.SetFillColor(p.Color)
 	c.gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
 	c.gc.Fill()
