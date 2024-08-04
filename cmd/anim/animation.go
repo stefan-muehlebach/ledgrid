@@ -69,6 +69,7 @@ func RandColor() ColorFuncType {
 		return colornames.RandColor()
 	}
 }
+
 // Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
 // Rechtecks r.
 func RandPoint(r geom.Rectangle) PointFuncType {
@@ -78,6 +79,7 @@ func RandPoint(r geom.Rectangle) PointFuncType {
 		return r.RelPos(fx, fy)
 	}
 }
+
 // Wie RandPoint, sorgt jedoch dafuer dass die Koordinaten auf ein Vielfaches
 // von t abgeschnitten werden.
 func RandPointTrunc(r geom.Rectangle, t float64) PointFuncType {
@@ -90,6 +92,7 @@ func RandPointTrunc(r geom.Rectangle, t float64) PointFuncType {
 		return p
 	}
 }
+
 // Macht eine Interpolation zwischen den Groessen s1 und s2. Der Interpolations-
 // punkt wird zufaellig gewaehlt.
 func RandSize(s1, s2 geom.Point) PointFuncType {
@@ -98,12 +101,14 @@ func RandSize(s1, s2 geom.Point) PointFuncType {
 		return s1.Interpolate(s2, t)
 	}
 }
+
 // Liefert eine zufaellig gewaehlte Fliesskommazahl im Interval [a,b).
 func RandFloat(a, b float64) FloatFuncType {
 	return func() float64 {
 		return a + (b-a)*rand.Float64()
 	}
 }
+
 // Liefert eine zufaellig gewaehlte natuerliche Zahl im Interval [a,b).
 func RandAlpha(a, b uint8) AlphaFuncType {
 	return func() uint8 {
@@ -825,6 +830,46 @@ func (a *FixedPosAnimation) Tick(t float64) {
 
 func float2fix(x float64) fixed.Int26_6 {
 	return fixed.Int26_6(math.Round(x * 64))
+}
+
+
+
+// Versuch einer generischen Positions-Animation
+type ScalingNumber interface {
+    int | float64
+}
+
+type Interpolatable interface {
+	Add(Interpolatable) Interpolatable
+}
+
+type PosAnim struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *Interpolatable
+	Val1, Val2 Interpolatable
+}
+
+func NewPosAnim(valPtr *Interpolatable, val2 Interpolatable, dur time.Duration) *PosAnim {
+	a := &PosAnim{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *PosAnim) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+}
+
+func (a *PosAnim) Tick(t float64) {
+    // u := N(t)
+    // v := N(1.0-t)
+	*a.ValPtr = a.Val1.Add(a.Val2)
 }
 
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,

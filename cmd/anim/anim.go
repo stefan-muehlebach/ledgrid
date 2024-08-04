@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"flag"
 	"fmt"
 	"image"
@@ -18,15 +19,14 @@ import (
 )
 
 const (
-	width  = 40
-	height = 40
+	defWidth       = 10
+	defHeight      = 10
 )
 
 var (
 	gridSize       = image.Point{width, height}
-	pixelHost      = "localhost"
+	pixelHost      = "raspi-3"
 	pixelPort uint = 5333
-	// gammaValue         = 3.0
 	refreshRate = 30 * time.Millisecond
 	backAlpha   = 1.0
 
@@ -759,13 +759,19 @@ func CameraTest(c *Canvas) {
 }
 
 func BlinkenAnimation(c *Canvas) {
-	pos := ConvertPos(geom.Point{0.5, 0.5})
+	posA := ConvertPos(geom.Point{0.5, 0.5})
+    posB := ConvertPos(geom.Point{5.5, 5.5})
 
-	bml := ReadBlinkenFile("mario.bml")
+	bml := ReadBlinkenFile("marioWalkRight.bml")
 	img := bml.Image(0)
-	img.Pos = pos
+	img.Pos = posA
+
+    aPos := NewPositionAnimation(&img.Pos, posB, 3 * time.Second)
+    aPos.AutoReverse = true
+    aPos.RepeatCount = AnimationRepeatForever
 
 	c.Add(img)
+    aPos.Start()
 }
 
 //-----------------------------------------------------------------------------
@@ -899,6 +905,26 @@ func WalkingPixelOnGrid(g *Grid) {
 	}()
 }
 
+func ImagesOnGrid(g *Grid) {
+    // var aPos *PosAnim
+    pos := image.Point{5, 2}
+    size := image.Point{10, 10}
+
+    img := NewGridImage(pos, size)
+    for row := range size.Y {
+        for col := range size.X {
+            img.Img.SetRGBA(col, row, color.RGBA{0x8f, 0x8f, 0x8f, 0xff})
+        }
+    }
+    // aPos = NewPosAnim(&img.Pos, pos.Mul(2), 3 * time.Second)
+    // aPos.AutoReverse = true
+    // aPos.RepeatCount = AnimationRepeatForever
+
+    g.Add(img)
+    // aPos.Start()
+}
+
+
 //----------------------------------------------------------------------------
 
 func SignalHandler() {
@@ -925,8 +951,10 @@ func main() {
 	var sceneId int
 	var runInteractive bool
 	var pixCtrl ledgrid.PixelClient
-	// var modConf ledgrid.ModuleConfig
+	var width, height int
 
+	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.StringVar(&pixelHost, "host", pixelHost, "Controller hostname")
 	flag.UintVar(&pixelPort, "port", pixelPort, "Controller port")
 	flag.StringVar(&input, "scene", input, "play one single scene (no menu)")
@@ -966,10 +994,12 @@ func main() {
 		{"Random Pixels", RandomGridPixels},
 		{"Text on a grid", TextOnGrid},
 		{"Walking pixel", WalkingPixelOnGrid},
+   		{"Draw images on a grid", ImagesOnGrid},
+
 	}
 
 	pixCtrl = ledgrid.NewNetPixelClient(pixelHost, pixelPort)
-	pixCtrl.SetMaxBright(255, 255, 255)
+	pixCtrl.SetMaxBright(128, 128, 128)
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 	//if pixelHost != "localhost" {

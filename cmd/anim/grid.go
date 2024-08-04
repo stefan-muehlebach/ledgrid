@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/draw"
 	"fmt"
 	"image"
 	"io"
@@ -191,6 +192,22 @@ func (c *Grid) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
 // sie auf einem gg-Kontext gezeichnet werden.
 type GridObject interface {
 	Draw(lg *ledgrid.LedGrid)
+}
+
+// Grid-Objekt fuer Images
+type GridImage struct {
+    Pos image.Point
+    Img *image.RGBA
+}
+
+func NewGridImage(pos image.Point, size image.Point) *GridImage {
+    i := &GridImage{Pos: pos}
+    i.Img = image.NewRGBA(image.Rectangle{Max: size})
+    return i
+}
+
+func (i *GridImage) Draw(lg *ledgrid.LedGrid) {
+    draw.Draw(lg, i.Img.Bounds().Add(i.Pos), i.Img, image.Point{0, 0}, draw.Over)
 }
 
 // Will man ein einzelnes Pixel zeichnen, so eignet sich dieser Typ. Er wird
