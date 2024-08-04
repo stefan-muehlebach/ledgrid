@@ -1,10 +1,10 @@
 package main
 
 import (
-	"image/color"
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"math/rand/v2"
 	"os"
@@ -19,16 +19,19 @@ import (
 )
 
 const (
-	defWidth       = 10
-	defHeight      = 10
+	defWidth  = 40
+	defHeight = 10
+	defHost   = "raspi-3"
+	defPort   = 5333
 )
 
 var (
-	gridSize       = image.Point{width, height}
-	pixelHost      = "raspi-3"
-	pixelPort uint = 5333
-	refreshRate = 30 * time.Millisecond
-	backAlpha   = 1.0
+	width, height int
+	gridSize      image.Point
+	// pixelHost          = "raspi-3"
+	// pixelPort     uint = 5333
+	refreshRate        = 30 * time.Millisecond
+	backAlpha          = 1.0
 
 	AnimCtrl Animator
 )
@@ -73,10 +76,8 @@ func RegularPolygonTest(c *Canvas) {
 }
 
 func GroupTest(ctrl *Canvas) {
-	// ctrl.Stop()
-
 	rPos1 := ConvertPos(geom.Point{4.5, 4.5})
-	rPos2 := ConvertPos(geom.Point{width - 1.5, 4.5})
+	rPos2 := ConvertPos(geom.Point{float64(width) - 1.5, 4.5})
 	rSize1 := ConvertSize(geom.Point{7.0, 7.0})
 	rSize2 := ConvertSize(geom.Point{1.0, 1.0})
 	rColor1 := colornames.SkyBlue
@@ -154,11 +155,11 @@ func SequenceTest(ctrl *Canvas) {
 }
 
 func TimelineTest(ctrl *Canvas) {
-	r1Pos := ConvertPos(geom.Point{6.5, (height - 1.0) / 2.0})
+	r1Pos := ConvertPos(geom.Point{6.5, float64(height-1) / 2.0})
 	r1Size := ConvertSize(geom.Point{9.0, 5.0})
-	r2Pos := ConvertPos(geom.Point{(width - 1.0) / 2.0, (height - 1.0) / 2.0})
+	r2Pos := ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) / 2.0})
 	r2Size := ConvertSize(geom.Point{11.0, 7.0})
-	r3Pos := ConvertPos(geom.Point{width - 7.5, (height - 1.0) / 2.0})
+	r3Pos := ConvertPos(geom.Point{float64(width) - 7.5, float64(height-1) / 2.0})
 	r3Size := ConvertSize(geom.Point{9.0, 5.0})
 
 	r1 := NewRectangle(r1Pos, r1Size, colornames.GreenYellow)
@@ -226,10 +227,10 @@ func PathTest(ctrl *Canvas) {
 	pathA := FullCirclePathA
 	pathB := FullCirclePathB
 
-	pos1 := ConvertPos(geom.Point{1.5, (height - 1.0) / 2.0})
-	pos2 := ConvertPos(geom.Point{(width - 1.0) / 2.0, 1.5})
-	pos3 := ConvertPos(geom.Point{(width - 1.0) - 1.5, (height - 1.0) / 2.0})
-	pos4 := ConvertPos(geom.Point{(width - 1.0) / 2.0, (height - 1.0) - 1.5})
+	pos1 := ConvertPos(geom.Point{1.5, float64(height-1) / 2.0})
+	pos2 := ConvertPos(geom.Point{float64(width-1) / 2.0, 1.5})
+	pos3 := ConvertPos(geom.Point{float64(width-1) - 1.5, float64(height-1) / 2.0})
+	pos4 := ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) - 1.5})
 	cSize := ConvertSize(geom.Point{3.0, 3.0})
 
 	c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
@@ -238,14 +239,14 @@ func PathTest(ctrl *Canvas) {
 	c4 := NewEllipse(pos4, cSize, colornames.Gold)
 	ctrl.Add(c1, c2, c3, c4)
 
-	c1Path := NewPathAnimation(&c1.Pos, pathB, ConvertSize(geom.Point{width - 4.0, 6.0}), duration)
+	c1Path := NewPathAnimation(&c1.Pos, pathB, ConvertSize(geom.Point{float64(width - 4), 6.0}), duration)
 	c1Path.AutoReverse = true
-	c3Path := NewPathAnimation(&c3.Pos, pathB, ConvertSize(geom.Point{-(width - 4.0), -6.0}), duration)
+	c3Path := NewPathAnimation(&c3.Pos, pathB, ConvertSize(geom.Point{-float64(width - 4), -6.0}), duration)
 	c3Path.AutoReverse = true
 
-	c2Path := NewPathAnimation(&c2.Pos, pathA, ConvertSize(geom.Point{width / 3.0, 6.0}), duration)
+	c2Path := NewPathAnimation(&c2.Pos, pathA, ConvertSize(geom.Point{float64(width) / 3.0, 6.0}), duration)
 	c2Path.AutoReverse = true
-	c4Path := NewPathAnimation(&c4.Pos, pathA, ConvertSize(geom.Point{-width / 3.0, -6.0}), duration)
+	c4Path := NewPathAnimation(&c4.Pos, pathA, ConvertSize(geom.Point{-float64(width) / 3.0, -6.0}), duration)
 	c4Path.AutoReverse = true
 
 	aGrp := NewGroup(c1Path, c2Path, c3Path, c4Path)
@@ -261,24 +262,24 @@ func PolygonPathTest(ctrl *Canvas) {
 
 	polyPath1 := NewPolygonPath(
 		ConvertPos(geom.Point{1, 1}),
-		ConvertPos(geom.Point{width - 2, 1}),
-		ConvertPos(geom.Point{width - 2, height - 2}),
-		ConvertPos(geom.Point{1, height - 2}),
+		ConvertPos(geom.Point{float64(width) - 2, 1}),
+		ConvertPos(geom.Point{float64(width) - 2, float64(height) - 2}),
+		ConvertPos(geom.Point{1, float64(height) - 2}),
 
 		ConvertPos(geom.Point{1, 2}),
-		ConvertPos(geom.Point{width - 3, 2}),
-		ConvertPos(geom.Point{width - 3, height - 3}),
-		ConvertPos(geom.Point{2, height - 3}),
+		ConvertPos(geom.Point{float64(width) - 3, 2}),
+		ConvertPos(geom.Point{float64(width) - 3, float64(height) - 3}),
+		ConvertPos(geom.Point{2, float64(height) - 3}),
 
 		ConvertPos(geom.Point{2, 3}),
-		ConvertPos(geom.Point{width - 4, 3}),
-		ConvertPos(geom.Point{width - 4, height - 4}),
-		ConvertPos(geom.Point{3, height - 4}),
+		ConvertPos(geom.Point{float64(width) - 4, 3}),
+		ConvertPos(geom.Point{float64(width) - 4, float64(height) - 4}),
+		ConvertPos(geom.Point{3, float64(height) - 4}),
 
 		ConvertPos(geom.Point{3, 4}),
-		ConvertPos(geom.Point{width - 5, 4}),
-		ConvertPos(geom.Point{width - 5, height - 5}),
-		ConvertPos(geom.Point{4, height - 5}),
+		ConvertPos(geom.Point{float64(width) - 5, 4}),
+		ConvertPos(geom.Point{float64(width) - 5, float64(height) - 5}),
+		ConvertPos(geom.Point{4, float64(height) - 5}),
 	)
 
 	polyPath2 := NewPolygonPath(
@@ -308,7 +309,7 @@ func PolygonPathTest(ctrl *Canvas) {
 }
 
 func RandomWalk(ctrl *Canvas) {
-	rect := geom.Rectangle{Min: ConvertPos(geom.Point{1.0, 1.0}), Max: ConvertPos(geom.Point{width - 1.0, height - 1.0})}
+	rect := geom.Rectangle{Min: ConvertPos(geom.Point{1.0, 1.0}), Max: ConvertPos(geom.Point{float64(width) - 1.0, float64(height) - 1.0})}
 	pos1 := ConvertPos(geom.Point{1.0, 1.0})
 	pos2 := ConvertPos(geom.Point{18.0, 8.0})
 	size1 := ConvertSize(geom.Point{2.0, 2.0})
@@ -561,14 +562,14 @@ func CircleAnimation(ctrl *Canvas) {
 }
 
 func PushingRectangles(ctrl *Canvas) {
-	rSize1 := ConvertSize(geom.Point{width - 3.0, 1.0})
-	rSize2 := ConvertSize(geom.Point{1.0, height - 1.0})
+	rSize1 := ConvertSize(geom.Point{float64(width) - 3.0, 1.0})
+	rSize2 := ConvertSize(geom.Point{1.0, float64(height) - 1.0})
 
-	r1Pos1 := ConvertPos(geom.Point{0.5, (height - 1.0) / 2.0})
-	r1Pos2 := ConvertPos(geom.Point{0.5 + (width-3.0)/2.0, (height - 1.0) / 2.0})
+	r1Pos1 := ConvertPos(geom.Point{0.5, float64(height-1) / 2.0})
+	r1Pos2 := ConvertPos(geom.Point{0.5 + float64(width-3)/2.0, float64(height-1) / 2.0})
 
-	r2Pos1 := ConvertPos(geom.Point{(width - 1.0) - 0.5, (height - 1.0) / 2.0})
-	r2Pos2 := ConvertPos(geom.Point{(width - 1.0) - 0.5 - (width-3.0)/2.0, (height - 1.0) / 2.0})
+	r2Pos1 := ConvertPos(geom.Point{float64(width-1) - 0.5, float64(height-1) / 2.0})
+	r2Pos2 := ConvertPos(geom.Point{float64(width-1) - 0.5 - float64(width-3)/2.0, float64(height-1) / 2.0})
 	duration := 2 * time.Second
 
 	r1 := NewRectangle(r1Pos1, rSize2, colornames.Crimson)
@@ -667,9 +668,9 @@ func GlowingPixels(ctrl *Canvas) {
 var (
 	pts = []geom.Point{
 		ConvertPos(geom.Point{0, 0}),
-		ConvertPos(geom.Point{0, height}),
-		ConvertPos(geom.Point{width, height}),
-		ConvertPos(geom.Point{width, 0}),
+		ConvertPos(geom.Point{0, float64(height)}),
+		ConvertPos(geom.Point{float64(width), float64(height)}),
+		ConvertPos(geom.Point{float64(width), 0}),
 	}
 	lastP0 = 0
 )
@@ -749,8 +750,8 @@ func FlyingImages(c *Canvas) {
 }
 
 func CameraTest(c *Canvas) {
-	pos := ConvertPos(geom.Point{width / 2.0, height / 2.0})
-	size := ConvertSize(geom.Point{width, height})
+	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
+	size := ConvertSize(geom.Point{float64(width), float64(height)})
 
 	cam := NewCamera(pos, size)
 	c.Add(cam)
@@ -760,18 +761,18 @@ func CameraTest(c *Canvas) {
 
 func BlinkenAnimation(c *Canvas) {
 	posA := ConvertPos(geom.Point{0.5, 0.5})
-    posB := ConvertPos(geom.Point{5.5, 5.5})
+	posB := ConvertPos(geom.Point{5.5, 5.5})
 
 	bml := ReadBlinkenFile("marioWalkRight.bml")
 	img := bml.Image(0)
 	img.Pos = posA
 
-    aPos := NewPositionAnimation(&img.Pos, posB, 3 * time.Second)
-    aPos.AutoReverse = true
-    aPos.RepeatCount = AnimationRepeatForever
+	aPos := NewPositionAnimation(&img.Pos, posB, 3*time.Second)
+	aPos.AutoReverse = true
+	aPos.RepeatCount = AnimationRepeatForever
 
 	c.Add(img)
-    aPos.Start()
+	aPos.Start()
 }
 
 //-----------------------------------------------------------------------------
@@ -906,24 +907,23 @@ func WalkingPixelOnGrid(g *Grid) {
 }
 
 func ImagesOnGrid(g *Grid) {
-    // var aPos *PosAnim
-    pos := image.Point{5, 2}
-    size := image.Point{10, 10}
+	// var aPos *PosAnim
+	pos := image.Point{5, 2}
+	size := image.Point{10, 10}
 
-    img := NewGridImage(pos, size)
-    for row := range size.Y {
-        for col := range size.X {
-            img.Img.SetRGBA(col, row, color.RGBA{0x8f, 0x8f, 0x8f, 0xff})
-        }
-    }
-    // aPos = NewPosAnim(&img.Pos, pos.Mul(2), 3 * time.Second)
-    // aPos.AutoReverse = true
-    // aPos.RepeatCount = AnimationRepeatForever
+	img := NewGridImage(pos, size)
+	for row := range size.Y {
+		for col := range size.X {
+			img.Img.SetRGBA(col, row, color.RGBA{0x8f, 0x8f, 0x8f, 0xff})
+		}
+	}
+	// aPos = NewPosAnim(&img.Pos, pos.Mul(2), 3 * time.Second)
+	// aPos.AutoReverse = true
+	// aPos.RepeatCount = AnimationRepeatForever
 
-    g.Add(img)
-    // aPos.Start()
+	g.Add(img)
+	// aPos.Start()
 }
-
 
 //----------------------------------------------------------------------------
 
@@ -946,20 +946,23 @@ type gridSceneRecord struct {
 }
 
 func main() {
+	var host string
+	var port uint
 	var input string
 	var ch byte
 	var sceneId int
 	var runInteractive bool
 	var pixCtrl ledgrid.PixelClient
-	var width, height int
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
-	flag.StringVar(&pixelHost, "host", pixelHost, "Controller hostname")
-	flag.UintVar(&pixelPort, "port", pixelPort, "Controller port")
+	flag.StringVar(&host, "host", defHost, "Controller hostname")
+	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.StringVar(&input, "scene", input, "play one single scene (no menu)")
 	flag.BoolVar(&doLog, "log", doLog, "enable logging")
 	flag.Parse()
+
+	gridSize = image.Point{width, height}
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -969,7 +972,6 @@ func main() {
 	}
 
 	canvasSceneList := []canvasSceneRecord{
-		{"(Regular) Polygon test", RegularPolygonTest},
 		{"Group test", GroupTest},
 		{"Sequence test", SequenceTest},
 		{"Timeline test", TimelineTest},
@@ -978,11 +980,12 @@ func main() {
 		{"Random walk", RandomWalk},
 		{"Let's bounce around", BounceAround},
 		{"Piiiiixels", Piiiiixels},
+		{"Regular Polygon test", RegularPolygonTest},
 		{"Circling Circles", CirclingCircles},
 		{"Chasing Circles", ChasingCircles},
 		{"Circle Animation", CircleAnimation},
 		{"Pushing Rectangles", PushingRectangles},
-		{"Glowing Pixels (Canvas)", GlowingPixels},
+		{"Glowing Pixels", GlowingPixels},
 		{"Moving Text", MovingText},
 		{"Flying images", FlyingImages},
 		{"Hidden or visible camera", CameraTest},
@@ -990,26 +993,24 @@ func main() {
 	}
 
 	gridSceneList := []gridSceneRecord{
-		{"Glowing Pixels (Grid)", GlowingGridPixels},
+		{"Glowing Pixels", GlowingGridPixels},
 		{"Random Pixels", RandomGridPixels},
 		{"Text on a grid", TextOnGrid},
 		{"Walking pixel", WalkingPixelOnGrid},
-   		{"Draw images on a grid", ImagesOnGrid},
-
+		{"Draw images on a grid", ImagesOnGrid},
 	}
 
-	pixCtrl = ledgrid.NewNetPixelClient(pixelHost, pixelPort)
-	pixCtrl.SetMaxBright(128, 128, 128)
+	pixCtrl = ledgrid.NewNetPixelClient(host, port)
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
-	//if pixelHost != "localhost" {
-	//    ledGrid.MarkDefect(defectPosList[0])
-	//}
+
+    animCtrl := NewAnimationController(refreshRate)
+    animCtrl.Stop()
 
 	canvas := NewCanvas(pixCtrl, ledGrid)
-	canvas.Stop()
+	// canvas.Stop()
 	grid := NewGrid(pixCtrl, ledGrid)
-	grid.Stop()
+	// grid.Stop()
 
 	if runInteractive {
 		sceneId = -1
@@ -1050,12 +1051,12 @@ func main() {
 				if sceneId < 0 || sceneId >= len(canvasSceneList) {
 					continue
 				}
-				if AnimCtrl != nil {
-					AnimCtrl.Stop()
-					AnimCtrl.DelAllAnim()
+				if animCtrl != nil {
+					animCtrl.Stop()
+					animCtrl.DelAllAnim()
 				}
-				AnimCtrl = canvas
-				AnimCtrl.Continue()
+				// AnimCtrl = canvas
+				animCtrl.Continue()
 				canvas.DelAll()
 				canvasSceneList[sceneId].fnc(canvas)
 			}
@@ -1064,12 +1065,12 @@ func main() {
 				if sceneId < 0 || sceneId >= len(gridSceneList) {
 					continue
 				}
-				if AnimCtrl != nil {
-					AnimCtrl.Stop()
-					AnimCtrl.DelAllAnim()
+				if animCtrl != nil {
+					animCtrl.Stop()
+					animCtrl.DelAllAnim()
 				}
-				AnimCtrl = grid
-				AnimCtrl.Continue()
+				// AnimCtrl = grid
+				animCtrl.Continue()
 				grid.DelAll()
 				gridSceneList[sceneId].fnc(grid)
 			}
@@ -1078,33 +1079,33 @@ func main() {
 		if ch >= 'a' && ch <= 'z' {
 			sceneId = int(ch - 'a')
 			if sceneId >= 0 && sceneId < len(canvasSceneList) {
-				AnimCtrl = canvas
+				// AnimCtrl = canvas
 				canvasSceneList[sceneId].fnc(canvas)
 			}
 		}
 		if ch >= 'A' && ch <= 'Z' {
 			sceneId = int(ch - 'A')
 			if sceneId >= 0 && sceneId < len(gridSceneList) {
-				AnimCtrl = grid
+				// AnimCtrl = grid
 				gridSceneList[sceneId].fnc(grid)
 			}
 		}
-		AnimCtrl.Continue()
+		animCtrl.Continue()
 		fmt.Printf("Quit by Ctrl-C\n")
 		SignalHandler()
 	}
 
-	AnimCtrl.Stop()
+	animCtrl.Stop()
 	ledGrid.Clear(ledgrid.Black)
 	pixCtrl.Draw(ledGrid)
 	pixCtrl.Close()
 
 	fmt.Printf("Canvas statistics:\n")
-	fmt.Printf("  animation: %v\n", canvas.animWatch)
+	fmt.Printf("  animation: %v\n", animCtrl.animWatch)
 	fmt.Printf("  painting : %v\n", canvas.paintWatch)
 	fmt.Printf("  sending  : %v\n", canvas.sendWatch)
 	fmt.Printf("Grid statistics:\n")
-	fmt.Printf("  animation: %v\n", grid.animWatch)
+	fmt.Printf("  animation: %v\n", animCtrl.animWatch)
 	fmt.Printf("  painting : %v\n", grid.paintWatch)
 	fmt.Printf("  sending  : %v\n", grid.sendWatch)
 }

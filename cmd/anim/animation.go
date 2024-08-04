@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"math"
 	"math/rand/v2"
+	"runtime"
 	"slices"
+	"sync"
 	"time"
 
 	"golang.org/x/image/math/fixed"
@@ -138,6 +142,117 @@ type Animator interface {
 	DelAllAnim()
 	Stop()
 	Continue()
+}
+
+type AnimationController struct {
+	AnimList   []Animation
+	animMutex  *sync.RWMutex
+	ticker     *time.Ticker
+	quit       bool
+	animPit    time.Time
+	logFile    io.Writer
+	animWatch  *ledgrid.Stopwatch
+	numThreads int
+}
+
+func NewAnimationController(refreshRate time.Duration) *AnimationController {
+	a := &AnimationController{}
+	a.AnimList = make([]Animation, 0)
+	a.animMutex = &sync.RWMutex{}
+	a.ticker = time.NewTicker(refreshRate)
+	a.animWatch = ledgrid.NewStopwatch()
+	a.numThreads = runtime.NumCPU()
+	go a.backgroundThread()
+	return a
+}
+
+// Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
+// wird synchronisiert, da die Bearbeitung der Animationen durch den
+// Background-Thread ebenfalls relativ haeufig auf den Slice zugreift.
+func (a *AnimationController) AddAnim(anims ...Animation) {
+	a.animMutex.Lock()
+	a.AnimList = append(a.AnimList, anims...)
+	a.animMutex.Unlock()
+}
+
+// Loescht eine einzelne Animation.
+func (a *AnimationController) DelAnim(anim Animation) {
+	a.animMutex.Lock()
+	defer a.animMutex.Unlock()
+	for idx, obj := range a.AnimList {
+		if obj == anim {
+			a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
+			return
+		}
+	}
+}
+
+// Loescht alle Animationen.
+func (a *AnimationController) DelAllAnim() {
+	a.animMutex.Lock()
+	a.AnimList = a.AnimList[:0]
+	a.animMutex.Unlock()
+}
+
+// Mit Stop koennen die Animationen und die Darstellung auf der Hardware
+// unterbunden werden.
+func (a *AnimationController) Stop() {
+	a.ticker.Stop()
+}
+
+// Setzt die Animationen wieder fort.
+// TO DO: Die Fortsetzung sollte fuer eine:n Beobachter:in nahtlos erfolgen.
+// Im Moment tut es das nicht - man muesste sich bei den Methoden und Ideen
+// von AnimationEmbed bedienen.
+func (a *AnimationController) Continue() {
+	a.ticker.Reset(refreshRate)
+}
+
+func (a *AnimationController) backgroundThread() {
+	startChan := make(chan int) //, queueSize)
+	doneChan := make(chan bool) //, queueSize)
+
+	for range a.numThreads {
+		go a.animationUpdater(startChan, doneChan)
+	}
+
+	lastPit := time.Now()
+	for a.animPit = range a.ticker.C {
+		if doLog {
+			delay := a.animPit.Sub(lastPit)
+			lastPit = a.animPit
+			fmt.Fprintf(a.logFile, "delay: %v\n", delay)
+		}
+		if a.quit {
+			break
+		}
+
+		a.animWatch.Start()
+		for id := range a.numThreads {
+			startChan <- id
+		}
+		for range a.numThreads {
+			<-doneChan
+		}
+		a.animWatch.Stop()
+	}
+	close(doneChan)
+	close(startChan)
+}
+
+func (a *AnimationController) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
+	for id := range startChan {
+		a.animMutex.RLock()
+		for i := id; i < len(a.AnimList); i += a.numThreads {
+			anim := a.AnimList[i]
+			if anim == nil || anim.IsStopped() {
+				continue
+			}
+			anim.Update(a.animPit)
+		}
+		a.animMutex.RUnlock()
+		doneChan <- true
+	}
 }
 
 // Das Interface fuer jede Art von Animation (bis jetzt zumindest).
@@ -832,11 +947,9 @@ func float2fix(x float64) fixed.Int26_6 {
 	return fixed.Int26_6(math.Round(x * 64))
 }
 
-
-
 // Versuch einer generischen Positions-Animation
 type ScalingNumber interface {
-    int | float64
+	int | float64
 }
 
 type Interpolatable interface {
@@ -867,8 +980,8 @@ func (a *PosAnim) Init() {
 }
 
 func (a *PosAnim) Tick(t float64) {
-    // u := N(t)
-    // v := N(1.0-t)
+	// u := N(t)
+	// v := N(1.0-t)
 	*a.ValPtr = a.Val1.Add(a.Val2)
 }
 
