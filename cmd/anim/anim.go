@@ -641,35 +641,41 @@ var (
 		ConvertPos(geom.Point{float64(width), float64(height)}),
 		ConvertPos(geom.Point{float64(width), 0}),
 	}
-	lastP0 = 0
+	lastIdx = -1
 )
 
 func randPoint() geom.Point {
-	p0 := rand.IntN(len(pts))
-	for p0 == lastP0 {
-		p0 = rand.IntN(len(pts))
+	idx0 := rand.IntN(len(pts))
+	for idx0 == lastIdx {
+		idx0 = rand.IntN(len(pts))
 	}
-	lastP0 = p0
-	p1 := (p0 + 1) % len(pts)
+	lastIdx = idx0
+	idx1 := (idx0 + 1) % len(pts)
 
-	return pts[p0].Interpolate(pts[p1], rand.Float64())
+	return pts[idx0].Interpolate(pts[idx1], rand.Float64())
 }
 
 func MovingText(c *Canvas) {
 
-	t1 := NewText(randPoint(), "Beni", colornames.LightSeaGreen)
-	t2 := NewText(randPoint(), "Stefan", colornames.YellowGreen)
-	c.Add(t1, t2)
+	t1 := NewText(randPoint(), "BM-18M-S3-BE-Mo-0823", colornames.LightSeaGreen)
+	t2 := NewText(randPoint(), "Mathematik", colornames.YellowGreen)
+    t3 := NewText(randPoint(), "Physik", colornames.OrangeRed)
+	c.Add(t1, t2, t3)
 
-	aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 4*time.Second)
+	aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 5*time.Second)
 	aPos1.ValFunc = randPoint
 	aPos1.RepeatCount = AnimationRepeatForever
 	aPos1.Cont = true
 
-	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
+	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 2*time.Second)
 	aPos2.ValFunc = randPoint
 	aPos2.RepeatCount = AnimationRepeatForever
 	aPos2.Cont = true
+
+	aPos3 := NewPositionAnimation(&t3.Pos, geom.Point{}, 2*time.Second)
+	aPos3.ValFunc = randPoint
+	aPos3.RepeatCount = AnimationRepeatForever
+	aPos3.Cont = true
 
 	aAngle1 := NewFloatAnimation(&t1.Angle, 0.0, 3*time.Second)
 	aAngle1.ValFunc = RandFloat(math.Pi/2.0, math.Pi)
@@ -685,6 +691,7 @@ func MovingText(c *Canvas) {
 	aAngle2.Start()
 	aPos1.Start()
 	aPos2.Start()
+    aPos3.Start()
 }
 
 func FlyingImages(c *Canvas) {

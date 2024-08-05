@@ -287,17 +287,18 @@ func (conf ModuleConfig) IndexMap() IndexMap {
 }
 
 func (idxMap IndexMap) CoordMap() CoordMap {
-    coordMap := make([]image.Point, len(idxMap)*len(idxMap[0]))
-    for col, idxColumn := range idxMap {
-        for row, idx := range idxColumn {
-            coordMap[idx/3] = image.Point{col, row}
-        }
-    }
-    return coordMap
+	coordMap := make([]image.Point, len(idxMap)*len(idxMap[0]))
+	for col, idxColumn := range idxMap {
+		for row, idx := range idxColumn {
+			coordMap[idx/3] = image.Point{col, row}
+		}
+	}
+	return coordMap
 }
 
 // Fuer die graphische Ausgabe des Verkabelungsplanes werden viele Konstanten
-// verwendet.
+// zur Konfiguration des visuellen Erscheinungsbildes verwendet und zwei
+// Methoden (Plot und Draw).
 
 var (
 	marginSize = 100.0
@@ -323,10 +324,14 @@ var (
 	arrowColor = color.Black
 )
 
+// Mit dieser Methode wird ein einzelnes Modul gezeichnet. Die aufrufende
+// Methode/Funktion muss mittels Translation und ggf. Rotation dafuer sorgen,
+// dass der Ursprung des Koordinatensystems im Mittelpunkt des Modules zu
+// liegen kommt.
 func (mod Module) Draw(gc *gg.Context) {
-	// Referenzpunkt links oben...
+	// p0 und p1 sind Referenzpunkte, die in den Ecken eines Modules
+	// platziert werden: p0 links oben, p1 rechts oben.
 	p0 := geom.Point{-moduleSize / 2.0, -moduleSize / 2.0}
-	// ... und rechts oben
 	p1 := p0.Add(geom.Point{moduleSize, 0})
 
 	mp := geom.Point{}
@@ -424,7 +429,7 @@ func (conf ModuleConfig) Plot(fileName string) {
 	gc.SetFillColor(color.White)
 	gc.Clear()
 
-    conf.Draw(gc)
+	conf.Draw(gc)
 
 	err := gc.SavePNG(fileName)
 	if err != nil {
@@ -522,8 +527,6 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
-			// default:
-			// 	log.Fatalf("Module type '%s' is only configured with a rotation of 0 and 180 degrees", m.Type)
 		}
 	case ModRL:
 		switch m.Rot {
@@ -579,8 +582,6 @@ func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
 					idxMap[x][y] = baseIdx + 3*idx
 				}
 			}
-			// default:
-			// 	log.Fatalf("Module type '%s' is only configured with a rotation of 90 degrees", m.Type)
 		}
 	}
 	return baseIdx + 3*ModuleSize.X*ModuleSize.Y

@@ -65,6 +65,7 @@ func OpenSPIBus(spiDev string, baud int) *SPIBus {
 
 func (p *SPIBus) Close() {
 	p.spiPort.Close()
+
 }
 
 func (p *SPIBus) Send(buffer []byte) {
@@ -258,7 +259,7 @@ const (
 )
 
 const (
-	NumTestLeds    = 400
+	NumTestLeds    = 425
 	TestBufferSize = 3 * NumTestLeds
 )
 
