@@ -18,7 +18,7 @@ import (
 )
 
 var (
-    globAnimCtrl *AnimationController
+	globAnimCtrl *AnimationController
 )
 
 // Fuer Animationen, die endlos wiederholt weren sollen, kann diese Konstante
@@ -135,7 +135,7 @@ type Animator interface {
 }
 
 type AnimationController struct {
-    DrawArea   DrawingArea
+	DrawArea   DrawingArea
 	AnimList   []Animation
 	animMutex  *sync.RWMutex
 	ticker     *time.Ticker
@@ -147,16 +147,16 @@ type AnimationController struct {
 }
 
 func NewAnimationController(refreshRate time.Duration) *AnimationController {
-    if globAnimCtrl != nil {
-        return globAnimCtrl
-    }
+	if globAnimCtrl != nil {
+		return globAnimCtrl
+	}
 	a := &AnimationController{}
 	a.AnimList = make([]Animation, 0)
 	a.animMutex = &sync.RWMutex{}
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = ledgrid.NewStopwatch()
 	a.numThreads = runtime.NumCPU()
-    globAnimCtrl = a
+	globAnimCtrl = a
 	go a.backgroundThread()
 	return a
 }
@@ -176,6 +176,7 @@ func (a *AnimationController) DelAnim(anim Animation) {
 	defer a.animMutex.Unlock()
 	for idx, obj := range a.AnimList {
 		if obj == anim {
+			obj.Stop()
 			a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
 			return
 		}
@@ -185,6 +186,9 @@ func (a *AnimationController) DelAnim(anim Animation) {
 // Loescht alle Animationen.
 func (a *AnimationController) DelAllAnim() {
 	a.animMutex.Lock()
+	for _, obj := range a.AnimList {
+		obj.Stop()
+	}
 	a.AnimList = a.AnimList[:0]
 	a.animMutex.Unlock()
 }
@@ -231,7 +235,7 @@ func (a *AnimationController) backgroundThread() {
 		}
 		a.animWatch.Stop()
 
-        a.DrawArea.Refresh()
+		a.DrawArea.Refresh()
 	}
 	close(doneChan)
 	close(startChan)
@@ -258,7 +262,7 @@ type Animation interface {
 	SetDuration(dur time.Duration)
 	Start()
 	Stop()
-	Continue()
+	// Continue()
 	IsStopped() bool
 	Update(t time.Time) bool
 }
@@ -352,15 +356,15 @@ func (a *Group) Stop() {
 }
 
 // Setzt die Ausfuehrung der Gruppe fort.
-func (a *Group) Continue() {
-	if a.running {
-		return
-	}
-	dt := time.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
+// func (a *Group) Continue() {
+// 	if a.running {
+// 		return
+// 	}
+// 	dt := time.Now().Sub(a.stop)
+// 	a.start = a.start.Add(dt)
+// 	a.end = a.end.Add(dt)
+// 	a.running = true
+// }
 
 // Liefert den Status der Gruppe zurueck.
 func (a *Group) IsStopped() bool {
@@ -411,8 +415,8 @@ func NewSequence(anims ...Animation) *Sequence {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-    	globAnimCtrl.AddAnim(a)
-    return a
+	globAnimCtrl.AddAnim(a)
+	return a
 }
 
 // Fuegt der Sequenz weitere Animationen hinzu.
@@ -446,15 +450,15 @@ func (a *Sequence) Stop() {
 }
 
 // Setzt die Ausfuehrung der Sequenz fort.
-func (a *Sequence) Continue() {
-	if a.running {
-		return
-	}
-	dt := time.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
+// func (a *Sequence) Continue() {
+// 	if a.running {
+// 		return
+// 	}
+// 	dt := time.Now().Sub(a.stop)
+// 	a.start = a.start.Add(dt)
+// 	a.end = a.end.Add(dt)
+// 	a.running = true
+// }
 
 // Liefert den Status der Sequenz zurueck.
 func (a *Sequence) IsStopped() bool {
@@ -569,15 +573,15 @@ func (a *Timeline) Stop() {
 }
 
 // Setzt die Ausfuehrung der Timeline fort.
-func (a *Timeline) Continue() {
-	if a.running {
-		return
-	}
-	dt := time.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
+// func (a *Timeline) Continue() {
+// 	if a.running {
+// 		return
+// 	}
+// 	dt := time.Now().Sub(a.stop)
+// 	a.start = a.start.Add(dt)
+// 	a.end = a.end.Add(dt)
+// 	a.running = true
+// }
 
 // Retourniert den Status der Timeline.
 func (a *Timeline) IsStopped() bool {
@@ -691,15 +695,15 @@ func (a *AnimationEmbed) Stop() {
 }
 
 // Setzt eine mit [Stop] angehaltene Animation wieder fort.
-func (a *AnimationEmbed) Continue() {
-	if a.running {
-		return
-	}
-	dt := time.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
+// func (a *AnimationEmbed) Continue() {
+// 	if a.running {
+// 		return
+// 	}
+// 	dt := time.Now().Sub(a.stop)
+// 	a.start = a.start.Add(dt)
+// 	a.end = a.end.Add(dt)
+// 	a.running = true
+// }
 
 // Liefert true, falls die Animation mittels [Stop] angehalten wurde oder
 // falls die Animation zu Ende ist.
@@ -840,7 +844,6 @@ func (a *PaletteAnimation) Init() {}
 func (a *PaletteAnimation) Tick(t float64) {
 	*a.ValPtr = a.pal.Color(t)
 }
-
 
 // Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
 // werden (geom.Point), ist die Animation einer Groesse und einer Position

@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -43,7 +42,7 @@ var (
 	// Mit oversize wird ein Vergroesserungsfaktor beschrieben, der fuer alle
 	// Zeichenoperationen verwendet wird. Damit wird ein insgesamt weicheres
 	// Bild erzielt.
-	oversize = 10.0
+	oversize = 1.0
 
 	// Ueber die NewXXX-Funktionen koennen die Objekte einfacher erzeugt
 	// werden. Die Fuellfarbe ist gleich der Randfarbe, hat aber einen
@@ -68,13 +67,13 @@ type DrawableObject interface {
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
 type Canvas struct {
-	ObjList               []CanvasObject
-	objMutex              *sync.RWMutex
-	pixCtrl               ledgrid.PixelClient
-	ledGrid               *ledgrid.LedGrid
-	canvas                *image.RGBA
-	gc                    *gg.Context
-	scaler                draw.Scaler
+	ObjList  []CanvasObject
+	objMutex *sync.RWMutex
+	pixCtrl  ledgrid.PixelClient
+	ledGrid  *ledgrid.LedGrid
+	img      *image.RGBA
+	gc       *gg.Context
+	// scaler                draw.Scaler
 	logFile               io.Writer
 	paintWatch, sendWatch *ledgrid.Stopwatch
 }
@@ -85,11 +84,11 @@ func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
 	c := &Canvas{}
 	c.pixCtrl = pixCtrl
 	c.ledGrid = ledGrid
-	c.canvas = image.NewRGBA(image.Rectangle{Max: c.ledGrid.Rect.Max.Mul(int(oversize))})
-	c.gc = gg.NewContextForRGBA(c.canvas)
+	c.img = image.NewRGBA(image.Rectangle{Max: c.ledGrid.Rect.Max.Mul(int(oversize))})
+	c.gc = gg.NewContextForRGBA(c.img)
 	c.ObjList = make([]CanvasObject, 0)
 	c.objMutex = &sync.RWMutex{}
-	c.scaler = draw.CatmullRom.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.canvas.Rect.Dx(), c.canvas.Rect.Dy())
+	// c.scaler = draw.CatmullRom.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.img.Rect.Dx(), c.img.Rect.Dy())
 	if doLog {
 		c.logFile, err = os.Create("canvas.log")
 		if err != nil {
@@ -132,7 +131,8 @@ func (c *Canvas) Refresh() {
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-	c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
+	// c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
+	draw.Draw(c.ledGrid, c.ledGrid.Rect, c.img, image.Point{}, draw.Over)
 	c.paintWatch.Stop()
 
 	c.sendWatch.Start()
@@ -167,7 +167,36 @@ func ApplyAlpha(c ledgrid.LedColor) ledgrid.LedColor {
 // sollen, muessen im Minimum die Methode Draw implementieren, durch welche
 // sie auf einem gg-Kontext gezeichnet werden.
 type CanvasObject interface {
+	Show()
+	Hide()
+	IsVisible() bool
 	Draw(d DrawingArea)
+}
+
+type CanvasObjectEmbed struct {
+	isVisible bool
+	wrapper   CanvasObject
+}
+
+func (c *CanvasObjectEmbed) ExtendCanvasObject(wrapper CanvasObject) {
+	c.isVisible = false
+	c.wrapper = wrapper
+}
+
+func (c *CanvasObjectEmbed) Show() {
+	if !c.isVisible {
+		c.isVisible = true
+	}
+}
+
+func (c *CanvasObjectEmbed) Hide() {
+	if c.isVisible {
+		c.isVisible = false
+	}
+}
+
+func (c *CanvasObjectEmbed) IsVisible() bool {
+	return c.isVisible
 }
 
 // Dient dazu, ein Live-Bild ab einer beliebigen, aber ansprechbaren Kamera
@@ -183,6 +212,7 @@ const (
 )
 
 type CameraV4L struct {
+	CanvasObjectEmbed
 	Pos, Size geom.Point
 	dev       *device.Device
 	img       image.Image
@@ -193,6 +223,7 @@ type CameraV4L struct {
 
 func NewCameraV4L(pos, size geom.Point) *CameraV4L {
 	c := &CameraV4L{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
+	c.CanvasObjectEmbed.ExtendCanvasObject(c)
 	animCtrl.AddAnim(c)
 	return c
 }
@@ -274,10 +305,11 @@ func (c *CameraV4L) Draw(d DrawingArea) {
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.canvas, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
+	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
 }
 
 type CameraCV struct {
+	CanvasObjectEmbed
 	Pos, Size geom.Point
 	dev       *gocv.VideoCapture
 	img       image.Image
@@ -288,7 +320,8 @@ type CameraCV struct {
 
 func NewCameraCV(pos, size geom.Point) *CameraCV {
 	c := &CameraCV{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
-	c.mat = gocv.NewMat()
+	c.CanvasObjectEmbed.ExtendCanvasObject(c)
+	c.mat = gocv.NewMatWithSize(c.cut.Dx(), c.cut.Dy(), gocv.MatTypeCV8UC3)
 	animCtrl.AddAnim(c)
 	return c
 }
@@ -325,6 +358,7 @@ func (c *CameraCV) Stop() {
 		log.Fatalf("failed to close device: %v", err)
 	}
 	c.dev = nil
+	c.img = nil
 	c.running = false
 }
 
@@ -335,32 +369,35 @@ func (c *CameraCV) IsStopped() bool {
 }
 
 func (c *CameraCV) Update(pit time.Time) bool {
-	var err error
-
+	// var err error
 	if !c.dev.Read(&c.mat) {
 		log.Fatal("Device closed")
 	}
-	c.img, err = c.mat.ToImage()
-	if err != nil {
-		log.Fatalf("Couldn't convert image: %v", err)
-	}
+	// log.Printf("OpenCV matrix type: %v", c.mat.Type())
+	// c.img, err = c.mat.ToImage()
+	// if err != nil {
+	// 	log.Fatalf("Couldn't convert image: %v", err)
+	// }
 	return true
 }
 
 func (c *CameraCV) Draw(d DrawingArea) {
+	var err error
 	canv := d.(*Canvas)
-	if c.img == nil {
-		return
+	c.img, err = c.mat.ToImage()
+	if err != nil {
+		log.Fatalf("Couldn't convert image: %v", err)
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.canvas, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
+	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
 }
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
 // Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
 // skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
 type Image struct {
+	CanvasObjectEmbed
 	Pos, Size geom.Point
 	Angle     float64
 	Img       draw.Image
@@ -370,6 +407,7 @@ func NewImageFromFile(pos geom.Point, fileName string) *Image {
 	var tmp image.Image
 
 	i := &Image{Pos: pos, Angle: 0.0}
+	i.CanvasObjectEmbed.ExtendCanvasObject(i)
 	fh, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Couldn't open file: %v", err)
@@ -405,7 +443,7 @@ func (i *Image) Read(fileName string) {
 
 func (i *Image) Draw(d DrawingArea) {
 	c := d.(*Canvas)
-	draw.CatmullRom.Scale(c.canvas, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.Img, i.Img.Bounds(), draw.Over, nil)
+	draw.CatmullRom.Scale(c.img, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.Img, i.Img.Bounds(), draw.Over, nil)
 }
 
 type BlinkenFile struct {
@@ -519,6 +557,7 @@ var (
 )
 
 type Text struct {
+	CanvasObjectEmbed
 	Pos      geom.Point
 	Angle    float64
 	Color    ledgrid.LedColor
@@ -531,6 +570,7 @@ type Text struct {
 func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
 		Text: text}
+	t.CanvasObjectEmbed.ExtendCanvasObject(t)
 	t.fontFace = fonts.NewFace(t.Font, t.FontSize)
 	return t
 }
@@ -553,6 +593,7 @@ func (t *Text) Draw(draw DrawingArea) {
 // BorderWith einen Wert >0 enthalten und FillColor, resp. BorderColor
 // enthalten die Farben fuer Rand und Flaeche.
 type Ellipse struct {
+	CanvasObjectEmbed
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
@@ -567,6 +608,7 @@ type Ellipse struct {
 func NewEllipse(pos, size geom.Point, borderColor ledgrid.LedColor) *Ellipse {
 	e := &Ellipse{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
+	e.CanvasObjectEmbed.ExtendCanvasObject(e)
 	e.FillColor = ledgrid.Transparent
 	return e
 }
@@ -592,6 +634,7 @@ func (e *Ellipse) Draw(draw DrawingArea) {
 // Rectangle ist fuer alle rechteckigen Objekte vorgesehen. Pos bezeichnet
 // den Mittelpunkt des Objektes und Size die Breite, rsep. Hoehe.
 type Rectangle struct {
+	CanvasObjectEmbed
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
@@ -602,6 +645,7 @@ type Rectangle struct {
 func NewRectangle(pos, size geom.Point, borderColor ledgrid.LedColor) *Rectangle {
 	r := &Rectangle{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
+	r.CanvasObjectEmbed.ExtendCanvasObject(r)
 	return r
 }
 
@@ -625,6 +669,7 @@ func (r *Rectangle) Draw(d DrawingArea) {
 
 // Auch gleichmaessige Polygone duerfen nicht fehlen.
 type RegularPolygon struct {
+	CanvasObjectEmbed
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
@@ -636,6 +681,7 @@ type RegularPolygon struct {
 func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor ledgrid.LedColor) *RegularPolygon {
 	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: ConvertLen(1.0),
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha, numPoints: numPoints}
+	p.CanvasObjectEmbed.ExtendCanvasObject(p)
 	return p
 }
 
@@ -655,6 +701,7 @@ func (p *RegularPolygon) Draw(draw DrawingArea) {
 // Fuer Geraden ist dieser Datentyp vorgesehen, der von Pos1 nach Pos2
 // verlaeuft.
 type Line struct {
+	CanvasObjectEmbed
 	Pos1, Pos2 geom.Point
 	Width      float64
 	Color      ledgrid.LedColor
@@ -662,6 +709,7 @@ type Line struct {
 
 func NewLine(pos1, pos2 geom.Point, col ledgrid.LedColor) *Line {
 	l := &Line{Pos1: pos1, Pos2: pos2, Width: ConvertLen(1.0), Color: col}
+	l.CanvasObjectEmbed.ExtendCanvasObject(l)
 	return l
 }
 
@@ -677,18 +725,22 @@ func (l *Line) Draw(draw DrawingArea) {
 // ueber die Zeichenfunktion DrawPoint im gg-Kontext realisiert und hat einen
 // Radius von 0.5*sqrt(2).
 type Pixel struct {
-	Pos   geom.Point
+	CanvasObjectEmbed
+	// Pos   geom.Point
+	Pos   image.Point
 	Color ledgrid.LedColor
 }
 
-func NewPixel(pos geom.Point, col ledgrid.LedColor) *Pixel {
+func NewPixel(pos image.Point, col ledgrid.LedColor) *Pixel {
 	p := &Pixel{Pos: pos, Color: col}
+	p.CanvasObjectEmbed.ExtendCanvasObject(p)
 	return p
 }
 
 func (p *Pixel) Draw(draw DrawingArea) {
 	c := draw.(*Canvas)
-	c.gc.SetFillColor(p.Color)
-	c.gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
-	c.gc.Fill()
+	c.img.Set(p.Pos.X, p.Pos.Y, p.Color)
+	// c.gc.SetFillColor(p.Color)
+	// c.gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
+	// c.gc.Fill()
 }

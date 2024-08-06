@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"golang.org/x/image/math/fixed"
-    "gocv.io/x/gocv"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -29,9 +28,9 @@ const (
 var (
 	width, height int
 	gridSize      image.Point
-	refreshRate        = 30 * time.Millisecond
-	backAlpha          = 1.0
-	animCtrl *AnimationController
+	refreshRate   = 30 * time.Millisecond
+	backAlpha     = 1.0
+	animCtrl      *AnimationController
 )
 
 //----------------------------------------------------------------------------
@@ -353,10 +352,10 @@ func BounceAround(c *Canvas) {
 
 	obj1 := NewBouncingEllipse(pos1, size, colornames.GreenYellow)
 	obj1.Vel = vel1
-	obj1.Field = geom.NewRectangleIMG(c.canvas.Bounds())
+	obj1.Field = geom.NewRectangleIMG(c.img.Bounds())
 	obj2 := NewBouncingEllipse(pos2, size, colornames.LightSeaGreen)
 	obj2.Vel = vel2
-	obj2.Field = geom.NewRectangleIMG(c.canvas.Bounds())
+	obj2.Field = geom.NewRectangleIMG(c.img.Bounds())
 
 	c.Add(obj1, obj2)
 	animCtrl.AddAnim(obj1, obj2)
@@ -365,16 +364,16 @@ func BounceAround(c *Canvas) {
 //----------------------------------------------------------------------------
 
 func Piiiiixels(ctrl *Canvas) {
-	dPosX := ConvertSize(geom.Point{2.0, 0.0})
-	dPosY := ConvertSize(geom.Point{0.0, 2.0})
-	p1Pos1 := ConvertPos(geom.Point{1.0, 1.0})
+	dPosX := image.Point{2, 0}
+	dPosY := image.Point{0, 2}
+	p1Pos1 := image.Point{1, 1}
 
 	aGrp := NewGroup()
 	aGrp.RepeatCount = AnimationRepeatForever
 	for i := range 5 {
 		for j := range 5 {
 			palName := ledgrid.PaletteNames[5*i+j]
-			pos := p1Pos1.Add(dPosX.Mul(float64(j)).Add(dPosY.Mul(float64(i))))
+			pos := p1Pos1.Add(dPosX.Mul(j).Add(dPosY.Mul(i)))
 			pix := NewPixel(pos, colornames.OrangeRed)
 			ctrl.Add(pix)
 
@@ -594,7 +593,7 @@ func GlowingPixels(ctrl *Canvas) {
 
 	for idx, _ := range pixField {
 		x, y := pixCoord(idx)
-		pos := ConvertPos(geom.Point{float64(x), float64(y)})
+		pos := image.Point{x, y}
 		col := colornames.DimGray.Interpolate(colornames.DarkGray, rand.Float64())
 
 		pix := NewPixel(pos, col)
@@ -660,7 +659,7 @@ func MovingText(c *Canvas) {
 
 	t1 := NewText(randPoint(), "BM-18M-S3-BE-Mo-0823", colornames.LightSeaGreen)
 	t2 := NewText(randPoint(), "Mathematik", colornames.YellowGreen)
-    t3 := NewText(randPoint(), "Physik", colornames.OrangeRed)
+	t3 := NewText(randPoint(), "Physik", colornames.OrangeRed)
 	c.Add(t1, t2, t3)
 
 	aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 5*time.Second)
@@ -692,7 +691,7 @@ func MovingText(c *Canvas) {
 	aAngle2.Start()
 	aPos1.Start()
 	aPos2.Start()
-    aPos3.Start()
+	aPos3.Start()
 }
 
 func FlyingImages(c *Canvas) {
@@ -965,15 +964,17 @@ func main() {
 
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 
-    animCtrl = NewAnimationController(refreshRate)
-    animCtrl.Stop()
+	animCtrl = NewAnimationController(refreshRate)
+	animCtrl.Stop()
 
 	canvas := NewCanvas(pixCtrl, ledGrid)
+	fmt.Printf("canvas.Rect: %v\n", canvas.img.Rect)
+	fmt.Printf("ledGrid.Rect: %v\n", ledGrid.Rect)
 	grid := NewGrid(pixCtrl, ledGrid)
 
-    animCtrl.DrawArea = canvas
+	animCtrl.DrawArea = canvas
 
-    fmt.Printf("numThreads in OpenCV: %d\n", gocv.GetNumThreads())
+	// fmt.Printf("numThreads in OpenCV: %d\n", gocv.GetNumThreads())
 
 	if runInteractive {
 		sceneId = -1
