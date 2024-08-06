@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"gocv.io/x/gocv"
+
 	"golang.org/x/image/font"
 
 	"github.com/stefan-muehlebach/gg"
@@ -169,16 +171,18 @@ type CanvasObject interface {
 }
 
 // Dient dazu, ein Live-Bild ab einer beliebigen, aber ansprechbaren Kamera
-// auf dem LED-Grid darzustellen.
+// auf dem LED-Grid darzustellen. Als erstes eine Implementation mit Hilfe
+// der Video4Linux-Umgebung.
 const (
 	camDevName    = "/dev/video0"
+	camDevId      = 0
 	camWidth      = 320
 	camHeight     = 240
 	camFrameRate  = 30
 	camBufferSize = 4
 )
 
-type Camera struct {
+type CameraV4L struct {
 	Pos, Size geom.Point
 	dev       *device.Device
 	img       image.Image
@@ -187,19 +191,19 @@ type Camera struct {
 	running   bool
 }
 
-func NewCamera(pos, size geom.Point) *Camera {
-	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
+func NewCameraV4L(pos, size geom.Point) *CameraV4L {
+	c := &CameraV4L{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
 	animCtrl.AddAnim(c)
 	return c
 }
 
-func (c *Camera) Duration() time.Duration {
+func (c *CameraV4L) Duration() time.Duration {
 	return time.Duration(0)
 }
 
-func (c *Camera) SetDuration(dur time.Duration) {}
+func (c *CameraV4L) SetDuration(dur time.Duration) {}
 
-func (c *Camera) Start() {
+func (c *CameraV4L) Start() {
 	var ctx context.Context
 	var err error
 
@@ -226,7 +230,7 @@ func (c *Camera) Start() {
 	c.running = true
 }
 
-func (c *Camera) Stop() {
+func (c *CameraV4L) Stop() {
 	var err error
 
 	if !c.running {
@@ -240,13 +244,13 @@ func (c *Camera) Stop() {
 	c.running = false
 }
 
-func (c *Camera) Continue() {}
+func (c *CameraV4L) Continue() {}
 
-func (c *Camera) IsStopped() bool {
+func (c *CameraV4L) IsStopped() bool {
 	return !c.running
 }
 
-func (c *Camera) Update(pit time.Time) bool {
+func (c *CameraV4L) Update(pit time.Time) bool {
 	var err error
 	var frame []byte
 	var ok bool
@@ -263,7 +267,87 @@ func (c *Camera) Update(pit time.Time) bool {
 	return true
 }
 
-func (c *Camera) Draw(d DrawingArea) {
+func (c *CameraV4L) Draw(d DrawingArea) {
+	canv := d.(*Canvas)
+	if c.img == nil {
+		return
+	}
+	rect := geom.Rectangle{Max: c.Size}
+	refPt := c.Pos.Sub(c.Size.Div(2.0))
+	draw.CatmullRom.Scale(canv.canvas, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
+}
+
+type CameraCV struct {
+	Pos, Size geom.Point
+	dev       *gocv.VideoCapture
+	img       image.Image
+	cut       image.Rectangle
+	mat       gocv.Mat
+	running   bool
+}
+
+func NewCameraCV(pos, size geom.Point) *CameraCV {
+	c := &CameraCV{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
+	c.mat = gocv.NewMat()
+	animCtrl.AddAnim(c)
+	return c
+}
+
+func (c *CameraCV) Duration() time.Duration {
+	return time.Duration(0)
+}
+
+func (c *CameraCV) SetDuration(dur time.Duration) {}
+
+func (c *CameraCV) Start() {
+	var err error
+
+	if c.running {
+		return
+	}
+	c.dev, err = gocv.VideoCaptureDevice(camDevId)
+	if err != nil {
+		log.Fatalf("Couldn't open device: %v", err)
+	}
+	c.dev.Set(gocv.VideoCaptureFrameWidth, camWidth)
+	c.dev.Set(gocv.VideoCaptureFrameHeight, camHeight)
+	c.running = true
+}
+
+func (c *CameraCV) Stop() {
+	var err error
+
+	if !c.running {
+		return
+	}
+	err = c.dev.Close()
+	if err != nil {
+		log.Fatalf("failed to close device: %v", err)
+	}
+	c.dev = nil
+	c.running = false
+}
+
+func (c *CameraCV) Continue() {}
+
+func (c *CameraCV) IsStopped() bool {
+	return !c.running
+}
+
+func (c *CameraCV) Update(pit time.Time) bool {
+	var err error
+
+	if !c.dev.Read(&c.mat) {
+		log.Fatal("Device closed")
+	}
+	c.img, err = c.mat.ToImage()
+	if err != nil {
+		log.Fatalf("Couldn't convert image: %v", err)
+	}
+	return true
+}
+
+func (c *CameraCV) Draw(d DrawingArea) {
 	canv := d.(*Canvas)
 	if c.img == nil {
 		return

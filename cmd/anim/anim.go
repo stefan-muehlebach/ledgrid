@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"golang.org/x/image/math/fixed"
+    "gocv.io/x/gocv"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -714,11 +715,21 @@ func FlyingImages(c *Canvas) {
 	aSeq.Start()
 }
 
-func CameraTest(c *Canvas) {
+func CameraTestV4L(c *Canvas) {
 	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
 	size := ConvertSize(geom.Point{float64(width), float64(height)})
 
-	cam := NewCamera(pos, size)
+	cam := NewCameraV4L(pos, size)
+	c.Add(cam)
+
+	cam.Start()
+}
+
+func CameraTestCV(c *Canvas) {
+	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
+	size := ConvertSize(geom.Point{float64(width), float64(height)})
+
+	cam := NewCameraCV(pos, size)
 	c.Add(cam)
 
 	cam.Start()
@@ -937,7 +948,8 @@ func main() {
 		{"Glowing Pixels", GlowingPixels},
 		{"Moving Text", MovingText},
 		{"Flying images", FlyingImages},
-		{"Hidden or visible camera", CameraTest},
+		{"Camera via V4L", CameraTestV4L},
+		{"Camera via CV", CameraTestCV},
 		{"Animation from a BlinkenLight file", BlinkenAnimation},
 	}
 
@@ -960,6 +972,8 @@ func main() {
 	grid := NewGrid(pixCtrl, ledGrid)
 
     animCtrl.DrawArea = canvas
+
+    fmt.Printf("numThreads in OpenCV: %d\n", gocv.GetNumThreads())
 
 	if runInteractive {
 		sceneId = -1

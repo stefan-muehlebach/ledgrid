@@ -31,6 +31,11 @@ type Displayer interface {
 	Send(bufffer []byte)
 }
 
+// Um einerseits nicht nur von einer Library zum Ansteuern des SPI-Bus
+// abhaengig zu sein, aber auch um verschiedene SPI-Libraries miteinander zu
+// vergleichen, wird die Verbindung zu den LEDs via SPI mit periph.io und
+// gobot.io realisiert.
+
 type SPIBus struct {
 	spiPort   spi.PortCloser
 	spiConn   spi.Conn
@@ -91,7 +96,7 @@ const (
 )
 
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
-// SPI angeschlossen ist.
+// SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type PixelServer struct {
 	Disp                 Displayer
 	onRaspi              bool
@@ -189,6 +194,7 @@ func NewPixelServer(port uint /*, spiDev string, baud int*/) *PixelServer {
 // Schliesst die diversen Verbindungen.
 func (p *PixelServer) Close() {
 	p.udpConn.Close()
+    p.tcpListener.Close()
 }
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
@@ -202,6 +208,7 @@ func (p *PixelServer) SetGamma(r, g, b float64) {
 	p.updateGammaTable()
 }
 
+// Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
 func (p *PixelServer) MaxBright() (r, g, b uint8) {
 	return p.maxValue[0], p.maxValue[1], p.maxValue[2]
 }

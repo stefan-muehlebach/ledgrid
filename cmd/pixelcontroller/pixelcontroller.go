@@ -52,7 +52,7 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 		}
 	}
 }
-
+gobot.io/x/gobot/platforms/raspi
 func main() {
 	var port uint
 	var baud int
