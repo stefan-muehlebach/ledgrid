@@ -204,7 +204,7 @@ func (a *Animator) coordinator() {
 					scaler.Scale(a.lg, dstRect, fg, srcRect, draw.Over, drawOpts)
 				}
 			}
-			a.client.Draw(a.lg)
+			a.client.Send(a.lg)
 		}
 	}()
 }

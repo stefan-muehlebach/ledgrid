@@ -450,11 +450,12 @@ func (p *PixelServer) RPCMaxBright(arg int, reply *BrightArg) error {
 // - DummyPixelClient
 type PixelClient interface {
 	Close()
-	Draw(lg *LedGrid)
+	Send(lg *LedGrid)
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
 	MaxBright() (r, g, b uint8)
 	SetMaxBright(r, g, b uint8)
+    Watch() (*Stopwatch)
 }
 
 // Falls die Software zur Erzeugung der Bilder auf dem gleichen Node laeuft
@@ -472,6 +473,7 @@ type NetPixelClient struct {
 	addr      *net.UDPAddr
 	conn      *net.UDPConn
 	rpcClient *rpc.Client
+    sendWatch *Stopwatch
 }
 
 func NewNetPixelClient(host string, port uint) PixelClient {
@@ -493,6 +495,7 @@ func NewNetPixelClient(host string, port uint) PixelClient {
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
+    p.sendWatch = NewStopwatch()
 
 	return p
 }
@@ -503,13 +506,15 @@ func (p *NetPixelClient) Close() {
 }
 
 // Sendet die Bilddaten in der LedGrid-Struktur zum Controller.
-func (p *NetPixelClient) Draw(lg *LedGrid) {
+func (p *NetPixelClient) Send(lg *LedGrid) {
 	var err error
 
+    p.sendWatch.Start()
 	_, err = p.conn.Write(lg.Pix)
 	if err != nil {
 		log.Fatal(err)
 	}
+    p.sendWatch.Stop()
 }
 
 func (p *NetPixelClient) Gamma() (r, g, b float64) {
@@ -554,6 +559,10 @@ func (p *NetPixelClient) SetMaxBright(r, g, b uint8) {
 	}
 }
 
+func (p *NetPixelClient) Watch() *Stopwatch {
+    return p.sendWatch
+}
+
 // Mit dieser Implementation des PixelClient-Interfaces kann man ohne Zugriff
 // auf ein reales LED-Grid Software testen.
 type DummyPixelClient struct {
@@ -568,7 +577,7 @@ func (p *DummyPixelClient) Close() {
 
 }
 
-func (p *DummyPixelClient) Draw(lg *LedGrid) {
+func (p *DummyPixelClient) Send(lg *LedGrid) {
 
 }
 
@@ -586,4 +595,8 @@ func (p *DummyPixelClient) MaxBright() (r, g, b uint8) {
 
 func (p *DummyPixelClient) SetMaxBright(r, g, b uint8) {
 
+}
+
+func (p *DummyPixelClient) Watch() *Stopwatch {
+    return nil
 }

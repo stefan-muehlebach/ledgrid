@@ -4,18 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/color"
 	"math"
 	"math/rand/v2"
 	"os"
 	"os/signal"
 	"time"
 
-	"golang.org/x/image/math/fixed"
-
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
+	"golang.org/x/image/math/fixed"
 )
 
 const (
@@ -28,7 +26,6 @@ const (
 var (
 	width, height int
 	gridSize      image.Point
-	refreshRate   = 30 * time.Millisecond
 	backAlpha     = 1.0
 	animCtrl      *AnimationController
 )
@@ -346,9 +343,8 @@ func BounceAround(c *Canvas) {
 	pos1 := ConvertPos(geom.Point{2.0, 2.0})
 	pos2 := ConvertPos(geom.Point{37.0, 7.0})
 	size := ConvertSize(geom.Point{4.0, 4.0})
-	vel1 := geom.Point{1.5, 0.75}
-	vel2 := geom.Point{-3.5, -2.5}
-	// acc := ConvertSize(geom.Point{0, 0.1})
+	vel1 := geom.Point{0.15, 0.075}
+	vel2 := geom.Point{-0.35, -0.25}
 
 	obj1 := NewBouncingEllipse(pos1, size, colornames.GreenYellow)
 	obj1.Vel = vel1
@@ -358,7 +354,7 @@ func BounceAround(c *Canvas) {
 	obj2.Field = geom.NewRectangleIMG(c.img.Bounds())
 
 	c.Add(obj1, obj2)
-	animCtrl.AddAnim(obj1, obj2)
+	animCtrl.Add(obj1, obj2)
 }
 
 //----------------------------------------------------------------------------
@@ -586,61 +582,8 @@ func pixCoord(idx int) (x, y int) {
 	return idx % width, idx / width
 }
 
-func GlowingPixels(ctrl *Canvas) {
-	var pixField []*Pixel
-
-	pixField = make([]*Pixel, width*height)
-
-	for idx, _ := range pixField {
-		x, y := pixCoord(idx)
-		pos := image.Point{x, y}
-		col := colornames.DimGray.Interpolate(colornames.DarkGray, rand.Float64())
-
-		pix := NewPixel(pos, col)
-		pixField[idx] = pix
-		ctrl.Add(pix)
-
-		dur := time.Second + rand.N(400*time.Millisecond)
-		aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
-		aAlpha.AutoReverse = true
-		aAlpha.RepeatCount = AnimationRepeatForever
-		aAlpha.Start()
-	}
-
-	aGrpPurple := NewGroup()
-	aGrpYellow := NewGroup()
-	aGrpGreen := NewGroup()
-
-	for _, pix := range pixField {
-		aColor := NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aGrpPurple.Add(aColor)
-
-		aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aGrpYellow.Add(aColor)
-
-		aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, rand.Float64()), 3*time.Second)
-		aColor.AutoReverse = true
-		aGrpGreen.Add(aColor)
-	}
-
-	aTimel := NewTimeline(40 * time.Second)
-	aTimel.Add(10*time.Second, aGrpPurple)
-	aTimel.Add(20*time.Second, aGrpYellow)
-	aTimel.Add(30*time.Second, aGrpGreen)
-	aTimel.RepeatCount = AnimationRepeatForever
-
-	aTimel.Start()
-}
-
 var (
-	pts = []geom.Point{
-		ConvertPos(geom.Point{0, 0}),
-		ConvertPos(geom.Point{0, float64(height)}),
-		ConvertPos(geom.Point{float64(width), float64(height)}),
-		ConvertPos(geom.Point{float64(width), 0}),
-	}
+	pts     []geom.Point
 	lastIdx = -1
 )
 
@@ -656,10 +599,16 @@ func randPoint() geom.Point {
 }
 
 func MovingText(c *Canvas) {
+	pts = []geom.Point{
+		ConvertPos(geom.Point{0, 0}),
+		ConvertPos(geom.Point{0, float64(height)}),
+		ConvertPos(geom.Point{float64(width), float64(height)}),
+		ConvertPos(geom.Point{float64(width), 0}),
+	}
 
-	t1 := NewText(randPoint(), "BM-18M-S3-BE-Mo-0823", colornames.LightSeaGreen)
+	t1 := NewText(randPoint(), "Mühlebach", colornames.LightSeaGreen)
 	t2 := NewText(randPoint(), "Mathematik", colornames.YellowGreen)
-	t3 := NewText(randPoint(), "Physik", colornames.OrangeRed)
+	t3 := NewText(randPoint(), "Benedict", colornames.OrangeRed)
 	c.Add(t1, t2, t3)
 
 	aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 5*time.Second)
@@ -667,7 +616,7 @@ func MovingText(c *Canvas) {
 	aPos1.RepeatCount = AnimationRepeatForever
 	aPos1.Cont = true
 
-	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 2*time.Second)
+	aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
 	aPos2.ValFunc = randPoint
 	aPos2.RepeatCount = AnimationRepeatForever
 	aPos2.Cont = true
@@ -692,6 +641,25 @@ func MovingText(c *Canvas) {
 	aPos1.Start()
 	aPos2.Start()
 	aPos3.Start()
+}
+
+func BitmapText(c *Canvas) {
+	basePt := fixed.P(0, 5)
+	baseColor1 := colornames.SkyBlue
+
+	txt1 := NewFixedText(basePt, baseColor1.Alpha(0.0), "STEFAN")
+	c.Add(txt1)
+
+	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
+	aTxt1.AutoReverse = true
+	aTxt1.RepeatCount = AnimationRepeatForever
+
+	aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
+	aPos.AutoReverse = true
+	aPos.RepeatCount = AnimationRepeatForever
+
+	aTxt1.Start()
+	aPos.Start()
 }
 
 func FlyingImages(c *Canvas) {
@@ -754,22 +722,22 @@ func BlinkenAnimation(c *Canvas) {
 // Folgende Animationen sind mit dem wesentlich schnelleren aber graphisch
 // etwas eingeschraenkteren Grid-Typ erstellt.
 
-func GlowingGridPixels(g *Grid) {
+func GlowingPixels(c *Canvas) {
 	aGrpPurple := NewGroup()
 	aGrpYellow := NewGroup()
 	aGrpGreen := NewGroup()
 	aGrpGrey := NewGroup()
 
-	for y := range g.ledGrid.Rect.Dy() {
-		for x := range g.ledGrid.Rect.Dx() {
+	for y := range c.rect.Dy() {
+		for x := range c.rect.Dx() {
 			pos := image.Point{x, y}
 			t := rand.Float64()
 			col := (colornames.DimGray.Dark(0.2)).Interpolate((colornames.DarkGrey.Dark(0.2)), t)
-			pix := NewGridPixel(pos, col)
-			g.Add(pix)
+			pix := NewPixel(pos, col)
+			c.Add(pix)
 
 			dur := time.Second + rand.N(time.Second)
-			aAlpha := NewAlphaAnimation(&pix.Color.A, 200, dur)
+			aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
 			aAlpha.AutoReverse = true
 			aAlpha.RepeatCount = AnimationRepeatForever
 			aAlpha.Start()
@@ -780,7 +748,6 @@ func GlowingGridPixels(g *Grid) {
 
 			aColor = NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, t), 5*time.Second)
 			aColor.Cont = true
-			// aColor.AutoReverse = true
 			aGrpPurple.Add(aColor)
 
 			aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, t), 5*time.Second)
@@ -793,16 +760,16 @@ func GlowingGridPixels(g *Grid) {
 		}
 	}
 
-	txt1 := NewGridText(fixed.P(width/2, height/2), colornames.GreenYellow.Alpha(0.0), "REDEN")
+	txt1 := NewFixedText(fixed.P(width/2, height/2), colornames.GreenYellow.Alpha(0.0), "REDEN")
 	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
 	aTxt1.AutoReverse = true
-	txt2 := NewGridText(fixed.P(width/2, height/2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
+	txt2 := NewFixedText(fixed.P(width/2, height/2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
 	aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
 	aTxt2.AutoReverse = true
-	txt3 := NewGridText(fixed.P(width/2, height/2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
+	txt3 := NewFixedText(fixed.P(width/2, height/2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
 	aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
 	aTxt3.AutoReverse = true
-	g.Add(txt1, txt2, txt3)
+	c.Add(txt1, txt2, txt3)
 
 	aTimel := NewTimeline(42 * time.Second)
 	aTimel.Add(7*time.Second, aGrpPurple)
@@ -821,68 +788,68 @@ func GlowingGridPixels(g *Grid) {
 	aTimel.Start()
 }
 
-func RandomGridPixels(g *Grid) {
-	for y := range g.ledGrid.Rect.Dy() {
-		for x := range g.ledGrid.Rect.Dx() {
-			pos := image.Pt(x, y)
-			colorGrp1 := colornames.ColorGroup(x/3) % colornames.NumColorGroups
-			colorGrp2 := (colorGrp1 + 1) % colornames.NumColorGroups
-			col := colornames.RandGroupColor(colorGrp1)
-			pix := NewGridPixel(pos, col)
-			g.Add(pix)
-			dur := time.Second
-			aColor := NewColorAnimation(&pix.Color, colornames.RandGroupColor(colorGrp2), dur)
-			aColor.AutoReverse = true
-			aColor.RepeatCount = AnimationRepeatForever
-			aColor.Start()
-		}
-	}
-}
+// func RandomGridPixels(g *Grid) {
+// 	for y := range g.ledGrid.Rect.Dy() {
+// 		for x := range g.ledGrid.Rect.Dx() {
+// 			pos := image.Pt(x, y)
+// 			colorGrp1 := colornames.ColorGroup(x/3) % colornames.NumColorGroups
+// 			colorGrp2 := (colorGrp1 + 1) % colornames.NumColorGroups
+// 			col := colornames.RandGroupColor(colorGrp1)
+// 			pix := NewGridPixel(pos, col)
+// 			g.Add(pix)
+// 			dur := time.Second
+// 			aColor := NewColorAnimation(&pix.Color, colornames.RandGroupColor(colorGrp2), dur)
+// 			aColor.AutoReverse = true
+// 			aColor.RepeatCount = AnimationRepeatForever
+// 			aColor.Start()
+// 		}
+// 	}
+// }
 
-func TextOnGrid(g *Grid) {
-	basePt := fixed.P(0, 5)
-	baseColor1 := colornames.SkyBlue
+// func TextOnGrid(g *Grid) {
+// 	basePt := fixed.P(0, 5)
+// 	baseColor1 := colornames.SkyBlue
 
-	txt1 := NewGridText(basePt, baseColor1, "STEFAN")
-	g.Add(txt1)
+// 	txt1 := NewGridText(basePt, baseColor1, "STEFAN")
+// 	g.Add(txt1)
 
-	aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
-	aPos.AutoReverse = true
-	aPos.RepeatCount = AnimationRepeatForever
-	aPos.Start()
-}
+// 	aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
+// 	aPos.AutoReverse = true
+// 	aPos.RepeatCount = AnimationRepeatForever
+// 	aPos.Start()
+// }
 
-func WalkingPixelOnGrid(g *Grid) {
-	pos := image.Point{0, 0}
-	col := colornames.GreenYellow
-	pix := NewGridPixel(pos, col)
-	g.Add(pix)
+// func WalkingPixelOnGrid(g *Grid) {
+// 	pos := image.Point{0, 0}
+// 	col := colornames.GreenYellow
+// 	pix := NewGridPixel(pos, col)
+// 	g.Add(pix)
 
-	go func() {
-		idx := 0
-		for {
-			col := idx % width
-			row := idx / width
-			pix.Pos = image.Point{col, row}
-			time.Sleep(time.Second / 5)
-			idx++
-		}
-	}()
-}
+// 	go func() {
+// 		idx := 0
+// 		for {
+// 			col := idx % width
+// 			row := idx / width
+// 			pix.Pos = image.Point{col, row}
+// 			time.Sleep(time.Second / 5)
+// 			idx++
+// 		}
+// 	}()
+// }
 
-func ImagesOnGrid(g *Grid) {
-	pos := image.Point{5, 2}
-	size := image.Point{10, 10}
+// func ImagesOnGrid(g *Grid) {
+// 	pos := image.Point{5, 2}
+// 	size := image.Point{10, 10}
 
-	img := NewGridImage(pos, size)
-	for row := range size.Y {
-		for col := range size.X {
-			img.Img.SetRGBA(col, row, color.RGBA{0x8f, 0x8f, 0x8f, 0xff})
-		}
-	}
+// 	img := NewGridImage(pos, size)
+// 	for row := range size.Y {
+// 		for col := range size.X {
+// 			img.Img.SetRGBA(col, row, color.RGBA{0x8f, 0x8f, 0x8f, 0xff})
+// 		}
+// 	}
 
-	g.Add(img)
-}
+// 	g.Add(img)
+// }
 
 //----------------------------------------------------------------------------
 
@@ -899,11 +866,6 @@ type canvasSceneRecord struct {
 	fnc  func(canvas *Canvas)
 }
 
-type gridSceneRecord struct {
-	name string
-	fnc  func(grid *Grid)
-}
-
 func main() {
 	var host string
 	var port uint
@@ -911,7 +873,7 @@ func main() {
 	var ch byte
 	var sceneId int
 	var runInteractive bool
-	var pixCtrl ledgrid.PixelClient
+	// var pixClient ledgrid.PixelClient
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
@@ -946,42 +908,23 @@ func main() {
 		{"Pushing Rectangles", PushingRectangles},
 		{"Glowing Pixels", GlowingPixels},
 		{"Moving Text", MovingText},
+		{"Bitmap Text", BitmapText},
 		{"Flying images", FlyingImages},
 		{"Camera via V4L", CameraTestV4L},
 		{"Camera via CV", CameraTestCV},
 		{"Animation from a BlinkenLight file", BlinkenAnimation},
 	}
 
-	gridSceneList := []gridSceneRecord{
-		{"Glowing Pixels", GlowingGridPixels},
-		{"Random Pixels", RandomGridPixels},
-		{"Text on a grid", TextOnGrid},
-		{"Walking pixel", WalkingPixelOnGrid},
-		{"Draw images on a grid", ImagesOnGrid},
-	}
-
-	pixCtrl = ledgrid.NewNetPixelClient(host, port)
-
+	canvas := NewCanvas(gridSize)
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
+	pixClient := ledgrid.NewNetPixelClient(host, port)
 
-	animCtrl = NewAnimationController(refreshRate)
-	animCtrl.Stop()
-
-	canvas := NewCanvas(pixCtrl, ledGrid)
-	fmt.Printf("canvas.Rect: %v\n", canvas.img.Rect)
-	fmt.Printf("ledGrid.Rect: %v\n", ledGrid.Rect)
-	grid := NewGrid(pixCtrl, ledGrid)
-
-	animCtrl.DrawArea = canvas
-
-	// fmt.Printf("numThreads in OpenCV: %d\n", gocv.GetNumThreads())
+	animCtrl = NewAnimationController(canvas, ledGrid, pixClient)
 
 	if runInteractive {
 		sceneId = -1
 		for {
 			fmt.Printf("Animations:\n")
-			fmt.Printf("---------------------------------------\n")
-			fmt.Printf("Canvas based\n")
 			fmt.Printf("---------------------------------------\n")
 			for i, scene := range canvasSceneList {
 				if ch >= 'a' && ch <= 'z' && i == sceneId {
@@ -990,17 +933,6 @@ func main() {
 					fmt.Printf("  ")
 				}
 				fmt.Printf("[%c] %s\n", 'a'+i, scene.name)
-			}
-			fmt.Printf("---------------------------------------\n")
-			fmt.Printf("Grid based\n")
-			fmt.Printf("---------------------------------------\n")
-			for i, scene := range gridSceneList {
-				if ch >= 'A' && ch <= 'Z' && i == sceneId {
-					fmt.Printf("> ")
-				} else {
-					fmt.Printf("  ")
-				}
-				fmt.Printf("[%c] %s\n", 'A'+i, scene.name)
 			}
 			fmt.Printf("---------------------------------------\n")
 
@@ -1016,38 +948,17 @@ func main() {
 					continue
 				}
 				animCtrl.Stop()
-				animCtrl.DelAllAnim()
-				animCtrl.DrawArea = canvas
+				animCtrl.Purge()
 				animCtrl.Continue()
-				canvas.DelAll()
+				canvas.Purge()
 				canvasSceneList[sceneId].fnc(canvas)
-			}
-			if ch >= 'A' && ch <= 'Z' {
-				sceneId = int(ch - 'A')
-				if sceneId < 0 || sceneId >= len(gridSceneList) {
-					continue
-				}
-				animCtrl.Stop()
-				animCtrl.DelAllAnim()
-				animCtrl.DrawArea = grid
-				animCtrl.Continue()
-				grid.DelAll()
-				gridSceneList[sceneId].fnc(grid)
 			}
 		}
 	} else {
 		if ch >= 'a' && ch <= 'z' {
 			sceneId = int(ch - 'a')
 			if sceneId >= 0 && sceneId < len(canvasSceneList) {
-				animCtrl.DrawArea = canvas
 				canvasSceneList[sceneId].fnc(canvas)
-			}
-		}
-		if ch >= 'A' && ch <= 'Z' {
-			sceneId = int(ch - 'A')
-			if sceneId >= 0 && sceneId < len(gridSceneList) {
-				animCtrl.DrawArea = grid
-				gridSceneList[sceneId].fnc(grid)
 			}
 		}
 		animCtrl.Continue()
@@ -1057,15 +968,11 @@ func main() {
 
 	animCtrl.Stop()
 	ledGrid.Clear(ledgrid.Black)
-	pixCtrl.Draw(ledGrid)
-	pixCtrl.Close()
+	pixClient.Send(ledGrid)
+	pixClient.Close()
 
 	fmt.Printf("Canvas statistics:\n")
 	fmt.Printf("  animation: %v\n", animCtrl.animWatch)
 	fmt.Printf("  painting : %v\n", canvas.paintWatch)
-	fmt.Printf("  sending  : %v\n", canvas.sendWatch)
-	fmt.Printf("Grid statistics:\n")
-	fmt.Printf("  animation: %v\n", animCtrl.animWatch)
-	fmt.Printf("  painting : %v\n", grid.paintWatch)
-	fmt.Printf("  sending  : %v\n", grid.sendWatch)
+	fmt.Printf("  sending  : %v\n", pixClient.Watch())
 }

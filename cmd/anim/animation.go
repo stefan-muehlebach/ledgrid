@@ -25,6 +25,7 @@ var (
 // fuer die Anzahl Wiederholungen verwendet werden.
 const (
 	AnimationRepeatForever = -1
+	refreshRate            = 30 * time.Millisecond
 )
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
@@ -127,17 +128,19 @@ func RandAlpha(a, b uint8) AlphaFuncType {
 // Dieses Interface ist von allen Typen zu implementieren, welche
 // Animationen ausfuehren sollen/wollen.
 type Animator interface {
-	AddAnim(anims ...Animation)
-	DelAnim(anim Animation)
-	DelAllAnim()
+	Add(anims ...Animation)
+	Del(anim Animation)
+	Purge()
 	Stop()
 	Continue()
 }
 
 type AnimationController struct {
-	DrawArea   DrawingArea
 	AnimList   []Animation
 	animMutex  *sync.RWMutex
+	canvas     *Canvas
+	ledGrid    *ledgrid.LedGrid
+	pixClient  ledgrid.PixelClient
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
@@ -146,13 +149,16 @@ type AnimationController struct {
 	numThreads int
 }
 
-func NewAnimationController(refreshRate time.Duration) *AnimationController {
+func NewAnimationController(canvas *Canvas, ledGrid *ledgrid.LedGrid, pixClient ledgrid.PixelClient) *AnimationController {
 	if globAnimCtrl != nil {
 		return globAnimCtrl
 	}
 	a := &AnimationController{}
 	a.AnimList = make([]Animation, 0)
 	a.animMutex = &sync.RWMutex{}
+	a.canvas = canvas
+	a.ledGrid = ledGrid
+	a.pixClient = pixClient
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = ledgrid.NewStopwatch()
 	a.numThreads = runtime.NumCPU()
@@ -164,14 +170,14 @@ func NewAnimationController(refreshRate time.Duration) *AnimationController {
 // Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
 // wird synchronisiert, da die Bearbeitung der Animationen durch den
 // Background-Thread ebenfalls relativ haeufig auf den Slice zugreift.
-func (a *AnimationController) AddAnim(anims ...Animation) {
+func (a *AnimationController) Add(anims ...Animation) {
 	a.animMutex.Lock()
 	a.AnimList = append(a.AnimList, anims...)
 	a.animMutex.Unlock()
 }
 
 // Loescht eine einzelne Animation.
-func (a *AnimationController) DelAnim(anim Animation) {
+func (a *AnimationController) Del(anim Animation) {
 	a.animMutex.Lock()
 	defer a.animMutex.Unlock()
 	for idx, obj := range a.AnimList {
@@ -184,7 +190,7 @@ func (a *AnimationController) DelAnim(anim Animation) {
 }
 
 // Loescht alle Animationen.
-func (a *AnimationController) DelAllAnim() {
+func (a *AnimationController) Purge() {
 	a.animMutex.Lock()
 	for _, obj := range a.AnimList {
 		obj.Stop()
@@ -235,7 +241,10 @@ func (a *AnimationController) backgroundThread() {
 		}
 		a.animWatch.Stop()
 
-		a.DrawArea.Refresh()
+		a.canvas.Draw(a.ledGrid)
+
+        a.pixClient.Send(a.ledGrid)
+
 	}
 	close(doneChan)
 	close(startChan)
@@ -262,8 +271,8 @@ type Animation interface {
 	SetDuration(dur time.Duration)
 	Start()
 	Stop()
-	// Continue()
 	IsStopped() bool
+	// Continue()
 	Update(t time.Time) bool
 }
 
@@ -318,7 +327,7 @@ func NewGroup(anims ...Animation) *Group {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-	globAnimCtrl.AddAnim(a)
+	globAnimCtrl.Add(a)
 	return a
 }
 
@@ -415,7 +424,7 @@ func NewSequence(anims ...Animation) *Sequence {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-	globAnimCtrl.AddAnim(a)
+	globAnimCtrl.Add(a)
 	return a
 }
 
@@ -524,7 +533,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a.duration = d
 	a.RepeatCount = 0
 	a.posList = make([]*timelinePos, 0)
-	globAnimCtrl.AddAnim(a)
+	globAnimCtrl.Add(a)
 	return a
 }
 
@@ -649,7 +658,7 @@ func (a *AnimationEmbed) ExtendAnimation(wrapper Animation) {
 	a.running = false
 	a.tick = wrapper.(AnimationImpl).Tick
 	a.init = wrapper.(AnimationImpl).Init
-	globAnimCtrl.AddAnim(wrapper)
+	globAnimCtrl.Add(wrapper)
 }
 
 func (a *AnimationEmbed) Duration() time.Duration {
@@ -916,42 +925,42 @@ func float2fix(x float64) fixed.Int26_6 {
 }
 
 // Versuch einer generischen Positions-Animation
-type ScalingNumber interface {
-	int | float64
-}
+// type ScalingNumber interface {
+// 	int | float64
+// }
 
-type Interpolatable interface {
-	Add(Interpolatable) Interpolatable
-}
+// type Interpolatable interface {
+// 	Add(Interpolatable) Interpolatable
+// }
 
-type PosAnim struct {
-	AnimationEmbed
-	Cont       bool
-	ValPtr     *Interpolatable
-	Val1, Val2 Interpolatable
-}
+// type PosAnim struct {
+// 	AnimationEmbed
+// 	Cont       bool
+// 	ValPtr     *Interpolatable
+// 	Val1, Val2 Interpolatable
+// }
 
-func NewPosAnim(valPtr *Interpolatable, val2 Interpolatable, dur time.Duration) *PosAnim {
-	a := &PosAnim{}
-	a.AnimationEmbed.ExtendAnimation(a)
-	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
+// func NewPosAnim(valPtr *Interpolatable, val2 Interpolatable, dur time.Duration) *PosAnim {
+// 	a := &PosAnim{}
+// 	a.AnimationEmbed.ExtendAnimation(a)
+// 	a.SetDuration(dur)
+// 	a.ValPtr = valPtr
+// 	a.Val1 = *valPtr
+// 	a.Val2 = val2
+// 	return a
+// }
 
-func (a *PosAnim) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-}
+// func (a *PosAnim) Init() {
+// 	if a.Cont {
+// 		a.Val1 = *a.ValPtr
+// 	}
+// }
 
-func (a *PosAnim) Tick(t float64) {
-	// u := N(t)
-	// v := N(1.0-t)
-	*a.ValPtr = a.Val1.Add(a.Val2)
-}
+// func (a *PosAnim) Tick(t float64) {
+// 	// u := N(t)
+// 	// v := N(1.0-t)
+// 	*a.ValPtr = a.Val1.Add(a.Val2)
+// }
 
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]

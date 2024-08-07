@@ -18,6 +18,7 @@ import (
 	"gocv.io/x/gocv"
 
 	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/fonts"
@@ -53,42 +54,28 @@ var (
 	doLog = false
 )
 
-type DrawingArea interface {
-	Add(objs ...DrawableObject)
-	DelAll()
-	Refresh()
-}
-
-type DrawableObject interface {
-	Draw(d DrawingArea)
-}
-
 // Ein Canvas ist eine animierbare Zeichenflaeche. Ihr koennen eine beliebige
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
 type Canvas struct {
-	ObjList  []CanvasObject
-	objMutex *sync.RWMutex
-	pixCtrl  ledgrid.PixelClient
-	ledGrid  *ledgrid.LedGrid
-	img      *image.RGBA
-	gc       *gg.Context
-	// scaler                draw.Scaler
-	logFile               io.Writer
-	paintWatch, sendWatch *ledgrid.Stopwatch
+	ObjList    []CanvasObject
+	objMutex   *sync.RWMutex
+	rect       image.Rectangle
+	img        *image.RGBA
+	gc         *gg.Context
+	logFile    io.Writer
+	paintWatch *ledgrid.Stopwatch
 }
 
-func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
+func NewCanvas(size image.Point) *Canvas {
 	var err error
 
 	c := &Canvas{}
-	c.pixCtrl = pixCtrl
-	c.ledGrid = ledGrid
-	c.img = image.NewRGBA(image.Rectangle{Max: c.ledGrid.Rect.Max.Mul(int(oversize))})
+	c.rect = image.Rectangle{Max: size}
+	c.img = image.NewRGBA(c.rect)
 	c.gc = gg.NewContextForRGBA(c.img)
 	c.ObjList = make([]CanvasObject, 0)
 	c.objMutex = &sync.RWMutex{}
-	// c.scaler = draw.CatmullRom.NewScaler(c.ledGrid.Rect.Dx(), c.ledGrid.Rect.Dy(), c.img.Rect.Dx(), c.img.Rect.Dy())
 	if doLog {
 		c.logFile, err = os.Create("canvas.log")
 		if err != nil {
@@ -96,33 +83,29 @@ func NewCanvas(pixCtrl ledgrid.PixelClient, ledGrid *ledgrid.LedGrid) *Canvas {
 		}
 	}
 	c.paintWatch = ledgrid.NewStopwatch()
-	c.sendWatch = ledgrid.NewStopwatch()
 	return c
 }
 
 func (c *Canvas) Close() {
-	c.DelAll()
+	c.Purge()
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
-func (c *Canvas) Add(objs ...DrawableObject) {
+func (c *Canvas) Add(objs ...CanvasObject) {
 	c.objMutex.Lock()
-	for _, tmp := range objs {
-		obj := tmp.(CanvasObject)
-		c.ObjList = append(c.ObjList, obj)
-	}
+	c.ObjList = append(c.ObjList, objs...)
 	c.objMutex.Unlock()
 }
 
 // Loescht alle Objekte von der Zeichenflaeche.
-func (c *Canvas) DelAll() {
+func (c *Canvas) Purge() {
 	c.objMutex.Lock()
 	c.ObjList = c.ObjList[:0]
 	c.objMutex.Unlock()
 }
 
-func (c *Canvas) Refresh() {
+func (c *Canvas) Draw(lg *ledgrid.LedGrid) {
 	c.paintWatch.Start()
 	c.gc.SetFillColor(colornames.Black)
 	c.gc.Clear()
@@ -131,14 +114,15 @@ func (c *Canvas) Refresh() {
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-	// c.scaler.Scale(c.ledGrid, c.ledGrid.Rect, c.canvas, c.canvas.Rect, draw.Over, nil)
-	draw.Draw(c.ledGrid, c.ledGrid.Rect, c.img, image.Point{}, draw.Over)
+	draw.Draw(lg, lg.Rect, c.img, image.Point{}, draw.Over)
 	c.paintWatch.Stop()
-
-	c.sendWatch.Start()
-	c.pixCtrl.Draw(c.ledGrid)
-	c.sendWatch.Stop()
 }
+
+// func (c *Canvas) Refresh() {
+// 	c.sendWatch.Start()
+// 	c.pixCtrl.Draw(c.ledGrid)
+// 	c.sendWatch.Stop()
+// }
 
 // Mit ConvertPos muessen alle Positionsdaten konvertiert werden.
 func ConvertPos(p geom.Point) geom.Point {
@@ -164,44 +148,47 @@ func ApplyAlpha(c ledgrid.LedColor) ledgrid.LedColor {
 }
 
 // Alle Objekte, die durch den Controller auf dem LED-Grid dargestellt werden
-// sollen, muessen im Minimum die Methode Draw implementieren, durch welche
-// sie auf einem gg-Kontext gezeichnet werden.
+// sollen, muessen das CanvasObject-Interface implementieren. Dieses
+// enthaelt einerseits Methoden zum Ein-/Ausblenden von Objekten und
+// andererseits die Methode Draw, mit welcher das CanvasObject auf einer
+// Zeichenflaeche gezeichnet werden kann.
 type CanvasObject interface {
 	Show()
 	Hide()
-	IsVisible() bool
-	Draw(d DrawingArea)
+	IsHidden() bool
+	Draw(c *Canvas)
 }
 
 type CanvasObjectEmbed struct {
-	isVisible bool
-	wrapper   CanvasObject
+	wrapper CanvasObject
+	visible bool
 }
 
 func (c *CanvasObjectEmbed) ExtendCanvasObject(wrapper CanvasObject) {
-	c.isVisible = false
+	c.visible = false
 	c.wrapper = wrapper
 }
 
 func (c *CanvasObjectEmbed) Show() {
-	if !c.isVisible {
-		c.isVisible = true
+	if !c.visible {
+		c.visible = true
 	}
 }
 
 func (c *CanvasObjectEmbed) Hide() {
-	if c.isVisible {
-		c.isVisible = false
+	if c.visible {
+		c.visible = false
 	}
 }
 
-func (c *CanvasObjectEmbed) IsVisible() bool {
-	return c.isVisible
+func (c *CanvasObjectEmbed) IsHidden() bool {
+	return !c.visible
 }
 
 // Dient dazu, ein Live-Bild ab einer beliebigen, aber ansprechbaren Kamera
 // auf dem LED-Grid darzustellen. Als erstes eine Implementation mit Hilfe
-// der Video4Linux-Umgebung.
+// der Video4Linux-Umgebung... nachdem zuerst mal ein paar Konstanten die
+// Konfiguration vereinfachen sollen.
 const (
 	camDevName    = "/dev/video0"
 	camDevId      = 0
@@ -224,7 +211,7 @@ type CameraV4L struct {
 func NewCameraV4L(pos, size geom.Point) *CameraV4L {
 	c := &CameraV4L{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
 	c.CanvasObjectEmbed.ExtendCanvasObject(c)
-	animCtrl.AddAnim(c)
+	animCtrl.Add(c)
 	return c
 }
 
@@ -298,8 +285,7 @@ func (c *CameraV4L) Update(pit time.Time) bool {
 	return true
 }
 
-func (c *CameraV4L) Draw(d DrawingArea) {
-	canv := d.(*Canvas)
+func (c *CameraV4L) Draw(canv *Canvas) {
 	if c.img == nil {
 		return
 	}
@@ -308,6 +294,9 @@ func (c *CameraV4L) Draw(d DrawingArea) {
 	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
 }
 
+// Die zweite Kamera-Umsetzung verwendet OpenCV und kann/wird/sollte spaeter
+// auch dazu verwendet werden, wenn statt der Kamera-Bilder eine Interpretation
+// davon angezeigt werden soll.
 type CameraCV struct {
 	CanvasObjectEmbed
 	Pos, Size geom.Point
@@ -322,7 +311,7 @@ func NewCameraCV(pos, size geom.Point) *CameraCV {
 	c := &CameraCV{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
 	c.CanvasObjectEmbed.ExtendCanvasObject(c)
 	c.mat = gocv.NewMatWithSize(c.cut.Dx(), c.cut.Dy(), gocv.MatTypeCV8UC3)
-	animCtrl.AddAnim(c)
+	animCtrl.Add(c)
 	return c
 }
 
@@ -369,21 +358,14 @@ func (c *CameraCV) IsStopped() bool {
 }
 
 func (c *CameraCV) Update(pit time.Time) bool {
-	// var err error
 	if !c.dev.Read(&c.mat) {
 		log.Fatal("Device closed")
 	}
-	// log.Printf("OpenCV matrix type: %v", c.mat.Type())
-	// c.img, err = c.mat.ToImage()
-	// if err != nil {
-	// 	log.Fatalf("Couldn't convert image: %v", err)
-	// }
 	return true
 }
 
-func (c *CameraCV) Draw(d DrawingArea) {
+func (c *CameraCV) Draw(canv *Canvas) {
 	var err error
-	canv := d.(*Canvas)
 	c.img, err = c.mat.ToImage()
 	if err != nil {
 		log.Fatalf("Couldn't convert image: %v", err)
@@ -441,8 +423,7 @@ func (i *Image) Read(fileName string) {
 	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
 }
 
-func (i *Image) Draw(d DrawingArea) {
-	c := d.(*Canvas)
+func (i *Image) Draw(c *Canvas) {
 	draw.CatmullRom.Scale(c.img, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.Img, i.Img.Bounds(), draw.Over, nil)
 }
 
@@ -575,8 +556,7 @@ func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
 	return t
 }
 
-func (t *Text) Draw(draw DrawingArea) {
-	c := draw.(*Canvas)
+func (t *Text) Draw(c *Canvas) {
 	if t.Angle != 0.0 {
 		c.gc.Push()
 		c.gc.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
@@ -585,6 +565,50 @@ func (t *Text) Draw(draw DrawingArea) {
 	c.gc.SetStrokeColor(t.Color)
 	c.gc.SetFontFace(t.fontFace)
 	c.gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
+}
+
+// Fuer das direkte Zeichnen von Text auf dem LED-Grid, existieren einige
+// 'fixed size' Bitmap-Schriften, die ohne Rastern und Rendern sehr schnell
+// dargestellt werden koennen.
+var (
+	defFixedFontFace = ledgrid.Face3x5
+)
+
+type FixedText struct {
+	CanvasObjectEmbed
+	Pos    fixed.Point26_6
+	Color  ledgrid.LedColor
+	text   string
+	drawer *font.Drawer
+	rect   fixed.Rectangle26_6
+	dp     fixed.Point26_6
+}
+
+func NewFixedText(pos fixed.Point26_6, col ledgrid.LedColor, text string) *FixedText {
+	t := &FixedText{Pos: pos, Color: col}
+	t.CanvasObjectEmbed.ExtendCanvasObject(t)
+	t.drawer = &font.Drawer{
+		Face: defFixedFontFace,
+	}
+	t.SetText(text)
+	return t
+}
+
+func (t *FixedText) Text() string {
+	return t.text
+}
+
+func (t *FixedText) SetText(text string) {
+	t.text = text
+	t.rect, _ = t.drawer.BoundString(text)
+	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
+}
+
+func (t *FixedText) Draw(c *Canvas) {
+	t.drawer.Dst = c.img
+	t.drawer.Src = image.NewUniform(t.Color)
+	t.drawer.Dot = t.Pos.Sub(t.dp)
+	t.drawer.DrawString(t.text)
 }
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
@@ -613,8 +637,7 @@ func NewEllipse(pos, size geom.Point, borderColor ledgrid.LedColor) *Ellipse {
 	return e
 }
 
-func (e *Ellipse) Draw(draw DrawingArea) {
-	c := draw.(*Canvas)
+func (e *Ellipse) Draw(c *Canvas) {
 	if e.Angle != 0.0 {
 		c.gc.Push()
 		c.gc.RotateAbout(e.Angle, e.Pos.X, e.Pos.Y)
@@ -649,8 +672,7 @@ func NewRectangle(pos, size geom.Point, borderColor ledgrid.LedColor) *Rectangle
 	return r
 }
 
-func (r *Rectangle) Draw(d DrawingArea) {
-	c := d.(*Canvas)
+func (r *Rectangle) Draw(c *Canvas) {
 	if r.Angle != 0.0 {
 		c.gc.Push()
 		c.gc.RotateAbout(r.Angle, r.Pos.X, r.Pos.Y)
@@ -685,8 +707,7 @@ func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor ledgrid.
 	return p
 }
 
-func (p *RegularPolygon) Draw(draw DrawingArea) {
-	c := draw.(*Canvas)
+func (p *RegularPolygon) Draw(c *Canvas) {
 	c.gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
 	c.gc.SetStrokeWidth(p.BorderWidth)
 	c.gc.SetStrokeColor(p.BorderColor)
@@ -713,8 +734,7 @@ func NewLine(pos1, pos2 geom.Point, col ledgrid.LedColor) *Line {
 	return l
 }
 
-func (l *Line) Draw(draw DrawingArea) {
-	c := draw.(*Canvas)
+func (l *Line) Draw(c *Canvas) {
 	c.gc.SetStrokeWidth(l.Width)
 	c.gc.SetStrokeColor(l.Color)
 	c.gc.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
@@ -726,7 +746,6 @@ func (l *Line) Draw(draw DrawingArea) {
 // Radius von 0.5*sqrt(2).
 type Pixel struct {
 	CanvasObjectEmbed
-	// Pos   geom.Point
 	Pos   image.Point
 	Color ledgrid.LedColor
 }
@@ -737,10 +756,7 @@ func NewPixel(pos image.Point, col ledgrid.LedColor) *Pixel {
 	return p
 }
 
-func (p *Pixel) Draw(draw DrawingArea) {
-	c := draw.(*Canvas)
-	c.img.Set(p.Pos.X, p.Pos.Y, p.Color)
-	// c.gc.SetFillColor(p.Color)
-	// c.gc.DrawPoint(p.Pos.X, p.Pos.Y, ConvertLen(0.5*math.Sqrt2))
-	// c.gc.Fill()
+func (p *Pixel) Draw(c *Canvas) {
+	bgColor := ledgrid.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(ledgrid.LedColor)
+	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, ledgrid.Blend))
 }

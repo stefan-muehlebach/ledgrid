@@ -29,11 +29,11 @@ var (
 
 var (
 	width              = 40
-	height             = 40
+	height             = 10
 	gridSize           = image.Point{width, height}
 	defLocal           = false
 	defDummy           = false
-	defHost            = "localhost"
+	defHost            = "raspi-3"
 	defPort       uint = 5333
 	defGammaValue      = 3.0
 	blinkenFiles       = []string{

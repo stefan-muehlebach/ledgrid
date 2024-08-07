@@ -1,5 +1,47 @@
 [
   {
+    "ID": 90,
+    "Title": "Plasma",
+    "Colors": [
+    		"F0F921",
+		"FEBC2B",
+		"F48948",
+		"DB5B68",
+		"B93389",
+		"8B09A5",
+		"5402A3",
+		"0F0787"
+    ]
+  },
+  {
+    "ID": 91,
+    "Title": "Magma",
+    "Colors": [
+    		"FCFDBF",
+		"FEBA80",
+		"F8775C",
+		"D3426E",
+		"982D80",
+		"5E177F",
+		"231152",
+		"000004"
+    ]
+  },
+  {
+    "ID": 92,
+    "Title": "Viridis",
+    "Colors": [
+    		"FDE725",
+		"9EDA3A",
+		"4BC26D",
+		"1FA187",
+		"277F8E",
+		"365B8D",
+		"46327F",
+		"440255"
+    ]
+  },
+  {
     "ID": 100,
     "Title": "BlackAndWhite",
     "Stops": [
