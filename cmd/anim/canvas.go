@@ -535,10 +535,3 @@ func (p *Pixel) Draw(c *Canvas) {
 	bgColor := ledgrid.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(ledgrid.LedColor)
 	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, ledgrid.Blend))
 }
-
-type Shader struct {
-    CanvasObjectEmbed
-    Pos, Size image.Point
-    field [][]float64
-    fnc ShaderFuncType
-}
