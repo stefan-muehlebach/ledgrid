@@ -1,15 +1,13 @@
 package main
 
 import (
-	"encoding/xml"
 	"image"
-	"image/color"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"sync"
+
+	"golang.org/x/image/math/f64"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -103,6 +101,9 @@ func (c *Canvas) Draw(lg *ledgrid.LedGrid) {
 	c.gc.Clear()
 	c.objMutex.RLock()
 	for _, obj := range c.ObjList {
+        if obj.IsHidden() {
+            continue
+        }
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
@@ -154,7 +155,7 @@ type CanvasObjectEmbed struct {
 }
 
 func (c *CanvasObjectEmbed) ExtendCanvasObject(wrapper CanvasObject) {
-	c.visible = false
+	c.visible = true
 	c.wrapper = wrapper
 }
 
@@ -180,8 +181,10 @@ func (c *CanvasObjectEmbed) IsHidden() bool {
 // Konfiguration vereinfachen sollen.
 // Die 2 möglichen Implementationen der Kamera sind in separaten Dateien
 // zu finden, welche über Build-Flags aktiviert werden können:
-//     -tags=cameraOpenCV
-//     -tags=cameraV4L2
+//
+//	-tags=cameraOpenCV
+//	-tags=cameraV4L2
+//
 // Die allgemeinen Konstanten sind:
 const (
 	camDevName    = "/dev/video0"
@@ -195,33 +198,7 @@ const (
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
 // Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
 // skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
-type Image struct {
-	CanvasObjectEmbed
-	Pos, Size geom.Point
-	Angle     float64
-	Img       draw.Image
-}
-
-func NewImageFromFile(pos geom.Point, fileName string) *Image {
-	var tmp image.Image
-
-	i := &Image{Pos: pos, Angle: 0.0}
-	i.CanvasObjectEmbed.ExtendCanvasObject(i)
-	fh, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't open file: %v", err)
-	}
-	defer fh.Close()
-	tmp, _, err = image.Decode(fh)
-	if err != nil {
-		log.Fatalf("Couldn't decode image: %v", err)
-	}
-	i.Img = tmp.(draw.Image)
-	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
-	return i
-}
-
-func (i *Image) Read(fileName string) {
+func DecodeImageFile(fileName string) draw.Image {
 	var img image.Image
 
 	fh, err := os.Open(fileName)
@@ -233,7 +210,48 @@ func (i *Image) Read(fileName string) {
 	if err != nil {
 		log.Fatalf("Couldn't decode image: %v", err)
 	}
-	i.Img = img.(draw.Image)
+	return img.(draw.Image)
+}
+
+type Image struct {
+	CanvasObjectEmbed
+	Pos, Size geom.Point
+	Angle     float64
+	Img       draw.Image
+}
+
+func NewImageFromFile(pos geom.Point, fileName string) *Image {
+	i := &Image{Pos: pos, Angle: 0.0}
+	i.CanvasObjectEmbed.ExtendCanvasObject(i)
+	i.Img = DecodeImageFile(fileName)
+	// fh, err := os.Open(fileName)
+	// if err != nil {
+	// 	log.Fatalf("Couldn't open file: %v", err)
+	// }
+	// defer fh.Close()
+	// tmp, _, err = image.Decode(fh)
+	// if err != nil {
+	// 	log.Fatalf("Couldn't decode image: %v", err)
+	// }
+	// i.Img = tmp.(draw.Image)
+	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
+	return i
+}
+
+func (i *Image) Read(fileName string) {
+	// var img image.Image
+
+	i.Img = DecodeImageFile(fileName)
+	// fh, err := os.Open(fileName)
+	// if err != nil {
+	// 	log.Fatalf("Couldn't open file: %v", err)
+	// }
+	// defer fh.Close()
+	// img, _, err = image.Decode(fh)
+	// if err != nil {
+	// 	log.Fatalf("Couldn't decode image: %v", err)
+	// }
+	// i.Img = img.(draw.Image)
 	if i.Size.X > 0 || i.Size.Y > 0 {
 		return
 	}
@@ -241,111 +259,51 @@ func (i *Image) Read(fileName string) {
 }
 
 func (i *Image) Draw(c *Canvas) {
-	draw.CatmullRom.Scale(c.img, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.Img, i.Img.Bounds(), draw.Over, nil)
+	//draw.CatmullRom.Scale(c.img, geom.NewRectangleWH(i.Pos.X, i.Pos.Y, i.Size.X, i.Size.Y).Int(), i.Img, i.Img.Bounds(), draw.Over, nil)
+	sx := i.Size.X / float64(i.Img.Bounds().Dx())
+	sy := i.Size.Y / float64(i.Img.Bounds().Dy())
+	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
+	draw.BiLinear.Transform(c.img, m, i.Img, i.Img.Bounds(), draw.Over, nil)
 }
 
-type BlinkenFile struct {
-	XMLName  xml.Name       `xml:"blm"`
-	Width    int            `xml:"width,attr"`
-	Height   int            `xml:"height,attr"`
-	Bits     int            `xml:"bits,attr"`
-	Channels int            `xml:"channels,attr"`
-	Header   BlinkenHeader  `xml:"header"`
-	Frames   []BlinkenFrame `xml:"frame"`
+// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
+// Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
+// skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
+type ImageList struct {
+	CanvasObjectEmbed
+	Pos, Size geom.Point
+	Angle     float64
+	ImgIdx    int
+	imgs      []draw.Image
+	imgBounds image.Rectangle
 }
 
-type BlinkenHeader struct {
-	XMLName  xml.Name `xml:"header"`
-	Title    string   `xml:"title"`
-	Author   string   `xml:"author"`
-	Email    string   `xml:"email"`
-	Creator  string   `xml:"creator"`
-	Duration int      `xml:"duration,omitempty"`
-}
-
-type BlinkenFrame struct {
-	XMLName  xml.Name  `xml:"frame"`
-	Duration int       `xml:"duration,attr"`
-	Rows     [][]byte  `xml:"row"`
-	Values   [][]uint8 `xml:"-"`
-}
-
-func ReadBlinkenFile(fileName string) *BlinkenFile {
-	b := &BlinkenFile{Channels: 1}
-
-	xmlFile, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't open file '%s': %v", fileName, err)
-	}
-	defer xmlFile.Close()
-
-	byteValue, err := ioutil.ReadAll(xmlFile)
-	if err != nil {
-		log.Fatalf("Couldn't read content of file: %v", err)
-	}
-
-	err = xml.Unmarshal(byteValue, b)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	numberWidth := b.Bits / 4
-	if b.Bits%4 != 0 {
-		numberWidth++
-	}
-	for i, frame := range b.Frames {
-		b.Frames[i].Values = make([][]uint8, b.Height)
-		for j, row := range frame.Rows {
-			b.Frames[i].Values[j] = make([]uint8, b.Width*b.Channels)
-			for k := 0; k < b.Width; k++ {
-				for l := range b.Channels {
-					idx := k*numberWidth*b.Channels + l*numberWidth
-					val := row[idx : idx+numberWidth]
-					v, err := strconv.ParseUint(string(val), 16, b.Bits)
-					if err != nil {
-						log.Fatalf("Cannot parse '%s': %v", string(val), err)
-					}
-					idx = k*b.Channels + l
-					b.Frames[i].Values[j][idx] = uint8(v)
-				}
-			}
-		}
-	}
-	return b
-}
-
-func (b *BlinkenFile) Image(idx int) *Image {
-	var c color.Color
-
-	i := &Image{}
-	i.Img = image.NewRGBA(image.Rect(0, 0, b.Width, b.Height))
-	colorScale := uint8(255 / ((1 << b.Bits) - 1))
-	for row := range b.Height {
-		for col := range b.Width {
-			idxFrom := col * b.Channels
-			idxTo := idxFrom + b.Channels
-			src := b.Frames[idx].Values[row][idxFrom:idxTo:idxTo]
-			switch b.Channels {
-			case 1:
-				v := colorScale * src[0]
-				if v == 0 {
-					c = color.RGBA{0, 0, 0, 0}
-				} else {
-					c = color.RGBA{v, v, v, 0xff}
-				}
-			case 3:
-				r, g, b := colorScale*src[0], colorScale*src[1], colorScale*src[2]
-				if r == 0 && g == 0 && b == 0 {
-					c = color.RGBA{0, 0, 0, 0}
-				} else {
-					c = color.RGBA{r, g, b, 0xff}
-				}
-			}
-			i.Img.Set(col, row, c)
-		}
-	}
-	i.Size = ConvertSize(geom.NewPointIMG(i.Img.Bounds().Size()))
+func NewImageList(pos geom.Point) *ImageList {
+	i := &ImageList{Pos: pos, Angle: 0.0}
+	i.CanvasObjectEmbed.ExtendCanvasObject(i)
+	i.imgs = make([]draw.Image, 0)
+	i.ImgIdx = 0
 	return i
+}
+
+func (i *ImageList) Add(img draw.Image) {
+	i.imgs = append(i.imgs, img)
+	i.imgBounds = img.Bounds()
+	i.Size = geom.NewPointIMG(img.Bounds().Size())
+}
+
+func (i *ImageList) AddBlinkenLight(b *BlinkenFile) {
+	i.imgs = i.imgs[:0]
+	for idx := range b.NumFrames() {
+		i.Add(b.Decode(idx))
+	}
+}
+
+func (i *ImageList) Draw(c *Canvas) {
+	sx := i.Size.X / float64(i.imgBounds.Dx())
+	sy := i.Size.Y / float64(i.imgBounds.Dy())
+	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
+	draw.BiLinear.Transform(c.img, m, i.imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
 }
 
 // Zur Darstellung von beliebigem Text.
@@ -576,4 +534,11 @@ func NewPixel(pos image.Point, col ledgrid.LedColor) *Pixel {
 func (p *Pixel) Draw(c *Canvas) {
 	bgColor := ledgrid.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(ledgrid.LedColor)
 	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, ledgrid.Blend))
+}
+
+type Shader struct {
+    CanvasObjectEmbed
+    Pos, Size image.Point
+    field [][]float64
+    fnc ShaderFuncType
 }

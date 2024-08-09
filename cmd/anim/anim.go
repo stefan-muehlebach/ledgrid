@@ -663,22 +663,35 @@ func BitmapText(c *Canvas) {
 }
 
 func FlyingImages(c *Canvas) {
-	pos1 := ConvertPos(geom.Point{-7.5, 4.5})
-	pos2 := ConvertPos(geom.Point{14.5, 4.5})
+	pos1 := geom.Point{5, 5}
+	pos2 := geom.Point{20, 5}
+	// pos3 := geom.Point{35, 5}
+	size1 := geom.Point{25.32, 4.72}
+	size2 := geom.Point{633.0, 118.0}
+	// size3 := geom.Point{5.0, 5.0}
+
 	i4 := NewImageFromFile(pos1, "images/lorem.png")
-	i4.Size = ConvertSize(geom.Point{16.0, 3.0})
+	i4.Size = size1
 	c.Add(i4)
 
 	aPos1 := NewPositionAnimation(&i4.Pos, pos2, 4*time.Second)
-	aSize1 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{633.0, 118.0}), 4*time.Second)
-	aPos2 := NewPositionAnimation(&i4.Pos, pos2.Add(geom.Point{250.0, 0.0}), 6*time.Second)
+	aPos2 := NewPositionAnimation(&i4.Pos, pos1, 4*time.Second)
 	aPos2.Cont = true
-	aSize2 := NewSizeAnimation(&i4.Size, ConvertSize(geom.Point{16.0, 3.0}), 4*time.Second)
+	// aPos3 := NewPositionAnimation(&i4.Pos, pos1, 4*time.Second)
+	// aPos3.Cont = true
+
+	aSize1 := NewSizeAnimation(&i4.Size, size2, 4*time.Second)
+	aSize2 := NewSizeAnimation(&i4.Size, size1, 4*time.Second)
 	aSize2.Cont = true
-	aPos3 := NewPositionAnimation(&i4.Pos, pos1, 3*time.Second)
-	aPos3.Cont = true
+	// aSize3 := NewSizeAnimation(&i4.Size, size1, 4*time.Second)
+	// aSize3.Cont = true
+
+	// aGrp1 := NewGroup(aPos1, aSize1)
+	// aGrp2 := NewGroup(aPos2, aSize2)
+	// aGrp3 := NewGroup(aPos3, aSize3)
 
 	aSeq := NewSequence(aPos1, aSize1, aPos2, aSize2)
+	aSeq.RepeatCount = AnimationRepeatForever
 	aSeq.Start()
 }
 
@@ -692,30 +705,27 @@ func CameraTest(c *Canvas) {
 	cam.Start()
 }
 
-// func CameraTestCV(c *Canvas) {
-// 	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
-// 	size := ConvertSize(geom.Point{float64(width), float64(height)})
-
-// 	cam := NewCameraCV(pos, size)
-// 	c.Add(cam)
-
-// 	cam.Start()
-// }
-
 func BlinkenAnimation(c *Canvas) {
-	posA := ConvertPos(geom.Point{0.5, 0.5})
-	posB := ConvertPos(geom.Point{5.5, 5.5})
+	posA := geom.Point{20.0, 5.0}
+    // posB := geom.Point{39.0, 5.0}
 
-	bml := ReadBlinkenFile("marioWalkRight.bml")
-	img := bml.Image(0)
-	img.Pos = posA
+	bml := ReadBlinkenFile("blinken/mario.bml")
 
-	aPos := NewPositionAnimation(&img.Pos, posB, 3*time.Second)
-	aPos.AutoReverse = true
-	aPos.RepeatCount = AnimationRepeatForever
+	imgList := NewImageList(posA)
+	imgList.AddBlinkenLight(bml)
+    imgList.Size = geom.Point{10.0, 10.0}
 
-	c.Add(img)
-	aPos.Start()
+    // aPos := NewPositionAnimation(&imgList.Pos, posB, 3*time.Second)
+    // aPos.Curve = AnimationLinear
+
+    aImgList := NewImageAnimation(&imgList.ImgIdx)
+    aImgList.RepeatCount = AnimationRepeatForever
+    aImgList.AddBlinkenLight(bml)
+
+    aGrp := NewGroup(aImgList)
+
+	c.Add(imgList)
+    aGrp.Start()
 }
 
 //-----------------------------------------------------------------------------
@@ -737,7 +747,7 @@ func GlowingPixels(c *Canvas) {
 			c.Add(pix)
 
 			dur := time.Second + rand.N(time.Second)
-			aAlpha := NewAlphaAnimation(&pix.Color.A, 127, dur)
+			aAlpha := NewAlphaAnimation(&pix.Color.A, 148, dur)
 			aAlpha.AutoReverse = true
 			aAlpha.RepeatCount = AnimationRepeatForever
 			aAlpha.Start()
@@ -866,33 +876,8 @@ type canvasSceneRecord struct {
 	fnc  func(canvas *Canvas)
 }
 
-func main() {
-	var host string
-	var port uint
-	var input string
-	var ch byte
-	var sceneId int
-	var runInteractive bool
-	// var pixClient ledgrid.PixelClient
-
-	flag.IntVar(&width, "width", defWidth, "Width of panel")
-	flag.IntVar(&height, "height", defHeight, "Height of panel")
-	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&port, "port", defPort, "Controller port")
-	flag.StringVar(&input, "scene", input, "play one single scene (no menu)")
-	flag.BoolVar(&doLog, "log", doLog, "enable logging")
-	flag.Parse()
-
-	gridSize = image.Point{width, height}
-
-	if len(input) > 0 {
-		runInteractive = false
-		ch = input[0]
-	} else {
-		runInteractive = true
-	}
-
-	canvasSceneList := []canvasSceneRecord{
+var (
+	canvasSceneList = []canvasSceneRecord{
 		{"Group test", GroupTest},
 		{"Sequence test", SequenceTest},
 		{"Timeline test", TimelineTest},
@@ -912,6 +897,38 @@ func main() {
 		{"Flying images", FlyingImages},
 		{"Live Camera stream", CameraTest},
 		{"Animation from a BlinkenLight file", BlinkenAnimation},
+	}
+)
+
+func main() {
+	var host string
+	var port uint
+	var input string
+	var ch byte
+	var sceneId int
+	var runInteractive bool
+	var sceneList string
+
+	for i, sceneRecord := range canvasSceneList {
+		id := 'a' + i
+		sceneList += ("\n" + string(id) + " - " + sceneRecord.name)
+	}
+
+	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.StringVar(&host, "host", defHost, "Controller hostname")
+	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.StringVar(&input, "scene", input, "Play one single scene"+sceneList)
+	flag.BoolVar(&doLog, "log", doLog, "enable logging")
+	flag.Parse()
+
+	gridSize = image.Point{width, height}
+
+	if len(input) > 0 {
+		runInteractive = false
+		ch = input[0]
+	} else {
+		runInteractive = true
 	}
 
 	canvas := NewCanvas(gridSize)

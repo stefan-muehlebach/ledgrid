@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"math/rand/v2"
+	"os"
 	"runtime"
 	"slices"
 	"sync"
@@ -150,6 +152,8 @@ type AnimationController struct {
 }
 
 func NewAnimationController(canvas *Canvas, ledGrid *ledgrid.LedGrid, pixClient ledgrid.PixelClient) *AnimationController {
+	var err error
+
 	if globAnimCtrl != nil {
 		return globAnimCtrl
 	}
@@ -162,6 +166,13 @@ func NewAnimationController(canvas *Canvas, ledGrid *ledgrid.LedGrid, pixClient 
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = ledgrid.NewStopwatch()
 	a.numThreads = runtime.NumCPU()
+	if doLog {
+		a.logFile, err = os.Create("animation.log")
+		if err != nil {
+			log.Fatalf("Couldn't create logfile: %v", err)
+		}
+	}
+
 	globAnimCtrl = a
 	go a.backgroundThread()
 	return a
@@ -255,7 +266,7 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, doneChan ch
 		a.animMutex.RLock()
 		for i := id; i < len(a.AnimList); i += a.numThreads {
 			anim := a.AnimList[i]
-			if anim == nil || anim.IsStopped() {
+			if /* anim == nil || */ anim.IsStopped() {
 				continue
 			}
 			anim.Update(a.animPit)
@@ -638,27 +649,23 @@ type AnimationEmbed struct {
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
 	RepeatCount int
 
-	wrapper          Animation
+	impl             AnimationImpl
 	reverse          bool
 	start, stop, end time.Time
 	total            float64
 	repeatsLeft      int
 	running          bool
-	tick             func(t float64)
-	init             func()
 }
 
 // Muss beim Erstellen einer Animation aufgerufen werden, welche dieses
 // Embeddable einbindet.
-func (a *AnimationEmbed) ExtendAnimation(wrapper Animation) {
+func (a *AnimationEmbed) ExtendAnimation(impl AnimationImpl) {
 	a.AutoReverse = false
 	a.Curve = AnimationEaseInOut
 	a.RepeatCount = 0
-	a.wrapper = wrapper
+	a.impl = impl
 	a.running = false
-	a.tick = wrapper.(AnimationImpl).Tick
-	a.init = wrapper.(AnimationImpl).Init
-	globAnimCtrl.Add(wrapper)
+	globAnimCtrl.Add(a)
 }
 
 func (a *AnimationEmbed) Duration() time.Duration {
@@ -689,7 +696,7 @@ func (a *AnimationEmbed) Start() {
 	a.repeatsLeft = a.RepeatCount
 	a.reverse = false
 	a.running = true
-	a.init()
+	a.impl.Init()
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
@@ -726,14 +733,14 @@ func (a *AnimationEmbed) IsStopped() bool {
 func (a *AnimationEmbed) Update(t time.Time) bool {
 	if t.After(a.end) {
 		if a.reverse {
-			a.tick(a.Curve(0.0))
+			a.impl.Tick(a.Curve(0.0))
 			if a.repeatsLeft == 0 {
 				a.running = false
 				return false
 			}
 			a.reverse = false
 		} else {
-			a.tick(a.Curve(1.0))
+			a.impl.Tick(a.Curve(1.0))
 			if a.AutoReverse {
 				a.reverse = true
 			}
@@ -749,16 +756,16 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 		}
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
-		a.init()
+		a.impl.Init()
 		return true
 	}
 
 	delta := t.Sub(a.start).Seconds()
 	val := delta / a.total
 	if a.reverse {
-		a.tick(a.Curve(1.0 - val))
+		a.impl.Tick(a.Curve(1.0 - val))
 	} else {
-		a.tick(a.Curve(val))
+		a.impl.Tick(a.Curve(val))
 	}
 	return true
 }
@@ -1141,31 +1148,46 @@ func float2fix(x float64) fixed.Int26_6 {
 	return fixed.Int26_6(math.Round(x * 64))
 }
 
-// Animation von BlinkenLight Videos.
+// Animation welche auch für die Animation von BlinkenLight-Videos verwendet
+// werden kann.
 type ImageAnimation struct {
 	AnimationEmbed
-	Cont       bool
-	ValPtr     *int
-	Val1, Val2 int
+	Cont   bool
+	ValPtr *int
+	tsList []time.Duration
 }
 
-func NewImageAnimation(valPtr *int, val2 int, dur time.Duration) *ImageAnimation {
+func NewImageAnimation(valPtr *int) *ImageAnimation {
 	a := &ImageAnimation{}
 	a.AnimationEmbed.ExtendAnimation(a)
-	//a.SetDuration(dur)
+	a.Curve = AnimationLinear
 	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
 	return a
 }
 
-func (a *ImageAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
+func (a *ImageAnimation) Add(dt time.Duration) {
+	a.duration += dt
+	a.tsList = append(a.tsList, a.duration)
+}
+
+func (a *ImageAnimation) AddBlinkenLight(b *BlinkenFile) {
+	for idx := range b.NumFrames() {
+		a.Add(b.Duration(idx))
 	}
 }
 
-func (a *ImageAnimation) Tick(t float64) {
-	*a.ValPtr = int((1.0 - t)*float64(a.Val1) + t*float64(a.Val2))
+func (a *ImageAnimation) Init() {
+	*a.ValPtr = 0
 }
 
+func (a *ImageAnimation) Tick(t float64) {
+	var idx int
+
+	ts := time.Duration(t * float64(a.duration))
+	for idx = 0; idx < len(a.tsList); idx++ {
+		if a.tsList[idx] >= ts {
+			break
+		}
+	}
+	*a.ValPtr = idx
+}
