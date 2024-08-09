@@ -1,21 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"encoding/xml"
 	"image"
 	"image/color"
-	"image/jpeg"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"sync"
-	"time"
-
-	"gocv.io/x/gocv"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -25,8 +19,6 @@ import (
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colornames"
-	"github.com/vladimirvivien/go4vl/device"
-	"github.com/vladimirvivien/go4vl/v4l2"
 	"golang.org/x/image/draw"
 )
 
@@ -118,12 +110,6 @@ func (c *Canvas) Draw(lg *ledgrid.LedGrid) {
 	c.paintWatch.Stop()
 }
 
-// func (c *Canvas) Refresh() {
-// 	c.sendWatch.Start()
-// 	c.pixCtrl.Draw(c.ledGrid)
-// 	c.sendWatch.Stop()
-// }
-
 // Mit ConvertPos muessen alle Positionsdaten konvertiert werden.
 func ConvertPos(p geom.Point) geom.Point {
 	return p.Add(displ).Mul(oversize)
@@ -159,6 +145,9 @@ type CanvasObject interface {
 	Draw(c *Canvas)
 }
 
+// Wie bei den Animationen gibt es für die darstellbaren Objekte (CanvasObject)
+// ein entsprechendes Embedable, welche die für die meisten Objekte
+// brauchbaren Methoden enthält.
 type CanvasObjectEmbed struct {
 	wrapper CanvasObject
 	visible bool
@@ -189,6 +178,11 @@ func (c *CanvasObjectEmbed) IsHidden() bool {
 // auf dem LED-Grid darzustellen. Als erstes eine Implementation mit Hilfe
 // der Video4Linux-Umgebung... nachdem zuerst mal ein paar Konstanten die
 // Konfiguration vereinfachen sollen.
+// Die 2 möglichen Implementationen der Kamera sind in separaten Dateien
+// zu finden, welche über Build-Flags aktiviert werden können:
+//     -tags=cameraOpenCV
+//     -tags=cameraV4L2
+// Die allgemeinen Konstanten sind:
 const (
 	camDevName    = "/dev/video0"
 	camDevId      = 0
@@ -197,183 +191,6 @@ const (
 	camFrameRate  = 30
 	camBufferSize = 4
 )
-
-type CameraV4L struct {
-	CanvasObjectEmbed
-	Pos, Size geom.Point
-	dev       *device.Device
-	img       image.Image
-	cut       image.Rectangle
-	cancel    context.CancelFunc
-	running   bool
-}
-
-func NewCameraV4L(pos, size geom.Point) *CameraV4L {
-	c := &CameraV4L{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
-	c.CanvasObjectEmbed.ExtendCanvasObject(c)
-	animCtrl.Add(c)
-	return c
-}
-
-func (c *CameraV4L) Duration() time.Duration {
-	return time.Duration(0)
-}
-
-func (c *CameraV4L) SetDuration(dur time.Duration) {}
-
-func (c *CameraV4L) Start() {
-	var ctx context.Context
-	var err error
-
-	if c.running {
-		return
-	}
-	c.dev, err = device.Open(camDevName,
-		device.WithIOType(v4l2.IOTypeMMAP),
-		device.WithPixFormat(v4l2.PixFormat{
-			PixelFormat: v4l2.PixelFmtMJPEG,
-			Width:       camWidth,
-			Height:      camHeight,
-		}),
-		device.WithFPS(camFrameRate),
-		device.WithBufferSize(camBufferSize),
-	)
-	if err != nil {
-		log.Fatalf("failed to open device: %v", err)
-	}
-	ctx, c.cancel = context.WithCancel(context.TODO())
-	if err = c.dev.Start(ctx); err != nil {
-		log.Fatalf("failed to start stream: %v", err)
-	}
-	c.running = true
-}
-
-func (c *CameraV4L) Stop() {
-	var err error
-
-	if !c.running {
-		return
-	}
-	c.cancel()
-	if err = c.dev.Close(); err != nil {
-		log.Fatalf("failed to close device: %v", err)
-	}
-	c.dev = nil
-	c.running = false
-}
-
-func (c *CameraV4L) Continue() {}
-
-func (c *CameraV4L) IsStopped() bool {
-	return !c.running
-}
-
-func (c *CameraV4L) Update(pit time.Time) bool {
-	var err error
-	var frame []byte
-	var ok bool
-
-	if frame, ok = <-c.dev.GetOutput(); !ok {
-		log.Printf("no frame to process")
-		return true
-	}
-	reader := bytes.NewReader(frame)
-	c.img, err = jpeg.Decode(reader)
-	if err != nil {
-		log.Fatalf("failed to decode data: %v", err)
-	}
-	return true
-}
-
-func (c *CameraV4L) Draw(canv *Canvas) {
-	if c.img == nil {
-		return
-	}
-	rect := geom.Rectangle{Max: c.Size}
-	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
-}
-
-// Die zweite Kamera-Umsetzung verwendet OpenCV und kann/wird/sollte spaeter
-// auch dazu verwendet werden, wenn statt der Kamera-Bilder eine Interpretation
-// davon angezeigt werden soll.
-type CameraCV struct {
-	CanvasObjectEmbed
-	Pos, Size geom.Point
-	dev       *gocv.VideoCapture
-	img       image.Image
-	cut       image.Rectangle
-	mat       gocv.Mat
-	running   bool
-}
-
-func NewCameraCV(pos, size geom.Point) *CameraCV {
-	c := &CameraCV{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
-	c.CanvasObjectEmbed.ExtendCanvasObject(c)
-	c.mat = gocv.NewMatWithSize(c.cut.Dx(), c.cut.Dy(), gocv.MatTypeCV8UC3)
-	animCtrl.Add(c)
-	return c
-}
-
-func (c *CameraCV) Duration() time.Duration {
-	return time.Duration(0)
-}
-
-func (c *CameraCV) SetDuration(dur time.Duration) {}
-
-func (c *CameraCV) Start() {
-	var err error
-
-	if c.running {
-		return
-	}
-	c.dev, err = gocv.VideoCaptureDevice(camDevId)
-	if err != nil {
-		log.Fatalf("Couldn't open device: %v", err)
-	}
-	c.dev.Set(gocv.VideoCaptureFrameWidth, camWidth)
-	c.dev.Set(gocv.VideoCaptureFrameHeight, camHeight)
-	c.running = true
-}
-
-func (c *CameraCV) Stop() {
-	var err error
-
-	if !c.running {
-		return
-	}
-	err = c.dev.Close()
-	if err != nil {
-		log.Fatalf("failed to close device: %v", err)
-	}
-	c.dev = nil
-	c.img = nil
-	c.running = false
-}
-
-func (c *CameraCV) Continue() {}
-
-func (c *CameraCV) IsStopped() bool {
-	return !c.running
-}
-
-func (c *CameraCV) Update(pit time.Time) bool {
-	if !c.dev.Read(&c.mat) {
-		log.Fatal("Device closed")
-	}
-	return true
-}
-
-func (c *CameraCV) Draw(canv *Canvas) {
-	var err error
-	c.img, err = c.mat.ToImage()
-	if err != nil {
-		log.Fatalf("Couldn't convert image: %v", err)
-	}
-	rect := geom.Rectangle{Max: c.Size}
-	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
-}
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
 // Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos

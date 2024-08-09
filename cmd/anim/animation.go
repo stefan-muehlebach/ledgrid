@@ -243,7 +243,7 @@ func (a *AnimationController) backgroundThread() {
 
 		a.canvas.Draw(a.ledGrid)
 
-        a.pixClient.Send(a.ledGrid)
+		a.pixClient.Send(a.ledGrid)
 
 	}
 	close(doneChan)
@@ -891,77 +891,6 @@ func (a *FloatAnimation) Tick(t float64) {
 	*a.ValPtr = (1-t)*a.Val1 + t*a.Val2
 }
 
-// Animation fuer eine Positionsveraenderung mit Hilfe des fixed Datentyps
-// Point26_6.
-type FixedPosAnimation struct {
-	AnimationEmbed
-	Cont       bool
-	ValPtr     *fixed.Point26_6
-	Val1, Val2 fixed.Point26_6
-}
-
-func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
-	a := &FixedPosAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
-	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
-
-func (a *FixedPosAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-}
-
-func (a *FixedPosAnimation) Tick(t float64) {
-	*a.ValPtr = a.Val1.Mul(float2fix(1.0 - t)).Add(a.Val2.Mul(float2fix(t)))
-}
-
-func float2fix(x float64) fixed.Int26_6 {
-	return fixed.Int26_6(math.Round(x * 64))
-}
-
-// Versuch einer generischen Positions-Animation
-// type ScalingNumber interface {
-// 	int | float64
-// }
-
-// type Interpolatable interface {
-// 	Add(Interpolatable) Interpolatable
-// }
-
-// type PosAnim struct {
-// 	AnimationEmbed
-// 	Cont       bool
-// 	ValPtr     *Interpolatable
-// 	Val1, Val2 Interpolatable
-// }
-
-// func NewPosAnim(valPtr *Interpolatable, val2 Interpolatable, dur time.Duration) *PosAnim {
-// 	a := &PosAnim{}
-// 	a.AnimationEmbed.ExtendAnimation(a)
-// 	a.SetDuration(dur)
-// 	a.ValPtr = valPtr
-// 	a.Val1 = *valPtr
-// 	a.Val2 = val2
-// 	return a
-// }
-
-// func (a *PosAnim) Init() {
-// 	if a.Cont {
-// 		a.Val1 = *a.ValPtr
-// 	}
-// }
-
-// func (a *PosAnim) Tick(t float64) {
-// 	// u := N(t)
-// 	// v := N(1.0-t)
-// 	*a.ValPtr = a.Val1.Add(a.Val2)
-// }
-
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnimation struct {
@@ -1090,6 +1019,11 @@ func (p *PolygonPath) RelPoint(t float64) geom.Point {
 	return p.stopList[len(p.stopList)-1].pos
 }
 
+// Im Folgenden sind einige Pfad-generierende Funktionen zusammengestellt, die
+// als Parameter [pathFunc] bei NewPathAnimation verwendet werden können.
+// Eigene Pfad-Funktionen sind ebenfalls möglich, die Bedingungen an eine
+// solche Funktion sind beim Funktionstyp [PathFunctionType] beschrieben.
+
 // Die PathFunctionType muss folgende Bedingungen erfuellen:
 //  1. t ist in [0,1]
 //  2. f(0) = (0,0)
@@ -1172,3 +1106,66 @@ func QuarterCirclePathB(t float64) geom.Point {
 	phi := t * math.Pi / 2.0
 	return geom.Point{1.0 - math.Cos(phi), math.Sin(phi)}
 }
+
+// Animation fuer eine Positionsveraenderung anhand des Fixed-Datentyps
+// [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
+// Schriften verwendet.
+type FixedPosAnimation struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *fixed.Point26_6
+	Val1, Val2 fixed.Point26_6
+}
+
+func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
+	a := &FixedPosAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *FixedPosAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+}
+
+func (a *FixedPosAnimation) Tick(t float64) {
+	*a.ValPtr = a.Val1.Mul(float2fix(1.0 - t)).Add(a.Val2.Mul(float2fix(t)))
+}
+
+func float2fix(x float64) fixed.Int26_6 {
+	return fixed.Int26_6(math.Round(x * 64))
+}
+
+// Animation von BlinkenLight Videos.
+type ImageAnimation struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *int
+	Val1, Val2 int
+}
+
+func NewImageAnimation(valPtr *int, val2 int, dur time.Duration) *ImageAnimation {
+	a := &ImageAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	//a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *ImageAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+}
+
+func (a *ImageAnimation) Tick(t float64) {
+	*a.ValPtr = int((1.0 - t)*float64(a.Val1) + t*float64(a.Val2))
+}
+

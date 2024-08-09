@@ -4,7 +4,7 @@
 		<creator>Blimp (version 1.5.0)</creator>
 		<title>Walking Mario</title>
 		<author>Stefan Mühlebach</author>
-		<description>A 36x36 pixel Mario walking to the right</description>
+		<description>A 23x34 pixel Mario walking to the right</description>
 	</header>
 
 	<frame duration="100">

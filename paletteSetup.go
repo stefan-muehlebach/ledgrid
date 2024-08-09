@@ -108,6 +108,7 @@ func ReadNamedColors() {
 }
 
 func init() {
+    ReadJsonPalette("gnuPalettes.json")
 	ReadJsonPalette("palettes.json")
 	ReadJsonPalette("colourlovers.json")
 	ReadNamedColors()

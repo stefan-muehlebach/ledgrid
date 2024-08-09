@@ -682,25 +682,25 @@ func FlyingImages(c *Canvas) {
 	aSeq.Start()
 }
 
-func CameraTestV4L(c *Canvas) {
+func CameraTest(c *Canvas) {
 	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
 	size := ConvertSize(geom.Point{float64(width), float64(height)})
 
-	cam := NewCameraV4L(pos, size)
+	cam := NewCamera(pos, size)
 	c.Add(cam)
 
 	cam.Start()
 }
 
-func CameraTestCV(c *Canvas) {
-	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
-	size := ConvertSize(geom.Point{float64(width), float64(height)})
+// func CameraTestCV(c *Canvas) {
+// 	pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
+// 	size := ConvertSize(geom.Point{float64(width), float64(height)})
 
-	cam := NewCameraCV(pos, size)
-	c.Add(cam)
+// 	cam := NewCameraCV(pos, size)
+// 	c.Add(cam)
 
-	cam.Start()
-}
+// 	cam.Start()
+// }
 
 func BlinkenAnimation(c *Canvas) {
 	posA := ConvertPos(geom.Point{0.5, 0.5})
@@ -760,13 +760,13 @@ func GlowingPixels(c *Canvas) {
 		}
 	}
 
-	txt1 := NewFixedText(fixed.P(width/2, height/2), colornames.GreenYellow.Alpha(0.0), "REDEN")
+	txt1 := NewFixedText(fixed.P(width/2, height/2), colornames.GreenYellow.Alpha(0.0), "LORENZ")
 	aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
 	aTxt1.AutoReverse = true
-	txt2 := NewFixedText(fixed.P(width/2, height/2), colornames.DarkViolet.Alpha(0.0), "DENKEN")
+	txt2 := NewFixedText(fixed.P(width/2, height/2), colornames.DarkViolet.Alpha(0.0), "SIMON")
 	aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
 	aTxt2.AutoReverse = true
-	txt3 := NewFixedText(fixed.P(width/2, height/2), colornames.OrangeRed.Alpha(0.0), "LACHEN")
+	txt3 := NewFixedText(fixed.P(width/2, height/2), colornames.OrangeRed.Alpha(0.0), "REBEKKA")
 	aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
 	aTxt3.AutoReverse = true
 	c.Add(txt1, txt2, txt3)
@@ -910,8 +910,7 @@ func main() {
 		{"Moving Text", MovingText},
 		{"Bitmap Text", BitmapText},
 		{"Flying images", FlyingImages},
-		{"Camera via V4L", CameraTestV4L},
-		{"Camera via CV", CameraTestCV},
+		{"Live Camera stream", CameraTest},
 		{"Animation from a BlinkenLight file", BlinkenAnimation},
 	}
 

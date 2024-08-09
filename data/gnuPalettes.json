@@ -1,0 +1,688 @@
+[
+  {
+    "ID": 90,
+    "Title": "brbg",
+    "Colors": [
+        "01665E",
+        "35978F",
+        "80CDC1",
+        "C7EAE5",
+        "F6E8C3",
+        "DFC27D",
+        "BF812D",
+        "8C510A"
+    ]
+  },
+  {
+    "ID": 91,
+    "Title": "prgn",
+    "Colors": [
+        "1B7837",
+        "5AAE61",
+        "A6DBA0",
+        "D9F0D3",
+        "E7D4E8",
+        "C2A5CF",
+        "9970AB",
+        "762A83"
+    ]
+  },
+  {
+    "ID": 92,
+    "Title": "piyg",
+    "Colors": [
+        "4D9221",
+        "7FBC41",
+        "B8E186",
+        "E6F5D0",
+        "FDE0EF",
+        "F1B6DA",
+        "DE77AE",
+        "C51B7D"
+    ]
+  },
+  {
+    "ID": 93,
+    "Title": "puor",
+    "Colors": [
+        "542788",
+        "8073AC",
+        "B2ABD2",
+        "D8DAEB",
+        "FEE0B6",
+        "FDB863",
+        "E08214",
+        "B35806"
+    ]
+  },
+  {
+    "ID": 94,
+    "Title": "rdbu",
+    "Colors": [
+        "2166AC",
+        "4393C3",
+        "92C5DE",
+        "D1E5F0",
+        "FDDBC7",
+        "F4A582",
+        "D6604D",
+        "B2182B"
+    ]
+  },
+  {
+    "ID": 95,
+    "Title": "rdgy",
+    "Colors": [
+        "4D4D4D",
+        "878787",
+        "BABABA",
+        "E0E0E0",
+        "FDDBC7",
+        "F4A582",
+        "D6604D",
+        "B2182B"
+    ]
+  },
+  {
+    "ID": 96,
+    "Title": "rdylbu",
+    "Colors": [
+        "4575B4",
+        "74ADD1",
+        "ABD9E9",
+        "E0F3F8",
+        "FEE090",
+        "FDAE61",
+        "F46D43",
+        "D73027"
+    ]
+  },
+  {
+    "ID": 97,
+    "Title": "rdylgn",
+    "Colors": [
+        "1A9850",
+        "66BD63",
+        "A6D96A",
+        "D9EF8B",
+        "FEE08B",
+        "FDAE61",
+        "F46D43",
+        "D73027"
+    ]
+  },
+  {
+    "ID": 98,
+    "Title": "spectral",
+    "Colors": [
+        "3288BD",
+        "66C2A5",
+        "ABDDA4",
+        "E6F598",
+        "FEE08B",
+        "FDAE61",
+        "F46D43",
+        "D53E4F"
+    ]
+  },
+  {
+    "ID": 99,
+    "Title": "accent",
+    "Colors": [
+        "666666",
+        "BF5B17",
+        "F0027F",
+        "386CB0",
+        "FFFF99",
+        "FDC086",
+        "BEAED4",
+        "7FC97F"
+    ]
+  },
+  {
+    "ID": 100,
+    "Title": "dark2",
+    "Colors": [
+        "666666",
+        "A6761D",
+        "E6AB02",
+        "66A61E",
+        "E7298A",
+        "7570B3",
+        "D95F02",
+        "1B9E77"
+    ]
+  },
+  {
+    "ID": 101,
+    "Title": "paired",
+    "Colors": [
+        "FF7F00",
+        "FDBF6F",
+        "E31A1C",
+        "FB9A99",
+        "33A02C",
+        "B2DF8A",
+        "1F78B4",
+        "A6CEE3"
+    ]
+  },
+  {
+    "ID": 102,
+    "Title": "pastel1",
+    "Colors": [
+        "FDDAEC",
+        "E5D8BD",
+        "FFFFCC",
+        "FED9A6",
+        "DECBE4",
+        "CCEBC5",
+        "B3CDE3",
+        "FBB4AE"
+    ]
+  },
+  {
+    "ID": 103,
+    "Title": "pastel2",
+    "Colors": [
+        "CCCCCC",
+        "F1E2CC",
+        "FFF2AE",
+        "D6F5C9",
+        "F4CAE4",
+        "CDB5E8",
+        "FDCDAC",
+        "B3E2CD"
+    ]
+  },
+  {
+    "ID": 104,
+    "Title": "set1",
+    "Colors": [
+        "F781BF",
+        "A65628",
+        "FFFF33",
+        "FF7F00",
+        "984EA3",
+        "4DAF4A",
+        "377EB8",
+        "E41A1C"
+    ]
+  },
+  {
+    "ID": 105,
+    "Title": "set2",
+    "Colors": [
+        "B3B3B3",
+        "E5C494",
+        "FFD92F",
+        "A6D854",
+        "E78AC3",
+        "8DA0CB",
+        "FC8D62",
+        "66C2A5"
+    ]
+  },
+  {
+    "ID": 106,
+    "Title": "set3",
+    "Colors": [
+        "FCCDE5",
+        "B3DE69",
+        "FDB462",
+        "80B1D3",
+        "FB8072",
+        "BEBADA",
+        "FFFFB3",
+        "8DD3C7"
+    ]
+  },
+  {
+    "ID": 107,
+    "Title": "blues",
+    "Colors": [
+        "084594",
+        "2171B5",
+        "4292C6",
+        "6BAED6",
+        "9ECAE1",
+        "C6DBEF",
+        "DEEBF7",
+        "F7FBFF"
+    ]
+  },
+  {
+    "ID": 108,
+    "Title": "bugn",
+    "Colors": [
+        "005824",
+        "238B45",
+        "41AE76",
+        "66C2A4",
+        "99D8C9",
+        "CCECE6",
+        "E5F5F9",
+        "F7FCFD"
+    ]
+  },
+  {
+    "ID": 109,
+    "Title": " bupu",
+    "Colors": [
+        "6E016B",
+        "88419D",
+        "8C6BB1",
+        "8C96C6",
+        "9EBCDA",
+        "BFD3E6",
+        "E0ECF4",
+        "F7FCFD"
+    ]
+  },
+  {
+    "ID": 110,
+    "Title": "gnpu",
+    "Colors": [
+        "08589E",
+        "2B8CBE",
+        "4EB3D3",
+        "7BCCC4",
+        "A8DDB5",
+        "CCEBC5",
+        "E0F3DB",
+        "F7FCF0"
+    ]
+  },
+  {
+    "ID": 111,
+    "Title": "greens",
+    "Colors": [
+        "005A32",
+        "238B45",
+        "41AB5D",
+        "74C476",
+        "A1D99B",
+        "C7E9C0",
+        "E5F5E0",
+        "F7FCF5"
+    ]
+  },
+  {
+    "ID": 112,
+    "Title": "greys",
+    "Colors": [
+        "252525",
+        "525252",
+        "737373",
+        "969696",
+        "BDBDBD",
+        "D9D9D9",
+        "F0F0F0",
+        "FFFFFF"
+    ]
+  },
+  {
+    "ID": 113,
+    "Title": "orrd",
+    "Colors": [
+        "990000",
+        "D7301F",
+        "EF6548",
+        "FC8D59",
+        "FDBB84",
+        "FDD49E",
+        "FEE8C8",
+        "FFF7EC"
+    ]
+  },
+  {
+    "ID": 114,
+    "Title": "oranges",
+    "Colors": [
+        "8C2D04",
+        "D94801",
+        "F16913",
+        "FD8D3C",
+        "FDAE6B",
+        "FDD0A2",
+        "FEE6CE",
+        "FFF5EB"
+    ]
+  },
+  {
+    "ID": 115,
+    "Title": "pubu",
+    "Colors": [
+        "034E7B",
+        "0570B0",
+        "3690C0",
+        "74A9CF",
+        "A6BDDB",
+        "D0D1E6",
+        "ECE7F2",
+        "FFF7FB"
+    ]
+  },
+  {
+    "ID": 116,
+    "Title": "pubugn",
+    "Colors": [
+        "016540",
+        "02818A",
+        "3690C0",
+        "67A9CF",
+        "A6BDDB",
+        "D0D1E6",
+        "ECE7F0",
+        "FFF7FB"
+    ]
+  },
+  {
+    "ID": 117,
+    "Title": "purd",
+    "Colors": [
+        "91003F",
+        "CE1256",
+        "E7298A",
+        "DF65B0",
+        "C994C7",
+        "D4B9DA",
+        "E7E1EF",
+        "F7F4F9"
+    ]
+  },
+  {
+    "ID": 118,
+    "Title": "purples",
+    "Colors": [
+        "4A1486",
+        "6A51A3",
+        "807DBA",
+        "9E9AC8",
+        "BCBDDC",
+        "DADAEB",
+        "EFEDF5",
+        "FCFBFD"
+    ]
+  },
+  {
+    "ID": 119,
+    "Title": "rdpu",
+    "Colors": [
+        "7A0177",
+        "AE017E",
+        "DD3497",
+        "F768A1",
+        "FA9FB5",
+        "FCC5C0",
+        "FDE0DD",
+        "FFF7F3"
+    ]
+  },
+  {
+    "ID": 120,
+    "Title": "reds",
+    "Colors": [
+        "99000D",
+        "CB181D",
+        "EF3B2C",
+        "FB6A4A",
+        "FC9272",
+        "FCBBA1",
+        "FEE0D2",
+        "FFF5F0"
+    ]
+  },
+  {
+    "ID": 121,
+    "Title": "ylgn",
+    "Colors": [
+        "005A32",
+        "238443",
+        "41AB5D",
+        "78C679",
+        "ADDD8E",
+        "D9F0A3",
+        "F7FCB9",
+        "FFFFE5"
+    ]
+  },
+  {
+    "ID": 122,
+    "Title": "ylgnbu",
+    "Colors": [
+        "0C2C84",
+        "225EA8",
+        "1D91C0",
+        "41B6C4",
+        "7FCDBB",
+        "C7E9B4",
+        "EDF8B1",
+        "FFFFD9"
+    ]
+  },
+  {
+    "ID": 123,
+    "Title": "ylorbr",
+    "Colors": [
+        "8C2D04",
+        "CC4C02",
+        "EC7014",
+        "FE9929",
+        "FEC44F",
+        "FEE391",
+        "FFF7BC",
+        "FFFFE5"
+    ]
+  },
+  {
+    "ID": 124,
+    "Title": "ylorrd",
+    "Colors": [
+        "B10026",
+        "E31A1C",
+        "FC4E2A",
+        "FD8D3C",
+        "FEB24C",
+        "FED976",
+        "FFEDA0",
+        "FFFFCC"
+    ]
+  },
+  {
+    "ID": 125,
+    "Title": "moreland",
+    "Colors": [
+        "B40426",
+        "E26953",
+        "F7A88A",
+        "EDD1C2",
+        "C9D8F0",
+        "9ABBFF",
+        "6889EE",
+        "3B4DC1"
+    ]
+  },
+  {
+    "ID": 126,
+    "Title": "bentcoolwarm",
+    "Colors": [
+        "B10127",
+        "C86450",
+        "D99A81",
+        "EBD9CF",
+        "D6DEEE",
+        "9AA8E3",
+        "757CD6",
+        "584EC4"
+    ]
+  },
+  {
+    "ID": 127,
+    "Title": "jet",
+    "Colors": [
+        "800000",
+        "FF1200",
+        "FFA400",
+        "C8FF37",
+        "37FFC8",
+        "00A4FF",
+        "0012FF",
+        "000080"
+    ]
+  },
+  {
+    "ID": 128,
+    "Title": "turbo",
+    "Colors": [
+        "7A0403",
+        "DB3A07",
+        "FE9A2D",
+        "D1E935",
+        "63FC6A",
+        "1CCED6",
+        "4777EF",
+        "31143F"
+    ]
+  },
+  {
+    "ID": 129,
+    "Title": "parula",
+    "Colors": [
+        "F9FB0E",
+        "F7CB34",
+        "C5BB5E",
+        "6BBC85",
+        "1BAFB5",
+        "108FD0",
+        "0568DF",
+        "352A87"
+    ]
+  },
+  {
+    "ID": 130,
+    "Title": "chromajs",
+    "Colors": [
+        "8B0000",
+        "B0062C",
+        "D21F47",
+        "EE4256",
+        "FF9777",
+        "FFBC94",
+        "FFDFB8",
+        "FFFFE0"
+    ]
+  },
+  {
+    "ID": 131,
+    "Title": "viridis",
+    "Colors": [
+        "FDE725",
+        "9EDA3A",
+        "4BC26D",
+        "1FA187",
+        "277F8E",
+        "365B8D",
+        "46327F",
+        "440255"
+    ]
+  },
+  {
+    "ID": 132,
+    "Title": "plasma",
+    "Colors": [
+        "F0F921",
+        "FEBC2B",
+        "F48948",
+        "DB5B68",
+        "B93389",
+        "8B09A5",
+        "5402A3",
+        "0F0787"
+    ]
+  },
+  {
+    "ID": 133,
+    "Title": "magma",
+    "Colors": [
+        "FCFDBF",
+        "FEBA80",
+        "F8775C",
+        "D3426E",
+        "982D80",
+        "5E177F",
+        "231152",
+        "000004"
+    ]
+  },
+  {
+    "ID": 134,
+    "Title": "inferno",
+    "Colors": [
+        "FCFFA4",
+        "FAC127",
+        "F57D15",
+        "D44842",
+        "9F2A63",
+        "65156E",
+        "290B54",
+        "000004"
+    ]
+  },
+  {
+    "ID": 135,
+    "Title": "whylrd",
+    "Colors": [
+        "7F0000",
+        "B70000",
+        "EE0000",
+        "F73800",
+        "FFAF00",
+        "FFEE00",
+        "FFF780",
+        "FFFFFF"
+    ]
+  },
+  {
+    "ID": 136,
+    "Title": "ylrd",
+    "Colors": [
+        "7F0000",
+        "A90000",
+        "D20000",
+        "F00E00",
+        "FD6200",
+        "FF9000",
+        "FFBF00",
+        "FFEE00"
+    ]
+  },
+  {
+    "ID": 137,
+    "Title": "gnpu",
+    "Colors": [
+        "504971",
+        "79469B",
+        "AE93C5",
+        "D3BFDD",
+        "BDDEA9",
+        "7DC674",
+        "19B34F",
+        "396353"
+    ]
+  },
+  {
+    "ID": 138,
+    "Title": "sand",
+    "Colors": [
+        "FFFCF6",
+        "FFF7D8",
+        "FFF0B8",
+        "FBDB9D",
+        "D28A57",
+        "AE6660",
+        "7E4B60",
+        "604860"
+    ]
+  }
+]

@@ -37,6 +37,7 @@ var (
 	defPort       uint = 5333
 	defGammaValue      = 3.0
 	blinkenFiles       = []string{
+		"bml/pixelFlames.bml",
 		"bml/flatter.bml",
 		"bml/torus.bml",
 		"bml/cube.bml",
@@ -331,6 +332,6 @@ func main() {
 
 	pixAnim.Stop()
 	pixGrid.Clear(ledgrid.Black)
-	pixCtrl.Draw(pixGrid)
+	pixCtrl.Send(pixGrid)
 	pixCtrl.Close()
 }
