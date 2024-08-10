@@ -29,10 +29,10 @@ var (
 		"brbg", "prgn", "piyg", "puor", "rdbu", "rdgy",
 		"rdylbu", "rdylgn", "Spectral", "Accent", "Dark2", "Paired",
 		"Pastel1", "Pastel2", "Set1", "Set2", "Set3", "Blues",
-		"bugn", " bupu", "gnpu", "Greens", "Greys", "orrd",
+		"bugn", "bupu", "gnpu", "Greens", "Greys", "orrd",
 		"Oranges", "pubu", "pubugn", "purd", "Purples", "rdpu",
 		"Reds", "ylgn", "ylgnbu", "ylorbr", "ylorrd", "Moreland",
-		"bentcoolwarm", "Jet", "Turbo", "Parula", "Chromajs", "Viridis",
+		"BentCoolWarm", "Jet", "Turbo", "Parula", "Chromajs", "Viridis",
 		"Plasma", "Magma", "Inferno", "whylrd", "ylrd", "gnpu",
 		"Sand",
 	}

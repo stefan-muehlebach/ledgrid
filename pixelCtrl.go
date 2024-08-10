@@ -11,12 +11,7 @@ import (
 	"net/rpc"
 	"time"
 
-	"periph.io/x/conn/v3/physic"
-	"periph.io/x/conn/v3/spi"
-	"periph.io/x/conn/v3/spi/spireg"
-	"periph.io/x/host/v3"
 	"periph.io/x/host/v3/rpi"
-	"periph.io/x/host/v3/sysfs"
 )
 
 const (
@@ -25,67 +20,6 @@ const (
 	// dimensioniert... ;-)
 	bufferSize = 320 * 240 * 3
 )
-
-type Displayer interface {
-	Close()
-	Send(bufffer []byte)
-}
-
-// Um einerseits nicht nur von einer Library zum Ansteuern des SPI-Bus
-// abhaengig zu sein, aber auch um verschiedene SPI-Libraries miteinander zu
-// vergleichen, wird die Verbindung zu den LEDs via SPI mit periph.io und
-// gobot.io realisiert.
-
-type SPIBus struct {
-	spiPort   spi.PortCloser
-	spiConn   spi.Conn
-	maxTxSize int
-}
-
-func OpenSPIBus(spiDev string, baud int) *SPIBus {
-	var err error
-	p := &SPIBus{}
-
-	_, err = host.Init()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	spiFs, _ := sysfs.NewSPI(0, 0)
-	p.maxTxSize = spiFs.MaxTxSize()
-	spiFs.Close()
-
-	p.spiPort, err = spireg.Open(spiDev)
-	if err != nil {
-		log.Fatal(err)
-	}
-	p.spiConn, err = p.spiPort.Connect(physic.Frequency(baud)*physic.Hertz,
-		spi.Mode0, 8)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return p
-}
-
-func (p *SPIBus) Close() {
-	p.spiPort.Close()
-
-}
-
-func (p *SPIBus) Send(buffer []byte) {
-	var err error
-	var bufferSize int
-
-	bufferSize = len(buffer)
-	for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-		txSize := min(p.maxTxSize, bufferSize-idx)
-		if err = p.spiConn.Tx(buffer[idx:idx+txSize:idx+txSize], nil); err != nil {
-			log.Fatalf("Couldn't send data: %v", err)
-		}
-	}
-	time.Sleep(20 * time.Microsecond)
-}
 
 type PixelStatusType byte
 
@@ -194,7 +128,7 @@ func NewPixelServer(port uint /*, spiDev string, baud int*/) *PixelServer {
 // Schliesst die diversen Verbindungen.
 func (p *PixelServer) Close() {
 	p.udpConn.Close()
-    p.tcpListener.Close()
+	p.tcpListener.Close()
 }
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
@@ -455,7 +389,7 @@ type PixelClient interface {
 	SetGamma(r, g, b float64)
 	MaxBright() (r, g, b uint8)
 	SetMaxBright(r, g, b uint8)
-    Watch() (*Stopwatch)
+	Watch() *Stopwatch
 }
 
 // Falls die Software zur Erzeugung der Bilder auf dem gleichen Node laeuft
@@ -473,7 +407,7 @@ type NetPixelClient struct {
 	addr      *net.UDPAddr
 	conn      *net.UDPConn
 	rpcClient *rpc.Client
-    sendWatch *Stopwatch
+	sendWatch *Stopwatch
 }
 
 func NewNetPixelClient(host string, port uint) PixelClient {
@@ -495,7 +429,7 @@ func NewNetPixelClient(host string, port uint) PixelClient {
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
-    p.sendWatch = NewStopwatch()
+	p.sendWatch = NewStopwatch()
 
 	return p
 }
@@ -509,12 +443,12 @@ func (p *NetPixelClient) Close() {
 func (p *NetPixelClient) Send(lg *LedGrid) {
 	var err error
 
-    p.sendWatch.Start()
+	p.sendWatch.Start()
 	_, err = p.conn.Write(lg.Pix)
 	if err != nil {
 		log.Fatal(err)
 	}
-    p.sendWatch.Stop()
+	p.sendWatch.Stop()
 }
 
 func (p *NetPixelClient) Gamma() (r, g, b float64) {
@@ -560,7 +494,7 @@ func (p *NetPixelClient) SetMaxBright(r, g, b uint8) {
 }
 
 func (p *NetPixelClient) Watch() *Stopwatch {
-    return p.sendWatch
+	return p.sendWatch
 }
 
 // Mit dieser Implementation des PixelClient-Interfaces kann man ohne Zugriff
@@ -598,5 +532,5 @@ func (p *DummyPixelClient) SetMaxBright(r, g, b uint8) {
 }
 
 func (p *DummyPixelClient) Watch() *Stopwatch {
-    return nil
+	return nil
 }

@@ -35,7 +35,6 @@ var (
 	defDummy           = false
 	defHost            = "raspi-3"
 	defPort       uint = 5333
-	defGammaValue      = 3.0
 	blinkenFiles       = []string{
 		"bml/pixelFlames.bml",
 		"bml/flatter.bml",
@@ -96,7 +95,8 @@ func main() {
 	pixGrid = ledgrid.NewLedGrid(gridSize, nil)
 	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)
 
-	gammaValue = ledgrid.NewFloatParameter("Gamma", defGammaValue, 1.0, 5.0, 0.1)
+    redGamma, _, _ := pixCtrl.Gamma()
+	gammaValue = ledgrid.NewFloatParameter("Gamma", redGamma, 1.0, 5.0, 0.1)
 	gammaValue.SetCallback(func(p ledgrid.Parameter) {
 		v := gammaValue.Val()
 		pixCtrl.SetGamma(v, v, v)
