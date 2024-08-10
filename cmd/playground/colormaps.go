@@ -54,7 +54,6 @@ func main() {
 		fmt.Printf("  {\n")
 		fmt.Printf("    \"ID\": %d,\n", i)
 		fmt.Printf("    \"Title\": \"%s\",\n", colorNames[i])
-		fmt.Printf("    \"IsCyclic\": true,\n")
 		fmt.Printf("    \"Colors\": [\n")
 		row := i / numColumns
 		col := i % numColumns

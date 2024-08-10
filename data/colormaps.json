@@ -2,7 +2,6 @@
   {
     "ID": 0,
     "Title": "brbg",
-    "IsCyclic": true,
     "Colors": [
         "01665E",
         "35978F",
@@ -17,7 +16,6 @@
   {
     "ID": 1,
     "Title": "prgn",
-    "IsCyclic": true,
     "Colors": [
         "1B7837",
         "5AAE61",
@@ -32,7 +30,6 @@
   {
     "ID": 2,
     "Title": "piyg",
-    "IsCyclic": true,
     "Colors": [
         "4D9221",
         "7FBC41",
@@ -47,7 +44,6 @@
   {
     "ID": 3,
     "Title": "puor",
-    "IsCyclic": true,
     "Colors": [
         "542788",
         "8073AC",
@@ -62,7 +58,6 @@
   {
     "ID": 4,
     "Title": "rdbu",
-    "IsCyclic": true,
     "Colors": [
         "2166AC",
         "4393C3",
@@ -77,7 +72,6 @@
   {
     "ID": 5,
     "Title": "rdgy",
-    "IsCyclic": true,
     "Colors": [
         "4D4D4D",
         "878787",
@@ -92,7 +86,6 @@
   {
     "ID": 6,
     "Title": "rdylbu",
-    "IsCyclic": true,
     "Colors": [
         "4575B4",
         "74ADD1",
@@ -107,7 +100,6 @@
   {
     "ID": 7,
     "Title": "rdylgn",
-    "IsCyclic": true,
     "Colors": [
         "1A9850",
         "66BD63",
@@ -122,7 +114,6 @@
   {
     "ID": 8,
     "Title": "Spectral",
-    "IsCyclic": true,
     "Colors": [
         "3288BD",
         "66C2A5",
@@ -137,7 +128,6 @@
   {
     "ID": 9,
     "Title": "Accent",
-    "IsCyclic": true,
     "Colors": [
         "666666",
         "BF5B17",
@@ -152,7 +142,6 @@
   {
     "ID": 10,
     "Title": "Dark2",
-    "IsCyclic": true,
     "Colors": [
         "666666",
         "A6761D",
@@ -167,7 +156,6 @@
   {
     "ID": 11,
     "Title": "Paired",
-    "IsCyclic": true,
     "Colors": [
         "FF7F00",
         "FDBF6F",
@@ -182,7 +170,6 @@
   {
     "ID": 12,
     "Title": "Pastel1",
-    "IsCyclic": true,
     "Colors": [
         "FDDAEC",
         "E5D8BD",
@@ -197,7 +184,6 @@
   {
     "ID": 13,
     "Title": "Pastel2",
-    "IsCyclic": true,
     "Colors": [
         "CCCCCC",
         "F1E2CC",
@@ -212,7 +198,6 @@
   {
     "ID": 14,
     "Title": "Set1",
-    "IsCyclic": true,
     "Colors": [
         "F781BF",
         "A65628",
@@ -227,7 +212,6 @@
   {
     "ID": 15,
     "Title": "Set2",
-    "IsCyclic": true,
     "Colors": [
         "B3B3B3",
         "E5C494",
@@ -242,7 +226,6 @@
   {
     "ID": 16,
     "Title": "Set3",
-    "IsCyclic": true,
     "Colors": [
         "FCCDE5",
         "B3DE69",
@@ -257,7 +240,6 @@
   {
     "ID": 17,
     "Title": "Blues",
-    "IsCyclic": true,
     "Colors": [
         "084594",
         "2171B5",
@@ -272,7 +254,6 @@
   {
     "ID": 18,
     "Title": "bugn",
-    "IsCyclic": true,
     "Colors": [
         "005824",
         "238B45",
@@ -286,8 +267,7 @@
   },
   {
     "ID": 19,
-    "Title": " bupu",
-    "IsCyclic": true,
+    "Title": "bupu",
     "Colors": [
         "6E016B",
         "88419D",
@@ -302,7 +282,6 @@
   {
     "ID": 20,
     "Title": "gnpu",
-    "IsCyclic": true,
     "Colors": [
         "08589E",
         "2B8CBE",
@@ -317,7 +296,6 @@
   {
     "ID": 21,
     "Title": "Greens",
-    "IsCyclic": true,
     "Colors": [
         "005A32",
         "238B45",
@@ -332,7 +310,6 @@
   {
     "ID": 22,
     "Title": "Greys",
-    "IsCyclic": true,
     "Colors": [
         "252525",
         "525252",
@@ -347,7 +324,6 @@
   {
     "ID": 23,
     "Title": "orrd",
-    "IsCyclic": true,
     "Colors": [
         "990000",
         "D7301F",
@@ -362,7 +338,6 @@
   {
     "ID": 24,
     "Title": "Oranges",
-    "IsCyclic": true,
     "Colors": [
         "8C2D04",
         "D94801",
@@ -377,7 +352,6 @@
   {
     "ID": 25,
     "Title": "pubu",
-    "IsCyclic": true,
     "Colors": [
         "034E7B",
         "0570B0",
@@ -392,7 +366,6 @@
   {
     "ID": 26,
     "Title": "pubugn",
-    "IsCyclic": true,
     "Colors": [
         "016540",
         "02818A",
@@ -407,7 +380,6 @@
   {
     "ID": 27,
     "Title": "purd",
-    "IsCyclic": true,
     "Colors": [
         "91003F",
         "CE1256",
@@ -422,7 +394,6 @@
   {
     "ID": 28,
     "Title": "Purples",
-    "IsCyclic": true,
     "Colors": [
         "4A1486",
         "6A51A3",
@@ -437,7 +408,6 @@
   {
     "ID": 29,
     "Title": "rdpu",
-    "IsCyclic": true,
     "Colors": [
         "7A0177",
         "AE017E",
@@ -452,7 +422,6 @@
   {
     "ID": 30,
     "Title": "Reds",
-    "IsCyclic": true,
     "Colors": [
         "99000D",
         "CB181D",
@@ -467,7 +436,6 @@
   {
     "ID": 31,
     "Title": "ylgn",
-    "IsCyclic": true,
     "Colors": [
         "005A32",
         "238443",
@@ -482,7 +450,6 @@
   {
     "ID": 32,
     "Title": "ylgnbu",
-    "IsCyclic": true,
     "Colors": [
         "0C2C84",
         "225EA8",
@@ -497,7 +464,6 @@
   {
     "ID": 33,
     "Title": "ylorbr",
-    "IsCyclic": true,
     "Colors": [
         "8C2D04",
         "CC4C02",
@@ -512,7 +478,6 @@
   {
     "ID": 34,
     "Title": "ylorrd",
-    "IsCyclic": true,
     "Colors": [
         "B10026",
         "E31A1C",
@@ -527,7 +492,6 @@
   {
     "ID": 35,
     "Title": "Moreland",
-    "IsCyclic": true,
     "Colors": [
         "B40426",
         "E26953",
@@ -541,8 +505,7 @@
   },
   {
     "ID": 36,
-    "Title": "bentcoolwarm",
-    "IsCyclic": true,
+    "Title": "BentCoolWarm",
     "Colors": [
         "B10127",
         "C86450",
@@ -557,7 +520,6 @@
   {
     "ID": 37,
     "Title": "Jet",
-    "IsCyclic": true,
     "Colors": [
         "800000",
         "FF1200",
@@ -572,7 +534,6 @@
   {
     "ID": 38,
     "Title": "Turbo",
-    "IsCyclic": true,
     "Colors": [
         "7A0403",
         "DB3A07",
@@ -587,7 +548,6 @@
   {
     "ID": 39,
     "Title": "Parula",
-    "IsCyclic": true,
     "Colors": [
         "F9FB0E",
         "F7CB34",
@@ -602,7 +562,6 @@
   {
     "ID": 40,
     "Title": "Chromajs",
-    "IsCyclic": true,
     "Colors": [
         "8B0000",
         "B0062C",
@@ -617,7 +576,6 @@
   {
     "ID": 41,
     "Title": "Viridis",
-    "IsCyclic": true,
     "Colors": [
         "FDE725",
         "9EDA3A",
@@ -632,7 +590,6 @@
   {
     "ID": 42,
     "Title": "Plasma",
-    "IsCyclic": true,
     "Colors": [
         "F0F921",
         "FEBC2B",
@@ -647,7 +604,6 @@
   {
     "ID": 43,
     "Title": "Magma",
-    "IsCyclic": true,
     "Colors": [
         "FCFDBF",
         "FEBA80",
@@ -662,7 +618,6 @@
   {
     "ID": 44,
     "Title": "Inferno",
-    "IsCyclic": true,
     "Colors": [
         "FCFFA4",
         "FAC127",
@@ -677,7 +632,6 @@
   {
     "ID": 45,
     "Title": "whylrd",
-    "IsCyclic": true,
     "Colors": [
         "7F0000",
         "B70000",
@@ -692,7 +646,6 @@
   {
     "ID": 46,
     "Title": "ylrd",
-    "IsCyclic": true,
     "Colors": [
         "7F0000",
         "A90000",
@@ -707,7 +660,6 @@
   {
     "ID": 47,
     "Title": "gnpu",
-    "IsCyclic": true,
     "Colors": [
         "504971",
         "79469B",
@@ -722,7 +674,6 @@
   {
     "ID": 48,
     "Title": "Sand",
-    "IsCyclic": true,
     "Colors": [
         "FFFCF6",
         "FFF7D8",
