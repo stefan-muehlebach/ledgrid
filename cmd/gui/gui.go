@@ -36,15 +36,15 @@ var (
 	defHost            = "raspi-3"
 	defPort       uint = 5333
 	blinkenFiles       = []string{
-		"bml/pixelFlames.bml",
-		"bml/flatter.bml",
-		"bml/torus.bml",
-		"bml/cube.bml",
-		"bml/kreise.bml",
-		"bml/benedictus.bml",
-		"bml/lemming.bml",
-		"bml/marioWalkRight.bml",
-		"bml/marioRunRight.bml",
+		"blinken/pixelFlames.bml",
+		"blinken/flatter.bml",
+		"blinken/torus.bml",
+		"blinken/cube.bml",
+		"blinken/kreise.bml",
+		"blinken/benedictus.bml",
+		"blinken/lemming.bml",
+		"blinken/marioWalkRight.bml",
+		"blinken/marioRunRight.bml",
 	}
 	gradientImageFile = "gradient.png"
 

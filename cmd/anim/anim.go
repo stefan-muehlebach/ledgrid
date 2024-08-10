@@ -728,10 +728,6 @@ func BlinkenAnimation(c *Canvas) {
     aGrp.Start()
 }
 
-//-----------------------------------------------------------------------------
-// Folgende Animationen sind mit dem wesentlich schnelleren aber graphisch
-// etwas eingeschraenkteren Grid-Typ erstellt.
-
 func GlowingPixels(c *Canvas) {
 	aGrpPurple := NewGroup()
 	aGrpYellow := NewGroup()
@@ -796,6 +792,62 @@ func GlowingPixels(c *Canvas) {
 	aTimel.RepeatCount = AnimationRepeatForever
 
 	aTimel.Start()
+}
+
+func PlasmaShaderFunc(x, y, t float64) float64 {
+	v1 := f1(x, y, t, 1.2)
+	v2 := f2(x, y, t, 1.6, 3.0, 1.5)
+	v3 := f3(x, y, t, 5.0, 5.0)
+	v := (v1+v2+v3)/6.0 + 0.5
+	return v
+}
+
+func f1(x, y, t, p1 float64) float64 {
+	return math.Sin(x*p1 + t)
+}
+
+func f2(x, y, t, p1, p2, p3 float64) float64 {
+	return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
+}
+
+func f3(x, y, t, p1, p2 float64) float64 {
+	cx := 0.125*x + 0.5*math.Sin(t/p1)
+	cy := 0.125*y + 0.5*math.Cos(t/p2)
+	return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
+}
+
+
+func ShowTheShader(c *Canvas) {
+    var xMin, yMax float64
+
+    pal := ledgrid.PaletteMap["Hipster"]
+    aGrp := NewGroup()
+	dPix := 2.0 / float64(max(c.rect.Dx(), c.rect.Dy())-1)
+	ratio := float64(c.rect.Dx()) / float64(c.rect.Dy())
+	if ratio > 1.0 {
+		xMin = -1.0
+		yMax = ratio * 1.0
+	} else if ratio < 1.0 {
+		xMin = ratio * -1.0
+		yMax = 1.0
+	} else {
+		xMin = -1.0
+		yMax = 1.0
+	}
+
+    y := yMax
+    for row := range c.rect.Dy() {
+        x := xMin
+        for col := range c.rect.Dx() {
+            pix := NewPixel(image.Point{col, row}, colornames.Black)
+            c.Add(pix)
+            anim := NewShaderAnimation(&pix.Color, pal, x, y, PlasmaShaderFunc)
+            aGrp.Add(anim)
+            x += dPix
+        }
+        y -= dPix
+    }
+    aGrp.Start()
 }
 
 // func RandomGridPixels(g *Grid) {
@@ -897,6 +949,7 @@ var (
 		{"Flying images", FlyingImages},
 		{"Live Camera stream", CameraTest},
 		{"Animation from a BlinkenLight file", BlinkenAnimation},
+        {"Show the Shader", ShowTheShader},
 	}
 )
 

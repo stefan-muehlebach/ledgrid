@@ -1191,3 +1191,70 @@ func (a *ImageAnimation) Tick(t float64) {
 	}
 	*a.ValPtr = idx
 }
+
+type ShaderFuncType func(x, y, t float64) float64
+
+// Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
+type ShaderAnimation struct {
+	ValPtr      *ledgrid.LedColor
+	Pal         ledgrid.ColorSource
+	X, Y        float64
+	Fnc         ShaderFuncType
+	start, stop time.Time
+	running     bool
+}
+
+func NewShaderAnimation(valPtr *ledgrid.LedColor, pal ledgrid.ColorSource,
+	x, y float64, fnc ShaderFuncType) *ShaderAnimation {
+	a := &ShaderAnimation{}
+	a.ValPtr = valPtr
+	a.Pal = pal
+	a.X, a.Y = x, y
+	a.Fnc = fnc
+	globAnimCtrl.Add(a)
+	return a
+}
+
+func (a *ShaderAnimation) Duration() time.Duration {
+	return time.Duration(0)
+}
+
+func (a *ShaderAnimation) SetDuration(d time.Duration) {}
+
+// Startet die Animation.
+func (a *ShaderAnimation) Start() {
+	if a.running {
+		return
+	}
+	a.start = time.Now()
+	a.running = true
+}
+
+// Unterbricht die Ausfuehrung der Animation.
+func (a *ShaderAnimation) Stop() {
+	if !a.running {
+		return
+	}
+	a.stop = time.Now()
+	a.running = false
+}
+
+// Setzt die Ausfuehrung der Animation fort.
+func (a *ShaderAnimation) Continue() {
+	if a.running {
+		return
+	}
+	dt := time.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.running = true
+}
+
+// Liefert den Status der Animation zurueck.
+func (a *ShaderAnimation) IsStopped() bool {
+	return !a.running
+}
+
+func (a *ShaderAnimation) Update(t time.Time) bool {
+	*a.ValPtr = a.Pal.Color(a.Fnc(a.X, a.Y, t.Sub(a.start).Seconds()))
+	return true
+}
