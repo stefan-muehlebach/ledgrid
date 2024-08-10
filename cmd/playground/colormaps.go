@@ -25,17 +25,17 @@ var (
 	colorMapDist    = image.Point{374, 132}.Sub(firstColorMap)
 	colorMapXDist   = image.Point{colorMapDist.X, 0}
 	colorMapYDist   = image.Point{0, colorMapDist.Y}
-    colorNames = []string{
-        "brbg", "prgn", "piyg", "puor", "rdbu", "rdgy",
-        "rdylbu", "rdylgn", "spectral", "accent", "dark2", "paired",
-        "pastel1", "pastel2", "set1", "set2", "set3", "blues",
-        "bugn", " bupu", "gnpu", "greens", "greys", "orrd",
-        "oranges", "pubu", "pubugn", "purd", "purples", "rdpu",
-        "reds", "ylgn", "ylgnbu", "ylorbr", "ylorrd", "moreland",
-        "bentcoolwarm", "jet", "turbo", "parula", "chromajs", "viridis",
-        "plasma", "magma", "inferno", "whylrd", "ylrd", "gnpu",
-        "sand",
-    }
+	colorNames      = []string{
+		"brbg", "prgn", "piyg", "puor", "rdbu", "rdgy",
+		"rdylbu", "rdylgn", "Spectral", "Accent", "Dark2", "Paired",
+		"Pastel1", "Pastel2", "Set1", "Set2", "Set3", "Blues",
+		"bugn", " bupu", "gnpu", "Greens", "Greys", "orrd",
+		"Oranges", "pubu", "pubugn", "purd", "Purples", "rdpu",
+		"Reds", "ylgn", "ylgnbu", "ylorbr", "ylorrd", "Moreland",
+		"bentcoolwarm", "Jet", "Turbo", "Parula", "Chromajs", "Viridis",
+		"Plasma", "Magma", "Inferno", "whylrd", "ylrd", "gnpu",
+		"Sand",
+	}
 )
 
 func main() {
@@ -49,10 +49,12 @@ func main() {
 		log.Fatalf("Couldn't decode file: %v", err)
 	}
 
+	fmt.Printf("[\n")
 	for i := range numColors {
 		fmt.Printf("  {\n")
-		fmt.Printf("    \"ID\": %d,\n", i+90)
+		fmt.Printf("    \"ID\": %d,\n", i)
 		fmt.Printf("    \"Title\": \"%s\",\n", colorNames[i])
+		fmt.Printf("    \"IsCyclic\": true,\n")
 		fmt.Printf("    \"Colors\": [\n")
 		row := i / numColumns
 		col := i % numColumns
@@ -68,6 +70,11 @@ func main() {
 			}
 		}
 		fmt.Printf("    ]\n")
-		fmt.Printf("  },\n")
+		if i < numColors-1 {
+			fmt.Printf("  },\n")
+		} else {
+			fmt.Printf("  }\n")
+		}
 	}
+	fmt.Printf("]\n")
 }
