@@ -60,6 +60,7 @@ func main() {
 	var missingIDs, defectIDs string
 	var gammaValue [3]float64
 	var spiDevFile string = "/dev/spidev0.0"
+    var spiBus ledgrid.Displayer
 	var pixelServer *ledgrid.PixelServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
@@ -70,8 +71,8 @@ func main() {
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of LEDs to black out")
 	flag.Parse()
 
-	pixelServer = ledgrid.NewPixelServer(port)
-	pixelServer.Disp = ledgrid.OpenSPIBus(spiDevFile, baud)
+    spiBus = ledgrid.NewSPIBus(spiDevFile, baud)
+	pixelServer = ledgrid.NewPixelServer(port, spiBus)
 
 	for i, str := range strings.Split(gammaValues, ",") {
 		val, err := strconv.ParseFloat(str, 64)

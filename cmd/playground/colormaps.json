@@ -1,0 +1,737 @@
+[
+  {
+    "ID": 0,
+    "Title": "brbg",
+    "IsCyclic": true,
+    "Colors": [
+        "01665E",
+        "35978F",
+        "80CDC1",
+        "C7EAE5",
+        "F6E8C3",
+        "DFC27D",
+        "BF812D",
+        "8C510A"
+    ]
+  },
+  {
+    "ID": 1,
+    "Title": "prgn",
+    "IsCyclic": true,
+    "Colors": [
+        "1B7837",
+        "5AAE61",
+        "A6DBA0",
+        "D9F0D3",
+        "E7D4E8",
+        "C2A5CF",
+        "9970AB",
+        "762A83"
+    ]
+  },
+  {
+    "ID": 2,
+    "Title": "piyg",
+    "IsCyclic": true,
+    "Colors": [
+        "4D9221",
+        "7FBC41",
+        "B8E186",
+        "E6F5D0",
+        "FDE0EF",
+        "F1B6DA",
+        "DE77AE",
+        "C51B7D"
+    ]
+  },
+  {
+    "ID": 3,
+    "Title": "puor",
+    "IsCyclic": true,
+    "Colors": [
+        "542788",
+        "8073AC",
+        "B2ABD2",
+        "D8DAEB",
+        "FEE0B6",
+        "FDB863",
+        "E08214",
+        "B35806"
+    ]
+  },
+  {
+    "ID": 4,
+    "Title": "rdbu",
+    "IsCyclic": true,
+    "Colors": [
+        "2166AC",
+        "4393C3",
+        "92C5DE",
+        "D1E5F0",
+        "FDDBC7",
+        "F4A582",
+        "D6604D",
+        "B2182B"
+    ]
+  },
+  {
+    "ID": 5,
+    "Title": "rdgy",
+    "IsCyclic": true,
+    "Colors": [
+        "4D4D4D",
+        "878787",
+        "BABABA",
+        "E0E0E0",
+        "FDDBC7",
+        "F4A582",
+        "D6604D",
+        "B2182B"
+    ]
+  },
+  {
+    "ID": 6,
+    "Title": "rdylbu",
+    "IsCyclic": true,
+    "Colors": [
+        "4575B4",
+        "74ADD1",
+        "ABD9E9",
+        "E0F3F8",
+        "FEE090",
+        "FDAE61",
+        "F46D43",
+        "D73027"
+    ]
+  },
+  {
+    "ID": 7,
+    "Title": "rdylgn",
+    "IsCyclic": true,
+    "Colors": [
+        "1A9850",
+        "66BD63",
+        "A6D96A",
+        "D9EF8B",
+        "FEE08B",
+        "FDAE61",
+        "F46D43",
+        "D73027"
+    ]
+  },
+  {
+    "ID": 8,
+    "Title": "Spectral",
+    "IsCyclic": true,
+    "Colors": [
+        "3288BD",
+        "66C2A5",
+        "ABDDA4",
+        "E6F598",
+        "FEE08B",
+        "FDAE61",
+        "F46D43",
+        "D53E4F"
+    ]
+  },
+  {
+    "ID": 9,
+    "Title": "Accent",
+    "IsCyclic": true,
+    "Colors": [
+        "666666",
+        "BF5B17",
+        "F0027F",
+        "386CB0",
+        "FFFF99",
+        "FDC086",
+        "BEAED4",
+        "7FC97F"
+    ]
+  },
+  {
+    "ID": 10,
+    "Title": "Dark2",
+    "IsCyclic": true,
+    "Colors": [
+        "666666",
+        "A6761D",
+        "E6AB02",
+        "66A61E",
+        "E7298A",
+        "7570B3",
+        "D95F02",
+        "1B9E77"
+    ]
+  },
+  {
+    "ID": 11,
+    "Title": "Paired",
+    "IsCyclic": true,
+    "Colors": [
+        "FF7F00",
+        "FDBF6F",
+        "E31A1C",
+        "FB9A99",
+        "33A02C",
+        "B2DF8A",
+        "1F78B4",
+        "A6CEE3"
+    ]
+  },
+  {
+    "ID": 12,
+    "Title": "Pastel1",
+    "IsCyclic": true,
+    "Colors": [
+        "FDDAEC",
+        "E5D8BD",
+        "FFFFCC",
+        "FED9A6",
+        "DECBE4",
+        "CCEBC5",
+        "B3CDE3",
+        "FBB4AE"
+    ]
+  },
+  {
+    "ID": 13,
+    "Title": "Pastel2",
+    "IsCyclic": true,
+    "Colors": [
+        "CCCCCC",
+        "F1E2CC",
+        "FFF2AE",
+        "D6F5C9",
+        "F4CAE4",
+        "CDB5E8",
+        "FDCDAC",
+        "B3E2CD"
+    ]
+  },
+  {
+    "ID": 14,
+    "Title": "Set1",
+    "IsCyclic": true,
+    "Colors": [
+        "F781BF",
+        "A65628",
+        "FFFF33",
+        "FF7F00",
+        "984EA3",
+        "4DAF4A",
+        "377EB8",
+        "E41A1C"
+    ]
+  },
+  {
+    "ID": 15,
+    "Title": "Set2",
+    "IsCyclic": true,
+    "Colors": [
+        "B3B3B3",
+        "E5C494",
+        "FFD92F",
+        "A6D854",
+        "E78AC3",
+        "8DA0CB",
+        "FC8D62",
+        "66C2A5"
+    ]
+  },
+  {
+    "ID": 16,
+    "Title": "Set3",
+    "IsCyclic": true,
+    "Colors": [
+        "FCCDE5",
+        "B3DE69",
+        "FDB462",
+        "80B1D3",
+        "FB8072",
+        "BEBADA",
+        "FFFFB3",
+        "8DD3C7"
+    ]
+  },
+  {
+    "ID": 17,
+    "Title": "Blues",
+    "IsCyclic": true,
+    "Colors": [
+        "084594",
+        "2171B5",
+        "4292C6",
+        "6BAED6",
+        "9ECAE1",
+        "C6DBEF",
+        "DEEBF7",
+        "F7FBFF"
+    ]
+  },
+  {
+    "ID": 18,
+    "Title": "bugn",
+    "IsCyclic": true,
+    "Colors": [
+        "005824",
+        "238B45",
+        "41AE76",
+        "66C2A4",
+        "99D8C9",
+        "CCECE6",
+        "E5F5F9",
+        "F7FCFD"
+    ]
+  },
+  {
+    "ID": 19,
+    "Title": " bupu",
+    "IsCyclic": true,
+    "Colors": [
+        "6E016B",
+        "88419D",
+        "8C6BB1",
+        "8C96C6",
+        "9EBCDA",
+        "BFD3E6",
+        "E0ECF4",
+        "F7FCFD"
+    ]
+  },
+  {
+    "ID": 20,
+    "Title": "gnpu",
+    "IsCyclic": true,
+    "Colors": [
+        "08589E",
+        "2B8CBE",
+        "4EB3D3",
+        "7BCCC4",
+        "A8DDB5",
+        "CCEBC5",
+        "E0F3DB",
+        "F7FCF0"
+    ]
+  },
+  {
+    "ID": 21,
+    "Title": "Greens",
+    "IsCyclic": true,
+    "Colors": [
+        "005A32",
+        "238B45",
+        "41AB5D",
+        "74C476",
+        "A1D99B",
+        "C7E9C0",
+        "E5F5E0",
+        "F7FCF5"
+    ]
+  },
+  {
+    "ID": 22,
+    "Title": "Greys",
+    "IsCyclic": true,
+    "Colors": [
+        "252525",
+        "525252",
+        "737373",
+        "969696",
+        "BDBDBD",
+        "D9D9D9",
+        "F0F0F0",
+        "FFFFFF"
+    ]
+  },
+  {
+    "ID": 23,
+    "Title": "orrd",
+    "IsCyclic": true,
+    "Colors": [
+        "990000",
+        "D7301F",
+        "EF6548",
+        "FC8D59",
+        "FDBB84",
+        "FDD49E",
+        "FEE8C8",
+        "FFF7EC"
+    ]
+  },
+  {
+    "ID": 24,
+    "Title": "Oranges",
+    "IsCyclic": true,
+    "Colors": [
+        "8C2D04",
+        "D94801",
+        "F16913",
+        "FD8D3C",
+        "FDAE6B",
+        "FDD0A2",
+        "FEE6CE",
+        "FFF5EB"
+    ]
+  },
+  {
+    "ID": 25,
+    "Title": "pubu",
+    "IsCyclic": true,
+    "Colors": [
+        "034E7B",
+        "0570B0",
+        "3690C0",
+        "74A9CF",
+        "A6BDDB",
+        "D0D1E6",
+        "ECE7F2",
+        "FFF7FB"
+    ]
+  },
+  {
+    "ID": 26,
+    "Title": "pubugn",
+    "IsCyclic": true,
+    "Colors": [
+        "016540",
+        "02818A",
+        "3690C0",
+        "67A9CF",
+        "A6BDDB",
+        "D0D1E6",
+        "ECE7F0",
+        "FFF7FB"
+    ]
+  },
+  {
+    "ID": 27,
+    "Title": "purd",
+    "IsCyclic": true,
+    "Colors": [
+        "91003F",
+        "CE1256",
+        "E7298A",
+        "DF65B0",
+        "C994C7",
+        "D4B9DA",
+        "E7E1EF",
+        "F7F4F9"
+    ]
+  },
+  {
+    "ID": 28,
+    "Title": "Purples",
+    "IsCyclic": true,
+    "Colors": [
+        "4A1486",
+        "6A51A3",
+        "807DBA",
+        "9E9AC8",
+        "BCBDDC",
+        "DADAEB",
+        "EFEDF5",
+        "FCFBFD"
+    ]
+  },
+  {
+    "ID": 29,
+    "Title": "rdpu",
+    "IsCyclic": true,
+    "Colors": [
+        "7A0177",
+        "AE017E",
+        "DD3497",
+        "F768A1",
+        "FA9FB5",
+        "FCC5C0",
+        "FDE0DD",
+        "FFF7F3"
+    ]
+  },
+  {
+    "ID": 30,
+    "Title": "Reds",
+    "IsCyclic": true,
+    "Colors": [
+        "99000D",
+        "CB181D",
+        "EF3B2C",
+        "FB6A4A",
+        "FC9272",
+        "FCBBA1",
+        "FEE0D2",
+        "FFF5F0"
+    ]
+  },
+  {
+    "ID": 31,
+    "Title": "ylgn",
+    "IsCyclic": true,
+    "Colors": [
+        "005A32",
+        "238443",
+        "41AB5D",
+        "78C679",
+        "ADDD8E",
+        "D9F0A3",
+        "F7FCB9",
+        "FFFFE5"
+    ]
+  },
+  {
+    "ID": 32,
+    "Title": "ylgnbu",
+    "IsCyclic": true,
+    "Colors": [
+        "0C2C84",
+        "225EA8",
+        "1D91C0",
+        "41B6C4",
+        "7FCDBB",
+        "C7E9B4",
+        "EDF8B1",
+        "FFFFD9"
+    ]
+  },
+  {
+    "ID": 33,
+    "Title": "ylorbr",
+    "IsCyclic": true,
+    "Colors": [
+        "8C2D04",
+        "CC4C02",
+        "EC7014",
+        "FE9929",
+        "FEC44F",
+        "FEE391",
+        "FFF7BC",
+        "FFFFE5"
+    ]
+  },
+  {
+    "ID": 34,
+    "Title": "ylorrd",
+    "IsCyclic": true,
+    "Colors": [
+        "B10026",
+        "E31A1C",
+        "FC4E2A",
+        "FD8D3C",
+        "FEB24C",
+        "FED976",
+        "FFEDA0",
+        "FFFFCC"
+    ]
+  },
+  {
+    "ID": 35,
+    "Title": "Moreland",
+    "IsCyclic": true,
+    "Colors": [
+        "B40426",
+        "E26953",
+        "F7A88A",
+        "EDD1C2",
+        "C9D8F0",
+        "9ABBFF",
+        "6889EE",
+        "3B4DC1"
+    ]
+  },
+  {
+    "ID": 36,
+    "Title": "bentcoolwarm",
+    "IsCyclic": true,
+    "Colors": [
+        "B10127",
+        "C86450",
+        "D99A81",
+        "EBD9CF",
+        "D6DEEE",
+        "9AA8E3",
+        "757CD6",
+        "584EC4"
+    ]
+  },
+  {
+    "ID": 37,
+    "Title": "Jet",
+    "IsCyclic": true,
+    "Colors": [
+        "800000",
+        "FF1200",
+        "FFA400",
+        "C8FF37",
+        "37FFC8",
+        "00A4FF",
+        "0012FF",
+        "000080"
+    ]
+  },
+  {
+    "ID": 38,
+    "Title": "Turbo",
+    "IsCyclic": true,
+    "Colors": [
+        "7A0403",
+        "DB3A07",
+        "FE9A2D",
+        "D1E935",
+        "63FC6A",
+        "1CCED6",
+        "4777EF",
+        "31143F"
+    ]
+  },
+  {
+    "ID": 39,
+    "Title": "Parula",
+    "IsCyclic": true,
+    "Colors": [
+        "F9FB0E",
+        "F7CB34",
+        "C5BB5E",
+        "6BBC85",
+        "1BAFB5",
+        "108FD0",
+        "0568DF",
+        "352A87"
+    ]
+  },
+  {
+    "ID": 40,
+    "Title": "Chromajs",
+    "IsCyclic": true,
+    "Colors": [
+        "8B0000",
+        "B0062C",
+        "D21F47",
+        "EE4256",
+        "FF9777",
+        "FFBC94",
+        "FFDFB8",
+        "FFFFE0"
+    ]
+  },
+  {
+    "ID": 41,
+    "Title": "Viridis",
+    "IsCyclic": true,
+    "Colors": [
+        "FDE725",
+        "9EDA3A",
+        "4BC26D",
+        "1FA187",
+        "277F8E",
+        "365B8D",
+        "46327F",
+        "440255"
+    ]
+  },
+  {
+    "ID": 42,
+    "Title": "Plasma",
+    "IsCyclic": true,
+    "Colors": [
+        "F0F921",
+        "FEBC2B",
+        "F48948",
+        "DB5B68",
+        "B93389",
+        "8B09A5",
+        "5402A3",
+        "0F0787"
+    ]
+  },
+  {
+    "ID": 43,
+    "Title": "Magma",
+    "IsCyclic": true,
+    "Colors": [
+        "FCFDBF",
+        "FEBA80",
+        "F8775C",
+        "D3426E",
+        "982D80",
+        "5E177F",
+        "231152",
+        "000004"
+    ]
+  },
+  {
+    "ID": 44,
+    "Title": "Inferno",
+    "IsCyclic": true,
+    "Colors": [
+        "FCFFA4",
+        "FAC127",
+        "F57D15",
+        "D44842",
+        "9F2A63",
+        "65156E",
+        "290B54",
+        "000004"
+    ]
+  },
+  {
+    "ID": 45,
+    "Title": "whylrd",
+    "IsCyclic": true,
+    "Colors": [
+        "7F0000",
+        "B70000",
+        "EE0000",
+        "F73800",
+        "FFAF00",
+        "FFEE00",
+        "FFF780",
+        "FFFFFF"
+    ]
+  },
+  {
+    "ID": 46,
+    "Title": "ylrd",
+    "IsCyclic": true,
+    "Colors": [
+        "7F0000",
+        "A90000",
+        "D20000",
+        "F00E00",
+        "FD6200",
+        "FF9000",
+        "FFBF00",
+        "FFEE00"
+    ]
+  },
+  {
+    "ID": 47,
+    "Title": "gnpu",
+    "IsCyclic": true,
+    "Colors": [
+        "504971",
+        "79469B",
+        "AE93C5",
+        "D3BFDD",
+        "BDDEA9",
+        "7DC674",
+        "19B34F",
+        "396353"
+    ]
+  },
+  {
+    "ID": 48,
+    "Title": "Sand",
+    "IsCyclic": true,
+    "Colors": [
+        "FFFCF6",
+        "FFF7D8",
+        "FFF0B8",
+        "FBDB9D",
+        "D28A57",
+        "AE6660",
+        "7E4B60",
+        "604860"
+    ]
+  }
+]

@@ -10,8 +10,6 @@ import (
 	"net/netip"
 	"net/rpc"
 	"time"
-
-	"periph.io/x/host/v3/rpi"
 )
 
 const (
@@ -33,7 +31,6 @@ const (
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type PixelServer struct {
 	Disp                 Displayer
-	onRaspi              bool
 	udpAddr              *net.UDPAddr
 	udpConn              *net.UDPConn
 	tcpAddr              *net.TCPAddr
@@ -52,18 +49,11 @@ type PixelServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewPixelServer(port uint /*, spiDev string, baud int*/) *PixelServer {
+func NewPixelServer(port uint, disp Displayer) *PixelServer {
 	var err error
 	var addrPort netip.AddrPort
 
-	p := &PixelServer{}
-	// _, err = host.Init()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	if rpi.Present() {
-		p.onRaspi = true
-	}
+	p := &PixelServer{Disp: disp}
 
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
@@ -72,33 +62,13 @@ func NewPixelServer(port uint /*, spiDev string, baud int*/) *PixelServer {
 	p.buffer = make([]byte, bufferSize)
 	p.statusList = make([]PixelStatusType, bufferSize/3)
 
-	// p.missingList = make([]int, 0)
-	// p.defectList = make([]int, 0)
-
-	// spiFs, _ := sysfs.NewSPI(0, 0)
-	// p.maxTxSize = spiFs.MaxTxSize()
-	// spiFs.Close()
-
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
 	// maximale Helligkeit erstellt.
-	p.gammaValue = [3]float64{1.0, 1.0, 1.0}
+	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = p.Disp.DefaultGamma()
 	p.maxValue = [3]uint8{255, 255, 255}
 	p.updateGammaTable()
 
 	p.SendWatch = NewStopwatch()
-
-	// Dann wird der SPI-Bus initialisiert.
-	// if p.onRaspi {
-	// 	p.spiPort, err = spireg.Open(spiDev)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	p.spiConn, err = p.spiPort.Connect(physic.Frequency(baud)*physic.Hertz,
-	// 		spi.Mode0, 8)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt.
@@ -164,24 +134,6 @@ func (p *PixelServer) updateGammaTable() {
 		}
 	}
 }
-
-// func (p *PixelServer) SPISendBuffer(buffer []byte) {
-// 	var err error
-// 	var bufferSize int
-
-// 	bufferSize = len(buffer)
-// 	if p.onRaspi {
-// 		for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-// 			txSize := min(p.maxTxSize, bufferSize-idx)
-// 			if err = p.spiConn.Tx(buffer[idx:idx+txSize], nil); err != nil {
-// 				log.Fatalf("Couldn't send data: %v", err)
-// 			}
-// 		}
-// 		time.Sleep(20 * time.Microsecond)
-// 	} else {
-// 		log.Printf("Sent %d bytes to the SPI bus", bufferSize)
-// 	}
-// }
 
 const (
 	TestRed = iota

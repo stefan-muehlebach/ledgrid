@@ -59,7 +59,7 @@ func main() {
 	var pixelSize float64
 	var appSize fyne.Size
 	var pixelServer *ledgrid.PixelServer
-	var pixelEmulator *ledgrid.PixelEmulator
+	var pixelEmulator *PixelEmulator
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
@@ -74,10 +74,8 @@ func main() {
 	App = app.New()
 	Win = App.NewWindow("LedGrid Emulator")
 
-	pixelServer = ledgrid.NewPixelServer(port)
-	pixelEmulator = ledgrid.NewPixelEmulator(width, height)
-	pixelServer.Disp = pixelEmulator
-	pixelServer.SetGamma(pixelEmulator.DefaultGamma())
+	pixelEmulator = NewPixelEmulator(width, height)
+	pixelServer = ledgrid.NewPixelServer(port, pixelEmulator)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
