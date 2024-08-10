@@ -51,7 +51,8 @@ func (c *Camera) Start() {
 	}
 	c.dev.Set(gocv.VideoCaptureFrameWidth, camWidth)
 	c.dev.Set(gocv.VideoCaptureFrameHeight, camHeight)
-	c.dev.Set(gocv.VideoCaptureZoom, 200)
+    c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
+	c.dev.Set(gocv.VideoCaptureZoom, 0)
 	c.running = true
 }
 
