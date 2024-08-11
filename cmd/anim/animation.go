@@ -889,6 +889,7 @@ func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ledgrid.ColorSource, dur 
 }
 
 func (a *PaletteFadeAnimation) Init() {
+    a.Fader.T = 0.0
 	if a.ValFunc != nil {
 		a.Fader.Pals[1] = a.ValFunc()
 	} else {
@@ -898,6 +899,7 @@ func (a *PaletteFadeAnimation) Init() {
 
 func (a *PaletteFadeAnimation) Tick(t float64) {
     if t == 1.0 {
+        a.Fader.T = 0.0
         a.Fader.Pals[0], a.Fader.Pals[1] = a.Fader.Pals[1], a.Fader.Pals[0]
     } else {
         a.Fader.T = t
