@@ -779,11 +779,11 @@ var (
 			}
 
 			pal := NewPaletteFader(ledgrid.PaletteMap["Hipster"])
-			aPal := NewPaletteFadeAnimation(pal, nil, 3*time.Second)
+			aPal := NewPaletteFadeAnimation(pal, nil, 2*time.Second)
 			aPal.ValFunc = RandPalette()
 
-			aPalTl := NewTimeline(6 * time.Second)
-			aPalTl.Add(3*time.Second, aPal)
+			aPalTl := NewTimeline(10 * time.Second)
+			aPalTl.Add(8*time.Second, aPal)
 			aPalTl.RepeatCount = AnimationRepeatForever
 
 			aGrp := NewGroup()
