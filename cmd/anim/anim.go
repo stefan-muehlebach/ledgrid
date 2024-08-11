@@ -770,6 +770,7 @@ var (
 			}
 
 			PlasmaShaderFunc := func(x, y, t float64) float64 {
+				t /= 2.0
 				v1 := f1(x, y, t, 1.2)
 				v2 := f2(x, y, t, 1.6, 3.0, 1.5)
 				v3 := f3(x, y, t, 5.0, 5.0)
@@ -781,9 +782,9 @@ var (
 			aPal := NewPaletteFadeAnimation(pal, nil, 3*time.Second)
 			aPal.ValFunc = RandPalette()
 
-            aPalTl := NewTimeline(6*time.Second)
-            aPalTl.Add(3*time.Second, aPal)
-            aPalTl.RepeatCount = AnimationRepeatForever
+			aPalTl := NewTimeline(6 * time.Second)
+			aPalTl.Add(3*time.Second, aPal)
+			aPalTl.RepeatCount = AnimationRepeatForever
 
 			aGrp := NewGroup()
 			dPix := 2.0 / float64(max(c.rect.Dx(), c.rect.Dy())-1)

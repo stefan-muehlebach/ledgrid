@@ -562,7 +562,6 @@ func (p *PaletteFader) SetName(string) {
 
 }
 
-
 // Mit dieser Methode wird der aktuelle Farbwert retourniert. Damit
 // implementiert der Fader das ColorSource-Interface und kann als Farbquelle
 // verwendet werden - genau wie anderen Paletten-, resp. Farbtypen.
