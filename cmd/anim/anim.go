@@ -778,6 +778,10 @@ var (
 			}
 
 			pal := ledgrid.PaletteMap["Hipster"]
+			aPal := NewPaletteFadeAnimation(&pal, pal, 3*time.Second)
+			aPal.ValFunc = RandPalette()
+			aPal.RepeatCount = AnimationRepeatForever
+
 			aGrp := NewGroup()
 			dPix := 2.0 / float64(max(c.rect.Dx(), c.rect.Dy())-1)
 			ratio := float64(c.rect.Dx()) / float64(c.rect.Dy())
@@ -804,6 +808,7 @@ var (
 				}
 				y -= dPix
 			}
+			aPal.Start()
 			aGrp.Start()
 		})
 )
@@ -1020,21 +1025,21 @@ var (
 		GroupTest,
 		SequenceTest,
 		TimelineTest,
-		RegularPolygonTest,
 		PathTest,
 		PolygonPathTest,
 		RandomWalk,
-		Piiiiixels,
 		CirclingCircles,
 		ChasingCircles,
 		PushingRectangles,
+		RegularPolygonTest,
+		Piiiiixels,
 		GlowingPixels,
 		CameraTest,
 		BlinkenAnimation,
 		MovingText,
 		BitmapText,
 		FlyingImages,
-        ShowTheShader,
+		ShowTheShader,
 	}
 )
 

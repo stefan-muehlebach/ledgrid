@@ -69,10 +69,18 @@ func AnimationEaseInOutNew(t float64) float64 {
 
 // Dies ist ein etwas unbeholfener Versuch, die Zielwerte bestimmter
 // Animationen dynamisch berechnen zu lassen.
+type PaletteFuncType func() ledgrid.ColorSource
 type ColorFuncType func() ledgrid.LedColor
 type PointFuncType func() geom.Point
 type FloatFuncType func() float64
 type AlphaFuncType func() uint8
+
+func RandPalette() PaletteFuncType {
+    return func() ledgrid.ColorSource {
+        name := ledgrid.PaletteNames[rand.IntN(len(ledgrid.PaletteNames))]
+        return ledgrid.PaletteMap[name]
+    }
+}
 
 // Liefert bei jedem Aufruf eine zufaellig gewaehlte Farbe.
 func RandColor() ColorFuncType {
@@ -770,40 +778,6 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 	return true
 }
 
-// Animation fuer einen Verlauf zwischen zwei Farben.
-type ColorAnimation struct {
-	AnimationEmbed
-	Cont       bool
-	ValPtr     *ledgrid.LedColor
-	Val1, Val2 ledgrid.LedColor
-	ValFunc    ColorFuncType
-}
-
-func NewColorAnimation(valPtr *ledgrid.LedColor, val2 ledgrid.LedColor, dur time.Duration) *ColorAnimation {
-	a := &ColorAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
-	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
-
-func (a *ColorAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-	if a.ValFunc != nil {
-		a.Val2 = a.ValFunc()
-	}
-}
-
-func (a *ColorAnimation) Tick(t float64) {
-	alpha := (*a.ValPtr).A
-	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
-	(*a.ValPtr).A = alpha
-}
-
 // Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
 // veraendern und kennt beispielsweise die Farbe selber gar nicht, dann ist
 // die AlphaAnimation genau das Richtige.
@@ -838,6 +812,41 @@ func (a *AlphaAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.Val1) + t*float64(a.Val2))
 }
 
+// Animation fuer einen Verlauf zwischen zwei Farben.
+type ColorAnimation struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *ledgrid.LedColor
+	Val1, Val2 ledgrid.LedColor
+	ValFunc    ColorFuncType
+}
+
+func NewColorAnimation(valPtr *ledgrid.LedColor, val2 ledgrid.LedColor, dur time.Duration) *ColorAnimation {
+	a := &ColorAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *ColorAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+	if a.ValFunc != nil {
+		a.Val2 = a.ValFunc()
+	}
+}
+
+func (a *ColorAnimation) Tick(t float64) {
+	alpha := (*a.ValPtr).A
+	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
+	(*a.ValPtr).A = alpha
+}
+
+
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
 type PaletteAnimation struct {
 	AnimationEmbed
@@ -859,6 +868,41 @@ func (a *PaletteAnimation) Init() {}
 
 func (a *PaletteAnimation) Tick(t float64) {
 	*a.ValPtr = a.pal.Color(t)
+}
+
+// Dies schliesslich ist eine Animation, bei welcher stufenlos von einer
+// Palette auf eine andere umgestellt wird.
+type PaletteFadeAnimation struct {
+    AnimationEmbed
+    Cont bool
+    ValPtr *ledgrid.ColorSource
+    Val1, Val2 ledgrid.ColorSource
+	ValFunc    PaletteFuncType
+}
+
+func NewPaletteFadeAnimation(valPtr *ledgrid.ColorSource, val2 ledgrid.ColorSource, dur time.Duration) *PaletteFadeAnimation {
+    a := &PaletteFadeAnimation{}
+    a.AnimationEmbed.ExtendAnimation(a)
+    a.SetDuration(dur)
+    a.ValPtr = valPtr
+    a.Val1 = *valPtr
+    a.Val2 = val2
+    return a
+}
+
+func (a *PaletteFadeAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+	if a.ValFunc != nil {
+		a.Val2 = a.ValFunc()
+	}
+}
+
+func (a *PaletteFadeAnimation) Tick(t float64) {
+    if t == 1.0 {
+        *a.ValPtr = a.Val2
+    }
 }
 
 // Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
