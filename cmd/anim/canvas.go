@@ -536,3 +536,42 @@ func (p *Pixel) Draw(c *Canvas) {
 	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, ledgrid.Blend))
 }
 
+
+// Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
+// anderen realisiert werden.
+type PaletteFader struct {
+	Pals [2]ledgrid.ColorSource
+	T    float64
+}
+
+// Initialisiert wird der Fader mit der aktuell anzuzeigenden Palette. Der
+// PaletteFader wird anschliessend anstelle der ueblichen Palette verwendet.
+func NewPaletteFader(pal ledgrid.ColorSource) *PaletteFader {
+	p := &PaletteFader{}
+	p.Pals[0] = pal
+	p.Pals[1] = nil
+	p.T = 0.0
+	return p
+}
+
+func (p *PaletteFader) Name() string {
+    return ""
+}
+
+func (p *PaletteFader) SetName(string) {
+
+}
+
+
+// Mit dieser Methode wird der aktuelle Farbwert retourniert. Damit
+// implementiert der Fader das ColorSource-Interface und kann als Farbquelle
+// verwendet werden - genau wie anderen Paletten-, resp. Farbtypen.
+func (p *PaletteFader) Color(v float64) (c ledgrid.LedColor) {
+	c = p.Pals[0].Color(v)
+	if p.T > 0 {
+		c2 := p.Pals[1].Color(v)
+		c = c.Interpolate(c2, p.T)
+	}
+	return c
+}
+

@@ -874,34 +874,33 @@ func (a *PaletteAnimation) Tick(t float64) {
 // Palette auf eine andere umgestellt wird.
 type PaletteFadeAnimation struct {
     AnimationEmbed
-    Cont bool
-    ValPtr *ledgrid.ColorSource
-    Val1, Val2 ledgrid.ColorSource
+    Fader *PaletteFader
+    Val2 ledgrid.ColorSource
 	ValFunc    PaletteFuncType
 }
 
-func NewPaletteFadeAnimation(valPtr *ledgrid.ColorSource, val2 ledgrid.ColorSource, dur time.Duration) *PaletteFadeAnimation {
+func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ledgrid.ColorSource, dur time.Duration) *PaletteFadeAnimation {
     a := &PaletteFadeAnimation{}
     a.AnimationEmbed.ExtendAnimation(a)
     a.SetDuration(dur)
-    a.ValPtr = valPtr
-    a.Val1 = *valPtr
-    a.Val2 = val2
+    a.Fader = fader
+    a.Val2 = pal2
     return a
 }
 
 func (a *PaletteFadeAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
 	if a.ValFunc != nil {
-		a.Val2 = a.ValFunc()
-	}
+		a.Fader.Pals[1] = a.ValFunc()
+	} else {
+        a.Fader.Pals[1] = a.Val2
+    }
 }
 
 func (a *PaletteFadeAnimation) Tick(t float64) {
     if t == 1.0 {
-        *a.ValPtr = a.Val2
+        a.Fader.Pals[0], a.Fader.Pals[1] = a.Fader.Pals[1], a.Fader.Pals[0]
+    } else {
+        a.Fader.T = t
     }
 }
 
