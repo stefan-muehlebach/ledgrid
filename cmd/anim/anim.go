@@ -58,12 +58,12 @@ var (
 	RegularPolygonTest = NewLedGridProgram("Regular Polygon test",
 		func(c *ledgrid.Canvas) {
 			posList := []geom.Point{
-				ledgrid.ConvertPos(geom.Point{-5.5, 4.5}),
-				ledgrid.ConvertPos(geom.Point{44.5, 4.5}),
+				geom.Point{-5.5, 4.5},
+				geom.Point{44.5, 4.5},
 			}
-			posCenter := ledgrid.ConvertPos(geom.Point{19.5, 4.5})
-			smallSize := ledgrid.ConvertSize(geom.Point{9.0, 9.0})
-			largeSize := ledgrid.ConvertSize(geom.Point{80.0, 80.0})
+			posCenter := geom.Point{19.5, 4.5}
+			smallSize := geom.Point{9.0, 9.0}
+			largeSize := geom.Point{80.0, 80.0}
 
 			polyList := make([]*ledgrid.RegularPolygon, 9)
 
@@ -95,10 +95,10 @@ var (
 
 	GroupTest = NewLedGridProgram("Group test",
 		func(ctrl *ledgrid.Canvas) {
-			rPos1 := ledgrid.ConvertPos(geom.Point{4.5, 4.5})
-			rPos2 := ledgrid.ConvertPos(geom.Point{float64(width) - 1.5, 4.5})
-			rSize1 := ledgrid.ConvertSize(geom.Point{7.0, 7.0})
-			rSize2 := ledgrid.ConvertSize(geom.Point{1.0, 1.0})
+			rPos1 := geom.Point{4.5, 4.5}
+			rPos2 := geom.Point{float64(width) - 1.5, 4.5}
+			rSize1 := geom.Point{7.0, 7.0}
+			rSize2 := geom.Point{1.0, 1.0}
 			rColor1 := color.SkyBlue
 			rColor2 := color.GreenYellow
 
@@ -122,9 +122,9 @@ var (
 
 	SequenceTest = NewLedGridProgram("Sequence test",
 		func(ctrl *ledgrid.Canvas) {
-			rPos := ledgrid.ConvertPos(geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5))
-			rSize1 := ledgrid.ConvertSize(geom.NewPointIMG(gridSize).SubXY(1, 1))
-			rSize2 := ledgrid.ConvertSize(geom.Point{5.0, 3.0})
+			rPos := geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5)
+			rSize1 := geom.NewPointIMG(gridSize).SubXY(1, 1)
+			rSize2 := geom.Point{5.0, 3.0}
 
 			r := ledgrid.NewRectangle(rPos, rSize1, color.SkyBlue)
 			ctrl.Add(r)
@@ -149,12 +149,12 @@ var (
 
 	TimelineTest = NewLedGridProgram("Timeline test",
 		func(ctrl *ledgrid.Canvas) {
-			r1Pos := ledgrid.ConvertPos(geom.Point{6.5, float64(height-1) / 2.0})
-			r1Size := ledgrid.ConvertSize(geom.Point{9.0, 5.0})
-			r2Pos := ledgrid.ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) / 2.0})
-			r2Size := ledgrid.ConvertSize(geom.Point{11.0, 7.0})
-			r3Pos := ledgrid.ConvertPos(geom.Point{float64(width) - 7.5, float64(height-1) / 2.0})
-			r3Size := ledgrid.ConvertSize(geom.Point{9.0, 5.0})
+			r1Pos := geom.Point{6.5, float64(height-1) / 2.0}
+			r1Size := geom.Point{9.0, 5.0}
+			r2Pos := geom.Point{float64(width-1) / 2.0, float64(height-1) / 2.0}
+			r2Size := geom.Point{11.0, 7.0}
+			r3Pos := geom.Point{float64(width) - 7.5, float64(height-1) / 2.0}
+			r3Size := geom.Point{9.0, 5.0}
 
 			r1 := ledgrid.NewRectangle(r1Pos, r1Size, color.GreenYellow)
 			r2 := ledgrid.NewRectangle(r2Pos, r2Size, color.Gold)
@@ -191,7 +191,7 @@ var (
 
 			aColor7 := ledgrid.NewColorAnimation(&r2.BorderColor, color.Cornsilk, 500*time.Millisecond)
 			aColor7.AutoReverse = true
-			aBorder := ledgrid.NewFloatAnimation(&r2.BorderWidth, ledgrid.ConvertLen(3.0), 500*time.Millisecond)
+			aBorder := ledgrid.NewFloatAnimation(&r2.BorderWidth, 3.0, 500*time.Millisecond)
 			aBorder.AutoReverse = true
 
 			tl := ledgrid.NewTimeline(5 * time.Second)
@@ -222,11 +222,11 @@ var (
 			pathA := ledgrid.FullCirclePathA
 			pathB := ledgrid.FullCirclePathB
 
-			pos1 := ledgrid.ConvertPos(geom.Point{1.5, float64(height-1) / 2.0})
-			pos2 := ledgrid.ConvertPos(geom.Point{float64(width-1) / 2.0, 1.5})
-			pos3 := ledgrid.ConvertPos(geom.Point{float64(width-1) - 1.5, float64(height-1) / 2.0})
-			pos4 := ledgrid.ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) - 1.5})
-			cSize := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
+			pos1 := geom.Point{1.5, float64(height-1) / 2.0}
+			pos2 := geom.Point{float64(width-1) / 2.0, 1.5}
+			pos3 := geom.Point{float64(width-1) - 1.5, float64(height-1) / 2.0}
+			pos4 := geom.Point{float64(width-1) / 2.0, float64(height-1) - 1.5}
+			cSize := geom.Point{3.0, 3.0}
 
 			c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)
 			c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
@@ -234,14 +234,14 @@ var (
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
 			ctrl.Add(c1, c2, c3, c4)
 
-			c1Path := ledgrid.NewPathAnimation(&c1.Pos, pathB, ledgrid.ConvertSize(geom.Point{float64(width - 4), 6.0}), duration)
+			c1Path := ledgrid.NewPathAnimation(&c1.Pos, pathB, geom.Point{float64(width - 4), 6.0}, duration)
 			c1Path.AutoReverse = true
-			c3Path := ledgrid.NewPathAnimation(&c3.Pos, pathB, ledgrid.ConvertSize(geom.Point{-float64(width - 4), -6.0}), duration)
+			c3Path := ledgrid.NewPathAnimation(&c3.Pos, pathB, geom.Point{-float64(width - 4), -6.0}, duration)
 			c3Path.AutoReverse = true
 
-			c2Path := ledgrid.NewPathAnimation(&c2.Pos, pathA, ledgrid.ConvertSize(geom.Point{float64(width) / 3.0, 6.0}), duration)
+			c2Path := ledgrid.NewPathAnimation(&c2.Pos, pathA, geom.Point{float64(width) / 3.0, 6.0}, duration)
 			c2Path.AutoReverse = true
-			c4Path := ledgrid.NewPathAnimation(&c4.Pos, pathA, ledgrid.ConvertSize(geom.Point{-float64(width) / 3.0, -6.0}), duration)
+			c4Path := ledgrid.NewPathAnimation(&c4.Pos, pathA, geom.Point{-float64(width) / 3.0, -6.0}, duration)
 			c4Path.AutoReverse = true
 
 			aGrp := ledgrid.NewGroup(c1Path, c2Path, c3Path, c4Path)
@@ -252,40 +252,40 @@ var (
 	PolygonPathTest = NewLedGridProgram("Polygon path test",
 		func(c *ledgrid.Canvas) {
 
-			cPos := ledgrid.ConvertPos(geom.Point{1, 1})
-			cSize := ledgrid.ConvertSize(geom.Point{2, 2})
+			cPos := geom.Point{1, 1}
+			cSize := geom.Point{2, 2}
 
 			polyPath1 := ledgrid.NewPolygonPath(
-				ledgrid.ConvertPos(geom.Point{1, 1}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 2, 1}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 2, float64(height) - 2}),
-				ledgrid.ConvertPos(geom.Point{1, float64(height) - 2}),
+				geom.Point{1, 1},
+				geom.Point{float64(width) - 2, 1},
+				geom.Point{float64(width) - 2, float64(height) - 2},
+				geom.Point{1, float64(height) - 2},
 
-				ledgrid.ConvertPos(geom.Point{1, 2}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 3, 2}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 3, float64(height) - 3}),
-				ledgrid.ConvertPos(geom.Point{2, float64(height) - 3}),
+				geom.Point{1, 2},
+				geom.Point{float64(width) - 3, 2},
+				geom.Point{float64(width) - 3, float64(height) - 3},
+				geom.Point{2, float64(height) - 3},
 
-				ledgrid.ConvertPos(geom.Point{2, 3}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 4, 3}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 4, float64(height) - 4}),
-				ledgrid.ConvertPos(geom.Point{3, float64(height) - 4}),
+				geom.Point{2, 3},
+				geom.Point{float64(width) - 4, 3},
+				geom.Point{float64(width) - 4, float64(height) - 4},
+				geom.Point{3, float64(height) - 4},
 
-				ledgrid.ConvertPos(geom.Point{3, 4}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 5, 4}),
-				ledgrid.ConvertPos(geom.Point{float64(width) - 5, float64(height) - 5}),
-				ledgrid.ConvertPos(geom.Point{4, float64(height) - 5}),
+				geom.Point{3, 4},
+				geom.Point{float64(width) - 5, 4},
+				geom.Point{float64(width) - 5, float64(height) - 5},
+				geom.Point{4, float64(height) - 5},
 			)
 
 			polyPath2 := ledgrid.NewPolygonPath(
-				ledgrid.ConvertPos(geom.Point{1, 1}),
-				ledgrid.ConvertPos(geom.Point{4, 8}),
-				ledgrid.ConvertPos(geom.Point{7, 2}),
-				ledgrid.ConvertPos(geom.Point{10, 7}),
-				ledgrid.ConvertPos(geom.Point{13, 3}),
-				ledgrid.ConvertPos(geom.Point{16, 6}),
-				ledgrid.ConvertPos(geom.Point{19, 4}),
-				ledgrid.ConvertPos(geom.Point{22, 5}),
+				geom.Point{1, 1},
+				geom.Point{4, 8},
+				geom.Point{7, 2},
+				geom.Point{10, 7},
+				geom.Point{13, 3},
+				geom.Point{16, 6},
+				geom.Point{19, 4},
+				geom.Point{22, 5},
 			)
 
 			c1 := ledgrid.NewEllipse(cPos, cSize, color.GreenYellow)
@@ -305,11 +305,11 @@ var (
 
 	RandomWalk = NewLedGridProgram("Random walk",
 		func(c *ledgrid.Canvas) {
-			rect := geom.Rectangle{Min: ledgrid.ConvertPos(geom.Point{1.0, 1.0}), Max: ledgrid.ConvertPos(geom.Point{float64(width) - 1.0, float64(height) - 1.0})}
-			pos1 := ledgrid.ConvertPos(geom.Point{1.0, 1.0})
-			pos2 := ledgrid.ConvertPos(geom.Point{18.0, 8.0})
-			size1 := ledgrid.ConvertSize(geom.Point{2.0, 2.0})
-			size2 := ledgrid.ConvertSize(geom.Point{4.0, 4.0})
+			rect := geom.Rectangle{Min: geom.Point{1.0, 1.0}, Max: geom.Point{float64(width) - 1.0, float64(height) - 1.0}}
+			pos1 := geom.Point{1.0, 1.0}
+			pos2 := geom.Point{18.0, 8.0}
+			size1 := geom.Point{2.0, 2.0}
+			size2 := geom.Point{4.0, 4.0}
 
 			c1 := ledgrid.NewEllipse(pos1, size1, color.SkyBlue)
 			c2 := ledgrid.NewEllipse(pos2, size2, color.GreenYellow)
@@ -353,12 +353,12 @@ var (
 
 	CirclingCircles = NewLedGridProgram("Circling circles",
 		func(ctrl *ledgrid.Canvas) {
-			pos1 := ledgrid.ConvertPos(geom.Point{1.0, 1.0})
-			pos2 := ledgrid.ConvertPos(geom.Point{10.0, 8.0})
-			pos3 := ledgrid.ConvertPos(geom.Point{19.0, 1.0})
-			pos4 := ledgrid.ConvertPos(geom.Point{28.0, 8.0})
-			pos5 := ledgrid.ConvertPos(geom.Point{37.0, 1.0})
-			cSize := ledgrid.ConvertSize(geom.Point{2.0, 2.0})
+			pos1 := geom.Point{1.0, 1.0}
+			pos2 := geom.Point{10.0, 8.0}
+			pos3 := geom.Point{19.0, 1.0}
+			pos4 := geom.Point{28.0, 8.0}
+			pos5 := geom.Point{37.0, 1.0}
+			cSize := geom.Point{2.0, 2.0}
 
 			c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)
 			c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
@@ -366,9 +366,9 @@ var (
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
 			c5 := ledgrid.NewEllipse(pos5, cSize, color.YellowGreen)
 
-			stepRD := ledgrid.ConvertSize(geom.Point{9.0, 7.0})
+			stepRD := geom.Point{9.0, 7.0}
 			stepLU := stepRD.Neg()
-			stepRU := ledgrid.ConvertSize(geom.Point{9.0, -7.0})
+			stepRU := geom.Point{9.0, -7.0}
 			stepLD := stepRU.Neg()
 
 			c1Path1 := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.QuarterCirclePathA, stepRD, time.Second)
@@ -417,14 +417,14 @@ var (
 
 	ChasingCircles = NewLedGridProgram("Chasing circles",
 		func(ctrl *ledgrid.Canvas) {
-			c1Pos1 := ledgrid.ConvertPos(geom.Point{36.5, 4.5})
-			c1Size1 := ledgrid.ConvertSize(geom.Point{10.0, 10.0})
-			c1Size2 := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
-			c1PosSize := ledgrid.ConvertSize(geom.Point{-34.0, -5.0})
-			c2Pos := ledgrid.ConvertPos(geom.Point{2.5, 4.5})
-			c2Size1 := ledgrid.ConvertSize(geom.Point{5.0, 5.0})
-			c2Size2 := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
-			c2PosSize := ledgrid.ConvertSize(geom.Point{34.0, 7.0})
+			c1Pos1 := geom.Point{36.5, 4.5}
+			c1Size1 := geom.Point{10.0, 10.0}
+			c1Size2 := geom.Point{3.0, 3.0}
+			c1PosSize := geom.Point{-34.0, -5.0}
+			c2Pos := geom.Point{2.5, 4.5}
+			c2Size1 := geom.Point{5.0, 5.0}
+			c2Size2 := geom.Point{3.0, 3.0}
+			c2PosSize := geom.Point{34.0, 7.0}
 
 			aGrp := ledgrid.NewGroup()
 
@@ -473,11 +473,11 @@ var (
 
 	CircleAnimation = NewLedGridProgram("Circle animation",
 		func(ctrl *ledgrid.Canvas) {
-			c1Pos1 := ledgrid.ConvertPos(geom.Point{1.5, 4.5})
-			c1Pos3 := ledgrid.ConvertPos(geom.Point{37.5, 4.5})
+			c1Pos1 := geom.Point{1.5, 4.5}
+			c1Pos3 := geom.Point{37.5, 4.5}
 
-			c1Size1 := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
-			c1Size2 := ledgrid.ConvertSize(geom.Point{9.0, 9.0})
+			c1Size1 := geom.Point{3.0, 3.0}
+			c1Size2 := geom.Point{9.0, 9.0}
 
 			c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, color.OrangeRed)
 
@@ -502,14 +502,14 @@ var (
 
 	PushingRectangles = NewLedGridProgram("Pushing rectangles",
 		func(ctrl *ledgrid.Canvas) {
-			rSize1 := ledgrid.ConvertSize(geom.Point{float64(width) - 3.0, 1.0})
-			rSize2 := ledgrid.ConvertSize(geom.Point{1.0, float64(height) - 1.0})
+			rSize1 := geom.Point{float64(width) - 3.0, 1.0}
+			rSize2 := geom.Point{1.0, float64(height) - 1.0}
 
-			r1Pos1 := ledgrid.ConvertPos(geom.Point{0.5, float64(height-1) / 2.0})
-			r1Pos2 := ledgrid.ConvertPos(geom.Point{0.5 + float64(width-3)/2.0, float64(height-1) / 2.0})
+			r1Pos1 := geom.Point{0.5, float64(height-1) / 2.0}
+			r1Pos2 := geom.Point{0.5 + float64(width-3)/2.0, float64(height-1) / 2.0}
 
-			r2Pos1 := ledgrid.ConvertPos(geom.Point{float64(width-1) - 0.5, float64(height-1) / 2.0})
-			r2Pos2 := ledgrid.ConvertPos(geom.Point{float64(width-1) - 0.5 - float64(width-3)/2.0, float64(height-1) / 2.0})
+			r2Pos1 := geom.Point{float64(width-1) - 0.5, float64(height-1) / 2.0}
+			r2Pos2 := geom.Point{float64(width-1) - 0.5 - float64(width-3)/2.0, float64(height-1) / 2.0}
 			duration := 2 * time.Second
 
 			r1 := ledgrid.NewRectangle(r1Pos1, rSize2, color.Crimson)
@@ -552,10 +552,10 @@ var (
 	MovingText = NewLedGridProgram("Moving text",
 		func(c *ledgrid.Canvas) {
 			pts = []geom.Point{
-				ledgrid.ConvertPos(geom.Point{0, 0}),
-				ledgrid.ConvertPos(geom.Point{0, float64(height)}),
-				ledgrid.ConvertPos(geom.Point{float64(width), float64(height)}),
-				ledgrid.ConvertPos(geom.Point{float64(width), 0}),
+				geom.Point{0, 0},
+				geom.Point{0, float64(height)},
+				geom.Point{float64(width), float64(height)},
+				geom.Point{float64(width), 0},
 			}
 
 			t1 := ledgrid.NewText(randPoint(), "Mühlebach", color.LightSeaGreen)
@@ -651,8 +651,8 @@ var (
 
 	CameraTest = NewLedGridProgram("Camera test",
 		func(c *ledgrid.Canvas) {
-			pos := ledgrid.ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
-			size := ledgrid.ConvertSize(geom.Point{float64(width), float64(height)})
+			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+			size := geom.Point{float64(width), float64(height)}
 
 			cam := ledgrid.NewCamera(pos, size)
 			c.Add(cam)
@@ -864,9 +864,9 @@ func (b *BouncingEllipse) IsStopped() bool {
 }
 
 func BounceAround(c *ledgrid.Canvas) {
-	pos1 := ledgrid.ConvertPos(geom.Point{2.0, 2.0})
-	pos2 := ledgrid.ConvertPos(geom.Point{37.0, 7.0})
-	size := ledgrid.ConvertSize(geom.Point{4.0, 4.0})
+	pos1 := geom.Point{2.0, 2.0}
+	pos2 := geom.Point{37.0, 7.0}
+	size := geom.Point{4.0, 4.0}
 	vel1 := geom.Point{0.15, 0.075}
 	vel2 := geom.Point{-0.35, -0.25}
 

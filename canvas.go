@@ -26,12 +26,12 @@ var (
 	// Alle Positionsdaten werden bei der Konvertierung um diesem Wert
 	// verschoben. Da gg mit Fliesskommazahlen arbeitet, treffen Koordinaten
 	// wie (1,5) nie direkt auf ein Pixel, sondern immer dazwischen.
-	displ = geom.Point{0.5, 0.5}
+	// displ = geom.Point{0.5, 0.5}
 
 	// Mit oversize wird ein Vergroesserungsfaktor beschrieben, der fuer alle
 	// Zeichenoperationen verwendet wird. Damit wird ein insgesamt weicheres
 	// Bild erzielt.
-	oversize = 1.0
+	// oversize = 1.0
 
 	// Ueber die NewXXX-Funktionen koennen die Objekte einfacher erzeugt
 	// werden. Die Fuellfarbe ist gleich der Randfarbe, hat aber einen
@@ -104,20 +104,20 @@ func (c *Canvas) Watch() *Stopwatch {
 }
 
 // Mit ConvertPos muessen alle Positionsdaten konvertiert werden.
-func ConvertPos(p geom.Point) geom.Point {
-	return p.Add(displ).Mul(oversize)
-}
+// func ConvertPos(p geom.Point) geom.Point {
+// 	return p.Add(displ).Mul(oversize)
+// }
 
 // ConvertSize dagegen wird fuer die Konvertierung aller Groessenangaben
 // verwendet.
-func ConvertSize(s geom.Point) geom.Point {
-	return s.Mul(oversize)
-}
+// func ConvertSize(s geom.Point) geom.Point {
+// 	return s.Mul(oversize)
+// }
 
 // Einzelne Laengen werden mit ConvertLen konvertiert.
-func ConvertLen(l float64) float64 {
-	return l * oversize
-}
+// func ConvertLen(l float64) float64 {
+// 	return l * oversize
+// }
 
 type ColorConvertFunc func(color.LedColor) color.LedColor
 
@@ -226,7 +226,7 @@ func NewImageFromFile(pos geom.Point, fileName string) *Image {
 	// 	log.Fatalf("Couldn't decode image: %v", err)
 	// }
 	// i.Img = tmp.(draw.Image)
-	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
+	i.Size = geom.NewPointIMG(i.Img.Bounds().Size())
 	return i
 }
 
@@ -247,7 +247,7 @@ func (i *Image) Read(fileName string) {
 	if i.Size.X > 0 || i.Size.Y > 0 {
 		return
 	}
-	i.Size = geom.NewPointIMG(i.Img.Bounds().Size().Mul(int(oversize)))
+	i.Size = geom.NewPointIMG(i.Img.Bounds().Size())
 }
 
 func (i *Image) Draw(c *Canvas) {
@@ -301,7 +301,7 @@ func (i *ImageList) Draw(c *Canvas) {
 // Zur Darstellung von beliebigem Text.
 var (
 	defFont     = fonts.SeafordBold
-	defFontSize = ConvertLen(12.0)
+	defFontSize = 12.0
 )
 
 type Text struct {
@@ -397,7 +397,7 @@ type Ellipse struct {
 // Will man die einzelnen Werte flexibler verwenden, empfiehlt sich die
 // Erzeugung mittels &Ellipse{...}.
 func NewEllipse(pos, size geom.Point, borderColor color.LedColor) *Ellipse {
-	e := &Ellipse{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
+	e := &Ellipse{Pos: pos, Size: size, BorderWidth: 2.0,
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
 	e.CanvasObjectEmbed.ExtendCanvasObject(e)
 	e.FillColor = color.Transparent
@@ -433,7 +433,7 @@ type Rectangle struct {
 }
 
 func NewRectangle(pos, size geom.Point, borderColor color.LedColor) *Rectangle {
-	r := &Rectangle{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
+	r := &Rectangle{Pos: pos, Size: size, BorderWidth: 1.0,
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
 	r.CanvasObjectEmbed.ExtendCanvasObject(r)
 	return r
@@ -468,7 +468,7 @@ type RegularPolygon struct {
 }
 
 func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor color.LedColor) *RegularPolygon {
-	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: ConvertLen(1.0),
+	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: 1.0,
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha, numPoints: numPoints}
 	p.CanvasObjectEmbed.ExtendCanvasObject(p)
 	return p
@@ -496,7 +496,7 @@ type Line struct {
 }
 
 func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
-	l := &Line{Pos1: pos1, Pos2: pos2, Width: ConvertLen(1.0), Color: col}
+	l := &Line{Pos1: pos1, Pos2: pos2, Width: 1.0, Color: col}
 	l.CanvasObjectEmbed.ExtendCanvasObject(l)
 	return l
 }
