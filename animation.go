@@ -1,12 +1,9 @@
-package main
+package ledgrid
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"math"
 	"math/rand/v2"
-	"os"
 	"runtime"
 	"slices"
 	"sync"
@@ -15,19 +12,18 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/stefan-muehlebach/gg/geom"
-	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colornames"
+	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
 var (
-	globAnimCtrl *AnimationController
+	AnimCtrl *AnimationController
 )
 
 // Fuer Animationen, die endlos wiederholt weren sollen, kann diese Konstante
 // fuer die Anzahl Wiederholungen verwendet werden.
 const (
 	AnimationRepeatForever = -1
-	refreshRate            = 30 * time.Millisecond
+	refreshRate            = 20 * time.Millisecond
 )
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
@@ -69,25 +65,38 @@ func AnimationEaseInOutNew(t float64) float64 {
 
 // Dies ist ein etwas unbeholfener Versuch, die Zielwerte bestimmter
 // Animationen dynamisch berechnen zu lassen.
-type PaletteFuncType func() ledgrid.ColorSource
-type ColorFuncType func() ledgrid.LedColor
+type PaletteFuncType func() ColorSource
+type ColorFuncType func() color.LedColor
 type PointFuncType func() geom.Point
 type FloatFuncType func() float64
 type AlphaFuncType func() uint8
 
+var (
+	palId int = 0
+)
+
+func SeqPalette() PaletteFuncType {
+	return func() ColorSource {
+		name := PaletteNames[palId]
+        log.Printf("%s", name)
+		palId = (palId + 1) % len(PaletteNames)
+		return PaletteMap[name]
+	}
+}
+
 func RandPalette() PaletteFuncType {
-    return func() ledgrid.ColorSource {
-        name := ledgrid.PaletteNames[rand.IntN(len(ledgrid.PaletteNames))]
-        return ledgrid.PaletteMap[name]
-    }
+	return func() ColorSource {
+		name := PaletteNames[rand.IntN(len(PaletteNames))]
+		return PaletteMap[name]
+	}
 }
 
 // Liefert bei jedem Aufruf eine zufaellig gewaehlte Farbe.
-func RandColor() ColorFuncType {
-	return func() ledgrid.LedColor {
-		return colornames.RandColor()
-	}
-}
+// func RandColor() ColorFuncType {
+// 	return func() color.LedColor {
+// 		return colornames.RandColor()
+// 	}
+// }
 
 // Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
 // Rechtecks r.
@@ -149,21 +158,18 @@ type AnimationController struct {
 	AnimList   []Animation
 	animMutex  *sync.RWMutex
 	canvas     *Canvas
-	ledGrid    *ledgrid.LedGrid
-	pixClient  ledgrid.PixelClient
+	ledGrid    *LedGrid
+	pixClient  PixelClient
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
-	logFile    io.Writer
-	animWatch  *ledgrid.Stopwatch
+	animWatch  *Stopwatch
 	numThreads int
 }
 
-func NewAnimationController(canvas *Canvas, ledGrid *ledgrid.LedGrid, pixClient ledgrid.PixelClient) *AnimationController {
-	var err error
-
-	if globAnimCtrl != nil {
-		return globAnimCtrl
+func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient PixelClient) *AnimationController {
+	if AnimCtrl != nil {
+		return AnimCtrl
 	}
 	a := &AnimationController{}
 	a.AnimList = make([]Animation, 0)
@@ -172,16 +178,10 @@ func NewAnimationController(canvas *Canvas, ledGrid *ledgrid.LedGrid, pixClient 
 	a.ledGrid = ledGrid
 	a.pixClient = pixClient
 	a.ticker = time.NewTicker(refreshRate)
-	a.animWatch = ledgrid.NewStopwatch()
+	a.animWatch = NewStopwatch()
 	a.numThreads = runtime.NumCPU()
-	if doLog {
-		a.logFile, err = os.Create("animation.log")
-		if err != nil {
-			log.Fatalf("Couldn't create logfile: %v", err)
-		}
-	}
 
-	globAnimCtrl = a
+	AnimCtrl = a
 	go a.backgroundThread()
 	return a
 }
@@ -240,13 +240,8 @@ func (a *AnimationController) backgroundThread() {
 		go a.animationUpdater(startChan, doneChan)
 	}
 
-	lastPit := time.Now()
+	// lastPit := time.Now()
 	for a.animPit = range a.ticker.C {
-		if doLog {
-			delay := a.animPit.Sub(lastPit)
-			lastPit = a.animPit
-			fmt.Fprintf(a.logFile, "delay: %v\n", delay)
-		}
 		if a.quit {
 			break
 		}
@@ -282,6 +277,10 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, doneChan ch
 		a.animMutex.RUnlock()
 		doneChan <- true
 	}
+}
+
+func (a *AnimationController) Watch() *Stopwatch {
+	return a.animWatch
 }
 
 // Das Interface fuer jede Art von Animation (bis jetzt zumindest).
@@ -346,7 +345,7 @@ func NewGroup(anims ...Animation) *Group {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-	globAnimCtrl.Add(a)
+	AnimCtrl.Add(a)
 	return a
 }
 
@@ -443,7 +442,7 @@ func NewSequence(anims ...Animation) *Sequence {
 	a.duration = 0
 	a.RepeatCount = 0
 	a.Add(anims...)
-	globAnimCtrl.Add(a)
+	AnimCtrl.Add(a)
 	return a
 }
 
@@ -552,7 +551,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a.duration = d
 	a.RepeatCount = 0
 	a.posList = make([]*timelinePos, 0)
-	globAnimCtrl.Add(a)
+	AnimCtrl.Add(a)
 	return a
 }
 
@@ -673,7 +672,7 @@ func (a *AnimationEmbed) ExtendAnimation(impl AnimationImpl) {
 	a.RepeatCount = 0
 	a.impl = impl
 	a.running = false
-	globAnimCtrl.Add(a)
+	AnimCtrl.Add(a)
 }
 
 func (a *AnimationEmbed) Duration() time.Duration {
@@ -703,8 +702,8 @@ func (a *AnimationEmbed) Start() {
 	a.total = a.end.Sub(a.start).Seconds()
 	a.repeatsLeft = a.RepeatCount
 	a.reverse = false
-	a.running = true
 	a.impl.Init()
+	a.running = true
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
@@ -816,12 +815,12 @@ func (a *AlphaAnimation) Tick(t float64) {
 type ColorAnimation struct {
 	AnimationEmbed
 	Cont       bool
-	ValPtr     *ledgrid.LedColor
-	Val1, Val2 ledgrid.LedColor
+	ValPtr     *color.LedColor
+	Val1, Val2 color.LedColor
 	ValFunc    ColorFuncType
 }
 
-func NewColorAnimation(valPtr *ledgrid.LedColor, val2 ledgrid.LedColor, dur time.Duration) *ColorAnimation {
+func NewColorAnimation(valPtr *color.LedColor, val2 color.LedColor, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
 	a.AnimationEmbed.ExtendAnimation(a)
 	a.SetDuration(dur)
@@ -846,15 +845,14 @@ func (a *ColorAnimation) Tick(t float64) {
 	(*a.ValPtr).A = alpha
 }
 
-
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
 type PaletteAnimation struct {
 	AnimationEmbed
-	ValPtr *ledgrid.LedColor
-	pal    ledgrid.ColorSource
+	ValPtr *color.LedColor
+	pal    ColorSource
 }
 
-func NewPaletteAnimation(valPtr *ledgrid.LedColor, pal ledgrid.ColorSource, dur time.Duration) *PaletteAnimation {
+func NewPaletteAnimation(valPtr *color.LedColor, pal ColorSource, dur time.Duration) *PaletteAnimation {
 	a := &PaletteAnimation{}
 	a.AnimationEmbed.ExtendAnimation(a)
 	a.SetDuration(dur)
@@ -873,37 +871,37 @@ func (a *PaletteAnimation) Tick(t float64) {
 // Dies schliesslich ist eine Animation, bei welcher stufenlos von einer
 // Palette auf eine andere umgestellt wird.
 type PaletteFadeAnimation struct {
-    AnimationEmbed
-    Fader *PaletteFader
-    Val2 ledgrid.ColorSource
-	ValFunc    PaletteFuncType
+	AnimationEmbed
+	Fader   *PaletteFader
+	Val2    ColorSource
+	ValFunc PaletteFuncType
 }
 
-func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ledgrid.ColorSource, dur time.Duration) *PaletteFadeAnimation {
-    a := &PaletteFadeAnimation{}
-    a.AnimationEmbed.ExtendAnimation(a)
-    a.SetDuration(dur)
-    a.Fader = fader
-    a.Val2 = pal2
-    return a
+func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
+	a := &PaletteFadeAnimation{}
+	a.AnimationEmbed.ExtendAnimation(a)
+	a.SetDuration(dur)
+	a.Fader = fader
+	a.Val2 = pal2
+	return a
 }
 
 func (a *PaletteFadeAnimation) Init() {
-    a.Fader.T = 0.0
+	a.Fader.T = 0.0
 	if a.ValFunc != nil {
 		a.Fader.Pals[1] = a.ValFunc()
 	} else {
-        a.Fader.Pals[1] = a.Val2
-    }
+		a.Fader.Pals[1] = a.Val2
+	}
 }
 
 func (a *PaletteFadeAnimation) Tick(t float64) {
-    if t == 1.0 {
-        a.Fader.T = 0.0
-        a.Fader.Pals[0], a.Fader.Pals[1] = a.Fader.Pals[1], a.Fader.Pals[0]
-    } else {
-        a.Fader.T = t
-    }
+	if t == 1.0 {
+		a.Fader.Pals[0], a.Fader.Pals[1] = a.Fader.Pals[1], a.Fader.Pals[0]
+		a.Fader.T = 0.0
+	} else {
+		a.Fader.T = t
+	}
 }
 
 // Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
@@ -1241,22 +1239,22 @@ type ShaderFuncType func(x, y, t float64) float64
 
 // Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
 type ShaderAnimation struct {
-	ValPtr      *ledgrid.LedColor
-	Pal         ledgrid.ColorSource
+	ValPtr      *color.LedColor
+	Pal         ColorSource
 	X, Y        float64
 	Fnc         ShaderFuncType
 	start, stop time.Time
 	running     bool
 }
 
-func NewShaderAnimation(valPtr *ledgrid.LedColor, pal ledgrid.ColorSource,
+func NewShaderAnimation(valPtr *color.LedColor, pal ColorSource,
 	x, y float64, fnc ShaderFuncType) *ShaderAnimation {
 	a := &ShaderAnimation{}
 	a.ValPtr = valPtr
 	a.Pal = pal
 	a.X, a.Y = x, y
 	a.Fnc = fnc
-	globAnimCtrl.Add(a)
+	AnimCtrl.Add(a)
 	return a
 }
 

@@ -1,8 +1,7 @@
-package main
+package ledgrid
 
 import (
 	"image"
-	"io"
 	"log"
 	"os"
 	"sync"
@@ -15,8 +14,7 @@ import (
 	"github.com/stefan-muehlebach/gg"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
-	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colornames"
+	"github.com/stefan-muehlebach/ledgrid/color"
 	"golang.org/x/image/draw"
 )
 
@@ -40,8 +38,6 @@ var (
 	// niedrigeren Alpha-Wert, der mit dieser Konstante definiert werden
 	// kann.
 	fillAlpha = 0.4
-
-	doLog = false
 )
 
 // Ein Canvas ist eine animierbare Zeichenflaeche. Ihr koennen eine beliebige
@@ -50,29 +46,20 @@ var (
 type Canvas struct {
 	ObjList    []CanvasObject
 	objMutex   *sync.RWMutex
-	rect       image.Rectangle
+	Rect       image.Rectangle
 	img        *image.RGBA
 	gc         *gg.Context
-	logFile    io.Writer
-	paintWatch *ledgrid.Stopwatch
+	paintWatch *Stopwatch
 }
 
 func NewCanvas(size image.Point) *Canvas {
-	var err error
-
 	c := &Canvas{}
-	c.rect = image.Rectangle{Max: size}
-	c.img = image.NewRGBA(c.rect)
+	c.Rect = image.Rectangle{Max: size}
+	c.img = image.NewRGBA(c.Rect)
 	c.gc = gg.NewContextForRGBA(c.img)
 	c.ObjList = make([]CanvasObject, 0)
 	c.objMutex = &sync.RWMutex{}
-	if doLog {
-		c.logFile, err = os.Create("canvas.log")
-		if err != nil {
-			log.Fatalf("Couldn't create logfile: %v", err)
-		}
-	}
-	c.paintWatch = ledgrid.NewStopwatch()
+	c.paintWatch = NewStopwatch()
 	return c
 }
 
@@ -95,20 +82,25 @@ func (c *Canvas) Purge() {
 	c.objMutex.Unlock()
 }
 
-func (c *Canvas) Draw(lg *ledgrid.LedGrid) {
+func (c *Canvas) Draw(lg draw.Image) {
+// func (c *Canvas) Draw(lg *LedGrid) {
 	c.paintWatch.Start()
-	c.gc.SetFillColor(colornames.Black)
+	c.gc.SetFillColor(color.Black)
 	c.gc.Clear()
 	c.objMutex.RLock()
 	for _, obj := range c.ObjList {
-        if obj.IsHidden() {
-            continue
-        }
+		if obj.IsHidden() {
+			continue
+		}
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-	draw.Draw(lg, lg.Rect, c.img, image.Point{}, draw.Over)
+	draw.Draw(lg, lg.Bounds(), c.img, image.Point{}, draw.Over)
 	c.paintWatch.Stop()
+}
+
+func (c *Canvas) Watch() *Stopwatch {
+	return c.paintWatch
 }
 
 // Mit ConvertPos muessen alle Positionsdaten konvertiert werden.
@@ -127,9 +119,9 @@ func ConvertLen(l float64) float64 {
 	return l * oversize
 }
 
-type ColorConvertFunc func(ledgrid.LedColor) ledgrid.LedColor
+type ColorConvertFunc func(color.LedColor) color.LedColor
 
-func ApplyAlpha(c ledgrid.LedColor) ledgrid.LedColor {
+func ApplyAlpha(c color.LedColor) color.LedColor {
 	alpha := float64(c.A) / 255.0
 	return c.Alpha(alpha * fillAlpha)
 }
@@ -316,14 +308,14 @@ type Text struct {
 	CanvasObjectEmbed
 	Pos      geom.Point
 	Angle    float64
-	Color    ledgrid.LedColor
+	Color    color.LedColor
 	Font     *fonts.Font
 	FontSize float64
 	Text     string
 	fontFace font.Face
 }
 
-func NewText(pos geom.Point, text string, color ledgrid.LedColor) *Text {
+func NewText(pos geom.Point, text string, color color.LedColor) *Text {
 	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
 		Text: text}
 	t.CanvasObjectEmbed.ExtendCanvasObject(t)
@@ -346,20 +338,20 @@ func (t *Text) Draw(c *Canvas) {
 // 'fixed size' Bitmap-Schriften, die ohne Rastern und Rendern sehr schnell
 // dargestellt werden koennen.
 var (
-	defFixedFontFace = ledgrid.Face3x5
+	defFixedFontFace = Face3x5
 )
 
 type FixedText struct {
 	CanvasObjectEmbed
 	Pos    fixed.Point26_6
-	Color  ledgrid.LedColor
+	Color  color.LedColor
 	text   string
 	drawer *font.Drawer
 	rect   fixed.Rectangle26_6
 	dp     fixed.Point26_6
 }
 
-func NewFixedText(pos fixed.Point26_6, col ledgrid.LedColor, text string) *FixedText {
+func NewFixedText(pos fixed.Point26_6, col color.LedColor, text string) *FixedText {
 	t := &FixedText{Pos: pos, Color: col}
 	t.CanvasObjectEmbed.ExtendCanvasObject(t)
 	t.drawer = &font.Drawer{
@@ -396,7 +388,7 @@ type Ellipse struct {
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
-	BorderColor, FillColor ledgrid.LedColor
+	BorderColor, FillColor color.LedColor
 	FillColorFnc           ColorConvertFunc
 }
 
@@ -404,11 +396,11 @@ type Ellipse struct {
 // setzt die Fuellfarbe gleich Randfarbe mit Alpha-Wert von 0.3.
 // Will man die einzelnen Werte flexibler verwenden, empfiehlt sich die
 // Erzeugung mittels &Ellipse{...}.
-func NewEllipse(pos, size geom.Point, borderColor ledgrid.LedColor) *Ellipse {
+func NewEllipse(pos, size geom.Point, borderColor color.LedColor) *Ellipse {
 	e := &Ellipse{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
 	e.CanvasObjectEmbed.ExtendCanvasObject(e)
-	e.FillColor = ledgrid.Transparent
+	e.FillColor = color.Transparent
 	return e
 }
 
@@ -421,7 +413,7 @@ func (e *Ellipse) Draw(c *Canvas) {
 	c.gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
 	c.gc.SetStrokeWidth(e.BorderWidth)
 	c.gc.SetStrokeColor(e.BorderColor)
-	if e.FillColor == ledgrid.Transparent {
+	if e.FillColor == color.Transparent {
 		c.gc.SetFillColor(e.FillColorFnc(e.BorderColor))
 	} else {
 		c.gc.SetFillColor(e.FillColor)
@@ -436,11 +428,11 @@ type Rectangle struct {
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
-	BorderColor, FillColor ledgrid.LedColor
+	BorderColor, FillColor color.LedColor
 	FillColorFnc           ColorConvertFunc
 }
 
-func NewRectangle(pos, size geom.Point, borderColor ledgrid.LedColor) *Rectangle {
+func NewRectangle(pos, size geom.Point, borderColor color.LedColor) *Rectangle {
 	r := &Rectangle{Pos: pos, Size: size, BorderWidth: ConvertLen(1.0),
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
 	r.CanvasObjectEmbed.ExtendCanvasObject(r)
@@ -470,12 +462,12 @@ type RegularPolygon struct {
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
-	BorderColor, FillColor ledgrid.LedColor
+	BorderColor, FillColor color.LedColor
 	FillColorFnc           ColorConvertFunc
 	numPoints              int
 }
 
-func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor ledgrid.LedColor) *RegularPolygon {
+func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor color.LedColor) *RegularPolygon {
 	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: ConvertLen(1.0),
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha, numPoints: numPoints}
 	p.CanvasObjectEmbed.ExtendCanvasObject(p)
@@ -500,10 +492,10 @@ type Line struct {
 	CanvasObjectEmbed
 	Pos1, Pos2 geom.Point
 	Width      float64
-	Color      ledgrid.LedColor
+	Color      color.LedColor
 }
 
-func NewLine(pos1, pos2 geom.Point, col ledgrid.LedColor) *Line {
+func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
 	l := &Line{Pos1: pos1, Pos2: pos2, Width: ConvertLen(1.0), Color: col}
 	l.CanvasObjectEmbed.ExtendCanvasObject(l)
 	return l
@@ -522,55 +514,16 @@ func (l *Line) Draw(c *Canvas) {
 type Pixel struct {
 	CanvasObjectEmbed
 	Pos   image.Point
-	Color ledgrid.LedColor
+	Color color.LedColor
 }
 
-func NewPixel(pos image.Point, col ledgrid.LedColor) *Pixel {
+func NewPixel(pos image.Point, col color.LedColor) *Pixel {
 	p := &Pixel{Pos: pos, Color: col}
 	p.CanvasObjectEmbed.ExtendCanvasObject(p)
 	return p
 }
 
 func (p *Pixel) Draw(c *Canvas) {
-	bgColor := ledgrid.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(ledgrid.LedColor)
-	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, ledgrid.Blend))
+	bgColor := color.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
+	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
 }
-
-
-// Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
-// anderen realisiert werden.
-type PaletteFader struct {
-	Pals [2]ledgrid.ColorSource
-	T    float64
-}
-
-// Initialisiert wird der Fader mit der aktuell anzuzeigenden Palette. Der
-// PaletteFader wird anschliessend anstelle der ueblichen Palette verwendet.
-func NewPaletteFader(pal ledgrid.ColorSource) *PaletteFader {
-	p := &PaletteFader{}
-	p.Pals[0] = pal
-	p.Pals[1] = nil
-	p.T = 0.0
-	return p
-}
-
-func (p *PaletteFader) Name() string {
-    return ""
-}
-
-func (p *PaletteFader) SetName(string) {
-
-}
-
-// Mit dieser Methode wird der aktuelle Farbwert retourniert. Damit
-// implementiert der Fader das ColorSource-Interface und kann als Farbquelle
-// verwendet werden - genau wie anderen Paletten-, resp. Farbtypen.
-func (p *PaletteFader) Color(v float64) (c ledgrid.LedColor) {
-	c = p.Pals[0].Color(v)
-	if p.T > 0 {
-		c2 := p.Pals[1].Color(v)
-		c = c.Interpolate(c2, p.T)
-	}
-	return c
-}
-

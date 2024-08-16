@@ -3,16 +3,7 @@ package ledgrid
 import (
 	"image"
 	"image/color"
-	"time"
-)
-
-const (
-	defFramesPerSec = 30
-)
-
-var (
-	framesPerSecond int           = defFramesPerSec
-	frameRefresh    time.Duration = time.Second / time.Duration(framesPerSecond)
+    ledcolor "github.com/stefan-muehlebach/ledgrid/color"
 )
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.
@@ -26,28 +17,31 @@ type LedGrid struct {
 	// das LedGrid ausmachen. Die Reihenfolge entspricht dabei der
 	// Verkabelung!
 	Pix []uint8
-
+	// Mit dieser Struktur (slice of slices) werden Pixel-Koordinaten in
+	// Indizes uebersetzt.
 	idxMap IndexMap
 }
 
 // Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
-// Panels.
+// Panels. Wird bei modConf nil uebergeben, so wird eine Default-Konfiguration
+// der Module angenommen, welche bei DefaultModuleConfig naeher beschrieben
+// wird.
 func NewLedGrid(size image.Point, modConf ModuleConfig) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = image.Rectangle{Max: size}
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
 
-    // Autom. Formatwahl
-    if modConf == nil {
-        modConf = DefaultModuleConfig(g.Rect.Size())
-    }
+	// Autom. Formatwahl
+	if modConf == nil {
+		modConf = DefaultModuleConfig(g.Rect.Size())
+	}
 
 	g.idxMap = modConf.IndexMap()
 	return g
 }
 
 func (g *LedGrid) ColorModel() color.Model {
-	return LedColorModel
+	return ledcolor.LedColorModel
 }
 
 func (g *LedGrid) Bounds() image.Rectangle {
@@ -59,32 +53,32 @@ func (g *LedGrid) At(x, y int) color.Color {
 }
 
 func (g *LedGrid) Set(x, y int, c color.Color) {
-	c1 := LedColorModel.Convert(c).(LedColor)
+	c1 := ledcolor.LedColorModel.Convert(c).(ledcolor.LedColor)
 	g.SetLedColor(x, y, c1)
 }
 
 // Dient dem schnelleren Zugriff auf den Farbwert einer bestimmten Zelle, resp.
 // einer bestimmten LED. Analog zu At(), retourniert den Farbwert jedoch als
 // LedColor-Typ.
-func (g *LedGrid) LedColorAt(x, y int) LedColor {
+func (g *LedGrid) LedColorAt(x, y int) ledcolor.LedColor {
 	if !(image.Point{x, y}.In(g.Rect)) {
-		return LedColor{}
+		return ledcolor.LedColor{}
 	}
 	idx := g.PixOffset(x, y)
-	slc := g.Pix[idx : idx+3 : idx+3]
-	return LedColor{slc[0], slc[1], slc[2], 0xff}
+	src := g.Pix[idx : idx+3 : idx+3]
+	return ledcolor.LedColor{src[0], src[1], src[2], 0xff}
 }
 
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.
-func (g *LedGrid) SetLedColor(x, y int, c LedColor) {
+func (g *LedGrid) SetLedColor(x, y int, c ledcolor.LedColor) {
 	if !(image.Point{x, y}.In(g.Rect)) {
 		return
 	}
 	idx := g.PixOffset(x, y)
-	slc := g.Pix[idx : idx+3 : idx+3]
-	slc[0] = c.R
-	slc[1] = c.G
-	slc[2] = c.B
+	dst := g.Pix[idx : idx+3 : idx+3]
+	dst[0] = c.R
+	dst[1] = c.G
+	dst[2] = c.B
 }
 
 // Damit wird der Offset eines bestimmten Farbwerts innerhalb des Slices
@@ -95,16 +89,13 @@ func (g *LedGrid) PixOffset(x, y int) int {
 	return g.idxMap[x][y]
 }
 
-// Hier kommen nun die fuer das LedGrid spezifischen Funktionen.
-func (g *LedGrid) Clear(c LedColor) {
+// Mit Clear kann das ganze Grid geloescht, resp. alle LEDs auf die gleiche
+// Farbe gebracht werden.
+func (g *LedGrid) Clear(c ledcolor.LedColor) {
 	for idx := 0; idx < len(g.Pix); idx += 3 {
-		slc := g.Pix[idx : idx+3 : idx+3]
-		slc[0] = c.R
-		slc[1] = c.G
-		slc[2] = c.B
+		dst := g.Pix[idx : idx+3 : idx+3]
+		dst[0] = c.R
+		dst[1] = c.G
+		dst[2] = c.B
 	}
 }
-
-// func (g *LedGrid) MarkDefect(pos image.Point) {
-//     g.idxMap.MarkDefect(pos)
-// }

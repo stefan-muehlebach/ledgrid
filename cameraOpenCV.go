@@ -1,6 +1,6 @@
 //go:build cameraOpenCV
 
-package main
+package ledgrid
 
 import (
 	"image"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
+
 	"gocv.io/x/gocv"
 	"golang.org/x/image/draw"
 )
@@ -29,7 +30,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
 	c.CanvasObjectEmbed.ExtendCanvasObject(c)
 	c.mat = gocv.NewMatWithSize(c.cut.Dx(), c.cut.Dy(), gocv.MatTypeCV8UC3)
-	animCtrl.Add(c)
+	AnimCtrl.Add(c)
 	return c
 }
 
@@ -51,7 +52,7 @@ func (c *Camera) Start() {
 	}
 	c.dev.Set(gocv.VideoCaptureFrameWidth, camWidth)
 	c.dev.Set(gocv.VideoCaptureFrameHeight, camHeight)
-    c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
+	c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
 	c.dev.Set(gocv.VideoCaptureZoom, 0)
 	c.running = true
 }

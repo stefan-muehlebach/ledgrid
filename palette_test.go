@@ -24,7 +24,7 @@ const (
 var (
 	Font            = fonts.GoBold
 	PaletteFileList = []string{
-		"colourlovers.json",
+		"colormaps.json",
 		"palettes.json",
 	}
 )

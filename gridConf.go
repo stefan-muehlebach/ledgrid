@@ -301,126 +301,36 @@ func (idxMap IndexMap) CoordMap() CoordMap {
 // Methoden (Plot und Draw).
 
 var (
-	marginSize = 100.0
+    scaleFactor = 0.75
 
-	moduleSize        = 400.0
-	moduleBorderWidth = 3.0
+	marginSize = 100.0 * scaleFactor
+
+	moduleSize        = 400.0 * scaleFactor
+	moduleBorderWidth = 2.0
 	moduleBorderColor = color.Black
-	moduleFillColor   = color.Beige
+	moduleFillColor   = color.Ivory
 
 	moduleTextFont  = fonts.GoBold
-	moduleTextSize  = 60.0
+	moduleTextSize  = 60.0 * scaleFactor
 	moduleTextColor = color.Gainsboro
 
 	ledFieldSize        = moduleSize / float64(ModuleSize.X)
-	ledSize             = ledFieldSize - 15.0
+	ledSize             = ledFieldSize - 2.0
 	ledInputFieldColor  = color.OrangeRed.Alpha(0.3)
 	ledOutputFieldColor = color.Teal.Alpha(0.3)
-	ledBorderWidth      = 1.0
+	ledBorderWidth      = 1.5
 	ledBorderColor      = color.Black
 	ledFillColor        = color.White
+	ledInputFillColor   = color.Teal.Alpha(0.5)
+	ledOutputFillColor  = color.OrangeRed.Alpha(0.5)
 
-	arrowSize  = ledSize / 4.0
-	arrowColor = color.Black
+    arrowStartOffset = 1.0 / 5.0
+    arrowEndOffset   = 1.0 / 8.0
+	arrowSize        = 2.0 * ledSize / 3.0
+	arrowStrokeWidth = 2.5
+	arrowWidth       = 10.0
+	arrowColor       = color.Black.Alpha(0.5)
 )
-
-// Mit dieser Methode wird ein einzelnes Modul gezeichnet. Die aufrufende
-// Methode/Funktion muss mittels Translation und ggf. Rotation dafuer sorgen,
-// dass der Ursprung des Koordinatensystems im Mittelpunkt des Modules zu
-// liegen kommt.
-func (mod Module) Draw(gc *gg.Context) {
-	// p0 und p1 sind Referenzpunkte, die in den Ecken eines Modules
-	// platziert werden: p0 links oben, p1 rechts oben.
-	p0 := geom.Point{-moduleSize / 2.0, -moduleSize / 2.0}
-	p1 := p0.Add(geom.Point{moduleSize, 0})
-
-	mp := geom.Point{}
-	dp := geom.Point{}
-
-	// Feldfuellung fuer das Modul
-	gc.DrawRectangle(p0.X, p0.Y, moduleSize, moduleSize)
-	gc.SetFillColor(moduleFillColor)
-	gc.Fill()
-
-	// Index in der Mitte des Feldes plus Bezeichnung des Modules und
-	// seiner Ausrichtung.
-	gc.SetFontFace(fonts.NewFace(moduleTextFont, moduleTextSize))
-	gc.SetStrokeColor(moduleTextColor)
-	gc.DrawStringAnchored(fmt.Sprintf("%v", mod), 0.0, 0.0, 0.5, 0.5)
-
-	// Farbliche Hervorhebung des Feldes links oben
-	gc.DrawRectangle(p0.X, p0.Y, ledFieldSize, ledFieldSize)
-	if mod.Type == ModLR {
-		gc.SetFillColor(ledInputFieldColor)
-	} else {
-		gc.SetFillColor(ledOutputFieldColor)
-	}
-	gc.Fill()
-
-	// Farbliche Hervorhebung des Feldes rechts oben
-	gc.DrawRectangle(p1.X-ledFieldSize, p1.Y, ledFieldSize, ledFieldSize)
-	if mod.Type == ModRL {
-		gc.SetFillColor(ledInputFieldColor)
-	} else {
-		gc.SetFillColor(ledOutputFieldColor)
-	}
-	gc.Fill()
-
-	// Erste Spalte mit LED
-	for i := range 2 {
-		if mod.Type == ModLR {
-			mp = p0.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
-			if i == 1 {
-				mp = mp.AddXY(moduleSize-ledFieldSize, moduleSize-ledFieldSize)
-			}
-		} else {
-			mp = p1.AddXY(-ledFieldSize/2.0, ledFieldSize/2.0)
-			if i == 1 {
-				mp = mp.AddXY(-(moduleSize - ledFieldSize), moduleSize-ledFieldSize)
-			}
-		}
-		if i == 0 {
-			dp = geom.Point{0, ledFieldSize}
-		} else {
-			dp = geom.Point{0, -ledFieldSize}
-		}
-		for j := range ModuleSize.Y {
-			gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
-			gc.SetStrokeWidth(ledBorderWidth)
-			gc.SetStrokeColor(ledBorderColor)
-			gc.SetFillColor(ledFillColor)
-			gc.FillStroke()
-			if j > 0 {
-				prevPt := mp.Sub(dp)
-				arrowPt := mp.Interpolate(prevPt, 0.53)
-				angle := prevPt.Sub(mp).Angle() - math.Pi/2.0
-				gc.DrawRegularPolygon(3, arrowPt.X, arrowPt.Y, arrowSize, angle)
-				gc.SetFillColor(arrowColor)
-				gc.Fill()
-			}
-			mp = mp.Add(dp)
-		}
-	}
-
-	// Abschliessend die Modul-Umrahmung.
-	gc.DrawRectangle(p0.X, p0.Y, moduleSize, moduleSize)
-	gc.SetStrokeWidth(moduleBorderWidth)
-	gc.SetStrokeColor(moduleBorderColor)
-	gc.Stroke()
-}
-
-func (conf ModuleConfig) Draw(gc *gg.Context) {
-	p0 := geom.Point{marginSize, marginSize}.AddXY(moduleSize/2.0, moduleSize/2.0)
-	for _, modPos := range conf {
-		pt := p0.Add(geom.Point{float64(modPos.Col), float64(modPos.Row)}.Mul(moduleSize))
-
-		gc.Push()
-		gc.Translate(pt.X, pt.Y)
-		gc.Rotate(math.Pi * float64(-modPos.Mod.Rot) / 180.0)
-		modPos.Mod.Draw(gc)
-		gc.Pop()
-	}
-}
 
 func (conf ModuleConfig) Plot(fileName string) {
 	size := conf.Size()
@@ -437,6 +347,171 @@ func (conf ModuleConfig) Plot(fileName string) {
 	}
 }
 
+func (conf ModuleConfig) Draw(gc *gg.Context) {
+	p0 := geom.Point{marginSize, marginSize}.AddXY(moduleSize/2.0, moduleSize/2.0)
+	for _, modPos := range conf {
+		pt := p0.Add(geom.Point{float64(modPos.Col), float64(modPos.Row)}.Mul(moduleSize))
+
+		gc.Push()
+		gc.Translate(pt.X, pt.Y)
+		gc.Rotate(math.Pi * float64(-modPos.Mod.Rot) / 180.0)
+		modPos.Mod.Draw(gc)
+		gc.Pop()
+	}
+}
+
+// Mit dieser Methode wird ein einzelnes Modul gezeichnet. Die aufrufende
+// Methode/Funktion muss mittels Translation und ggf. Rotation dafuer sorgen,
+// dass der Ursprung des Koordinatensystems im Mittelpunkt des Modules zu
+// liegen kommt.
+func (mod Module) Draw(gc *gg.Context) {
+	// p0 und p1 sind Referenzpunkte, die in den Ecken eines Modules
+	// platziert werden: p0 links oben, p1 rechts oben.
+	p0 := geom.Point{-moduleSize / 2.0, -moduleSize / 2.0}
+	p1 := p0.Add(geom.Point{moduleSize, 0})
+
+	mp := geom.Point{}
+	dx := geom.Point{}
+    dy := geom.Point{}
+    dp := geom.Point{}
+    dir := math.Pi
+    turn := 0.0
+
+	// Feldfuellung fuer das Modul
+	gc.DrawRectangle(p0.X, p0.Y, moduleSize, moduleSize)
+	gc.SetFillColor(moduleFillColor)
+	gc.Fill()
+
+	// Index in der Mitte des Feldes plus Bezeichnung des Modules und
+	// seiner Ausrichtung.
+	gc.SetFontFace(fonts.NewFace(moduleTextFont, moduleTextSize))
+	gc.SetStrokeColor(moduleTextColor)
+	gc.DrawStringAnchored(fmt.Sprintf("%v", mod), 0.0, 0.0, 0.5, 0.5)
+
+	// Erste Spalte mit LED
+    // Iterationseinstellungen, die abhängig von der Hauptverkabelung sind.
+    if mod.Type == ModLR {
+        mp = p0.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
+        dx = geom.Point{ledFieldSize, 0.0}
+        dy = geom.Point{0.0, ledFieldSize}
+        turn = -math.Pi/2.0
+    } else {
+        mp = p1.AddXY(-ledFieldSize/2.0, ledFieldSize/2.0)
+        dx = geom.Point{-ledFieldSize, 0.0}
+        dy = geom.Point{0.0, ledFieldSize}
+        turn = math.Pi/2.0
+    }
+
+    mode := 0
+    dp = dy
+    for ledIdx := range ModuleSize.X * ModuleSize.Y {
+        switch mode {
+        case 0:
+            if ledIdx % ModuleSize.Y == 9 {
+                dir += turn
+                dp = dx
+                mode++
+            }
+        case 1:
+            dir += turn
+            dp = dy.Neg()
+            mode++
+        case 2:
+            if ledIdx % ModuleSize.Y == 9 {
+                dir -= turn
+                dp = dx
+                mode++
+            }
+        case 3:
+            dir -= turn
+            dp = dy
+            mode = 0
+        }
+
+        if ledIdx < 15 || ledIdx >= 85 {
+            // Kreis für PingPong-Ball zeichnen, falls Anfangs- oder End-LED mit
+            // entsprechender Farbe.
+            gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
+            gc.SetStrokeWidth(ledBorderWidth)
+            gc.SetStrokeColor(ledBorderColor)
+            if ledIdx == 0 {
+                gc.SetFillColor(ledInputFillColor)
+            } else if ledIdx == ModuleSize.X * ModuleSize.Y - 1 {
+                gc.SetFillColor(ledOutputFillColor)
+            } else {
+    			gc.SetFillColor(ledFillColor)
+            }
+            gc.FillStroke()
+
+            if ledIdx < ModuleSize.X * ModuleSize.Y - 1 {
+                // Pfeil in LED, welcher die Verkabelungsrichtung anzeigt.
+                gc.DrawRegularPolygon(3, mp.X, mp.Y, ledSize/4.0, dir)
+                gc.SetStrokeWidth(0.0)
+                gc.SetFillColor(arrowColor)
+                gc.Fill()
+            }
+        }
+
+        mp = mp.Add(dp)
+    }
+	// for i := range 2 {
+	// 	if mod.Type == ModLR {
+	// 		mp = p0.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
+	// 		if i == 1 {
+	// 			mp = mp.AddXY(moduleSize-ledFieldSize, moduleSize-ledFieldSize)
+	// 		}
+	// 	} else {
+	// 		mp = p1.AddXY(-ledFieldSize/2.0, ledFieldSize/2.0)
+	// 		if i == 1 {
+	// 			mp = mp.AddXY(-(moduleSize - ledFieldSize), moduleSize-ledFieldSize)
+	// 		}
+	// 	}
+	// 	if i == 0 {
+	// 		dp = geom.Point{0, ledFieldSize}
+	// 	} else {
+	// 		dp = geom.Point{0, -ledFieldSize}
+	// 	}
+	// 	for j := range ModuleSize.Y {
+	// 		gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
+	// 		gc.SetStrokeWidth(ledBorderWidth)
+	// 		gc.SetStrokeColor(ledBorderColor)
+	// 		if j == 0 && i == 0 {
+	// 			gc.SetFillColor(ledInputFillColor)
+	// 		} else if j == ModuleSize.Y-1 && i == 1 {
+	// 			gc.SetFillColor(ledOutputFillColor)
+	// 		} else {
+	// 			gc.SetFillColor(ledFillColor)
+	// 		}
+	// 		gc.FillStroke()
+	// 		if j > 0 {
+	// 			prevPt := mp.Sub(dp)
+	// 			arrowStart := prevPt.Interpolate(mp, arrowStartOffset)
+	// 			arrowEnd := prevPt.Interpolate(mp, 1.0-arrowEndOffset)
+	// 			gc.MoveTo(arrowEnd.AsCoord())
+	// 			gc.LineTo(arrowStart.SubXY(arrowWidth/2.0, 0.0).AsCoord())
+	// 			gc.LineTo(arrowStart.AddXY(arrowWidth/2.0, 0.0).AsCoord())
+	// 			gc.ClosePath()
+	// 			// gc.DrawLine(arrowStart.X, arrowStart.Y, arrowEnd.X, arrowEnd.Y)
+	// 			gc.SetStrokeWidth(arrowStrokeWidth)
+	// 			gc.SetStrokeColor(arrowColor)
+	// 			gc.Stroke()
+	// 			// angle := prevPt.Sub(mp).Angle() - math.Pi/2.0
+	// 			// gc.DrawRegularPolygon(3, arrowPt.X, arrowPt.Y, arrowSize, angle)
+	// 			// gc.SetFillColor(arrowColor)
+	// 			// gc.Fill()
+	// 		}
+	// 		mp = mp.Add(dp)
+	// 	}
+	// }
+
+	// Abschliessend die Modul-Umrahmung.
+	gc.DrawRectangle(p0.X, p0.Y, moduleSize, moduleSize)
+	gc.SetStrokeWidth(moduleBorderWidth)
+	gc.SetStrokeColor(moduleBorderColor)
+	gc.Stroke()
+}
+
+
 // Hilfsfunktioenchen (sogar generisch!)
 func abs[T ~int | ~float64](i T) T {
 	if i < 0 {
@@ -445,25 +520,6 @@ func abs[T ~int | ~float64](i T) T {
 		return i
 	}
 }
-
-// Mit dieser Methode kann eine bestimmte Position im LED-Panel als 'defekt'
-// markiert werden. In der Lichterkette muss diese Position ueberbrueckt,
-// d.h. die entsprechende LED entfernt und die Anschlusskabel direkt
-// miteinander verbunden werden.
-// func (idxMap IndexMap) MarkDefect(pos image.Point) {
-// 	idxDefect := idxMap[pos.X][pos.Y]
-// 	cols := len(idxMap)
-// 	rows := len(idxMap[0])
-// 	for col := range cols {
-// 		for row := range rows {
-// 			if idxMap[col][row] > idxDefect {
-// 				idxMap[col][row] -= 3
-// 			}
-// 		}
-// 	}
-// 	idxSpare := 3 * (cols*rows - 1)
-// 	idxMap[pos.X][pos.Y] = idxSpare
-// }
 
 // Diese Methode ergaenzt den Slice idxMap um die Koordinaten und Indizes des
 // Modules m. basePt sind die Pixel-Koordinaten der linken oberen Ecke des

@@ -1,6 +1,6 @@
 //go:build cameraV4L2
 
-package main
+package ledgrid
 
 import (
 	"bytes"

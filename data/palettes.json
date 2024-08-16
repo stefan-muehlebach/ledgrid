@@ -113,60 +113,6 @@
     ]
   },
   {
-    "ID": 201,
-    "Title": "FadeRed",
-    "IsCyclic": false,
-    "Colors": [
-        "000000",
-        "ff0000"
-    ]
-  },
-  {
-    "ID": 202,
-    "Title": "FadeGreen",
-    "IsCyclic": false,
-    "Colors": [
-        "000000",
-        "00ff00"
-    ]
-  },
-  {
-    "ID": 203,
-    "Title": "FadeBlue",
-    "IsCyclic": false,
-    "Colors": [
-        "000000",
-        "0000ff"
-    ]
-  },
-  {
-    "ID": 204,
-    "Title": "FadeYellow",
-    "IsCyclic": false,
-    "Colors": [
-        "000000",
-        "ffff00"
-    ]
-  },
-  {
-    "ID": 205,
-    "Title": "FadeCyan",
-    "IsCyclic": false,
-    "Colors": [
-        "000000",
-        "00ffff"
-    ]
-  },
-  {
-    "ID": 206,
-    "Title": "FadeMagenta",
-    "IsCyclic": false,
-    "Colors": [
-        "000000",
-        "ff00ff"
-    ]
-  },
-  {
     "ID": 208,
     "Title": "Hipster",
     "IsCyclic": true,

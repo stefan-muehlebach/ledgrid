@@ -12,7 +12,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colornames"
+    "github.com/stefan-muehlebach/ledgrid/color"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -27,175 +27,175 @@ var (
 	width, height int
 	gridSize      image.Point
 	backAlpha     = 1.0
-	animCtrl      *AnimationController
+	animCtrl      *ledgrid.AnimationController
 )
 
 //----------------------------------------------------------------------------
 
 type LedGridProgram interface {
 	Name() string
-	Run(c *Canvas)
+	Run(c *ledgrid.Canvas)
 }
 
-func NewLedGridProgram(name string, runFunc func(c *Canvas)) LedGridProgram {
+func NewLedGridProgram(name string, runFunc func(c *ledgrid.Canvas)) LedGridProgram {
 	return &simpleProgram{name, runFunc}
 }
 
 type simpleProgram struct {
 	name    string
-	runFunc func(c *Canvas)
+	runFunc func(c *ledgrid.Canvas)
 }
 
 func (p *simpleProgram) Name() string {
 	return p.name
 }
 
-func (p *simpleProgram) Run(c *Canvas) {
+func (p *simpleProgram) Run(c *ledgrid.Canvas) {
 	p.runFunc(c)
 }
 
 var (
 	RegularPolygonTest = NewLedGridProgram("Regular Polygon test",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			posList := []geom.Point{
-				ConvertPos(geom.Point{-5.5, 4.5}),
-				ConvertPos(geom.Point{44.5, 4.5}),
+				ledgrid.ConvertPos(geom.Point{-5.5, 4.5}),
+				ledgrid.ConvertPos(geom.Point{44.5, 4.5}),
 			}
-			posCenter := ConvertPos(geom.Point{19.5, 4.5})
-			smallSize := ConvertSize(geom.Point{9.0, 9.0})
-			largeSize := ConvertSize(geom.Point{80.0, 80.0})
+			posCenter := ledgrid.ConvertPos(geom.Point{19.5, 4.5})
+			smallSize := ledgrid.ConvertSize(geom.Point{9.0, 9.0})
+			largeSize := ledgrid.ConvertSize(geom.Point{80.0, 80.0})
 
-			polyList := make([]*RegularPolygon, 9)
+			polyList := make([]*ledgrid.RegularPolygon, 9)
 
-			aSeq := NewSequence()
+			aSeq := ledgrid.NewSequence()
 			for n := 3; n <= 6; n++ {
-				col := colornames.RandColor()
-				polyList[n] = NewRegularPolygon(n, posList[n%2], smallSize, col)
+				col := color.RandColor()
+				polyList[n] = ledgrid.NewRegularPolygon(n, posList[n%2], smallSize, col)
 				c.Add(polyList[n])
 				dur := 2*time.Second + rand.N(time.Second)
 				sign := []float64{+1.0, -1.0}[n%2]
 				angle := sign * 2 * math.Pi
-				animPos := NewPositionAnimation(&polyList[n].Pos, posCenter, dur)
-				animAngle := NewFloatAnimation(&polyList[n].Angle, angle, dur)
-				animSize := NewSizeAnimation(&polyList[n].Size, largeSize, 4*time.Second)
+				animPos := ledgrid.NewPositionAnimation(&polyList[n].Pos, posCenter, dur)
+				animAngle := ledgrid.NewFloatAnimation(&polyList[n].Angle, angle, dur)
+				animSize := ledgrid.NewSizeAnimation(&polyList[n].Size, largeSize, 4*time.Second)
 				animSize.Cont = true
-				animFade := NewColorAnimation(&polyList[n].BorderColor, colornames.Black, 4*time.Second)
+				animFade := ledgrid.NewColorAnimation(&polyList[n].BorderColor, color.Black, 4*time.Second)
 				animFade.Cont = true
 				// animFade := NewAlphaAnimation(&polyList[n].FillColor.A, 0x00, time.Second)
 
-				aGrpIn := NewGroup(animPos, animAngle)
+				aGrpIn := ledgrid.NewGroup(animPos, animAngle)
 				// aGrp.duration = dur
-				aGrpOut := NewGroup(animSize, animFade)
-				aObjSeq := NewSequence(aGrpIn, aGrpOut)
+				aGrpOut := ledgrid.NewGroup(animSize, animFade)
+				aObjSeq := ledgrid.NewSequence(aGrpIn, aGrpOut)
 				aSeq.Add(aObjSeq)
 			}
-			aSeq.RepeatCount = AnimationRepeatForever
+			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
 		})
 
 	GroupTest = NewLedGridProgram("Group test",
-		func(ctrl *Canvas) {
-			rPos1 := ConvertPos(geom.Point{4.5, 4.5})
-			rPos2 := ConvertPos(geom.Point{float64(width) - 1.5, 4.5})
-			rSize1 := ConvertSize(geom.Point{7.0, 7.0})
-			rSize2 := ConvertSize(geom.Point{1.0, 1.0})
-			rColor1 := colornames.SkyBlue
-			rColor2 := colornames.GreenYellow
+		func(ctrl *ledgrid.Canvas) {
+			rPos1 := ledgrid.ConvertPos(geom.Point{4.5, 4.5})
+			rPos2 := ledgrid.ConvertPos(geom.Point{float64(width) - 1.5, 4.5})
+			rSize1 := ledgrid.ConvertSize(geom.Point{7.0, 7.0})
+			rSize2 := ledgrid.ConvertSize(geom.Point{1.0, 1.0})
+			rColor1 := color.SkyBlue
+			rColor2 := color.GreenYellow
 
-			r := NewRectangle(rPos1, rSize1, rColor1)
+			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
 			ctrl.Add(r)
 
-			aPos := NewPositionAnimation(&r.Pos, rPos2, time.Second)
+			aPos := ledgrid.NewPositionAnimation(&r.Pos, rPos2, time.Second)
 			aPos.AutoReverse = true
-			aSize := NewSizeAnimation(&r.Size, rSize2, time.Second)
+			aSize := ledgrid.NewSizeAnimation(&r.Size, rSize2, time.Second)
 			aSize.AutoReverse = true
-			aColor := NewColorAnimation(&r.BorderColor, rColor2, time.Second)
+			aColor := ledgrid.NewColorAnimation(&r.BorderColor, rColor2, time.Second)
 			aColor.AutoReverse = true
-			aAngle := NewFloatAnimation(&r.Angle, math.Pi, time.Second)
+			aAngle := ledgrid.NewFloatAnimation(&r.Angle, math.Pi, time.Second)
 			aAngle.AutoReverse = true
 
-			aGroup := NewGroup(aPos, aSize, aColor, aAngle)
-			aGroup.RepeatCount = AnimationRepeatForever
+			aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
+			aGroup.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aGroup.Start()
 		})
 
 	SequenceTest = NewLedGridProgram("Sequence test",
-		func(ctrl *Canvas) {
-			rPos := ConvertPos(geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5))
-			rSize1 := ConvertSize(geom.NewPointIMG(gridSize).SubXY(1, 1))
-			rSize2 := ConvertSize(geom.Point{5.0, 3.0})
+		func(ctrl *ledgrid.Canvas) {
+			rPos := ledgrid.ConvertPos(geom.NewPointIMG(gridSize).Mul(0.5).SubXY(0.5, 0.5))
+			rSize1 := ledgrid.ConvertSize(geom.NewPointIMG(gridSize).SubXY(1, 1))
+			rSize2 := ledgrid.ConvertSize(geom.Point{5.0, 3.0})
 
-			r := NewRectangle(rPos, rSize1, colornames.SkyBlue)
+			r := ledgrid.NewRectangle(rPos, rSize1, color.SkyBlue)
 			ctrl.Add(r)
 
-			aSize1 := NewSizeAnimation(&r.Size, rSize2, time.Second)
-			aColor1 := NewColorAnimation(&r.BorderColor, colornames.OrangeRed, time.Second/2)
+			aSize1 := ledgrid.NewSizeAnimation(&r.Size, rSize2, time.Second)
+			aColor1 := ledgrid.NewColorAnimation(&r.BorderColor, color.OrangeRed, time.Second/2)
 			aColor1.AutoReverse = true
-			aColor2 := NewColorAnimation(&r.BorderColor, colornames.Crimson, time.Second/2)
+			aColor2 := ledgrid.NewColorAnimation(&r.BorderColor, color.Crimson, time.Second/2)
 			aColor2.AutoReverse = true
-			aColor3 := NewColorAnimation(&r.BorderColor, colornames.Coral, time.Second/2)
+			aColor3 := ledgrid.NewColorAnimation(&r.BorderColor, color.Coral, time.Second/2)
 			aColor3.AutoReverse = true
-			aColor4 := NewColorAnimation(&r.BorderColor, colornames.FireBrick, time.Second/2)
-			aSize2 := NewSizeAnimation(&r.Size, rSize1, time.Second)
+			aColor4 := ledgrid.NewColorAnimation(&r.BorderColor, color.FireBrick, time.Second/2)
+			aSize2 := ledgrid.NewSizeAnimation(&r.Size, rSize1, time.Second)
 			aSize2.Cont = true
-			aColor5 := NewColorAnimation(&r.BorderColor, colornames.SkyBlue, time.Second)
+			aColor5 := ledgrid.NewColorAnimation(&r.BorderColor, color.SkyBlue, time.Second)
 			aColor5.Cont = true
 
-			aSeq := NewSequence(aSize1, aColor1, aColor2, aColor3, aColor4, aSize2, aColor5)
-			aSeq.RepeatCount = AnimationRepeatForever
+			aSeq := ledgrid.NewSequence(aSize1, aColor1, aColor2, aColor3, aColor4, aSize2, aColor5)
+			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
 		})
 
 	TimelineTest = NewLedGridProgram("Timeline test",
-		func(ctrl *Canvas) {
-			r1Pos := ConvertPos(geom.Point{6.5, float64(height-1) / 2.0})
-			r1Size := ConvertSize(geom.Point{9.0, 5.0})
-			r2Pos := ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) / 2.0})
-			r2Size := ConvertSize(geom.Point{11.0, 7.0})
-			r3Pos := ConvertPos(geom.Point{float64(width) - 7.5, float64(height-1) / 2.0})
-			r3Size := ConvertSize(geom.Point{9.0, 5.0})
+		func(ctrl *ledgrid.Canvas) {
+			r1Pos := ledgrid.ConvertPos(geom.Point{6.5, float64(height-1) / 2.0})
+			r1Size := ledgrid.ConvertSize(geom.Point{9.0, 5.0})
+			r2Pos := ledgrid.ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) / 2.0})
+			r2Size := ledgrid.ConvertSize(geom.Point{11.0, 7.0})
+			r3Pos := ledgrid.ConvertPos(geom.Point{float64(width) - 7.5, float64(height-1) / 2.0})
+			r3Size := ledgrid.ConvertSize(geom.Point{9.0, 5.0})
 
-			r1 := NewRectangle(r1Pos, r1Size, colornames.GreenYellow)
-			r2 := NewRectangle(r2Pos, r2Size, colornames.Gold)
-			r3 := NewRectangle(r3Pos, r3Size, colornames.SkyBlue)
+			r1 := ledgrid.NewRectangle(r1Pos, r1Size, color.GreenYellow)
+			r2 := ledgrid.NewRectangle(r2Pos, r2Size, color.Gold)
+			r3 := ledgrid.NewRectangle(r3Pos, r3Size, color.SkyBlue)
 			ctrl.Add(r1, r2, r3)
 
-			aAngle1 := NewFloatAnimation(&r1.Angle, math.Pi, time.Second)
-			aAngle2 := NewFloatAnimation(&r1.Angle, 0.0, time.Second)
+			aAngle1 := ledgrid.NewFloatAnimation(&r1.Angle, math.Pi, time.Second)
+			aAngle2 := ledgrid.NewFloatAnimation(&r1.Angle, 0.0, time.Second)
 			aAngle2.Cont = true
 
-			aColor1 := NewColorAnimation(&r1.BorderColor, colornames.OrangeRed, 200*time.Millisecond)
+			aColor1 := ledgrid.NewColorAnimation(&r1.BorderColor, color.OrangeRed, 200*time.Millisecond)
 			aColor1.AutoReverse = true
 			aColor1.RepeatCount = 3
-			aColor2 := NewColorAnimation(&r1.BorderColor, colornames.Purple, 500*time.Millisecond)
-			aColor3 := NewColorAnimation(&r1.BorderColor, colornames.GreenYellow, 500*time.Millisecond)
+			aColor2 := ledgrid.NewColorAnimation(&r1.BorderColor, color.Purple, 500*time.Millisecond)
+			aColor3 := ledgrid.NewColorAnimation(&r1.BorderColor, color.GreenYellow, 500*time.Millisecond)
 			aColor3.Cont = true
 
-			aPos1 := NewPositionAnimation(&r1.Pos, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+			aPos1 := ledgrid.NewPositionAnimation(&r1.Pos, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
 			aPos1.AutoReverse = true
 
-			aAngle3 := NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
-			aAngle4 := NewFloatAnimation(&r3.Angle, 0.0, time.Second)
+			aAngle3 := ledgrid.NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
+			aAngle4 := ledgrid.NewFloatAnimation(&r3.Angle, 0.0, time.Second)
 			aAngle4.Cont = true
 
-			aColor4 := NewColorAnimation(&r3.BorderColor, colornames.DarkOrange, 200*time.Millisecond)
+			aColor4 := ledgrid.NewColorAnimation(&r3.BorderColor, color.DarkOrange, 200*time.Millisecond)
 			aColor4.AutoReverse = true
 			aColor4.RepeatCount = 3
-			aColor5 := NewColorAnimation(&r3.BorderColor, colornames.Purple, 500*time.Millisecond)
-			aColor6 := NewColorAnimation(&r3.BorderColor, colornames.SkyBlue, 500*time.Millisecond)
+			aColor5 := ledgrid.NewColorAnimation(&r3.BorderColor, color.Purple, 500*time.Millisecond)
+			aColor6 := ledgrid.NewColorAnimation(&r3.BorderColor, color.SkyBlue, 500*time.Millisecond)
 			aColor6.Cont = true
 
-			aPos2 := NewPositionAnimation(&r3.Pos, r2.Pos.AddXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+			aPos2 := ledgrid.NewPositionAnimation(&r3.Pos, r2.Pos.AddXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
 			aPos2.AutoReverse = true
 
-			aColor7 := NewColorAnimation(&r2.BorderColor, colornames.Cornsilk, 500*time.Millisecond)
+			aColor7 := ledgrid.NewColorAnimation(&r2.BorderColor, color.Cornsilk, 500*time.Millisecond)
 			aColor7.AutoReverse = true
-			aBorder := NewFloatAnimation(&r2.BorderWidth, ConvertLen(3.0), 500*time.Millisecond)
+			aBorder := ledgrid.NewFloatAnimation(&r2.BorderWidth, ledgrid.ConvertLen(3.0), 500*time.Millisecond)
 			aBorder.AutoReverse = true
 
-			tl := NewTimeline(5 * time.Second)
-			tl.RepeatCount = AnimationRepeatForever
+			tl := ledgrid.NewTimeline(5 * time.Second)
+			tl.RepeatCount = ledgrid.AnimationRepeatForever
 
 			// Timeline positions for the first rectangle
 			tl.Add(300*time.Millisecond, aColor1)
@@ -217,134 +217,134 @@ var (
 		})
 
 	PathTest = NewLedGridProgram("Path test",
-		func(ctrl *Canvas) {
+		func(ctrl *ledgrid.Canvas) {
 			duration := 4 * time.Second
-			pathA := FullCirclePathA
-			pathB := FullCirclePathB
+			pathA := ledgrid.FullCirclePathA
+			pathB := ledgrid.FullCirclePathB
 
-			pos1 := ConvertPos(geom.Point{1.5, float64(height-1) / 2.0})
-			pos2 := ConvertPos(geom.Point{float64(width-1) / 2.0, 1.5})
-			pos3 := ConvertPos(geom.Point{float64(width-1) - 1.5, float64(height-1) / 2.0})
-			pos4 := ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) - 1.5})
-			cSize := ConvertSize(geom.Point{3.0, 3.0})
+			pos1 := ledgrid.ConvertPos(geom.Point{1.5, float64(height-1) / 2.0})
+			pos2 := ledgrid.ConvertPos(geom.Point{float64(width-1) / 2.0, 1.5})
+			pos3 := ledgrid.ConvertPos(geom.Point{float64(width-1) - 1.5, float64(height-1) / 2.0})
+			pos4 := ledgrid.ConvertPos(geom.Point{float64(width-1) / 2.0, float64(height-1) - 1.5})
+			cSize := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
 
-			c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
-			c2 := NewEllipse(pos2, cSize, colornames.MediumSeaGreen)
-			c3 := NewEllipse(pos3, cSize, colornames.SkyBlue)
-			c4 := NewEllipse(pos4, cSize, colornames.Gold)
+			c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)
+			c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
+			c3 := ledgrid.NewEllipse(pos3, cSize, color.SkyBlue)
+			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
 			ctrl.Add(c1, c2, c3, c4)
 
-			c1Path := NewPathAnimation(&c1.Pos, pathB, ConvertSize(geom.Point{float64(width - 4), 6.0}), duration)
+			c1Path := ledgrid.NewPathAnimation(&c1.Pos, pathB, ledgrid.ConvertSize(geom.Point{float64(width - 4), 6.0}), duration)
 			c1Path.AutoReverse = true
-			c3Path := NewPathAnimation(&c3.Pos, pathB, ConvertSize(geom.Point{-float64(width - 4), -6.0}), duration)
+			c3Path := ledgrid.NewPathAnimation(&c3.Pos, pathB, ledgrid.ConvertSize(geom.Point{-float64(width - 4), -6.0}), duration)
 			c3Path.AutoReverse = true
 
-			c2Path := NewPathAnimation(&c2.Pos, pathA, ConvertSize(geom.Point{float64(width) / 3.0, 6.0}), duration)
+			c2Path := ledgrid.NewPathAnimation(&c2.Pos, pathA, ledgrid.ConvertSize(geom.Point{float64(width) / 3.0, 6.0}), duration)
 			c2Path.AutoReverse = true
-			c4Path := NewPathAnimation(&c4.Pos, pathA, ConvertSize(geom.Point{-float64(width) / 3.0, -6.0}), duration)
+			c4Path := ledgrid.NewPathAnimation(&c4.Pos, pathA, ledgrid.ConvertSize(geom.Point{-float64(width) / 3.0, -6.0}), duration)
 			c4Path.AutoReverse = true
 
-			aGrp := NewGroup(c1Path, c2Path, c3Path, c4Path)
-			aGrp.RepeatCount = AnimationRepeatForever
+			aGrp := ledgrid.NewGroup(c1Path, c2Path, c3Path, c4Path)
+			aGrp.RepeatCount = ledgrid.AnimationRepeatForever
 			aGrp.Start()
 		})
 
 	PolygonPathTest = NewLedGridProgram("Polygon path test",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 
-			cPos := ConvertPos(geom.Point{1, 1})
-			cSize := ConvertSize(geom.Point{2, 2})
+			cPos := ledgrid.ConvertPos(geom.Point{1, 1})
+			cSize := ledgrid.ConvertSize(geom.Point{2, 2})
 
-			polyPath1 := NewPolygonPath(
-				ConvertPos(geom.Point{1, 1}),
-				ConvertPos(geom.Point{float64(width) - 2, 1}),
-				ConvertPos(geom.Point{float64(width) - 2, float64(height) - 2}),
-				ConvertPos(geom.Point{1, float64(height) - 2}),
+			polyPath1 := ledgrid.NewPolygonPath(
+				ledgrid.ConvertPos(geom.Point{1, 1}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 2, 1}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 2, float64(height) - 2}),
+				ledgrid.ConvertPos(geom.Point{1, float64(height) - 2}),
 
-				ConvertPos(geom.Point{1, 2}),
-				ConvertPos(geom.Point{float64(width) - 3, 2}),
-				ConvertPos(geom.Point{float64(width) - 3, float64(height) - 3}),
-				ConvertPos(geom.Point{2, float64(height) - 3}),
+				ledgrid.ConvertPos(geom.Point{1, 2}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 3, 2}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 3, float64(height) - 3}),
+				ledgrid.ConvertPos(geom.Point{2, float64(height) - 3}),
 
-				ConvertPos(geom.Point{2, 3}),
-				ConvertPos(geom.Point{float64(width) - 4, 3}),
-				ConvertPos(geom.Point{float64(width) - 4, float64(height) - 4}),
-				ConvertPos(geom.Point{3, float64(height) - 4}),
+				ledgrid.ConvertPos(geom.Point{2, 3}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 4, 3}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 4, float64(height) - 4}),
+				ledgrid.ConvertPos(geom.Point{3, float64(height) - 4}),
 
-				ConvertPos(geom.Point{3, 4}),
-				ConvertPos(geom.Point{float64(width) - 5, 4}),
-				ConvertPos(geom.Point{float64(width) - 5, float64(height) - 5}),
-				ConvertPos(geom.Point{4, float64(height) - 5}),
+				ledgrid.ConvertPos(geom.Point{3, 4}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 5, 4}),
+				ledgrid.ConvertPos(geom.Point{float64(width) - 5, float64(height) - 5}),
+				ledgrid.ConvertPos(geom.Point{4, float64(height) - 5}),
 			)
 
-			polyPath2 := NewPolygonPath(
-				ConvertPos(geom.Point{1, 1}),
-				ConvertPos(geom.Point{4, 8}),
-				ConvertPos(geom.Point{7, 2}),
-				ConvertPos(geom.Point{10, 7}),
-				ConvertPos(geom.Point{13, 3}),
-				ConvertPos(geom.Point{16, 6}),
-				ConvertPos(geom.Point{19, 4}),
-				ConvertPos(geom.Point{22, 5}),
+			polyPath2 := ledgrid.NewPolygonPath(
+				ledgrid.ConvertPos(geom.Point{1, 1}),
+				ledgrid.ConvertPos(geom.Point{4, 8}),
+				ledgrid.ConvertPos(geom.Point{7, 2}),
+				ledgrid.ConvertPos(geom.Point{10, 7}),
+				ledgrid.ConvertPos(geom.Point{13, 3}),
+				ledgrid.ConvertPos(geom.Point{16, 6}),
+				ledgrid.ConvertPos(geom.Point{19, 4}),
+				ledgrid.ConvertPos(geom.Point{22, 5}),
 			)
 
-			c1 := NewEllipse(cPos, cSize, colornames.GreenYellow)
+			c1 := ledgrid.NewEllipse(cPos, cSize, color.GreenYellow)
 			c.Add(c1)
 
-			aPath1 := NewPolyPathAnimation(&c1.Pos, polyPath1, 7*time.Second)
+			aPath1 := ledgrid.NewPolyPathAnimation(&c1.Pos, polyPath1, 7*time.Second)
 			aPath1.AutoReverse = true
 
-			aPath2 := NewPolyPathAnimation(&c1.Pos, polyPath2, 7*time.Second)
+			aPath2 := ledgrid.NewPolyPathAnimation(&c1.Pos, polyPath2, 7*time.Second)
 			aPath2.AutoReverse = true
 
-			seq := NewSequence(aPath1, aPath2)
-			seq.RepeatCount = AnimationRepeatForever
+			seq := ledgrid.NewSequence(aPath1, aPath2)
+			seq.RepeatCount = ledgrid.AnimationRepeatForever
 
 			seq.Start()
 		})
 
 	RandomWalk = NewLedGridProgram("Random walk",
-		func(c *Canvas) {
-			rect := geom.Rectangle{Min: ConvertPos(geom.Point{1.0, 1.0}), Max: ConvertPos(geom.Point{float64(width) - 1.0, float64(height) - 1.0})}
-			pos1 := ConvertPos(geom.Point{1.0, 1.0})
-			pos2 := ConvertPos(geom.Point{18.0, 8.0})
-			size1 := ConvertSize(geom.Point{2.0, 2.0})
-			size2 := ConvertSize(geom.Point{4.0, 4.0})
+		func(c *ledgrid.Canvas) {
+			rect := geom.Rectangle{Min: ledgrid.ConvertPos(geom.Point{1.0, 1.0}), Max: ledgrid.ConvertPos(geom.Point{float64(width) - 1.0, float64(height) - 1.0})}
+			pos1 := ledgrid.ConvertPos(geom.Point{1.0, 1.0})
+			pos2 := ledgrid.ConvertPos(geom.Point{18.0, 8.0})
+			size1 := ledgrid.ConvertSize(geom.Point{2.0, 2.0})
+			size2 := ledgrid.ConvertSize(geom.Point{4.0, 4.0})
 
-			c1 := NewEllipse(pos1, size1, colornames.SkyBlue)
-			c2 := NewEllipse(pos2, size2, colornames.GreenYellow)
+			c1 := ledgrid.NewEllipse(pos1, size1, color.SkyBlue)
+			c2 := ledgrid.NewEllipse(pos2, size2, color.GreenYellow)
 			c.Add(c1, c2)
 
-			aPos1 := NewPositionAnimation(&c1.Pos, geom.Point{}, 1300*time.Millisecond)
+			aPos1 := ledgrid.NewPositionAnimation(&c1.Pos, geom.Point{}, 1300*time.Millisecond)
 			aPos1.Cont = true
-			aPos1.ValFunc = RandPointTrunc(rect, 1.0)
-			aPos1.RepeatCount = AnimationRepeatForever
+			aPos1.ValFunc = ledgrid.RandPointTrunc(rect, 1.0)
+			aPos1.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aPos2 := NewPositionAnimation(&c2.Pos, geom.Point{}, 901*time.Millisecond)
+			aPos2 := ledgrid.NewPositionAnimation(&c2.Pos, geom.Point{}, 901*time.Millisecond)
 			aPos2.Cont = true
-			aPos2.ValFunc = RandPoint(rect)
-			aPos2.RepeatCount = AnimationRepeatForever
+			aPos2.ValFunc = ledgrid.RandPoint(rect)
+			aPos2.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aPos1.Start()
 			aPos2.Start()
 		})
 
 	Piiiiixels = NewLedGridProgram("Piiiiixels",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			dPosX := image.Point{2, 0}
 			dPosY := image.Point{0, 2}
 			p1Pos1 := image.Point{1, 1}
 
-			aGrp := NewGroup()
-			aGrp.RepeatCount = AnimationRepeatForever
+			aGrp := ledgrid.NewGroup()
+			aGrp.RepeatCount = ledgrid.AnimationRepeatForever
 			for i := range 5 {
 				for j := range 5 {
 					palName := ledgrid.PaletteNames[5*i+j]
 					pos := p1Pos1.Add(dPosX.Mul(j).Add(dPosY.Mul(i)))
-					pix := NewPixel(pos, colornames.OrangeRed)
+					pix := ledgrid.NewPixel(pos, color.OrangeRed)
 					c.Add(pix)
 
-					pixColor := NewPaletteAnimation(&pix.Color, ledgrid.PaletteMap[palName], 4*time.Second)
+					pixColor := ledgrid.NewPaletteAnimation(&pix.Color, ledgrid.PaletteMap[palName], 4*time.Second)
 					aGrp.Add(pixColor)
 				}
 			}
@@ -352,118 +352,118 @@ var (
 		})
 
 	CirclingCircles = NewLedGridProgram("Circling circles",
-		func(ctrl *Canvas) {
-			pos1 := ConvertPos(geom.Point{1.0, 1.0})
-			pos2 := ConvertPos(geom.Point{10.0, 8.0})
-			pos3 := ConvertPos(geom.Point{19.0, 1.0})
-			pos4 := ConvertPos(geom.Point{28.0, 8.0})
-			pos5 := ConvertPos(geom.Point{37.0, 1.0})
-			cSize := ConvertSize(geom.Point{2.0, 2.0})
+		func(ctrl *ledgrid.Canvas) {
+			pos1 := ledgrid.ConvertPos(geom.Point{1.0, 1.0})
+			pos2 := ledgrid.ConvertPos(geom.Point{10.0, 8.0})
+			pos3 := ledgrid.ConvertPos(geom.Point{19.0, 1.0})
+			pos4 := ledgrid.ConvertPos(geom.Point{28.0, 8.0})
+			pos5 := ledgrid.ConvertPos(geom.Point{37.0, 1.0})
+			cSize := ledgrid.ConvertSize(geom.Point{2.0, 2.0})
 
-			c1 := NewEllipse(pos1, cSize, colornames.OrangeRed)
-			c2 := NewEllipse(pos2, cSize, colornames.MediumSeaGreen)
-			c3 := NewEllipse(pos3, cSize, colornames.SkyBlue)
-			c4 := NewEllipse(pos4, cSize, colornames.Gold)
-			c5 := NewEllipse(pos5, cSize, colornames.YellowGreen)
+			c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)
+			c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
+			c3 := ledgrid.NewEllipse(pos3, cSize, color.SkyBlue)
+			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
+			c5 := ledgrid.NewEllipse(pos5, cSize, color.YellowGreen)
 
-			stepRD := ConvertSize(geom.Point{9.0, 7.0})
+			stepRD := ledgrid.ConvertSize(geom.Point{9.0, 7.0})
 			stepLU := stepRD.Neg()
-			stepRU := ConvertSize(geom.Point{9.0, -7.0})
+			stepRU := ledgrid.ConvertSize(geom.Point{9.0, -7.0})
 			stepLD := stepRU.Neg()
 
-			c1Path1 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepRD, time.Second)
+			c1Path1 := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.QuarterCirclePathA, stepRD, time.Second)
 			c1Path1.Cont = true
-			c1Path2 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepRU, time.Second)
+			c1Path2 := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.QuarterCirclePathA, stepRU, time.Second)
 			c1Path2.Cont = true
-			c1Path3 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepLD, time.Second)
+			c1Path3 := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.QuarterCirclePathA, stepLD, time.Second)
 			c1Path3.Cont = true
-			c1Path4 := NewPathAnimation(&c1.Pos, QuarterCirclePathA, stepLU, time.Second)
+			c1Path4 := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.QuarterCirclePathA, stepLU, time.Second)
 			c1Path4.Cont = true
 
-			c2Path1 := NewPathAnimation(&c2.Pos, QuarterCirclePathA, stepLU, time.Second)
+			c2Path1 := ledgrid.NewPathAnimation(&c2.Pos, ledgrid.QuarterCirclePathA, stepLU, time.Second)
 			c2Path1.Cont = true
-			c2Path2 := NewPathAnimation(&c2.Pos, QuarterCirclePathA, stepRD, time.Second)
+			c2Path2 := ledgrid.NewPathAnimation(&c2.Pos, ledgrid.QuarterCirclePathA, stepRD, time.Second)
 			c2Path2.Cont = true
 
-			c3Path1 := NewPathAnimation(&c3.Pos, QuarterCirclePathA, stepLD, time.Second)
+			c3Path1 := ledgrid.NewPathAnimation(&c3.Pos, ledgrid.QuarterCirclePathA, stepLD, time.Second)
 			c3Path1.Cont = true
-			c3Path2 := NewPathAnimation(&c3.Pos, QuarterCirclePathA, stepRU, time.Second)
+			c3Path2 := ledgrid.NewPathAnimation(&c3.Pos, ledgrid.QuarterCirclePathA, stepRU, time.Second)
 			c3Path2.Cont = true
 
-			c4Path1 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, stepLU, time.Second)
+			c4Path1 := ledgrid.NewPathAnimation(&c4.Pos, ledgrid.QuarterCirclePathA, stepLU, time.Second)
 			c4Path1.Cont = true
-			c4Path2 := NewPathAnimation(&c4.Pos, QuarterCirclePathA, stepRD, time.Second)
+			c4Path2 := ledgrid.NewPathAnimation(&c4.Pos, ledgrid.QuarterCirclePathA, stepRD, time.Second)
 			c4Path2.Cont = true
 
-			c5Path1 := NewPathAnimation(&c5.Pos, QuarterCirclePathA, stepLD, time.Second)
+			c5Path1 := ledgrid.NewPathAnimation(&c5.Pos, ledgrid.QuarterCirclePathA, stepLD, time.Second)
 			c5Path1.Cont = true
-			c5Path2 := NewPathAnimation(&c5.Pos, QuarterCirclePathA, stepRU, time.Second)
+			c5Path2 := ledgrid.NewPathAnimation(&c5.Pos, ledgrid.QuarterCirclePathA, stepRU, time.Second)
 			c5Path2.Cont = true
 
-			aGrp1 := NewGroup(c1Path1, c2Path1)
-			aGrp2 := NewGroup(c1Path2, c3Path1)
-			aGrp3 := NewGroup(c1Path1, c4Path1)
-			aGrp4 := NewGroup(c1Path2, c5Path1)
-			aGrp5 := NewGroup(c1Path3, c5Path2)
-			aGrp6 := NewGroup(c1Path4, c4Path2)
-			aGrp7 := NewGroup(c1Path3, c3Path2)
-			aGrp8 := NewGroup(c1Path4, c2Path2)
-			aSeq := NewSequence(aGrp1, aGrp2, aGrp3, aGrp4, aGrp5, aGrp6, aGrp7, aGrp8)
-			aSeq.RepeatCount = AnimationRepeatForever
+			aGrp1 := ledgrid.NewGroup(c1Path1, c2Path1)
+			aGrp2 := ledgrid.NewGroup(c1Path2, c3Path1)
+			aGrp3 := ledgrid.NewGroup(c1Path1, c4Path1)
+			aGrp4 := ledgrid.NewGroup(c1Path2, c5Path1)
+			aGrp5 := ledgrid.NewGroup(c1Path3, c5Path2)
+			aGrp6 := ledgrid.NewGroup(c1Path4, c4Path2)
+			aGrp7 := ledgrid.NewGroup(c1Path3, c3Path2)
+			aGrp8 := ledgrid.NewGroup(c1Path4, c2Path2)
+			aSeq := ledgrid.NewSequence(aGrp1, aGrp2, aGrp3, aGrp4, aGrp5, aGrp6, aGrp7, aGrp8)
+			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 			ctrl.Add(c1, c2, c3, c4, c5)
 			aSeq.Start()
 		})
 
 	ChasingCircles = NewLedGridProgram("Chasing circles",
-		func(ctrl *Canvas) {
-			c1Pos1 := ConvertPos(geom.Point{36.5, 4.5})
-			c1Size1 := ConvertSize(geom.Point{10.0, 10.0})
-			c1Size2 := ConvertSize(geom.Point{3.0, 3.0})
-			c1PosSize := ConvertSize(geom.Point{-34.0, -5.0})
-			c2Pos := ConvertPos(geom.Point{2.5, 4.5})
-			c2Size1 := ConvertSize(geom.Point{5.0, 5.0})
-			c2Size2 := ConvertSize(geom.Point{3.0, 3.0})
-			c2PosSize := ConvertSize(geom.Point{34.0, 7.0})
+		func(ctrl *ledgrid.Canvas) {
+			c1Pos1 := ledgrid.ConvertPos(geom.Point{36.5, 4.5})
+			c1Size1 := ledgrid.ConvertSize(geom.Point{10.0, 10.0})
+			c1Size2 := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
+			c1PosSize := ledgrid.ConvertSize(geom.Point{-34.0, -5.0})
+			c2Pos := ledgrid.ConvertPos(geom.Point{2.5, 4.5})
+			c2Size1 := ledgrid.ConvertSize(geom.Point{5.0, 5.0})
+			c2Size2 := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
+			c2PosSize := ledgrid.ConvertSize(geom.Point{34.0, 7.0})
 
-			aGrp := NewGroup()
+			aGrp := ledgrid.NewGroup()
 
 			pal := ledgrid.NewGradientPaletteByList("Palette", true,
-				ledgrid.LedColorModel.Convert(colornames.DeepSkyBlue).(ledgrid.LedColor),
-				ledgrid.LedColorModel.Convert(colornames.Lime).(ledgrid.LedColor),
-				ledgrid.LedColorModel.Convert(colornames.Teal).(ledgrid.LedColor),
-				ledgrid.LedColorModel.Convert(colornames.SkyBlue).(ledgrid.LedColor),
+				color.DeepSkyBlue,
+				color.Lime,
+				color.Teal,
+				color.SkyBlue,
 			)
 
-			c1 := NewEllipse(c1Pos1, c1Size1, colornames.Gold)
+			c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, color.Gold)
 
-			c1pos := NewPathAnimation(&c1.Pos, FullCirclePathB, c1PosSize, 4*time.Second)
-			c1pos.RepeatCount = AnimationRepeatForever
-			c1pos.Curve = AnimationLinear
+			c1pos := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.FullCirclePathB, c1PosSize, 4*time.Second)
+			c1pos.RepeatCount = ledgrid.AnimationRepeatForever
+			c1pos.Curve = ledgrid.AnimationLinear
 
-			c1size := NewSizeAnimation(&c1.Size, c1Size2, time.Second)
+			c1size := ledgrid.NewSizeAnimation(&c1.Size, c1Size2, time.Second)
 			c1size.AutoReverse = true
-			c1size.RepeatCount = AnimationRepeatForever
+			c1size.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c1bcolor := NewColorAnimation(&c1.BorderColor, colornames.OrangeRed, time.Second)
+			c1bcolor := ledgrid.NewColorAnimation(&c1.BorderColor, color.OrangeRed, time.Second)
 			c1bcolor.AutoReverse = true
-			c1bcolor.RepeatCount = AnimationRepeatForever
+			c1bcolor.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aGrp.Add(c1pos, c1size, c1bcolor)
 
-			c2 := NewEllipse(c2Pos, c2Size1, colornames.Lime)
+			c2 := ledgrid.NewEllipse(c2Pos, c2Size1, color.Lime)
 
-			c2pos := NewPathAnimation(&c2.Pos, FullCirclePathB, c2PosSize, 4*time.Second)
-			c2pos.RepeatCount = AnimationRepeatForever
-			c2pos.Curve = AnimationLinear
+			c2pos := ledgrid.NewPathAnimation(&c2.Pos, ledgrid.FullCirclePathB, c2PosSize, 4*time.Second)
+			c2pos.RepeatCount = ledgrid.AnimationRepeatForever
+			c2pos.Curve = ledgrid.AnimationLinear
 
-			c2size := NewSizeAnimation(&c2.Size, c2Size2, time.Second)
+			c2size := ledgrid.NewSizeAnimation(&c2.Size, c2Size2, time.Second)
 			c2size.AutoReverse = true
-			c2size.RepeatCount = AnimationRepeatForever
+			c2size.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c2color := NewPaletteAnimation(&c2.BorderColor, pal, 2*time.Second)
-			c2color.RepeatCount = AnimationRepeatForever
-			c2color.Curve = AnimationLinear
+			c2color := ledgrid.NewPaletteAnimation(&c2.BorderColor, pal, 2*time.Second)
+			c2color.RepeatCount = ledgrid.AnimationRepeatForever
+			c2color.Curve = ledgrid.AnimationLinear
 
 			aGrp.Add(c2pos, c2size, c2color)
 
@@ -472,26 +472,26 @@ var (
 		})
 
 	CircleAnimation = NewLedGridProgram("Circle animation",
-		func(ctrl *Canvas) {
-			c1Pos1 := ConvertPos(geom.Point{1.5, 4.5})
-			c1Pos3 := ConvertPos(geom.Point{37.5, 4.5})
+		func(ctrl *ledgrid.Canvas) {
+			c1Pos1 := ledgrid.ConvertPos(geom.Point{1.5, 4.5})
+			c1Pos3 := ledgrid.ConvertPos(geom.Point{37.5, 4.5})
 
-			c1Size1 := ConvertSize(geom.Point{3.0, 3.0})
-			c1Size2 := ConvertSize(geom.Point{9.0, 9.0})
+			c1Size1 := ledgrid.ConvertSize(geom.Point{3.0, 3.0})
+			c1Size2 := ledgrid.ConvertSize(geom.Point{9.0, 9.0})
 
-			c1 := NewEllipse(c1Pos1, c1Size1, colornames.OrangeRed)
+			c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, color.OrangeRed)
 
-			c1pos := NewPositionAnimation(&c1.Pos, c1Pos3, 2*time.Second)
+			c1pos := ledgrid.NewPositionAnimation(&c1.Pos, c1Pos3, 2*time.Second)
 			c1pos.AutoReverse = true
-			c1pos.RepeatCount = AnimationRepeatForever
+			c1pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c1radius := NewSizeAnimation(&c1.Size, c1Size2, time.Second)
+			c1radius := ledgrid.NewSizeAnimation(&c1.Size, c1Size2, time.Second)
 			c1radius.AutoReverse = true
-			c1radius.RepeatCount = AnimationRepeatForever
+			c1radius.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c1color := NewColorAnimation(&c1.BorderColor, colornames.Gold, 4*time.Second)
+			c1color := ledgrid.NewColorAnimation(&c1.BorderColor, color.Gold, 4*time.Second)
 			c1color.AutoReverse = true
-			c1color.RepeatCount = AnimationRepeatForever
+			c1color.RepeatCount = ledgrid.AnimationRepeatForever
 
 			ctrl.Add(c1)
 
@@ -501,44 +501,44 @@ var (
 		})
 
 	PushingRectangles = NewLedGridProgram("Pushing rectangles",
-		func(ctrl *Canvas) {
-			rSize1 := ConvertSize(geom.Point{float64(width) - 3.0, 1.0})
-			rSize2 := ConvertSize(geom.Point{1.0, float64(height) - 1.0})
+		func(ctrl *ledgrid.Canvas) {
+			rSize1 := ledgrid.ConvertSize(geom.Point{float64(width) - 3.0, 1.0})
+			rSize2 := ledgrid.ConvertSize(geom.Point{1.0, float64(height) - 1.0})
 
-			r1Pos1 := ConvertPos(geom.Point{0.5, float64(height-1) / 2.0})
-			r1Pos2 := ConvertPos(geom.Point{0.5 + float64(width-3)/2.0, float64(height-1) / 2.0})
+			r1Pos1 := ledgrid.ConvertPos(geom.Point{0.5, float64(height-1) / 2.0})
+			r1Pos2 := ledgrid.ConvertPos(geom.Point{0.5 + float64(width-3)/2.0, float64(height-1) / 2.0})
 
-			r2Pos1 := ConvertPos(geom.Point{float64(width-1) - 0.5, float64(height-1) / 2.0})
-			r2Pos2 := ConvertPos(geom.Point{float64(width-1) - 0.5 - float64(width-3)/2.0, float64(height-1) / 2.0})
+			r2Pos1 := ledgrid.ConvertPos(geom.Point{float64(width-1) - 0.5, float64(height-1) / 2.0})
+			r2Pos2 := ledgrid.ConvertPos(geom.Point{float64(width-1) - 0.5 - float64(width-3)/2.0, float64(height-1) / 2.0})
 			duration := 2 * time.Second
 
-			r1 := NewRectangle(r1Pos1, rSize2, colornames.Crimson)
+			r1 := ledgrid.NewRectangle(r1Pos1, rSize2, color.Crimson)
 
-			a1Pos := NewPositionAnimation(&r1.Pos, r1Pos2, duration)
+			a1Pos := ledgrid.NewPositionAnimation(&r1.Pos, r1Pos2, duration)
 			a1Pos.AutoReverse = true
-			a1Pos.RepeatCount = AnimationRepeatForever
+			a1Pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a1Size := NewSizeAnimation(&r1.Size, rSize1, duration)
+			a1Size := ledgrid.NewSizeAnimation(&r1.Size, rSize1, duration)
 			a1Size.AutoReverse = true
-			a1Size.RepeatCount = AnimationRepeatForever
+			a1Size.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a1Color := NewColorAnimation(&r1.BorderColor, colornames.GreenYellow, duration)
+			a1Color := ledgrid.NewColorAnimation(&r1.BorderColor, color.GreenYellow, duration)
 			a1Color.AutoReverse = true
-			a1Color.RepeatCount = AnimationRepeatForever
+			a1Color.RepeatCount = ledgrid.AnimationRepeatForever
 
-			r2 := NewRectangle(r2Pos2, rSize1, colornames.SkyBlue)
+			r2 := ledgrid.NewRectangle(r2Pos2, rSize1, color.SkyBlue)
 
-			a2Pos := NewPositionAnimation(&r2.Pos, r2Pos1, duration)
+			a2Pos := ledgrid.NewPositionAnimation(&r2.Pos, r2Pos1, duration)
 			a2Pos.AutoReverse = true
-			a2Pos.RepeatCount = AnimationRepeatForever
+			a2Pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a2Size := NewSizeAnimation(&r2.Size, rSize2, duration)
+			a2Size := ledgrid.NewSizeAnimation(&r2.Size, rSize2, duration)
 			a2Size.AutoReverse = true
-			a2Size.RepeatCount = AnimationRepeatForever
+			a2Size.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a2Color := NewColorAnimation(&r2.BorderColor, colornames.Crimson, duration)
+			a2Color := ledgrid.NewColorAnimation(&r2.BorderColor, color.Crimson, duration)
 			a2Color.AutoReverse = true
-			a2Color.RepeatCount = AnimationRepeatForever
+			a2Color.RepeatCount = ledgrid.AnimationRepeatForever
 
 			ctrl.Add(r1, r2)
 			a1Pos.Start()
@@ -550,43 +550,43 @@ var (
 		})
 
 	MovingText = NewLedGridProgram("Moving text",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			pts = []geom.Point{
-				ConvertPos(geom.Point{0, 0}),
-				ConvertPos(geom.Point{0, float64(height)}),
-				ConvertPos(geom.Point{float64(width), float64(height)}),
-				ConvertPos(geom.Point{float64(width), 0}),
+				ledgrid.ConvertPos(geom.Point{0, 0}),
+				ledgrid.ConvertPos(geom.Point{0, float64(height)}),
+				ledgrid.ConvertPos(geom.Point{float64(width), float64(height)}),
+				ledgrid.ConvertPos(geom.Point{float64(width), 0}),
 			}
 
-			t1 := NewText(randPoint(), "Mühlebach", colornames.LightSeaGreen)
-			t2 := NewText(randPoint(), "Mathematik", colornames.YellowGreen)
-			t3 := NewText(randPoint(), "Benedict", colornames.OrangeRed)
+			t1 := ledgrid.NewText(randPoint(), "Mühlebach", color.LightSeaGreen)
+			t2 := ledgrid.NewText(randPoint(), "Mathematik", color.YellowGreen)
+			t3 := ledgrid.NewText(randPoint(), "Benedict", color.OrangeRed)
 			c.Add(t1, t2, t3)
 
-			aPos1 := NewPositionAnimation(&t1.Pos, geom.Point{}, 5*time.Second)
+			aPos1 := ledgrid.NewPositionAnimation(&t1.Pos, geom.Point{}, 5*time.Second)
 			aPos1.ValFunc = randPoint
-			aPos1.RepeatCount = AnimationRepeatForever
+			aPos1.RepeatCount = ledgrid.AnimationRepeatForever
 			aPos1.Cont = true
 
-			aPos2 := NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
+			aPos2 := ledgrid.NewPositionAnimation(&t2.Pos, geom.Point{}, 3*time.Second)
 			aPos2.ValFunc = randPoint
-			aPos2.RepeatCount = AnimationRepeatForever
+			aPos2.RepeatCount = ledgrid.AnimationRepeatForever
 			aPos2.Cont = true
 
-			aPos3 := NewPositionAnimation(&t3.Pos, geom.Point{}, 2*time.Second)
+			aPos3 := ledgrid.NewPositionAnimation(&t3.Pos, geom.Point{}, 2*time.Second)
 			aPos3.ValFunc = randPoint
-			aPos3.RepeatCount = AnimationRepeatForever
+			aPos3.RepeatCount = ledgrid.AnimationRepeatForever
 			aPos3.Cont = true
 
-			aAngle1 := NewFloatAnimation(&t1.Angle, 0.0, 3*time.Second)
-			aAngle1.ValFunc = RandFloat(math.Pi/2.0, math.Pi)
+			aAngle1 := ledgrid.NewFloatAnimation(&t1.Angle, 0.0, 3*time.Second)
+			aAngle1.ValFunc = ledgrid.RandFloat(math.Pi/2.0, math.Pi)
 			aAngle1.AutoReverse = true
-			aAngle1.RepeatCount = AnimationRepeatForever
+			aAngle1.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aAngle2 := NewFloatAnimation(&t2.Angle, 0.0, 4*time.Second)
-			aAngle2.ValFunc = RandFloat(math.Pi/6.0, math.Pi/2.0)
+			aAngle2 := ledgrid.NewFloatAnimation(&t2.Angle, 0.0, 4*time.Second)
+			aAngle2.ValFunc = ledgrid.RandFloat(math.Pi/6.0, math.Pi/2.0)
 			aAngle2.AutoReverse = true
-			aAngle2.RepeatCount = AnimationRepeatForever
+			aAngle2.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aAngle1.Start()
 			aAngle2.Start()
@@ -596,27 +596,27 @@ var (
 		})
 
 	BitmapText = NewLedGridProgram("Bitmap text",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			basePt := fixed.P(0, 5)
-			baseColor1 := colornames.SkyBlue
+			baseColor1 := color.SkyBlue
 
-			txt1 := NewFixedText(basePt, baseColor1.Alpha(0.0), "STEFAN")
+			txt1 := ledgrid.NewFixedText(basePt, baseColor1.Alpha(0.0), "STEFAN")
 			c.Add(txt1)
 
-			aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
+			aTxt1 := ledgrid.NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
 			aTxt1.AutoReverse = true
-			aTxt1.RepeatCount = AnimationRepeatForever
+			aTxt1.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
+			aPos := ledgrid.NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
 			aPos.AutoReverse = true
-			aPos.RepeatCount = AnimationRepeatForever
+			aPos.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aTxt1.Start()
 			aPos.Start()
 		})
 
 	FlyingImages = NewLedGridProgram("Flying images",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			pos1 := geom.Point{5, 5}
 			pos2 := geom.Point{20, 5}
 			// pos3 := geom.Point{35, 5}
@@ -624,117 +624,117 @@ var (
 			size2 := geom.Point{633.0, 118.0}
 			// size3 := geom.Point{5.0, 5.0}
 
-			i4 := NewImageFromFile(pos1, "images/lorem.png")
+			i4 := ledgrid.NewImageFromFile(pos1, "images/lorem.png")
 			i4.Size = size1
 			c.Add(i4)
 
-			aPos1 := NewPositionAnimation(&i4.Pos, pos2, 4*time.Second)
-			aPos2 := NewPositionAnimation(&i4.Pos, pos1, 4*time.Second)
+			aPos1 := ledgrid.NewPositionAnimation(&i4.Pos, pos2, 4*time.Second)
+			aPos2 := ledgrid.NewPositionAnimation(&i4.Pos, pos1, 4*time.Second)
 			aPos2.Cont = true
-			// aPos3 := NewPositionAnimation(&i4.Pos, pos1, 4*time.Second)
+			// aPos3 := ledgrid.NewPositionAnimation(&i4.Pos, pos1, 4*time.Second)
 			// aPos3.Cont = true
 
-			aSize1 := NewSizeAnimation(&i4.Size, size2, 4*time.Second)
-			aSize2 := NewSizeAnimation(&i4.Size, size1, 4*time.Second)
+			aSize1 := ledgrid.NewSizeAnimation(&i4.Size, size2, 4*time.Second)
+			aSize2 := ledgrid.NewSizeAnimation(&i4.Size, size1, 4*time.Second)
 			aSize2.Cont = true
-			// aSize3 := NewSizeAnimation(&i4.Size, size1, 4*time.Second)
+			// aSize3 := ledgrid.NewSizeAnimation(&i4.Size, size1, 4*time.Second)
 			// aSize3.Cont = true
 
-			// aGrp1 := NewGroup(aPos1, aSize1)
-			// aGrp2 := NewGroup(aPos2, aSize2)
-			// aGrp3 := NewGroup(aPos3, aSize3)
+			// aGrp1 := ledgrid.NewGroup(aPos1, aSize1)
+			// aGrp2 := ledgrid.NewGroup(aPos2, aSize2)
+			// aGrp3 := ledgrid.NewGroup(aPos3, aSize3)
 
-			aSeq := NewSequence(aPos1, aSize1, aPos2, aSize2)
-			aSeq.RepeatCount = AnimationRepeatForever
+			aSeq := ledgrid.NewSequence(aPos1, aSize1, aPos2, aSize2)
+			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
 		})
 
 	CameraTest = NewLedGridProgram("Camera test",
-		func(c *Canvas) {
-			pos := ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
-			size := ConvertSize(geom.Point{float64(width), float64(height)})
+		func(c *ledgrid.Canvas) {
+			pos := ledgrid.ConvertPos(geom.Point{float64(width) / 2.0, float64(height) / 2.0})
+			size := ledgrid.ConvertSize(geom.Point{float64(width), float64(height)})
 
-			cam := NewCamera(pos, size)
+			cam := ledgrid.NewCamera(pos, size)
 			c.Add(cam)
 
 			cam.Start()
 		})
 
 	BlinkenAnimation = NewLedGridProgram("Blinken animation",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			posA := geom.Point{20.0, 5.0}
 			// posB := geom.Point{39.0, 5.0}
 
-			bml := ReadBlinkenFile("blinken/mario.bml")
+			bml := ledgrid.ReadBlinkenFile("blinken/mario.bml")
 
-			imgList := NewImageList(posA)
+			imgList := ledgrid.NewImageList(posA)
 			imgList.AddBlinkenLight(bml)
 			imgList.Size = geom.Point{10.0, 10.0}
 
-			// aPos := NewPositionAnimation(&imgList.Pos, posB, 3*time.Second)
+			// aPos := ledgrid.NewPositionAnimation(&imgList.Pos, posB, 3*time.Second)
 			// aPos.Curve = AnimationLinear
 
-			aImgList := NewImageAnimation(&imgList.ImgIdx)
-			aImgList.RepeatCount = AnimationRepeatForever
+			aImgList := ledgrid.NewImageAnimation(&imgList.ImgIdx)
+			aImgList.RepeatCount = ledgrid.AnimationRepeatForever
 			aImgList.AddBlinkenLight(bml)
 
-			aGrp := NewGroup(aImgList)
+			aGrp := ledgrid.NewGroup(aImgList)
 
 			c.Add(imgList)
 			aGrp.Start()
 		})
 
 	GlowingPixels = NewLedGridProgram("Glowing pixels",
-		func(c *Canvas) {
-			aGrpPurple := NewGroup()
-			aGrpYellow := NewGroup()
-			aGrpGreen := NewGroup()
-			aGrpGrey := NewGroup()
+		func(c *ledgrid.Canvas) {
+			aGrpPurple := ledgrid.NewGroup()
+			aGrpYellow := ledgrid.NewGroup()
+			aGrpGreen := ledgrid.NewGroup()
+			aGrpGrey := ledgrid.NewGroup()
 
-			for y := range c.rect.Dy() {
-				for x := range c.rect.Dx() {
+			for y := range c.Rect.Dy() {
+				for x := range c.Rect.Dx() {
 					pos := image.Point{x, y}
 					t := rand.Float64()
-					col := (colornames.DimGray.Dark(0.2)).Interpolate((colornames.DarkGrey.Dark(0.2)), t)
-					pix := NewPixel(pos, col)
+					col := (color.DimGray.Dark(0.3)).Interpolate((color.DarkGrey.Dark(0.3)), t)
+					pix := ledgrid.NewPixel(pos, col)
 					c.Add(pix)
 
 					dur := time.Second + rand.N(time.Second)
-					aAlpha := NewAlphaAnimation(&pix.Color.A, 148, dur)
+					aAlpha := ledgrid.NewAlphaAnimation(&pix.Color.A, 196, dur)
 					aAlpha.AutoReverse = true
-					aAlpha.RepeatCount = AnimationRepeatForever
+					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 					aAlpha.Start()
 
-					aColor := NewColorAnimation(&pix.Color, col, 1*time.Second)
+					aColor := ledgrid.NewColorAnimation(&pix.Color, col, 1*time.Second)
 					aColor.Cont = true
 					aGrpGrey.Add(aColor)
 
-					aColor = NewColorAnimation(&pix.Color, colornames.MediumPurple.Interpolate(colornames.Fuchsia, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.MediumPurple.Interpolate(color.Fuchsia, t), 5*time.Second)
 					aColor.Cont = true
 					aGrpPurple.Add(aColor)
 
-					aColor = NewColorAnimation(&pix.Color, colornames.Gold.Interpolate(colornames.Khaki, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Gold.Interpolate(color.Khaki, t), 5*time.Second)
 					aColor.Cont = true
 					aGrpYellow.Add(aColor)
 
-					aColor = NewColorAnimation(&pix.Color, colornames.GreenYellow.Interpolate(colornames.LightSeaGreen, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.GreenYellow.Interpolate(color.LightSeaGreen, t), 5*time.Second)
 					aColor.Cont = true
 					aGrpGreen.Add(aColor)
 				}
 			}
 
-			txt1 := NewFixedText(fixed.P(width/2, height/2), colornames.GreenYellow.Alpha(0.0), "LORENZ")
-			aTxt1 := NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
+			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
+			aTxt1 := ledgrid.NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
 			aTxt1.AutoReverse = true
-			txt2 := NewFixedText(fixed.P(width/2, height/2), colornames.DarkViolet.Alpha(0.0), "SIMON")
-			aTxt2 := NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
+			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
+			aTxt2 := ledgrid.NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
 			aTxt2.AutoReverse = true
-			txt3 := NewFixedText(fixed.P(width/2, height/2), colornames.OrangeRed.Alpha(0.0), "REBEKKA")
-			aTxt3 := NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
+			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
+			aTxt3 := ledgrid.NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
 			aTxt3.AutoReverse = true
 			c.Add(txt1, txt2, txt3)
 
-			aTimel := NewTimeline(42 * time.Second)
+			aTimel := ledgrid.NewTimeline(42 * time.Second)
 			aTimel.Add(7*time.Second, aGrpPurple)
 			aTimel.Add(12*time.Second, aTxt1)
 			aTimel.Add(13*time.Second, aGrpGrey)
@@ -746,49 +746,55 @@ var (
 			aTimel.Add(35*time.Second, aGrpGreen)
 			aTimel.Add(40*time.Second, aTxt3)
 			aTimel.Add(41*time.Second, aGrpGrey)
-			aTimel.RepeatCount = AnimationRepeatForever
+			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aTimel.Start()
 		})
 
+	TestShaderFunc = func(x, y, t float64) float64 {
+		t = t/4.0 + x
+		_, f := math.Modf(math.Abs(t))
+		return f
+	}
+
+	f1 = func(x, y, t, p1 float64) float64 {
+		return math.Sin(x*p1 + t)
+	}
+
+	f2 = func(x, y, t, p1, p2, p3 float64) float64 {
+		return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
+	}
+
+	f3 = func(x, y, t, p1, p2 float64) float64 {
+		cx := 0.125*x + 0.5*math.Sin(t/p1)
+		cy := 0.125*y + 0.5*math.Cos(t/p2)
+		return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
+	}
+
+	PlasmaShaderFunc = func(x, y, t float64) float64 {
+		v1 := f1(x, y, t, 1.2)
+		v2 := f2(x, y, t, 1.6, 3.0, 1.5)
+		v3 := f3(x, y, t, 5.0, 5.0)
+		v := (v1+v2+v3)/6.0 + 0.5
+		return v
+	}
+
 	ShowTheShader = NewLedGridProgram("Show the shader!",
-		func(c *Canvas) {
+		func(c *ledgrid.Canvas) {
 			var xMin, yMax float64
 
-			f1 := func(x, y, t, p1 float64) float64 {
-				return math.Sin(x*p1 + t)
-			}
+			pal := ledgrid.PaletteMap["Hipster"]
+			fader := ledgrid.NewPaletteFader(pal)
+			aPal := ledgrid.NewPaletteFadeAnimation(fader, pal, 2*time.Second)
+			aPal.ValFunc = ledgrid.SeqPalette()
 
-			f2 := func(x, y, t, p1, p2, p3 float64) float64 {
-				return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
-			}
+			aPalTl := ledgrid.NewTimeline(10 * time.Second)
+			aPalTl.Add(7*time.Second, aPal)
+			aPalTl.RepeatCount = ledgrid.AnimationRepeatForever
 
-			f3 := func(x, y, t, p1, p2 float64) float64 {
-				cx := 0.125*x + 0.5*math.Sin(t/p1)
-				cy := 0.125*y + 0.5*math.Cos(t/p2)
-				return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
-			}
-
-			PlasmaShaderFunc := func(x, y, t float64) float64 {
-				t /= 2.0
-				v1 := f1(x, y, t, 1.2)
-				v2 := f2(x, y, t, 1.6, 3.0, 1.5)
-				v3 := f3(x, y, t, 5.0, 5.0)
-				v := (v1+v2+v3)/6.0 + 0.5
-				return v
-			}
-
-			pal := NewPaletteFader(ledgrid.PaletteMap["Hipster"])
-			aPal := NewPaletteFadeAnimation(pal, nil, 2*time.Second)
-			aPal.ValFunc = RandPalette()
-
-			aPalTl := NewTimeline(10 * time.Second)
-			aPalTl.Add(8*time.Second, aPal)
-			aPalTl.RepeatCount = AnimationRepeatForever
-
-			aGrp := NewGroup()
-			dPix := 2.0 / float64(max(c.rect.Dx(), c.rect.Dy())-1)
-			ratio := float64(c.rect.Dx()) / float64(c.rect.Dy())
+			aGrp := ledgrid.NewGroup()
+			dPix := 2.0 / float64(max(c.Rect.Dx(), c.Rect.Dy())-1)
+			ratio := float64(c.Rect.Dx()) / float64(c.Rect.Dy())
 			if ratio > 1.0 {
 				xMin = -1.0
 				yMax = ratio * 1.0
@@ -801,12 +807,12 @@ var (
 			}
 
 			y := yMax
-			for row := range c.rect.Dy() {
+			for row := range c.Rect.Dy() {
 				x := xMin
-				for col := range c.rect.Dx() {
-					pix := NewPixel(image.Point{col, row}, colornames.Black)
+				for col := range c.Rect.Dx() {
+					pix := ledgrid.NewPixel(image.Point{col, row}, color.Black)
 					c.Add(pix)
-					anim := NewShaderAnimation(&pix.Color, pal, x, y, PlasmaShaderFunc)
+					anim := ledgrid.NewShaderAnimation(&pix.Color, fader, x, y, PlasmaShaderFunc)
 					aGrp.Add(anim)
 					x += dPix
 				}
@@ -820,14 +826,14 @@ var (
 //----------------------------------------------------------------------------
 
 type BouncingEllipse struct {
-	Ellipse
+	ledgrid.Ellipse
 	Vel, Acc geom.Point
 	Field    geom.Rectangle
 }
 
-func NewBouncingEllipse(pos, size geom.Point, col ledgrid.LedColor) *BouncingEllipse {
+func NewBouncingEllipse(pos, size geom.Point, col color.LedColor) *BouncingEllipse {
 	b := &BouncingEllipse{}
-	b.Ellipse = *NewEllipse(pos, size, col)
+	b.Ellipse = *ledgrid.NewEllipse(pos, size, col)
 	b.Vel = geom.Point{}
 	b.Acc = geom.Point{}
 	return b
@@ -857,19 +863,19 @@ func (b *BouncingEllipse) IsStopped() bool {
 	return false
 }
 
-func BounceAround(c *Canvas) {
-	pos1 := ConvertPos(geom.Point{2.0, 2.0})
-	pos2 := ConvertPos(geom.Point{37.0, 7.0})
-	size := ConvertSize(geom.Point{4.0, 4.0})
+func BounceAround(c *ledgrid.Canvas) {
+	pos1 := ledgrid.ConvertPos(geom.Point{2.0, 2.0})
+	pos2 := ledgrid.ConvertPos(geom.Point{37.0, 7.0})
+	size := ledgrid.ConvertSize(geom.Point{4.0, 4.0})
 	vel1 := geom.Point{0.15, 0.075}
 	vel2 := geom.Point{-0.35, -0.25}
 
-	obj1 := NewBouncingEllipse(pos1, size, colornames.GreenYellow)
+	obj1 := NewBouncingEllipse(pos1, size, color.GreenYellow)
 	obj1.Vel = vel1
-	obj1.Field = geom.NewRectangleIMG(c.img.Bounds())
-	obj2 := NewBouncingEllipse(pos2, size, colornames.LightSeaGreen)
+	obj1.Field = geom.NewRectangleIMG(c.Rect)
+	obj2 := NewBouncingEllipse(pos2, size, color.LightSeaGreen)
 	obj2.Vel = vel2
-	obj2.Field = geom.NewRectangleIMG(c.img.Bounds())
+	obj2.Field = geom.NewRectangleIMG(c.Rect)
 
 	c.Add(obj1, obj2)
 	animCtrl.Add(obj1, obj2)
@@ -901,41 +907,41 @@ func randPoint() geom.Point {
 	return pts[idx0].Interpolate(pts[idx1], rand.Float64())
 }
 
-func PlasmaShaderFunc(x, y, t float64) float64 {
-	v1 := f1(x, y, t, 1.2)
-	v2 := f2(x, y, t, 1.6, 3.0, 1.5)
-	v3 := f3(x, y, t, 5.0, 5.0)
-	v := (v1+v2+v3)/6.0 + 0.5
-	return v
-}
+// func PlasmaShaderFunc(x, y, t float64) float64 {
+// 	v1 := f1(x, y, t, 1.2)
+// 	v2 := f2(x, y, t, 1.6, 3.0, 1.5)
+// 	v3 := f3(x, y, t, 5.0, 5.0)
+// 	v := (v1+v2+v3)/6.0 + 0.5
+// 	return v
+// }
 
-func f1(x, y, t, p1 float64) float64 {
-	return math.Sin(x*p1 + t)
-}
+// func f1(x, y, t, p1 float64) float64 {
+// 	return math.Sin(x*p1 + t)
+// }
 
-func f2(x, y, t, p1, p2, p3 float64) float64 {
-	return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
-}
+// func f2(x, y, t, p1, p2, p3 float64) float64 {
+// 	return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
+// }
 
-func f3(x, y, t, p1, p2 float64) float64 {
-	cx := 0.125*x + 0.5*math.Sin(t/p1)
-	cy := 0.125*y + 0.5*math.Cos(t/p2)
-	return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
-}
+// func f3(x, y, t, p1, p2 float64) float64 {
+// 	cx := 0.125*x + 0.5*math.Sin(t/p1)
+// 	cy := 0.125*y + 0.5*math.Cos(t/p2)
+// 	return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
+// }
 
 // func RandomGridPixels(g *Grid) {
 // 	for y := range g.ledGrid.Rect.Dy() {
 // 		for x := range g.ledGrid.Rect.Dx() {
 // 			pos := image.Pt(x, y)
-// 			colorGrp1 := colornames.ColorGroup(x/3) % colornames.NumColorGroups
-// 			colorGrp2 := (colorGrp1 + 1) % colornames.NumColorGroups
-// 			col := colornames.RandGroupColor(colorGrp1)
+// 			colorGrp1 := color.ColorGroup(x/3) % color.NumColorGroups
+// 			colorGrp2 := (colorGrp1 + 1) % color.NumColorGroups
+// 			col := color.RandGroupColor(colorGrp1)
 // 			pix := NewGridPixel(pos, col)
 // 			g.Add(pix)
 // 			dur := time.Second
-// 			aColor := NewColorAnimation(&pix.Color, colornames.RandGroupColor(colorGrp2), dur)
+// 			aColor := ledgrid.NewColorAnimation(&pix.Color, ledgrid.RandGroupColor(colorGrp2), dur)
 // 			aColor.AutoReverse = true
-// 			aColor.RepeatCount = AnimationRepeatForever
+// 			aColor.RepeatCount = ledgrid.AnimationRepeatForever
 // 			aColor.Start()
 // 		}
 // 	}
@@ -943,20 +949,20 @@ func f3(x, y, t, p1, p2 float64) float64 {
 
 // func TextOnGrid(g *Grid) {
 // 	basePt := fixed.P(0, 5)
-// 	baseColor1 := colornames.SkyBlue
+// 	baseColor1 := color.SkyBlue
 
 // 	txt1 := NewGridText(basePt, baseColor1, "STEFAN")
 // 	g.Add(txt1)
 
 // 	aPos := NewFixedPosAnimation(&txt1.Pos, fixed.P(25, 5), 3*time.Second)
 // 	aPos.AutoReverse = true
-// 	aPos.RepeatCount = AnimationRepeatForever
+// 	aPos.RepeatCount = ledgrid.AnimationRepeatForever
 // 	aPos.Start()
 // }
 
 // func WalkingPixelOnGrid(g *Grid) {
 // 	pos := image.Point{0, 0}
-// 	col := colornames.GreenYellow
+// 	col := color.GreenYellow
 // 	pix := NewGridPixel(pos, col)
 // 	g.Add(pix)
 
@@ -998,7 +1004,7 @@ func SignalHandler() {
 
 type canvasSceneRecord struct {
 	name string
-	fnc  func(canvas *Canvas)
+	fnc  func(canvas *ledgrid.Canvas)
 }
 
 var (
@@ -1011,7 +1017,7 @@ var (
 		// {"Random walk", RandomWalk},
 		{"Let's bounce around", BounceAround},
 		// {"Piiiiixels", Piiiiixels},
-		// {"Regular Polygon test", RegularPolygonTest},
+		// {"Regular Polygon test", ledgrid.RegularPolygonTest},
 		// {"Circling Circles", CirclingCircles},
 		// {"Chasing Circles", ChasingCircles},
 		// {"Circle Animation", CircleAnimation},
@@ -1066,7 +1072,6 @@ func main() {
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
-	flag.BoolVar(&doLog, "log", doLog, "enable logging")
 	flag.Parse()
 
 	gridSize = image.Point{width, height}
@@ -1078,11 +1083,11 @@ func main() {
 		runInteractive = true
 	}
 
-	canvas := NewCanvas(gridSize)
+	canvas := ledgrid.NewCanvas(gridSize)
 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 	pixClient := ledgrid.NewNetPixelClient(host, port)
 
-	animCtrl = NewAnimationController(canvas, ledGrid, pixClient)
+	animCtrl = ledgrid.NewAnimationController(canvas, ledGrid, pixClient)
 
 	if runInteractive {
 		progId = -1
@@ -1130,13 +1135,13 @@ func main() {
 	}
 
 	animCtrl.Stop()
-	ledGrid.Clear(ledgrid.Black)
+	ledGrid.Clear(color.Black)
 	pixClient.Send(ledGrid)
 	pixClient.Close()
 
 	fmt.Printf("Program statistics:\n")
-	fmt.Printf("  animation: %v\n", animCtrl.animWatch)
-	fmt.Printf("  painting : %v\n", canvas.paintWatch)
+	fmt.Printf("  animation: %v\n", animCtrl.Watch())
+	fmt.Printf("  painting : %v\n", canvas.Watch())
 	fmt.Printf("  sending  : %v\n", pixClient.Watch())
 }
 
@@ -1171,7 +1176,7 @@ func main() {
 // 		runInteractive = true
 // 	}
 
-// 	canvas := NewCanvas(gridSize)
+// 	canvas := Newledgrid.Canvas(gridSize)
 // 	ledGrid := ledgrid.NewLedGrid(gridSize, nil)
 // 	pixClient := ledgrid.NewNetPixelClient(host, port)
 
@@ -1223,11 +1228,11 @@ func main() {
 // 	}
 
 // 	animCtrl.Stop()
-// 	ledGrid.Clear(ledgrid.Black)
+// 	ledGrid.Clear(color.Black)
 // 	pixClient.Send(ledGrid)
 // 	pixClient.Close()
 
-// 	fmt.Printf("Canvas statistics:\n")
+// 	fmt.Printf("ledgrid.Canvas statistics:\n")
 // 	fmt.Printf("  animation: %v\n", animCtrl.animWatch)
 // 	fmt.Printf("  painting : %v\n", canvas.paintWatch)
 // 	fmt.Printf("  sending  : %v\n", pixClient.Watch())

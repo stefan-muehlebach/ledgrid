@@ -1,18 +1,13 @@
-package ledgrid
+package color
 
 import (
 	"fmt"
-	gocolor "image/color"
+	"image/color"
 	"log"
 	"strconv"
 )
 
 var (
-	Black       = LedColor{0x00, 0x00, 0x00, 0xFF}
-	White       = LedColor{0xFF, 0xFF, 0xFF, 0xFF}
-	Red         = LedColor{0xFF, 0x00, 0x00, 0xFF}
-	Green       = LedColor{0x00, 0xFF, 0x00, 0xFF}
-	Blue        = LedColor{0x00, 0x00, 0xFF, 0xFF}
 	Transparent = LedColor{0x00, 0x00, 0x00, 0x00}
 )
 
@@ -83,10 +78,12 @@ func (c LedColor) Alpha(a float64) LedColor {
 }
 
 func (c LedColor) Bright(t float64) LedColor {
+	t = max(min(t, 1.0), 0.0)
 	return c.Interpolate(White, t)
 }
 
 func (c LedColor) Dark(t float64) LedColor {
+	t = max(min(t, 1.0), 0.0)
 	return c.Interpolate(Black, t)
 }
 
@@ -170,11 +167,11 @@ func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 
 // Das zum Typ LedColor zugehoerende ColorModel.
 var (
-	LedColorModel gocolor.Model = gocolor.ModelFunc(ledColorModel)
+	LedColorModel color.Model = color.ModelFunc(ledColorModel)
 )
 
 // Wandelt einen beliebigen Farbwert c in einen LedColor-Typ um.
-func ledColorModel(c gocolor.Color) gocolor.Color {
+func ledColorModel(c color.Color) color.Color {
 	if _, ok := c.(LedColor); ok {
 		return c
 	}

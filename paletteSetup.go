@@ -5,8 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"path/filepath"
-
-	"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
 //go:embed data/*.json
@@ -17,8 +16,8 @@ type JsonPalette struct {
 	Name     string `json:"Title"`
 	IsCyclic bool
 	IsSlice  bool
-	Colors []LedColor
-	Stops  []ColorStop
+	Colors   []color.LedColor
+	Stops    []ColorStop
 }
 
 func ReadJsonData(fileName string) []JsonPalette {
@@ -84,12 +83,12 @@ func ReadJsonPalette(fileName string) {
 func ReadNamedColors() {
 	for _, colorName := range color.Names {
 		ColorNames = append(ColorNames, colorName)
-		pal := NewUniformPalette(colorName, LedColorModel.Convert(color.Map[colorName]).(LedColor))
+		pal := NewUniformPalette(colorName, color.Map[colorName])
 		ColorMap[colorName] = pal
 	}
 	colorName := "Transparent"
 	ColorNames = append(ColorNames, colorName)
-	pal := NewUniformPalette(colorName, Transparent)
+	pal := NewUniformPalette(colorName, color.Transparent)
 	ColorMap[colorName] = pal
 }
 

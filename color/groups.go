@@ -1,4 +1,4 @@
-package colornames
+package color
 
 import (
 	"errors"

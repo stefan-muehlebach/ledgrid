@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid
 
-go 1.22.6
+go 1.23.0
 
 replace github.com/stefan-muehlebach/gg => ../gg
 

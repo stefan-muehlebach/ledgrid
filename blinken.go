@@ -1,4 +1,4 @@
-package main
+package ledgrid
 
 import (
 	"encoding/xml"
