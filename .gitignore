@@ -2,8 +2,12 @@ cmd/anim/anim
 cmd/anim/animation.log
 cmd/anim/canvas.log
 cmd/colorEdit/colorEdit
+cmd/colorEdit/colorEdit.log
+cmd/colorEdit/ledgrid.png
 cmd/gui/gui
 cmd/pixelcontroller/pixelcontroller
 cmd/pixelemulator/pixelemulator
 cmd/paletteGui/paletteGui
 old/
+old_20240815/
+*.swp
