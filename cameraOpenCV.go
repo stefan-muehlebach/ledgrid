@@ -28,7 +28,7 @@ type Camera struct {
 
 func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
-	c.CanvasObjectEmbed.ExtendCanvasObject(c)
+	c.CanvasObjectEmbed.Extend(c)
 	c.mat = gocv.NewMatWithSize(c.cut.Dx(), c.cut.Dy(), gocv.MatTypeCV8UC3)
 	AnimCtrl.Add(c)
 	return c
@@ -53,7 +53,6 @@ func (c *Camera) Start() {
 	c.dev.Set(gocv.VideoCaptureFrameWidth, camWidth)
 	c.dev.Set(gocv.VideoCaptureFrameHeight, camHeight)
 	c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
-	c.dev.Set(gocv.VideoCaptureZoom, 0)
 	c.running = true
 }
 
@@ -65,7 +64,7 @@ func (c *Camera) Stop() {
 	}
 	err = c.dev.Close()
 	if err != nil {
-		log.Fatalf("failed to close device: %v", err)
+		log.Fatalf("Failed to close device: %v", err)
 	}
 	c.dev = nil
 	c.img = nil
@@ -80,10 +79,19 @@ func (c *Camera) IsStopped() bool {
 
 func (c *Camera) Update(pit time.Time) bool {
 	if !c.dev.Read(&c.mat) {
-		log.Fatal("Device closed")
+		log.Fatal("Failed to grab and decode frames")
 	}
 	return true
 }
+
+func (c *Camera) Get(prop gocv.VideoCaptureProperties) float64 {
+    return c.dev.Get(prop)
+}
+
+func (c *Camera) Set(prop gocv.VideoCaptureProperties, param float64) {
+    c.dev.Set(prop, param)
+}
+
 
 func (c *Camera) Draw(canv *Canvas) {
 	var err error

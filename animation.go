@@ -1,7 +1,7 @@
 package ledgrid
 
 import (
-	"log"
+	"image"
 	"math"
 	"math/rand/v2"
 	"runtime"
@@ -23,7 +23,7 @@ var (
 // fuer die Anzahl Wiederholungen verwendet werden.
 const (
 	AnimationRepeatForever = -1
-	refreshRate            = 20 * time.Millisecond
+	refreshRate            = 30 * time.Millisecond
 )
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
@@ -78,7 +78,7 @@ var (
 func SeqPalette() PaletteFuncType {
 	return func() ColorSource {
 		name := PaletteNames[palId]
-        log.Printf("%s", name)
+		// log.Printf("%s", name)
 		palId = (palId + 1) % len(PaletteNames)
 		return PaletteMap[name]
 	}
@@ -90,13 +90,6 @@ func RandPalette() PaletteFuncType {
 		return PaletteMap[name]
 	}
 }
-
-// Liefert bei jedem Aufruf eine zufaellig gewaehlte Farbe.
-// func RandColor() ColorFuncType {
-// 	return func() color.LedColor {
-// 		return colornames.RandColor()
-// 	}
-// }
 
 // Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
 // Rechtecks r.
@@ -152,6 +145,7 @@ type Animator interface {
 	Purge()
 	Stop()
 	Continue()
+	IsStopped() bool
 }
 
 type AnimationController struct {
@@ -165,6 +159,9 @@ type AnimationController struct {
 	animPit    time.Time
 	animWatch  *Stopwatch
 	numThreads int
+	stop       time.Time
+	delay      time.Duration
+	running    bool
 }
 
 func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient PixelClient) *AnimationController {
@@ -180,9 +177,11 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient PixelCli
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = NewStopwatch()
 	a.numThreads = runtime.NumCPU()
+	a.delay = time.Duration(0)
 
 	AnimCtrl = a
 	go a.backgroundThread()
+	a.running = true
 	return a
 }
 
@@ -221,7 +220,12 @@ func (a *AnimationController) Purge() {
 // Mit Stop koennen die Animationen und die Darstellung auf der Hardware
 // unterbunden werden.
 func (a *AnimationController) Stop() {
+	if !a.running {
+		return
+	}
+	a.running = false
 	a.ticker.Stop()
+	a.stop = time.Now()
 }
 
 // Setzt die Animationen wieder fort.
@@ -229,7 +233,16 @@ func (a *AnimationController) Stop() {
 // Im Moment tut es das nicht - man muesste sich bei den Methoden und Ideen
 // von AnimationEmbed bedienen.
 func (a *AnimationController) Continue() {
+	if a.running {
+		return
+	}
+	a.delay += time.Since(a.stop)
 	a.ticker.Reset(refreshRate)
+	a.running = true
+}
+
+func (a *AnimationController) IsStopped() bool {
+	return !a.running
 }
 
 func (a *AnimationController) backgroundThread() {
@@ -241,10 +254,11 @@ func (a *AnimationController) backgroundThread() {
 	}
 
 	// lastPit := time.Now()
-	for a.animPit = range a.ticker.C {
+	for pit := range a.ticker.C {
 		if a.quit {
 			break
 		}
+		a.animPit = pit.Add(-a.delay)
 
 		a.animWatch.Start()
 		for id := range a.numThreads {
@@ -256,7 +270,6 @@ func (a *AnimationController) backgroundThread() {
 		a.animWatch.Stop()
 
 		a.canvas.Draw(a.ledGrid)
-
 		a.pixClient.Send(a.ledGrid)
 
 	}
@@ -269,7 +282,7 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, doneChan ch
 		a.animMutex.RLock()
 		for i := id; i < len(a.AnimList); i += a.numThreads {
 			anim := a.AnimList[i]
-			if /* anim == nil || */ anim.IsStopped() {
+			if anim.IsStopped() {
 				continue
 			}
 			anim.Update(a.animPit)
@@ -283,14 +296,26 @@ func (a *AnimationController) Watch() *Stopwatch {
 	return a.animWatch
 }
 
+func (a *AnimationController) Now() time.Time {
+	delay := a.delay
+	if !a.running {
+		delay += time.Since(a.stop)
+	}
+	return time.Now().Add(delay)
+}
+
+type Task interface {
+    Start()
+    IsStopped() bool
+    Duration() time.Duration
+}
+
 // Das Interface fuer jede Art von Animation (bis jetzt zumindest).
 type Animation interface {
-	Duration() time.Duration
+    Task
 	SetDuration(dur time.Duration)
-	Start()
 	Stop()
-	IsStopped() bool
-	// Continue()
+	Continue()
 	Update(t time.Time) bool
 }
 
@@ -331,7 +356,8 @@ type Group struct {
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
 
-	animList         []Animation
+	taskList         []Task
+	// animList         []Animation
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -340,22 +366,22 @@ type Group struct {
 // Erstellt eine neue Gruppe, welche die Animationen in [anims] zusammen
 // startet. Per Default ist die Laufzeit der Gruppe gleich der laengsten
 // Laufzeit der hinzugefuegten Animationen.
-func NewGroup(anims ...Animation) *Group {
+func NewGroup(tasks ...Task) *Group {
 	a := &Group{}
 	a.duration = 0
 	a.RepeatCount = 0
-	a.Add(anims...)
+	a.Add(tasks...)
 	AnimCtrl.Add(a)
 	return a
 }
 
 // Fuegt der Gruppe weitere Animationen hinzu.
-func (a *Group) Add(anims ...Animation) {
-	for _, anim := range anims {
-		if anim.Duration() > a.duration {
-			a.duration = anim.Duration()
+func (a *Group) Add(tasks ...Task) {
+	for _, task := range tasks {
+		if task.Duration() > a.duration {
+			a.duration = task.Duration()
 		}
-		a.animList = append(a.animList, anim)
+		a.taskList = append(a.taskList, task)
 	}
 }
 
@@ -364,12 +390,12 @@ func (a *Group) Start() {
 	if a.running {
 		return
 	}
-	a.start = time.Now()
+	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	for _, anim := range a.animList {
-		anim.Start()
+	for _, task := range a.taskList {
+		task.Start()
 	}
 }
 
@@ -378,20 +404,20 @@ func (a *Group) Stop() {
 	if !a.running {
 		return
 	}
-	a.stop = time.Now()
+	a.stop = AnimCtrl.Now()
 	a.running = false
 }
 
 // Setzt die Ausfuehrung der Gruppe fort.
-// func (a *Group) Continue() {
-// 	if a.running {
-// 		return
-// 	}
-// 	dt := time.Now().Sub(a.stop)
-// 	a.start = a.start.Add(dt)
-// 	a.end = a.end.Add(dt)
-// 	a.running = true
-// }
+func (a *Group) Continue() {
+	if a.running {
+		return
+	}
+	dt := AnimCtrl.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.end = a.end.Add(dt)
+	a.running = true
+}
 
 // Liefert den Status der Gruppe zurueck.
 func (a *Group) IsStopped() bool {
@@ -399,8 +425,8 @@ func (a *Group) IsStopped() bool {
 }
 
 func (a *Group) Update(t time.Time) bool {
-	for _, anim := range a.animList {
-		if !anim.IsStopped() {
+	for _, task := range a.taskList {
+		if !task.IsStopped() {
 			return true
 		}
 	}
@@ -413,8 +439,8 @@ func (a *Group) Update(t time.Time) bool {
 		}
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
-		for _, anim := range a.animList {
-			anim.Start()
+		for _, task := range a.taskList {
+			task.Start()
 		}
 	}
 	return true
@@ -428,8 +454,8 @@ type Sequence struct {
 	// Gibt an, wie oft diese Sequenz wiederholt werden soll.
 	RepeatCount int
 
-	animList         []Animation
-	currAnim         int
+	taskList         []Task
+	currTask         int
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -437,20 +463,20 @@ type Sequence struct {
 
 // Erstellt eine neue Sequenz welche die Animationen in [anims] hintereinander
 // ausfuehrt.
-func NewSequence(anims ...Animation) *Sequence {
+func NewSequence(tasks ...Task) *Sequence {
 	a := &Sequence{}
 	a.duration = 0
 	a.RepeatCount = 0
-	a.Add(anims...)
+	a.Add(tasks...)
 	AnimCtrl.Add(a)
 	return a
 }
 
 // Fuegt der Sequenz weitere Animationen hinzu.
-func (a *Sequence) Add(anims ...Animation) {
-	for _, anim := range anims {
-		a.duration = a.duration + anim.Duration()
-		a.animList = append(a.animList, anim)
+func (a *Sequence) Add(tasks ...Task) {
+	for _, task := range tasks {
+		a.duration = a.duration + task.Duration()
+		a.taskList = append(a.taskList, task)
 	}
 }
 
@@ -459,12 +485,12 @@ func (a *Sequence) Start() {
 	if a.running {
 		return
 	}
-	a.start = time.Now()
+	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
-	a.currAnim = 0
+	a.currTask = 0
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	a.animList[a.currAnim].Start()
+	a.taskList[a.currTask].Start()
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
@@ -472,20 +498,20 @@ func (a *Sequence) Stop() {
 	if !a.running {
 		return
 	}
-	a.stop = time.Now()
+	a.stop = AnimCtrl.Now()
 	a.running = false
 }
 
 // Setzt die Ausfuehrung der Sequenz fort.
-// func (a *Sequence) Continue() {
-// 	if a.running {
-// 		return
-// 	}
-// 	dt := time.Now().Sub(a.stop)
-// 	a.start = a.start.Add(dt)
-// 	a.end = a.end.Add(dt)
-// 	a.running = true
-// }
+func (a *Sequence) Continue() {
+	if a.running {
+		return
+	}
+	dt := AnimCtrl.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.end = a.end.Add(dt)
+	a.running = true
+}
 
 // Liefert den Status der Sequenz zurueck.
 func (a *Sequence) IsStopped() bool {
@@ -495,13 +521,13 @@ func (a *Sequence) IsStopped() bool {
 // Wird durch den Controller periodisch aufgerufen, prueft ob Animationen
 // dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
 func (a *Sequence) Update(t time.Time) bool {
-	if a.currAnim < len(a.animList) {
-		if !a.animList[a.currAnim].IsStopped() {
+	if a.currTask < len(a.taskList) {
+		if !a.taskList[a.currTask].IsStopped() {
 			return true
 		}
-		a.currAnim++
+		a.currTask++
 	}
-	if a.currAnim >= len(a.animList) {
+	if a.currTask >= len(a.taskList) {
 		if t.After(a.end) {
 			if a.repeatsLeft == 0 {
 				a.running = false
@@ -511,12 +537,12 @@ func (a *Sequence) Update(t time.Time) bool {
 			}
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
-			a.currAnim = 0
-			a.animList[a.currAnim].Start()
+			a.currTask = 0
+			a.taskList[a.currTask].Start()
 		}
 		return true
 	}
-	a.animList[a.currAnim].Start()
+	a.taskList[a.currTask].Start()
 	return true
 }
 
@@ -540,7 +566,7 @@ type Timeline struct {
 // werden koennen.
 type timelinePos struct {
 	dt    time.Duration
-	anims []Animation
+	tasks []Task
 }
 
 // Erstellt eine neue Timeline mit Ausfuehrungsdauer d. Als d kann auch Null
@@ -558,7 +584,7 @@ func NewTimeline(d time.Duration) *Timeline {
 // Fuegt der Timeline die Animation anim hinzu mit Ausfuehrungszeitpunkt
 // dt nach Start der Timeline. Im Moment muessen die Animationen noch in
 // der Reihenfolge ihres Ausfuehrungszeitpunktes hinzugefuegt werden.
-func (a *Timeline) Add(pit time.Duration, anims ...Animation) {
+func (a *Timeline) Add(pit time.Duration, tasks ...Task) {
 	var i int
 
 	if pit > a.duration {
@@ -568,14 +594,14 @@ func (a *Timeline) Add(pit time.Duration, anims ...Animation) {
 	for i = 0; i < len(a.posList); i++ {
 		pos := a.posList[i]
 		if pos.dt == pit {
-			pos.anims = append(pos.anims, anims...)
+			pos.tasks = append(pos.tasks, tasks...)
 			return
 		}
 		if pos.dt > pit {
 			break
 		}
 	}
-	a.posList = slices.Insert(a.posList, i, &timelinePos{pit, anims})
+	a.posList = slices.Insert(a.posList, i, &timelinePos{pit, tasks})
 }
 
 // Startet die Timeline.
@@ -583,7 +609,7 @@ func (a *Timeline) Start() {
 	if a.running {
 		return
 	}
-	a.start = time.Now()
+	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.nextPos = 0
@@ -595,20 +621,20 @@ func (a *Timeline) Stop() {
 	if !a.running {
 		return
 	}
-	a.stop = time.Now()
+	a.stop = AnimCtrl.Now()
 	a.running = false
 }
 
 // Setzt die Ausfuehrung der Timeline fort.
-// func (a *Timeline) Continue() {
-// 	if a.running {
-// 		return
-// 	}
-// 	dt := time.Now().Sub(a.stop)
-// 	a.start = a.start.Add(dt)
-// 	a.end = a.end.Add(dt)
-// 	a.running = true
-// }
+func (a *Timeline) Continue() {
+	if a.running {
+		return
+	}
+	dt := AnimCtrl.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.end = a.end.Add(dt)
+	a.running = true
+}
 
 // Retourniert den Status der Timeline.
 func (a *Timeline) IsStopped() bool {
@@ -634,8 +660,8 @@ func (a *Timeline) Update(t time.Time) bool {
 	}
 	pos := a.posList[a.nextPos]
 	if t.Sub(a.start) >= pos.dt {
-		for _, anim := range pos.anims {
-			anim.Start()
+		for _, task := range pos.tasks {
+			task.Start()
 		}
 		a.nextPos++
 	}
@@ -666,7 +692,7 @@ type AnimationEmbed struct {
 
 // Muss beim Erstellen einer Animation aufgerufen werden, welche dieses
 // Embeddable einbindet.
-func (a *AnimationEmbed) ExtendAnimation(impl AnimationImpl) {
+func (a *AnimationEmbed) Extend(impl AnimationImpl) {
 	a.AutoReverse = false
 	a.Curve = AnimationEaseInOut
 	a.RepeatCount = 0
@@ -697,7 +723,7 @@ func (a *AnimationEmbed) Start() {
 	if a.running {
 		return
 	}
-	a.start = time.Now()
+	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.total = a.end.Sub(a.start).Seconds()
 	a.repeatsLeft = a.RepeatCount
@@ -713,20 +739,20 @@ func (a *AnimationEmbed) Stop() {
 	if !a.running {
 		return
 	}
-	a.stop = time.Now()
+	a.stop = AnimCtrl.Now()
 	a.running = false
 }
 
 // Setzt eine mit [Stop] angehaltene Animation wieder fort.
-// func (a *AnimationEmbed) Continue() {
-// 	if a.running {
-// 		return
-// 	}
-// 	dt := time.Now().Sub(a.stop)
-// 	a.start = a.start.Add(dt)
-// 	a.end = a.end.Add(dt)
-// 	a.running = true
-// }
+func (a *AnimationEmbed) Continue() {
+	if a.running {
+		return
+	}
+	dt := AnimCtrl.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.end = a.end.Add(dt)
+	a.running = true
+}
 
 // Liefert true, falls die Animation mittels [Stop] angehalten wurde oder
 // falls die Animation zu Ende ist.
@@ -777,6 +803,68 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 	return true
 }
 
+// ---------------------------------------------------------------------------
+
+type BackgroundTask struct {
+    fn func()
+}
+func NewBackgroundTask(fn func()) *BackgroundTask {
+    a := &BackgroundTask{fn}
+    return a
+}
+func (a *BackgroundTask) Duration() time.Duration {
+    return time.Duration(0)
+}
+func (a *BackgroundTask) Start() {
+    a.fn()
+}
+func (a *BackgroundTask) IsStopped() bool {
+    return true
+}
+
+type ShowHideAnimation struct {
+    obj CanvasObject
+}
+func NewShowHideAnimation(obj CanvasObject) *ShowHideAnimation {
+    a := &ShowHideAnimation{obj: obj}
+    return a
+}
+func (a *ShowHideAnimation) Duration() time.Duration {
+    return time.Duration(0)
+}
+func (a *ShowHideAnimation) Start() {
+    if a.obj.IsHidden() {
+        a.obj.Show()
+    } else {
+        a.obj.Hide()
+    }
+}
+func (a *ShowHideAnimation) IsStopped() bool {
+    return true
+}
+
+type StopContAnimation struct {
+    obj Animation
+}
+func NewStopContAnimation(obj Animation) *StopContAnimation {
+    a := &StopContAnimation{obj: obj}
+    return a
+}
+func (a *StopContAnimation) Duration() time.Duration {
+    return time.Duration(0)
+}
+func (a *StopContAnimation) Start() {
+    if a.obj.IsStopped() {
+        a.obj.Continue()
+    } else {
+        a.obj.Stop()
+    }
+}
+func (a *StopContAnimation) IsStopped() bool {
+    return true
+}
+
+
 // Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
 // veraendern und kennt beispielsweise die Farbe selber gar nicht, dann ist
 // die AlphaAnimation genau das Richtige.
@@ -790,7 +878,7 @@ type AlphaAnimation struct {
 
 func NewAlphaAnimation(valPtr *uint8, val2 uint8, dur time.Duration) *AlphaAnimation {
 	a := &AlphaAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -822,7 +910,7 @@ type ColorAnimation struct {
 
 func NewColorAnimation(valPtr *color.LedColor, val2 color.LedColor, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -854,7 +942,7 @@ type PaletteAnimation struct {
 
 func NewPaletteAnimation(valPtr *color.LedColor, pal ColorSource, dur time.Duration) *PaletteAnimation {
 	a := &PaletteAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.Curve = AnimationLinear
 	a.ValPtr = valPtr
@@ -879,7 +967,7 @@ type PaletteFadeAnimation struct {
 
 func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
 	a := &PaletteFadeAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.Fader = fader
 	a.Val2 = pal2
@@ -920,7 +1008,7 @@ type FloatAnimation struct {
 
 func NewFloatAnimation(valPtr *float64, val2 float64, dur time.Duration) *FloatAnimation {
 	a := &FloatAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -955,7 +1043,7 @@ type PathAnimation struct {
 
 func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -966,7 +1054,7 @@ func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.P
 
 func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1007,7 +1095,7 @@ func (a *PathAnimation) Tick(t float64) {
 
 func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1069,94 +1157,6 @@ func (p *PolygonPath) RelPoint(t float64) geom.Point {
 	return p.stopList[len(p.stopList)-1].pos
 }
 
-// Im Folgenden sind einige Pfad-generierende Funktionen zusammengestellt, die
-// als Parameter [pathFunc] bei NewPathAnimation verwendet werden können.
-// Eigene Pfad-Funktionen sind ebenfalls möglich, die Bedingungen an eine
-// solche Funktion sind beim Funktionstyp [PathFunctionType] beschrieben.
-
-// Die PathFunctionType muss folgende Bedingungen erfuellen:
-//  1. t ist in [0,1]
-//  2. f(0) = (0,0)
-//  3. max(f(t).X) - min(f(t).X) = 1.0 und
-//     max(f(t).Y) - min(f(t).Y) = 1.0
-type PathFunctionType func(t float64) geom.Point
-
-// Beschreibt eine Gerade
-func LinearPath(t float64) geom.Point {
-	return geom.Point{t, t}
-}
-
-// Beschreibt ein Rechteck im Uhrzeigersinn.
-// Startpunkt ist auf 12 Uhr.
-func RectanglePathA(t float64) geom.Point {
-	switch {
-	case t < 1.0/8.0:
-		return geom.Point{0.5 * 8.0 * t, 0.0}
-	case t < 3.0/8.0:
-		return geom.Point{0.5, 4.0 * (t - 1.0/8.0)}
-	case t < 5.0/8.0:
-		return geom.Point{0.5 - 4.0*(t-3.0/8.0), 1.0}
-	case t < 7.0/8.0:
-		return geom.Point{-0.5, 1.0 - 4.0*(t-5.0/8.0)}
-	default:
-		return geom.Point{-0.5 + 0.5*8.0*(t-7.0/8.0), 0.0}
-	}
-}
-
-// Beschreibt ein Rechteck im Uhrzeigersinn.
-// Startpunkt ist auf 9 Uhr.
-func RectanglePathB(t float64) geom.Point {
-	switch {
-	case t < 1.0/8.0:
-		return geom.Point{0.0, -0.5 * 8.0 * t}
-	case t < 3.0/8.0:
-		return geom.Point{4.0 * (t - 1.0/8.0), -0.5}
-	case t < 5.0/8.0:
-		return geom.Point{1.0, 4.0*(t-3.0/8.0) - 0.5}
-	case t < 7.0/8.0:
-		return geom.Point{1.0 - 4.0*(t-5.0/8.0), 0.5}
-	default:
-		return geom.Point{0, 0.5 * (1.0 - 8.0*(t-7.0/8.0))}
-	}
-}
-
-// Beschreibt einen Kreis oder Ellipse im Uhrzeigersinn.
-// Startpunkt ist auf 12 Uhr.
-func FullCirclePathA(t float64) geom.Point {
-	phi := t * 2 * math.Pi
-	return geom.Point{0.5 * math.Sin(phi), 0.5 - 0.5*math.Cos(phi)}
-}
-
-// Startpunkt ist auf 9 Uhr.
-func FullCirclePathB(t float64) geom.Point {
-	phi := t * 2 * math.Pi
-	return geom.Point{0.5 - 0.5*math.Cos(phi), -(0.5 * math.Sin(phi))}
-}
-
-// Beschreibt einen Halbkreis.
-func HalfCirclePathA(t float64) geom.Point {
-	phi := t * math.Pi
-	return geom.Point{math.Sin(phi), (1.0 - math.Cos(phi)) / 2.0}
-}
-
-func HalfCirclePathB(t float64) geom.Point {
-	phi := t * math.Pi
-	return geom.Point{(1.0 - math.Cos(phi)) / 2.0, math.Sin(phi)}
-}
-
-// Beschreibt einen Viertelkreis.
-// Horizontaler Start.
-func QuarterCirclePathA(t float64) geom.Point {
-	phi := t * math.Pi / 2.0
-	return geom.Point{math.Sin(phi), 1.0 - math.Cos(phi)}
-}
-
-// Vertikaler Start.
-func QuarterCirclePathB(t float64) geom.Point {
-	phi := t * math.Pi / 2.0
-	return geom.Point{1.0 - math.Cos(phi), math.Sin(phi)}
-}
-
 // Animation fuer eine Positionsveraenderung anhand des Fixed-Datentyps
 // [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
 // Schriften verwendet.
@@ -1169,7 +1169,7 @@ type FixedPosAnimation struct {
 
 func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
 	a := &FixedPosAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1191,6 +1191,36 @@ func float2fix(x float64) fixed.Int26_6 {
 	return fixed.Int26_6(math.Round(x * 64))
 }
 
+type IntegerPosAnimation struct {
+	AnimationEmbed
+	Cont       bool
+	ValPtr     *image.Point
+	Val1, Val2 image.Point
+}
+
+func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
+	a := &IntegerPosAnimation{}
+	a.AnimationEmbed.Extend(a)
+	a.SetDuration(dur)
+	a.ValPtr = valPtr
+	a.Val1 = *valPtr
+	a.Val2 = val2
+	return a
+}
+
+func (a *IntegerPosAnimation) Init() {
+	if a.Cont {
+		a.Val1 = *a.ValPtr
+	}
+}
+
+func (a *IntegerPosAnimation) Tick(t float64) {
+	v1 := geom.NewPointIMG(a.Val1)
+	v2 := geom.NewPointIMG(a.Val2)
+	np := v1.Mul(1.0 - t).Add(v2.Mul(t))
+	*a.ValPtr = np.Int()
+}
+
 // Animation welche auch für die Animation von BlinkenLight-Videos verwendet
 // werden kann.
 type ImageAnimation struct {
@@ -1202,7 +1232,7 @@ type ImageAnimation struct {
 
 func NewImageAnimation(valPtr *int) *ImageAnimation {
 	a := &ImageAnimation{}
-	a.AnimationEmbed.ExtendAnimation(a)
+	a.AnimationEmbed.Extend(a)
 	a.Curve = AnimationLinear
 	a.ValPtr = valPtr
 	return a
@@ -1269,7 +1299,7 @@ func (a *ShaderAnimation) Start() {
 	if a.running {
 		return
 	}
-	a.start = time.Now()
+	a.start = AnimCtrl.Now()
 	a.running = true
 }
 
@@ -1278,7 +1308,7 @@ func (a *ShaderAnimation) Stop() {
 	if !a.running {
 		return
 	}
-	a.stop = time.Now()
+	a.stop = AnimCtrl.Now()
 	a.running = false
 }
 
@@ -1287,7 +1317,7 @@ func (a *ShaderAnimation) Continue() {
 	if a.running {
 		return
 	}
-	dt := time.Now().Sub(a.stop)
+	dt := AnimCtrl.Now().Sub(a.stop)
 	a.start = a.start.Add(dt)
 	a.running = true
 }
