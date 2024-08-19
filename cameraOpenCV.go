@@ -3,6 +3,7 @@
 package ledgrid
 
 import (
+	"math"
 	"image"
 	"log"
 	"time"
@@ -21,15 +22,26 @@ type Camera struct {
 	Pos, Size geom.Point
 	dev       *gocv.VideoCapture
 	img       image.Image
-	cut       image.Rectangle
+	mask      image.Rectangle
+    DstMask   *image.Alpha
 	mat       gocv.Mat
 	running   bool
+    scaler    draw.Scaler
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
-	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
+	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
-	c.mat = gocv.NewMatWithSize(c.cut.Dx(), c.cut.Dy(), gocv.MatTypeCV8UC3)
+    ratio := size.X / size.Y
+    h := camWidth / ratio
+    m := (camHeight - h) / 2.0
+    c.mask = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+    c.DstMask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+    for i := range c.DstMask.Pix {
+        c.DstMask.Pix[i] = 0xff
+    }
+	c.mat = gocv.NewMatWithSize(camWidth, camHeight, gocv.MatTypeCV8UC3)
+    c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
 	AnimCtrl.Add(c)
 	return c
 }
@@ -79,7 +91,7 @@ func (c *Camera) IsStopped() bool {
 
 func (c *Camera) Update(pit time.Time) bool {
 	if !c.dev.Read(&c.mat) {
-		log.Fatal("Failed to grab and decode frames")
+		log.Fatalf("Failed to grab and decode frames")
 	}
 	return true
 }
@@ -92,7 +104,6 @@ func (c *Camera) Set(prop gocv.VideoCaptureProperties, param float64) {
     c.dev.Set(prop, param)
 }
 
-
 func (c *Camera) Draw(canv *Canvas) {
 	var err error
 	gocv.Flip(c.mat, &c.mat, 1)
@@ -102,5 +113,6 @@ func (c *Camera) Draw(canv *Canvas) {
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
+    c.scaler.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
+        &draw.Options{DstMask: c.DstMask})
 }

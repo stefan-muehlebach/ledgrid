@@ -98,13 +98,6 @@ func (c *Canvas) Watch() *Stopwatch {
 	return c.paintWatch
 }
 
-type ColorConvertFunc func(color.LedColor) color.LedColor
-
-func ApplyAlpha(c color.LedColor) color.LedColor {
-	alpha := float64(c.A) / 255.0
-	return c.Alpha(alpha * fillAlpha)
-}
-
 // Alle Objekte, die durch den Controller auf dem LED-Grid dargestellt werden
 // sollen, muessen das CanvasObject-Interface implementieren. Dieses
 // enthaelt einerseits Methoden zum Ein-/Ausblenden von Objekten und
@@ -146,6 +139,13 @@ func (c *CanvasObjectEmbed) IsHidden() bool {
 	return !c.visible
 }
 
+type ColorConvertFunc func(color.LedColor) color.LedColor
+
+func ApplyAlpha(c color.LedColor) color.LedColor {
+	alpha := float64(c.A) / 255.0
+	return c.Alpha(alpha * fillAlpha)
+}
+
 //
 // Basic geometric shapes
 //
@@ -172,7 +172,6 @@ func NewEllipse(pos, size geom.Point, borderColor color.LedColor) *Ellipse {
 	e := &Ellipse{Pos: pos, Size: size, BorderWidth: 1.0,
 		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
 	e.CanvasObjectEmbed.Extend(e)
-	e.FillColor = color.Transparent
 	return e
 }
 
@@ -220,7 +219,7 @@ func (r *Rectangle) Draw(c *Canvas) {
 	c.gc.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
 	c.gc.SetStrokeWidth(r.BorderWidth)
 	c.gc.SetStrokeColor(r.BorderColor)
-	if r.FillColorFnc != nil {
+	if r.FillColor == color.Transparent {
 		c.gc.SetFillColor(r.FillColorFnc(r.BorderColor))
 	} else {
 		c.gc.SetFillColor(r.FillColor)
@@ -250,7 +249,7 @@ func (p *RegularPolygon) Draw(c *Canvas) {
 	c.gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
 	c.gc.SetStrokeWidth(p.BorderWidth)
 	c.gc.SetStrokeColor(p.BorderColor)
-	if p.FillColorFnc != nil {
+	if p.FillColor == color.Transparent {
 		c.gc.SetFillColor(p.FillColorFnc(p.BorderColor))
 	} else {
 		c.gc.SetFillColor(p.FillColor)
@@ -284,6 +283,13 @@ func (l *Line) Draw(c *Canvas) {
 // eignet sich dieser Typ. Im Gegensatz zu den obigen Typen sind die
 // Koordinaten eines Pixels ganze Zahlen und das Zeichnen erfolgt direkt
 // in die draw.Image Struktur und nicht in gg.Context.
+// Der Typ eignet sich nicht, wenn man beabsichtigt die Pixel wandern zu
+// lassen! Da er immer auf ganze Koordinaten springt, sind seine Bewegungen
+// ziemlich "hoelzern".
+//
+//   - BorderWidth: 0.0
+//   - Size       : sqrt(2), sqrt(2)
+//   - FillColor  : (manuell setzen)
 type Pixel struct {
 	CanvasObjectEmbed
 	Pos   image.Point
@@ -400,13 +406,14 @@ func (i *ImageList) Draw(c *Canvas) {
 
 // Zur Darstellung von beliebigem Text.
 var (
-	defFont     = fonts.SeafordBold
-	defFontSize = 12.0
+	defFont     = fonts.GoMedium
+	defFontSize = 10.0
 )
 
 type Text struct {
 	CanvasObjectEmbed
 	Pos      geom.Point
+	AX, AY   float64
 	Angle    float64
 	Color    color.LedColor
 	Font     *fonts.Font
@@ -419,6 +426,7 @@ func NewText(pos geom.Point, text string, color color.LedColor) *Text {
 	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
 		Text: text}
 	t.CanvasObjectEmbed.Extend(t)
+	t.AX, t.AY = 0.5, 0.5
 	t.fontFace = fonts.NewFace(t.Font, t.FontSize)
 	return t
 }
@@ -431,7 +439,7 @@ func (t *Text) Draw(c *Canvas) {
 	}
 	c.gc.SetStrokeColor(t.Color)
 	c.gc.SetFontFace(t.fontFace)
-	c.gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, 0.5, 0.5)
+	c.gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, t.AX, t.AY)
 }
 
 // Fuer das direkte Zeichnen von Text auf dem LED-Grid, existieren einige

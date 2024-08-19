@@ -102,7 +102,7 @@ func (p *GradientPalette) SetColorStop(colStop ColorStop) {
 	var stop ColorStop
 
 	if colStop.Pos < 0.0 || colStop.Pos > 1.0 {
-		log.Fatalf("Positino must be in [0,1]; is: %f", colStop.Pos)
+		log.Fatalf("Position must be in [0,1]; is: %f", colStop.Pos)
 	}
 	for i, stop = range p.stops {
 		if stop.Pos == colStop.Pos {
@@ -129,7 +129,8 @@ func (p *GradientPalette) Color(t float64) (c ledcolor.LedColor) {
 	var stop ColorStop
 
 	if t < 0.0 || t > 1.0 {
-		log.Fatalf("Color: parameter t must be in [0,1] instead of %f", t)
+        t = max(0.0, min(1.0, t))
+		// log.Fatalf("Color: parameter t must be in [0,1] instead of %f", t)
 	}
 	for i, stop = range p.stops[1:] {
 		if stop.Pos > t {

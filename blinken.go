@@ -99,6 +99,12 @@ func (b *BlinkenFile) Duration(idx int) time.Duration {
 	return time.Duration(b.Frames[idx].Duration) * time.Millisecond
 }
 
+func (b *BlinkenFile) SetAllDuration(durMs int) {
+    for i := range b.Frames {
+        b.Frames[i].Duration = durMs
+    }
+}
+
 // Hier schliesslich werden die Bilddaten des Frames mit Index idx decodiert
 // und als image.RGBA-Struktur zurückgegeben.
 func (b *BlinkenFile) Decode(idx int) draw.Image {
