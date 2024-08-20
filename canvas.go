@@ -365,7 +365,6 @@ func (d *Dot) Draw(c *Canvas) {
 }
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel.
-
 type Image struct {
 	CanvasObjectEmbed
 	Pos, Size geom.Point

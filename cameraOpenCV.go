@@ -32,10 +32,17 @@ type Camera struct {
 func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
-    ratio := size.X / size.Y
-    h := camWidth / ratio
-    m := (camHeight - h) / 2.0
-    c.mask = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+    dstRatio := size.X / size.Y
+    srcRatio := float64(camWidth) / float64(camHeight)
+    if dstRatio > srcRatio {
+        h := camWidth / dstRatio
+        m := (camHeight - h) / 2.0
+        c.mask = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+    } else {
+        w := camHeight * dstRatio
+        m := (camWidth - w) / 2.0
+        c.mask = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
+    }
     c.DstMask = image.NewAlpha(image.Rectangle{Max: size.Int()})
     for i := range c.DstMask.Pix {
         c.DstMask.Pix[i] = 0xff

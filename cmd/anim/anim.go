@@ -637,55 +637,94 @@ var (
 			aColor.Start()
 		})
 
-	FlyingImages = NewLedGridProgram("Flying images",
+	FlyingImages = NewLedGridProgram("Stretched images",
 		func(c *ledgrid.Canvas) {
-			pos1 := geom.Point{float64(width) / 2.0, -float64(height) / 2.0}
 			pos2 := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-			pos3 := geom.Point{float64(width) / 2.0, 3 * float64(height) / 2.0}
+			files := []string{
+				"images/colormap01.png",
+				"images/colormap02.png",
+				"images/colormap03.png",
+				"images/lotr01.png",
+				"images/raster.png",
+				"images/testbild.png",
+			}
+			aTimeline := ledgrid.NewTimeline(time.Duration(2*len(files)) * time.Second)
+			dstSize := geom.NewPointIMG(c.Bounds().Size())
+			dstRatio := dstSize.X / dstSize.Y
+			for i, fileName := range files {
+				img := ledgrid.NewImage(pos2, fileName)
+				img.Hide()
+				srcRatio := img.Size.X / img.Size.Y
+				if dstRatio > srcRatio {
+					h := dstSize.Y
+					w := h * srcRatio
+					img.Size = geom.Point{w, h}
+				} else {
+					w := dstSize.X
+					h := w / srcRatio
+					img.Size = geom.Point{w, h}
+				}
+				t0 := time.Duration(4*i+1) * time.Second
+				t1 := t0 + 300*time.Millisecond
+				t2 := t1 + 3300*time.Millisecond
+				aTimeline.Add(t0, ledgrid.NewShowHideAnimation(img))
+				aTimeline.Add(t1, ledgrid.NewFloatAnimation(&img.Angle, 6*math.Pi, 3*time.Second))
+				aTimeline.Add(t2, ledgrid.NewShowHideAnimation(img))
+				c.Add(img)
+			}
+			aTimeline.Start()
 
-			size1 := geom.Point{float64(width) / 3.0, float64(height) / 3.0}
-			size2 := geom.Point{3.0 * float64(width), 3.0 * float64(height)}
+			/*
+			   			pos1 := geom.Point{float64(width) / 2.0, -float64(height) / 2.0}
+			   			pos2 := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+			   			pos3 := geom.Point{float64(width) / 2.0, 3 * float64(height) / 2.0}
 
-			size3 := geom.Point{1.0, 0.75}
-			size4 := geom.Point{160.0, 120.0}
+			   			size1 := geom.Point{float64(width) / 3.0, float64(height) / 3.0}
+			   			size2 := geom.Point{3.0 * float64(width), 3.0 * float64(height)}
 
-			img1 := ledgrid.NewImage(pos1, "images/ledgrid.png")
-			img1.Size = size1
-			// img1.Hide()
+			   			size3 := geom.Point{1.0, 0.75}
+			   			size4 := geom.Point{160.0, 120.0}
 
-			img2 := ledgrid.NewImage(pos2, "images/testbild.png")
-			img2.Size = size3
-			img2.Hide()
+			               img1 := ledgrid.NewImage(pos2, "images/colormap01.png")
 
-			c.Add(img1, img2)
+			   			img1 := ledgrid.NewImage(pos1, "images/ledgrid.png")
+			   			img1.Size = size1
+			   			// img1.Hide()
 
-			aPos1 := ledgrid.NewPositionAnimation(&img1.Pos, pos2, 4*time.Second)
-			aPos2 := ledgrid.NewPositionAnimation(&img1.Pos, pos3, 4*time.Second)
-			aPos2.Cont = true
+			   			img2 := ledgrid.NewImage(pos2, "images/testbild.png")
+			   			img2.Size = size3
+			   			img2.Hide()
 
-			aAngle1 := ledgrid.NewFloatAnimation(&img1.Angle, math.Pi, 4*time.Second)
-			aAngle2 := ledgrid.NewFloatAnimation(&img1.Angle, 0.0, 4*time.Second)
-			aAngle2.Cont = true
+			   			c.Add(img1, img2)
 
-			aSize1 := ledgrid.NewSizeAnimation(&img1.Size, size2, 4*time.Second)
-			aSize1.Cont = true
-			aSize2 := ledgrid.NewSizeAnimation(&img1.Size, size1, 4*time.Second)
-			aSize2.Cont = true
+			   			aPos1 := ledgrid.NewPositionAnimation(&img1.Pos, pos2, 4*time.Second)
+			   			aPos2 := ledgrid.NewPositionAnimation(&img1.Pos, pos3, 4*time.Second)
+			   			aPos2.Cont = true
 
-			aSize3 := ledgrid.NewSizeAnimation(&img2.Size, size4, 4*time.Second)
-			aSize3.AutoReverse = true
-			aSize3.RepeatCount = ledgrid.AnimationRepeatForever
-			aAngle3 := ledgrid.NewFloatAnimation(&img2.Angle, 4*math.Pi, 4*time.Second)
-			aAngle3.AutoReverse = true
-			aAngle3.RepeatCount = ledgrid.AnimationRepeatForever
+			   			aAngle1 := ledgrid.NewFloatAnimation(&img1.Angle, math.Pi, 4*time.Second)
+			   			aAngle2 := ledgrid.NewFloatAnimation(&img1.Angle, 0.0, 4*time.Second)
+			   			aAngle2.Cont = true
 
-			// task := ledgrid.NewBackgroundTask(func() { img2.Show() })
-			showHide := ledgrid.NewShowHideAnimation(img2)
+			   			aSize1 := ledgrid.NewSizeAnimation(&img1.Size, size2, 4*time.Second)
+			   			aSize1.Cont = true
+			   			aSize2 := ledgrid.NewSizeAnimation(&img1.Size, size1, 4*time.Second)
+			   			aSize2.Cont = true
 
-			aSize3.Start()
-			aAngle3.Start()
-			aSeq := ledgrid.NewSequence(aPos1, aAngle1, showHide, aSize1, aPos2, showHide, aAngle2, aSize2, aSize3)
-			aSeq.Start()
+			   			aSize3 := ledgrid.NewSizeAnimation(&img2.Size, size4, 4*time.Second)
+			   			aSize3.AutoReverse = true
+			   			aSize3.RepeatCount = ledgrid.AnimationRepeatForever
+			   			aAngle3 := ledgrid.NewFloatAnimation(&img2.Angle, 4*math.Pi, 4*time.Second)
+			   			aAngle3.AutoReverse = true
+			   			aAngle3.RepeatCount = ledgrid.AnimationRepeatForever
+
+			   			// task := ledgrid.NewBackgroundTask(func() { img2.Show() })
+			   			showHide := ledgrid.NewShowHideAnimation(img2)
+
+			   			aSize3.Start()
+			   			aAngle3.Start()
+			   			aSeq := ledgrid.NewSequence(aPos1, aAngle1, showHide, aSize1, aPos2, showHide, aAngle2, aSize2, aSize3)
+			   			aSeq.Start()
+			*/
 		})
 
 	CameraTest = NewLedGridProgram("Camera test",
@@ -823,10 +862,13 @@ var (
 
 			for y := range c.Rect.Dy() {
 				for x := range c.Rect.Dx() {
-					pos := image.Point{x, y}
+					pt := image.Point{x, y}
+					// pos := pt
+					pos := geom.NewPointIMG(pt)
 					t := rand.Float64()
 					col := (color.DimGray.Dark(0.3)).Interpolate((color.DarkGrey.Dark(0.3)), t)
-					pix := ledgrid.NewPixel(pos, col)
+					// pix := ledgrid.NewPixel(pos, col)
+					pix := ledgrid.NewDot(pos, col)
 					c.Add(pix)
 
 					dur := time.Second + time.Duration(x)*time.Millisecond
