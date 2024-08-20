@@ -29,9 +29,9 @@ var (
 	width, height int
 	gridSize      image.Point
 	backAlpha     = 1.0
-	animCtrl      *ledgrid.AnimationController
-	ledGrid       *ledgrid.LedGrid
-	canvas        *ledgrid.Canvas
+	// animCtrl      *ledgrid.AnimationController
+	ledGrid *ledgrid.LedGrid
+	canvas  *ledgrid.Canvas
 )
 
 //----------------------------------------------------------------------------
@@ -253,14 +253,14 @@ var (
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
 			c.Add(c1, c2, c3, c4)
 
-			c1Path := ledgrid.NewPathAnimation(&c1.Pos, pathB, geom.Point{float64(width - 4), float64(height)-4.0}, duration)
+			c1Path := ledgrid.NewPathAnimation(&c1.Pos, pathB, geom.Point{float64(width - 4), float64(height) - 4.0}, duration)
 			c1Path.AutoReverse = true
-			c3Path := ledgrid.NewPathAnimation(&c3.Pos, pathB, geom.Point{-float64(width - 4), -(float64(height)-4.0)}, duration)
+			c3Path := ledgrid.NewPathAnimation(&c3.Pos, pathB, geom.Point{-float64(width - 4), -(float64(height) - 4.0)}, duration)
 			c3Path.AutoReverse = true
 
-			c2Path := ledgrid.NewPathAnimation(&c2.Pos, pathA, geom.Point{-float64(width) / 3.0, float64(height)-4.0}, duration)
+			c2Path := ledgrid.NewPathAnimation(&c2.Pos, pathA, geom.Point{-float64(width) / 3.0, float64(height) - 4.0}, duration)
 			c2Path.AutoReverse = true
-			c4Path := ledgrid.NewPathAnimation(&c4.Pos, pathA, geom.Point{float64(width) / 3.0, -(float64(height)-4.0)}, duration)
+			c4Path := ledgrid.NewPathAnimation(&c4.Pos, pathA, geom.Point{float64(width) / 3.0, -(float64(height) - 4.0)}, duration)
 			c4Path.AutoReverse = true
 
 			aGrp := ledgrid.NewGroup(c1Path, c2Path, c3Path, c4Path)
@@ -365,9 +365,9 @@ var (
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
 			c5 := ledgrid.NewEllipse(pos5, cSize, color.YellowGreen)
 
-			stepRD := geom.Point{9.0, float64(height)-3.0}
+			stepRD := geom.Point{9.0, float64(height) - 3.0}
 			stepLU := stepRD.Neg()
-			stepRU := geom.Point{9.0, -(float64(height)-3.0)}
+			stepRU := geom.Point{9.0, -(float64(height) - 3.0)}
 			stepLD := stepRU.Neg()
 
 			c1Path1 := ledgrid.NewPathAnimation(&c1.Pos, ledgrid.QuarterCirclePathA, stepRD, time.Second)
@@ -603,7 +603,7 @@ var (
 			aAngle2.Curve = ledgrid.AnimationLinear
 			aAngle2.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aPos := ledgrid.NewPositionAnimation(&t3.Pos, geom.Point{-100, float64(height)/2.0}, 6*time.Second)
+			aPos := ledgrid.NewPositionAnimation(&t3.Pos, geom.Point{-100, float64(height) / 2.0}, 6*time.Second)
 			aPos.Curve = ledgrid.AnimationEaseInOut
 
 			aTimeline := ledgrid.NewTimeline(15 * time.Second)
@@ -1008,7 +1008,7 @@ func BounceAround(c *ledgrid.Canvas) {
 	obj2.Field = geom.NewRectangleIMG(c.Rect)
 
 	c.Add(obj1, obj2)
-	animCtrl.Add(obj1, obj2)
+	ledgrid.AnimCtrl.Add(obj1, obj2)
 }
 
 //----------------------------------------------------------------------------
@@ -1097,7 +1097,7 @@ func main() {
 	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
 	pixClient := ledgrid.NewNetPixelClient(host, port)
 
-	animCtrl = ledgrid.NewAnimationController(canvas, ledGrid, pixClient)
+	ledgrid.NewAnimationController(canvas, ledGrid, pixClient)
 
 	if runInteractive {
 		progId = -1
@@ -1114,8 +1114,8 @@ func main() {
 				fmt.Printf("[%c] %s\n", 'a'+i, prog.Name())
 			}
 			fmt.Printf("---------------------------------------\n")
-			fmt.Printf("  S - Stop animation\n")
-			fmt.Printf("  C - Continue animation\n")
+			fmt.Printf("  S - Save Canvas\n")
+			fmt.Printf("  L - Load Canvas from File\n")
 			fmt.Printf("---------------------------------------\n")
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
@@ -1131,24 +1131,45 @@ func main() {
 				if progId < 0 || progId >= len(programList) {
 					continue
 				}
-				// animCtrl.Stop()
+				// ledgrid.AnimCtrl.Stop()
 				fmt.Printf("Program statistics:\n")
-				fmt.Printf("  animation: %v\n", animCtrl.Watch())
+				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", pixClient.Watch())
-				animCtrl.Purge()
-				// animCtrl.Continue()
+				ledgrid.AnimCtrl.Purge()
+				// ledgrid.AnimCtrl.Continue()
 				canvas.Purge()
-				animCtrl.Watch().Reset()
+				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				pixClient.Watch().Reset()
 				programList[progId].Run(canvas)
 			}
 			if ch == 'S' {
-				animCtrl.Stop()
+				ledgrid.AnimCtrl.Save("gobs/program01.gob")
 			}
-			if ch == 'C' {
-				animCtrl.Continue()
+			if ch == 'L' {
+				ledgrid.AnimCtrl.Stop()
+				ledgrid.AnimCtrl.Purge()
+				ledgrid.AnimCtrl.Watch().Reset()
+				canvas.Purge()
+				canvas.Watch().Reset()
+				time.Sleep(60 * time.Millisecond)
+				ledgrid.AnimCtrl.Load("gobs/program01.gob")
+				ledgrid.AnimCtrl.Continue()
+				// fmt.Printf("canvas  >>> %+v\n", canvas)
+				for i, obj := range canvas.ObjList {
+					if obj == nil {
+						continue
+					}
+					fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
+				}
+				// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
+				for i, anim := range ledgrid.AnimCtrl.AnimList {
+					if anim == nil {
+						continue
+					}
+					fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
+				}
 			}
 		}
 	} else {
@@ -1162,13 +1183,13 @@ func main() {
 		SignalHandler()
 	}
 
-	animCtrl.Stop()
+	ledgrid.AnimCtrl.Stop()
 	ledGrid.Clear(color.Black)
 	pixClient.Send(ledGrid)
 	pixClient.Close()
 
 	fmt.Printf("Program statistics:\n")
-	fmt.Printf("  animation: %v\n", animCtrl.Watch())
+	fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 	fmt.Printf("  painting : %v\n", canvas.Watch())
 	fmt.Printf("  sending  : %v\n", pixClient.Watch())
 }

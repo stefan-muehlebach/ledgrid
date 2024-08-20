@@ -1,9 +1,12 @@
 package ledgrid
 
 import (
+	"encoding/gob"
 	"image"
+	"log"
 	"math"
 	"math/rand/v2"
+	"os"
 	"runtime"
 	"slices"
 	"sync"
@@ -157,8 +160,8 @@ type Animator interface {
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
 	AnimList   []Animation
+	Canvas     *Canvas
 	animMutex  *sync.RWMutex
-	canvas     *Canvas
 	ledGrid    *LedGrid
 	pixClient  PixelClient
 	ticker     *time.Ticker
@@ -177,8 +180,8 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient PixelCli
 	}
 	a := &AnimationController{}
 	a.AnimList = make([]Animation, 0)
+	a.Canvas = canvas
 	a.animMutex = &sync.RWMutex{}
-	a.canvas = canvas
 	a.ledGrid = ledGrid
 	a.pixClient = pixClient
 	a.ticker = time.NewTicker(refreshRate)
@@ -217,8 +220,8 @@ func (a *AnimationController) Del(anim Animation) {
 // Loescht alle Animationen.
 func (a *AnimationController) Purge() {
 	a.animMutex.Lock()
-	for _, obj := range a.AnimList {
-		obj.Stop()
+	for _, anim := range a.AnimList {
+		anim.Stop()
 	}
 	a.AnimList = a.AnimList[:0]
 	a.animMutex.Unlock()
@@ -253,14 +256,13 @@ func (a *AnimationController) IsStopped() bool {
 }
 
 func (a *AnimationController) backgroundThread() {
-	startChan := make(chan int) //, queueSize)
-	doneChan := make(chan bool) //, queueSize)
+	startChan := make(chan int)
+	doneChan := make(chan bool)
 
 	for range a.numThreads {
 		go a.animationUpdater(startChan, doneChan)
 	}
 
-	// lastPit := time.Now()
 	for pit := range a.ticker.C {
 		if a.quit {
 			break
@@ -276,12 +278,37 @@ func (a *AnimationController) backgroundThread() {
 		}
 		a.animWatch.Stop()
 
-		a.canvas.Draw(a.ledGrid)
+		a.Canvas.Draw(a.ledGrid)
 		a.pixClient.Send(a.ledGrid)
-
 	}
 	close(doneChan)
 	close(startChan)
+}
+
+func (a *AnimationController) Save(fileName string) {
+	fh, err := os.Create(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't create file: %v", err)
+	}
+	defer fh.Close()
+	gobEncoder := gob.NewEncoder(fh)
+	err = gobEncoder.Encode(a)
+	if err != nil {
+		log.Fatalf("Couldn't encode data: %v", err)
+	}
+}
+
+func (a *AnimationController) Load(fileName string) {
+	fh, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't create file: %v", err)
+	}
+	defer fh.Close()
+	gobDecoder := gob.NewDecoder(fh)
+	err = gobDecoder.Decode(a)
+	if err != nil {
+		log.Fatalf("Couldn't decode data: %v", err)
+	}
 }
 
 func (a *AnimationController) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
@@ -316,15 +343,15 @@ func (a *AnimationController) Now() time.Time {
 // Hintergrund gestartet werden koennen und nichts mit dem Zeichnen zu tun
 // haben.
 type Task interface {
-    Start()
-    IsStopped() bool
-    Duration() time.Duration
+	Start()
+	IsStopped() bool
+	Duration() time.Duration
 }
 
 // Das Interface Animation wird von allen Typen implementiert, welche ueber
 // laengere Zeit laufen und periodisch aktualisiert werden.
 type Animation interface {
-    Task
+	Task
 	SetDuration(dur time.Duration)
 	Stop()
 	Continue()
@@ -333,7 +360,8 @@ type Animation interface {
 
 // Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
 // Interface AnimationImpl implementieren.
-type AnimationImpl interface {
+type NormAnimation interface {
+	Animation
 	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
 	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
 	// zaehlen nicht als Start!
@@ -350,6 +378,7 @@ type AnimationImpl interface {
 // der Dauer.
 type DurationEmbed struct {
 	duration time.Duration
+	Dummy    int
 }
 
 func (d *DurationEmbed) Duration() time.Duration {
@@ -367,6 +396,25 @@ func (d *DurationEmbed) SetDuration(dur time.Duration) {
 // 'Timeline' sind solche Steuer-Animationen, implementieren jedoch alle
 // das Animation-Interface und koennen somit ineinander verschachtelt werden.
 
+func init() {
+	gob.Register(&Group{})
+	gob.Register(&Sequence{})
+	gob.Register(&Timeline{})
+	gob.Register(&BackgroundTask{})
+	gob.Register(&ShowHideAnimation{})
+	gob.Register(&StopContAnimation{})
+	gob.Register(&AlphaAnimation{})
+	gob.Register(&ColorAnimation{})
+	gob.Register(&PaletteAnimation{})
+	gob.Register(&PaletteFadeAnimation{})
+	gob.Register(&FloatAnimation{})
+	gob.Register(&PathAnimation{})
+	gob.Register(&FixedPosAnimation{})
+	gob.Register(&IntegerPosAnimation{})
+	gob.Register(&ShaderAnimation{})
+	gob.Register(&NormAnimationEmbed{})
+}
+
 // Eine Gruppe dient dazu, eine Anzahl von Animationen gleichzeitig zu starten.
 // Die Laufzeit der Gruppe ist gleich der laengsten Laufzeit ihrer Animationen
 // oder einer festen Dauer (je nach dem was groesser ist).
@@ -378,7 +426,7 @@ type Group struct {
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
 
-	taskList         []Task
+	Tasks            []Task
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -402,7 +450,7 @@ func (a *Group) Add(tasks ...Task) {
 		if task.Duration() > a.duration {
 			a.duration = task.Duration()
 		}
-		a.taskList = append(a.taskList, task)
+		a.Tasks = append(a.Tasks, task)
 	}
 }
 
@@ -415,7 +463,7 @@ func (a *Group) Start() {
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	for _, task := range a.taskList {
+	for _, task := range a.Tasks {
 		task.Start()
 	}
 }
@@ -446,7 +494,7 @@ func (a *Group) IsStopped() bool {
 }
 
 func (a *Group) Update(t time.Time) bool {
-	for _, task := range a.taskList {
+	for _, task := range a.Tasks {
 		if !task.IsStopped() {
 			return true
 		}
@@ -460,7 +508,7 @@ func (a *Group) Update(t time.Time) bool {
 		}
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
-		for _, task := range a.taskList {
+		for _, task := range a.Tasks {
 			task.Start()
 		}
 	}
@@ -475,7 +523,7 @@ type Sequence struct {
 	// Gibt an, wie oft diese Sequenz wiederholt werden soll.
 	RepeatCount int
 
-	taskList         []Task
+	Tasks            []Task
 	currTask         int
 	start, stop, end time.Time
 	repeatsLeft      int
@@ -497,7 +545,7 @@ func NewSequence(tasks ...Task) *Sequence {
 func (a *Sequence) Add(tasks ...Task) {
 	for _, task := range tasks {
 		a.duration = a.duration + task.Duration()
-		a.taskList = append(a.taskList, task)
+		a.Tasks = append(a.Tasks, task)
 	}
 }
 
@@ -511,7 +559,7 @@ func (a *Sequence) Start() {
 	a.currTask = 0
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	a.taskList[a.currTask].Start()
+	a.Tasks[a.currTask].Start()
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
@@ -542,13 +590,13 @@ func (a *Sequence) IsStopped() bool {
 // Wird durch den Controller periodisch aufgerufen, prueft ob Animationen
 // dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
 func (a *Sequence) Update(t time.Time) bool {
-	if a.currTask < len(a.taskList) {
-		if !a.taskList[a.currTask].IsStopped() {
+	if a.currTask < len(a.Tasks) {
+		if !a.Tasks[a.currTask].IsStopped() {
 			return true
 		}
 		a.currTask++
 	}
-	if a.currTask >= len(a.taskList) {
+	if a.currTask >= len(a.Tasks) {
 		if t.After(a.end) {
 			if a.repeatsLeft == 0 {
 				a.running = false
@@ -559,11 +607,11 @@ func (a *Sequence) Update(t time.Time) bool {
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
 			a.currTask = 0
-			a.taskList[a.currTask].Start()
+			a.Tasks[a.currTask].Start()
 		}
 		return true
 	}
-	a.taskList[a.currTask].Start()
+	a.Tasks[a.currTask].Start()
 	return true
 }
 
@@ -576,8 +624,8 @@ type Timeline struct {
 	// Gibt an, wie oft diese Timeline wiederholt werden soll.
 	RepeatCount int
 
-	posList          []*timelinePos
-	nextPos          int
+	Slots            []*TimelineSlot
+	nextSlot         int
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -585,9 +633,9 @@ type Timeline struct {
 
 // Interner Typ, mit dem Ausfuehrungszeitpunkt und Animationen festgehalten
 // werden koennen.
-type timelinePos struct {
-	dt    time.Duration
-	tasks []Task
+type TimelineSlot struct {
+	Duration time.Duration
+	Tasks    []Task
 }
 
 // Erstellt eine neue Timeline mit Ausfuehrungsdauer d. Als d kann auch Null
@@ -597,7 +645,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a := &Timeline{}
 	a.duration = d
 	a.RepeatCount = 0
-	a.posList = make([]*timelinePos, 0)
+	a.Slots = make([]*TimelineSlot, 0)
 	AnimCtrl.Add(a)
 	return a
 }
@@ -612,17 +660,17 @@ func (a *Timeline) Add(pit time.Duration, tasks ...Task) {
 		a.duration = pit
 	}
 
-	for i = 0; i < len(a.posList); i++ {
-		pos := a.posList[i]
-		if pos.dt == pit {
-			pos.tasks = append(pos.tasks, tasks...)
+	for i = 0; i < len(a.Slots); i++ {
+		pos := a.Slots[i]
+		if pos.Duration == pit {
+			pos.Tasks = append(pos.Tasks, tasks...)
 			return
 		}
-		if pos.dt > pit {
+		if pos.Duration > pit {
 			break
 		}
 	}
-	a.posList = slices.Insert(a.posList, i, &timelinePos{pit, tasks})
+	a.Slots = slices.Insert(a.Slots, i, &TimelineSlot{pit, tasks})
 }
 
 // Startet die Timeline.
@@ -633,7 +681,7 @@ func (a *Timeline) Start() {
 	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
-	a.nextPos = 0
+	a.nextSlot = 0
 	a.running = true
 }
 
@@ -665,7 +713,7 @@ func (a *Timeline) IsStopped() bool {
 // Wird periodisch durch den Controller aufgerufen und aktualisiert die
 // Timeline.
 func (a *Timeline) Update(t time.Time) bool {
-	if a.nextPos >= len(a.posList) {
+	if a.nextSlot >= len(a.Slots) {
 		if t.After(a.end) {
 			if a.repeatsLeft == 0 {
 				a.running = false
@@ -675,16 +723,16 @@ func (a *Timeline) Update(t time.Time) bool {
 			}
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
-			a.nextPos = 0
+			a.nextSlot = 0
 		}
 		return true
 	}
-	pos := a.posList[a.nextPos]
-	if t.Sub(a.start) >= pos.dt {
-		for _, task := range pos.tasks {
+	slot := a.Slots[a.nextSlot]
+	if t.Sub(a.start) >= slot.Duration {
+		for _, task := range slot.Tasks {
 			task.Start()
 		}
-		a.nextPos++
+		a.nextSlot++
 	}
 	return true
 }
@@ -694,75 +742,77 @@ func (a *Timeline) Update(t time.Time) bool {
 // werden, haben als Dauer stets 0 ms und werden immer als 'gestoppt'
 // ausgewiesen. Es empfiehlt sich, nur kurze Aktionen damit zu realisieren.
 type BackgroundTask struct {
-    fn func()
+	fn func()
 }
+
 func NewBackgroundTask(fn func()) *BackgroundTask {
-    a := &BackgroundTask{fn}
-    return a
+	a := &BackgroundTask{fn}
+	return a
 }
 func (a *BackgroundTask) Duration() time.Duration {
-    return time.Duration(0)
+	return 0
 }
 func (a *BackgroundTask) Start() {
-    a.fn()
+	a.fn()
 }
 func (a *BackgroundTask) IsStopped() bool {
-    return true
+	return true
 }
 
 // Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
 // CanvasObjekten beeinflusst werden. Mit jedem Aufruf wird dieser Switch
 // umgestellt (also Hidden -> Shown -> Hidden -> etc.).
 type ShowHideAnimation struct {
-    obj CanvasObject
+	obj CanvasObject
 }
+
 func NewShowHideAnimation(obj CanvasObject) *ShowHideAnimation {
-    a := &ShowHideAnimation{obj: obj}
-    return a
+	a := &ShowHideAnimation{obj: obj}
+	return a
 }
 func (a *ShowHideAnimation) Duration() time.Duration {
-    return time.Duration(0)
+	return 0
 }
 func (a *ShowHideAnimation) Start() {
-    if a.obj.IsHidden() {
-        a.obj.Show()
-    } else {
-        a.obj.Hide()
-    }
+	if a.obj.IsHidden() {
+		a.obj.Show()
+	} else {
+		a.obj.Hide()
+	}
 }
 func (a *ShowHideAnimation) IsStopped() bool {
-    return true
+	return true
 }
 
 // Analog zu ShowHiddenAnimation dient StopContAnimation dazu, die Eigenschaft
 // IsStopped von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
 // Animation wechselt die Eigenschaft (Stopped -> Started -> Stopped -> etc.)
 type StopContAnimation struct {
-    obj Animation
-}
-func NewStopContAnimation(obj Animation) *StopContAnimation {
-    a := &StopContAnimation{obj: obj}
-    return a
-}
-func (a *StopContAnimation) Duration() time.Duration {
-    return time.Duration(0)
-}
-func (a *StopContAnimation) Start() {
-    if a.obj.IsStopped() {
-        a.obj.Continue()
-    } else {
-        a.obj.Stop()
-    }
-}
-func (a *StopContAnimation) IsStopped() bool {
-    return true
+	obj Animation
 }
 
+func NewStopContAnimation(obj Animation) *StopContAnimation {
+	a := &StopContAnimation{obj: obj}
+	return a
+}
+func (a *StopContAnimation) Duration() time.Duration {
+	return 0
+}
+func (a *StopContAnimation) Start() {
+	if a.obj.IsStopped() {
+		a.obj.Continue()
+	} else {
+		a.obj.Stop()
+	}
+}
+func (a *StopContAnimation) IsStopped() bool {
+	return true
+}
 
 // Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
 // Erleichert das Erstellen von neuen Animationen gewaltig.
-type AnimationEmbed struct {
-	DurationEmbed
+type NormAnimationEmbed struct {
+	wrapper NormAnimation
 	// Falls true, wird die Animation einmal vorwaerts und einmal rueckwerts
 	// abgespielt.
 	AutoReverse bool
@@ -772,8 +822,7 @@ type AnimationEmbed struct {
 	Curve AnimationCurve
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
 	RepeatCount int
-
-	impl             AnimationImpl
+	DurationEmbed
 	reverse          bool
 	start, stop, end time.Time
 	total            float64
@@ -783,16 +832,16 @@ type AnimationEmbed struct {
 
 // Muss beim Erstellen einer Animation aufgerufen werden, welche dieses
 // Embeddable einbindet.
-func (a *AnimationEmbed) Extend(impl AnimationImpl) {
+func (a *NormAnimationEmbed) Extend(wrapper NormAnimation) {
+	a.wrapper = wrapper
 	a.AutoReverse = false
 	a.Curve = AnimationEaseInOut
 	a.RepeatCount = 0
-	a.impl = impl
 	a.running = false
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(wrapper)
 }
 
-func (a *AnimationEmbed) Duration() time.Duration {
+func (a *NormAnimationEmbed) Duration() time.Duration {
 	factor := 1
 	if a.RepeatCount > 0 {
 		factor += a.RepeatCount
@@ -806,7 +855,7 @@ func (a *AnimationEmbed) Duration() time.Duration {
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
 // aktuell sind. Ist die Animaton bereits am Laufen ist diese Methode
 // ein no-op.
-func (a *AnimationEmbed) Start() {
+func (a *NormAnimationEmbed) Start() {
 	if a.running {
 		return
 	}
@@ -815,14 +864,14 @@ func (a *AnimationEmbed) Start() {
 	a.total = a.end.Sub(a.start).Seconds()
 	a.repeatsLeft = a.RepeatCount
 	a.reverse = false
-	a.impl.Init()
+	a.wrapper.Init()
 	a.running = true
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
 // Applikation. Mit [Continue] kann eine gestoppte Animation wieder
 // fortgesetzt werden.
-func (a *AnimationEmbed) Stop() {
+func (a *NormAnimationEmbed) Stop() {
 	if !a.running {
 		return
 	}
@@ -831,7 +880,7 @@ func (a *AnimationEmbed) Stop() {
 }
 
 // Setzt eine mit [Stop] angehaltene Animation wieder fort.
-func (a *AnimationEmbed) Continue() {
+func (a *NormAnimationEmbed) Continue() {
 	if a.running {
 		return
 	}
@@ -843,24 +892,24 @@ func (a *AnimationEmbed) Continue() {
 
 // Liefert true, falls die Animation mittels [Stop] angehalten wurde oder
 // falls die Animation zu Ende ist.
-func (a *AnimationEmbed) IsStopped() bool {
+func (a *NormAnimationEmbed) IsStopped() bool {
 	return !a.running
 }
 
 // Diese Methode ist fuer die korrekte Abwicklung (Beachtung von Reverse und
 // RepeatCount, etc) einer Animation zustaendig. Wenn die Animation zu Ende
 // ist, retourniert Update false. Der Parameter [t] ist ein "Point in Time".
-func (a *AnimationEmbed) Update(t time.Time) bool {
+func (a *NormAnimationEmbed) Update(t time.Time) bool {
 	if t.After(a.end) {
 		if a.reverse {
-			a.impl.Tick(a.Curve(0.0))
+			a.wrapper.Tick(a.Curve(0.0))
 			if a.repeatsLeft == 0 {
 				a.running = false
 				return false
 			}
 			a.reverse = false
 		} else {
-			a.impl.Tick(a.Curve(1.0))
+			a.wrapper.Tick(a.Curve(1.0))
 			if a.AutoReverse {
 				a.reverse = true
 			}
@@ -876,16 +925,16 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 		}
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
-		a.impl.Init()
+		a.wrapper.Init()
 		return true
 	}
 
 	delta := t.Sub(a.start).Seconds()
 	val := delta / a.total
 	if a.reverse {
-		a.impl.Tick(a.Curve(1.0 - val))
+		a.wrapper.Tick(a.Curve(1.0 - val))
 	} else {
-		a.impl.Tick(a.Curve(val))
+		a.wrapper.Tick(a.Curve(val))
 	}
 	return true
 }
@@ -893,26 +942,21 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 // ---------------------------------------------------------------------------
 // Im folgenden Abschnitt befinden sich nun alle Typen, welche
 
-
-
 // Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
 // veraendern und kennt beispielsweise die Farbe selber gar nicht, dann ist
 // die AlphaAnimation genau das Richtige.
 type AlphaAnimation struct {
-	AnimationEmbed
-	Cont       bool
+	NormAnimationEmbed
 	ValPtr     *uint8
 	Val1, Val2 uint8
 	ValFunc    AlphaFuncType
+	Cont       bool
 }
 
 func NewAlphaAnimation(valPtr *uint8, val2 uint8, dur time.Duration) *AlphaAnimation {
-	a := &AlphaAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a := &AlphaAnimation{ValPtr: valPtr, Val1: *valPtr, Val2: val2}
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
 	return a
 }
 
@@ -931,20 +975,17 @@ func (a *AlphaAnimation) Tick(t float64) {
 
 // Animation fuer einen Verlauf zwischen zwei Farben.
 type ColorAnimation struct {
-	AnimationEmbed
-	Cont       bool
+	NormAnimationEmbed
 	ValPtr     *color.LedColor
 	Val1, Val2 color.LedColor
 	ValFunc    ColorFuncType
+	Cont       bool
 }
 
 func NewColorAnimation(valPtr *color.LedColor, val2 color.LedColor, dur time.Duration) *ColorAnimation {
-	a := &ColorAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a := &ColorAnimation{ValPtr: valPtr, Val1: *valPtr, Val2: val2}
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
 	return a
 }
 
@@ -965,14 +1006,14 @@ func (a *ColorAnimation) Tick(t float64) {
 
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
 type PaletteAnimation struct {
-	AnimationEmbed
+	NormAnimationEmbed
 	ValPtr *color.LedColor
 	pal    ColorSource
 }
 
 func NewPaletteAnimation(valPtr *color.LedColor, pal ColorSource, dur time.Duration) *PaletteAnimation {
 	a := &PaletteAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.Curve = AnimationLinear
 	a.ValPtr = valPtr
@@ -989,7 +1030,7 @@ func (a *PaletteAnimation) Tick(t float64) {
 // Dies schliesslich ist eine Animation, bei welcher stufenlos von einer
 // Palette auf eine andere umgestellt wird.
 type PaletteFadeAnimation struct {
-	AnimationEmbed
+	NormAnimationEmbed
 	Fader   *PaletteFader
 	Val2    ColorSource
 	ValFunc PaletteFuncType
@@ -997,7 +1038,7 @@ type PaletteFadeAnimation struct {
 
 func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
 	a := &PaletteFadeAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.Fader = fader
 	a.Val2 = pal2
@@ -1029,16 +1070,16 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 
 // Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen.
 type FloatAnimation struct {
-	AnimationEmbed
-	Cont       bool
+	NormAnimationEmbed
 	ValPtr     *float64
 	Val1, Val2 float64
 	ValFunc    FloatFuncType
+	Cont       bool
 }
 
 func NewFloatAnimation(valPtr *float64, val2 float64, dur time.Duration) *FloatAnimation {
 	a := &FloatAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1062,18 +1103,18 @@ func (a *FloatAnimation) Tick(t float64) {
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnimation struct {
-	AnimationEmbed
-	Cont       bool
+	NormAnimationEmbed
 	ValPtr     *geom.Point
 	Val1, Val2 geom.Point
 	Size       geom.Point
 	ValFunc    PointFuncType
 	PathFunc   PathFunctionType
+	Cont       bool
 }
 
 func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1084,7 +1125,7 @@ func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.P
 
 func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1125,7 +1166,7 @@ func (a *PathAnimation) Tick(t float64) {
 
 func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1191,15 +1232,15 @@ func (p *PolygonPath) RelPoint(t float64) geom.Point {
 // [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
 // Schriften verwendet.
 type FixedPosAnimation struct {
-	AnimationEmbed
-	Cont       bool
+	NormAnimationEmbed
 	ValPtr     *fixed.Point26_6
 	Val1, Val2 fixed.Point26_6
+	Cont       bool
 }
 
 func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
 	a := &FixedPosAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1222,15 +1263,15 @@ func float2fix(x float64) fixed.Int26_6 {
 }
 
 type IntegerPosAnimation struct {
-	AnimationEmbed
-	Cont       bool
+	NormAnimationEmbed
 	ValPtr     *image.Point
 	Val1, Val2 image.Point
+	Cont       bool
 }
 
 func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
 	a := &IntegerPosAnimation{}
-	a.AnimationEmbed.Extend(a)
+	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.ValPtr = valPtr
 	a.Val1 = *valPtr
@@ -1250,50 +1291,6 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 	np := v1.Mul(1.0 - t).Add(v2.Mul(t))
 	*a.ValPtr = np.Int()
 }
-
-// Animation welche auch für die Animation von BlinkenLight-Videos verwendet
-// werden kann.
-// type ImageAnimation struct {
-// 	AnimationEmbed
-// 	Cont   bool
-// 	ValPtr *int
-// 	tsList []time.Duration
-// }
-
-// func NewImageAnimation(valPtr *int) *ImageAnimation {
-// 	a := &ImageAnimation{}
-// 	a.AnimationEmbed.Extend(a)
-// 	a.Curve = AnimationLinear
-// 	a.ValPtr = valPtr
-// 	return a
-// }
-
-// func (a *ImageAnimation) Add(dt time.Duration) {
-// 	a.duration += dt
-// 	a.tsList = append(a.tsList, a.duration)
-// }
-
-// func (a *ImageAnimation) AddBlinkenLight(b *BlinkenFile) {
-// 	for idx := range b.NumFrames() {
-// 		a.Add(b.Duration(idx))
-// 	}
-// }
-
-// func (a *ImageAnimation) Init() {
-// 	*a.ValPtr = 0
-// }
-
-// func (a *ImageAnimation) Tick(t float64) {
-// 	var idx int
-
-// 	ts := time.Duration(t * float64(a.duration))
-// 	for idx = 0; idx < len(a.tsList); idx++ {
-// 		if a.tsList[idx] >= ts {
-// 			break
-// 		}
-// 	}
-// 	*a.ValPtr = idx
-// }
 
 type ShaderFuncType func(x, y, t float64) float64
 

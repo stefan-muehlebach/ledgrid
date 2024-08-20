@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"encoding/gob"
 	"image"
 	"log"
 	"math"
@@ -121,53 +122,75 @@ type CanvasObject interface {
 // brauchbaren Methoden enthält.
 type CanvasObjectEmbed struct {
 	wrapper CanvasObject
-	visible bool
+	Visible bool
 }
 
 func (c *CanvasObjectEmbed) Extend(wrapper CanvasObject) {
-	c.visible = true
+	c.Visible = true
 	c.wrapper = wrapper
 }
 
 func (c *CanvasObjectEmbed) Show() {
-	if !c.visible {
-		c.visible = true
+	if !c.Visible {
+		c.Visible = true
 	}
 }
 
 func (c *CanvasObjectEmbed) Hide() {
-	if c.visible {
-		c.visible = false
+	if c.Visible {
+		c.Visible = false
 	}
 }
 
 func (c *CanvasObjectEmbed) IsHidden() bool {
-	return !c.visible
+	return !c.Visible
 }
 
-type ColorConvertFunc func(color.LedColor) color.LedColor
+type ColorFunc func(color.LedColor) color.LedColor
 
 func ApplyAlpha(c color.LedColor) color.LedColor {
 	alpha := float64(c.A) / 255.0
 	return c.Alpha(alpha * fillAlpha)
 }
 
+var (
+	colorFncMap = map[string]ColorFunc{
+		"ApplyAlpha": ApplyAlpha,
+	}
+)
+
 //
 // Basic geometric shapes
 //
+
+func init() {
+	gob.Register(&Ellipse{})
+	gob.Register(&Rectangle{})
+	gob.Register(&RegularPolygon{})
+	gob.Register(&Line{})
+	gob.Register(&Pixel{})
+	gob.Register(&Dot{})
+	gob.Register(&Image{})
+	gob.Register(&ImageList{})
+    gob.Register(&Camera{})
+	gob.Register(&Text{})
+	gob.Register(&FixedText{})
+    gob.Register(&image.RGBA{})
+}
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
 // Position des Mittelpunktes und mit Size ist die Breite und Hoehe des
 // gesamten Objektes gemeint. Falls ein Rand gezeichnet werden soll, muss
 // BorderWith einen Wert >0 enthalten und FillColor, resp. BorderColor
 // enthalten die Farben fuer Rand und Flaeche.
+
 type Ellipse struct {
 	CanvasObjectEmbed
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
 	BorderColor, FillColor color.LedColor
-	FillColorFnc           ColorConvertFunc
+	FillColorFnc           string
 }
 
 // Erzeugt eine 'klassische' Ellipse mit einer Randbreite von einem Pixel und
@@ -176,7 +199,7 @@ type Ellipse struct {
 // Erzeugung mittels &Ellipse{...}.
 func NewEllipse(pos, size geom.Point, borderColor color.LedColor) *Ellipse {
 	e := &Ellipse{Pos: pos, Size: size, BorderWidth: 1.0,
-		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
+		BorderColor: borderColor, FillColorFnc: "ApplyAlpha"}
 	e.CanvasObjectEmbed.Extend(e)
 	return e
 }
@@ -190,8 +213,8 @@ func (e *Ellipse) Draw(c *Canvas) {
 	c.gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
 	c.gc.SetStrokeWidth(e.BorderWidth)
 	c.gc.SetStrokeColor(e.BorderColor)
-	if e.FillColor == color.Transparent {
-		c.gc.SetFillColor(e.FillColorFnc(e.BorderColor))
+	if e.FillColor == color.Transparent && e.FillColorFnc != "" {
+		c.gc.SetFillColor(colorFncMap[e.FillColorFnc](e.BorderColor))
 	} else {
 		c.gc.SetFillColor(e.FillColor)
 	}
@@ -200,18 +223,19 @@ func (e *Ellipse) Draw(c *Canvas) {
 
 // Rectangle ist fuer alle rechteckigen Objekte vorgesehen. Pos bezeichnet
 // den Mittelpunkt des Objektes und Size die Breite, rsep. Hoehe.
+
 type Rectangle struct {
 	CanvasObjectEmbed
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
 	BorderColor, FillColor color.LedColor
-	FillColorFnc           ColorConvertFunc
+	FillColorFnc           string
 }
 
 func NewRectangle(pos, size geom.Point, borderColor color.LedColor) *Rectangle {
 	r := &Rectangle{Pos: pos, Size: size, BorderWidth: 1.0,
-		BorderColor: borderColor, FillColorFnc: ApplyAlpha}
+		BorderColor: borderColor, FillColorFnc: "ApplyAlpha"}
 	r.CanvasObjectEmbed.Extend(r)
 	return r
 }
@@ -225,8 +249,8 @@ func (r *Rectangle) Draw(c *Canvas) {
 	c.gc.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
 	c.gc.SetStrokeWidth(r.BorderWidth)
 	c.gc.SetStrokeColor(r.BorderColor)
-	if r.FillColor == color.Transparent {
-		c.gc.SetFillColor(r.FillColorFnc(r.BorderColor))
+	if r.FillColor == color.Transparent && r.FillColorFnc != "" {
+		c.gc.SetFillColor(colorFncMap[r.FillColorFnc](r.BorderColor))
 	} else {
 		c.gc.SetFillColor(r.FillColor)
 	}
@@ -234,19 +258,20 @@ func (r *Rectangle) Draw(c *Canvas) {
 }
 
 // Auch gleichmaessige Polygone duerfen nicht fehlen.
+
 type RegularPolygon struct {
 	CanvasObjectEmbed
 	Pos, Size              geom.Point
 	Angle                  float64
 	BorderWidth            float64
 	BorderColor, FillColor color.LedColor
-	FillColorFnc           ColorConvertFunc
+	FillColorFnc           string
 	numPoints              int
 }
 
 func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor color.LedColor) *RegularPolygon {
 	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, BorderWidth: 1.0,
-		BorderColor: borderColor, FillColorFnc: ApplyAlpha, numPoints: numPoints}
+		BorderColor: borderColor, FillColorFnc: "ApplyAlpha", numPoints: numPoints}
 	p.CanvasObjectEmbed.Extend(p)
 	return p
 }
@@ -255,8 +280,8 @@ func (p *RegularPolygon) Draw(c *Canvas) {
 	c.gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
 	c.gc.SetStrokeWidth(p.BorderWidth)
 	c.gc.SetStrokeColor(p.BorderColor)
-	if p.FillColor == color.Transparent {
-		c.gc.SetFillColor(p.FillColorFnc(p.BorderColor))
+	if p.FillColor == color.Transparent && p.FillColorFnc != "" {
+		c.gc.SetFillColor(colorFncMap[p.FillColorFnc](p.BorderColor))
 	} else {
 		c.gc.SetFillColor(p.FillColor)
 	}
@@ -265,6 +290,7 @@ func (p *RegularPolygon) Draw(c *Canvas) {
 
 // Fuer Geraden ist dieser Datentyp vorgesehen, der von Pos1 nach Pos2
 // verlaeuft.
+
 type Line struct {
 	CanvasObjectEmbed
 	Pos1, Pos2 geom.Point
@@ -291,6 +317,7 @@ func (l *Line) Draw(c *Canvas) {
 // in die draw.Image Struktur und nicht in gg.Context. Es ist zu beachten,
 // dass bei diesem Typ die Koordinaten von pos als Spalten-, resp. Zeilenindex
 // des Led-Grids interpretiert werden!
+
 type Pixel struct {
 	CanvasObjectEmbed
 	Pos   image.Point
@@ -312,6 +339,7 @@ func (p *Pixel) Draw(c *Canvas) {
 // koennen, ist der Typ Dot. Da er grosse Aehnlichkeit zum Typ Pixel aufweist,
 // werden auch hier die Koordinaten als Spalten-, resp. Zeilenindex
 // interpretiert.
+
 type Dot struct {
 	CanvasObjectEmbed
 	Pos   geom.Point
@@ -337,6 +365,7 @@ func (d *Dot) Draw(c *Canvas) {
 }
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel.
+
 type Image struct {
 	CanvasObjectEmbed
 	Pos, Size geom.Point
@@ -390,38 +419,38 @@ func DecodeImageFile(fileName string) draw.Image {
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
 // Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
 // skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
+
 type ImageList struct {
-	CanvasObjectEmbed
-	AnimationEmbed
 	Pos, Size geom.Point
 	Angle     float64
 	ImgIdx    int
-	imgs      []draw.Image
-	durs      []time.Duration
+	Imgs      []draw.Image
+	Durs      []time.Duration
+	CanvasObjectEmbed
+	NormAnimationEmbed
 	imgBounds image.Rectangle
 }
 
 func NewImageList(pos geom.Point) *ImageList {
 	i := &ImageList{Pos: pos, Angle: 0.0, ImgIdx: 0}
 	i.CanvasObjectEmbed.Extend(i)
-	i.AnimationEmbed.Extend(i)
+	i.NormAnimationEmbed.Extend(i)
 	i.Curve = AnimationLinear
-	i.imgs = make([]draw.Image, 0)
-
+	i.Imgs = make([]draw.Image, 0)
 	return i
 }
 
 func (i *ImageList) Add(img draw.Image, dur time.Duration) {
-	i.imgs = append(i.imgs, img)
+	i.Imgs = append(i.Imgs, img)
 	i.imgBounds = img.Bounds()
 	i.Size = geom.NewPointIMG(img.Bounds().Size())
 	i.duration += dur
-	i.durs = append(i.durs, i.duration)
+	i.Durs = append(i.Durs, i.duration)
 }
 
 func (i *ImageList) AddBlinkenLight(b *BlinkenFile) {
-	i.imgs = i.imgs[:0]
-	i.durs = i.durs[:0]
+	i.Imgs = i.Imgs[:0]
+	i.Durs = i.Durs[:0]
 	for idx := range b.NumFrames() {
 		i.Add(b.Decode(idx), b.Duration(idx))
 	}
@@ -432,7 +461,7 @@ func (i *ImageList) Draw(c *Canvas) {
 	sx := i.Size.X / float64(i.imgBounds.Dx())
 	sy := i.Size.Y / float64(i.imgBounds.Dy())
 	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
-	draw.BiLinear.Transform(c.img, m, i.imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
+	draw.BiLinear.Transform(c.img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
 }
 
 func (i *ImageList) Init() {
@@ -443,8 +472,8 @@ func (i *ImageList) Tick(t float64) {
 	var idx int
 
 	ts := time.Duration(t * float64(i.duration))
-	for idx = 0; idx < len(i.durs); idx++ {
-		if i.durs[idx] >= ts {
+	for idx = 0; idx < len(i.Durs); idx++ {
+		if i.Durs[idx] >= ts {
 			break
 		}
 	}
@@ -515,14 +544,14 @@ func NewFixedText(pos fixed.Point26_6, col color.LedColor, text string) *FixedTe
 	t := &FixedText{Pos: pos, Color: col}
 	t.CanvasObjectEmbed.Extend(t)
 	t.drawer = &font.Drawer{}
-    t.SetFont(defFixedFontFace)
+	t.SetFont(defFixedFontFace)
 	t.SetText(text)
 	return t
 }
 
 func (t *FixedText) SetFont(font font.Face) {
-    t.drawer.Face = font
-    t.updateSize()
+	t.drawer.Face = font
+	t.updateSize()
 }
 
 func (t *FixedText) Text() string {
@@ -531,11 +560,11 @@ func (t *FixedText) Text() string {
 
 func (t *FixedText) SetText(text string) {
 	t.text = text
-    t.updateSize()
+	t.updateSize()
 }
 
 func (t *FixedText) updateSize() {
-    t.rect, _ = t.drawer.BoundString(t.text)
+	t.rect, _ = t.drawer.BoundString(t.text)
 	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
 }
 
