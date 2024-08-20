@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	// Dies ist die Groesse des Buffers, welcher fuer den Empfang der
-	// LED-Daten zur Verfuegung steht. Er ist bewusst extrem grosszuegig
-	// dimensioniert... ;-)
-	bufferSize = 320 * 240 * 3
+// Dies ist die Groesse des Buffers, welcher fuer den Empfang der
+// LED-Daten zur Verfuegung steht. Er ist bewusst extrem grosszuegig
+// dimensioniert... ;-)
+// bufferSize = 320 * 240 * 3
 )
 
 type PixelStatusType byte
@@ -41,7 +41,7 @@ type PixelServer struct {
 	maxValue             [3]uint8
 	gamma                [3][256]byte
 	drawTestPattern      bool
-	SendWatch            *Stopwatch
+	sendWatch            *Stopwatch
 	RecvBytes, SentBytes int
 }
 
@@ -52,9 +52,10 @@ type PixelServer struct {
 func NewPixelServer(port uint, disp Displayer) *PixelServer {
 	var err error
 	var addrPort netip.AddrPort
+	var bufferSize int
 
 	p := &PixelServer{Disp: disp}
-
+	bufferSize = 3 * disp.Size().X * disp.Size().Y
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
@@ -68,7 +69,7 @@ func NewPixelServer(port uint, disp Displayer) *PixelServer {
 	p.maxValue = [3]uint8{255, 255, 255}
 	p.updateGammaTable()
 
-	p.SendWatch = NewStopwatch()
+	p.sendWatch = NewStopwatch()
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt.
@@ -99,6 +100,10 @@ func NewPixelServer(port uint, disp Displayer) *PixelServer {
 func (p *PixelServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
+}
+
+func (p *PixelServer) Watch() *Stopwatch {
+    return p.sendWatch
 }
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
@@ -151,21 +156,19 @@ const (
 	NumBrightModes
 )
 
-const (
-	NumTestLeds    = 425
-	TestBufferSize = 3 * NumTestLeds
-)
-
 func (p *PixelServer) ToggleTestPattern() bool {
 	var colorMode, brightMode int
 	var colorValue byte
+
+	var numTestLeds = p.Disp.Size().X * p.Disp.Size().Y
+	var testBufferSize = 3 * numTestLeds
 
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return false
 	} else {
 		p.drawTestPattern = true
-		colorMode = TestRed
+		colorMode = TestBlue
 		brightMode = TestDimmed
 	}
 
@@ -173,43 +176,43 @@ func (p *PixelServer) ToggleTestPattern() bool {
 		for p.drawTestPattern {
 			switch brightMode {
 			case TestDimmed:
-				colorValue = 0x0f
+				colorValue = 0x7f
 			case TestFull:
 				colorValue = 0xff
 			}
 			switch colorMode {
 			case TestRed:
-				for i := range NumTestLeds {
+				for i := range numTestLeds {
 					p.buffer[3*i+0] = colorValue
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = 0x00
 				}
 			case TestGreen:
-				for i := range NumTestLeds {
+				for i := range numTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = colorValue
 					p.buffer[3*i+2] = 0x00
 				}
 			case TestBlue:
-				for i := range NumTestLeds {
+				for i := range numTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = colorValue
 				}
 			case TestYellow:
-				for i := range NumTestLeds {
+				for i := range numTestLeds {
 					p.buffer[3*i+0] = colorValue
 					p.buffer[3*i+1] = colorValue
 					p.buffer[3*i+2] = 0x00
 				}
 			case TestMagenta:
-				for i := range NumTestLeds {
+				for i := range numTestLeds {
 					p.buffer[3*i+0] = colorValue
 					p.buffer[3*i+1] = 0x00
 					p.buffer[3*i+2] = colorValue
 				}
 			case TestCyan:
-				for i := range NumTestLeds {
+				for i := range numTestLeds {
 					p.buffer[3*i+0] = 0x00
 					p.buffer[3*i+1] = colorValue
 					p.buffer[3*i+2] = colorValue
@@ -220,14 +223,17 @@ func (p *PixelServer) ToggleTestPattern() bool {
 			if brightMode == 0 {
 				colorMode = (colorMode + 1) % NumColorModes
 			}
-
-			p.Disp.Send(p.buffer[:TestBufferSize])
+			p.sendWatch.Start()
+			p.Disp.Send(p.buffer[:testBufferSize])
+			p.sendWatch.Stop()
 			time.Sleep(time.Second)
 		}
-		for i := range TestBufferSize {
+		for i := range testBufferSize {
 			p.buffer[i] = 0x00
 		}
+		p.sendWatch.Start()
 		p.Disp.Send(p.buffer)
+		p.sendWatch.Stop()
 	}()
 
 	return true
@@ -252,7 +258,7 @@ func (p *PixelServer) Handle() {
 			log.Fatal(err)
 		}
 		p.RecvBytes += bufferSize
-		p.SendWatch.Start()
+		p.sendWatch.Start()
 		numLEDs = bufferSize / 3
 		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
 			if p.statusList[srcIdx] == PixelMissing {
@@ -273,7 +279,7 @@ func (p *PixelServer) Handle() {
 		}
 		p.Disp.Send(p.buffer[:bufferSize])
 		p.SentBytes += bufferSize
-		p.SendWatch.Stop()
+		p.sendWatch.Stop()
 	}
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet

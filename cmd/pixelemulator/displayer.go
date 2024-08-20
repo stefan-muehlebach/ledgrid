@@ -12,10 +12,12 @@ import (
 
 // Die Emulation des LedGrids als fyne-Applikation
 type PixelEmulator struct {
-	Grid     *fyne.Container
-	gridConf ledgrid.ModuleConfig
-	coordMap ledgrid.CoordMap
-	field    [][]*canvas.Circle
+	Grid      *fyne.Container
+	gridConf  ledgrid.ModuleConfig
+	coordMap  ledgrid.CoordMap
+	field     [][]*canvas.Circle
+	size      image.Point
+	numPixels int
 }
 
 func NewPixelEmulator(width, height int) *PixelEmulator {
@@ -29,12 +31,15 @@ func NewPixelEmulator(width, height int) *PixelEmulator {
 	}
 	for col := range width {
 		for row := range height {
-			ledColor := color.White
+			ledColor := color.Black
 			led := canvas.NewCircle(ledColor)
+			led.StrokeWidth = 0.0
 			e.field[col][row] = led
 			e.Grid.Add(led)
 		}
 	}
+	e.size = image.Point{width, height}
+	e.numPixels = width * height
 	return e
 }
 
@@ -43,6 +48,10 @@ func (e *PixelEmulator) DefaultGamma() (r, g, b float64) {
 }
 
 func (e *PixelEmulator) Close() {}
+
+func (e *PixelEmulator) Size() image.Point {
+	return e.size
+}
 
 func (e *PixelEmulator) Send(buffer []byte) {
 	var r, g, b uint8
@@ -53,6 +62,9 @@ func (e *PixelEmulator) Send(buffer []byte) {
 	src = buffer
 	needsRefresh = false
 	for i, val := range src {
+		if i >= 3*e.numPixels {
+			break
+		}
 		if i%3 == 0 {
 			r = val
 			idx = i / 3

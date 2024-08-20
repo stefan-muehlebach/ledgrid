@@ -1,7 +1,10 @@
+//go:generate fyne bundle -o icon.go Icon.ico
+
 package main
 
 import (
 	"flag"
+	"image/color"
 	"log"
 	"os"
 	"os/signal"
@@ -9,19 +12,38 @@ import (
 
 	"github.com/stefan-muehlebach/ledgrid"
 
-	_ "github.com/stefan-muehlebach/ledgrid"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	_ "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 )
 
 const (
-	defPort        = 5333
-	defWidth       = 40
-	defHeight      = 10
-	defPixelSize   = 50.0
+	defPort      = 5333
+	defWidth     = 40
+	defHeight    = 10
+	defPixelSize = 50.0
 )
+
+type myTheme struct{}
+
+var _ fyne.Theme = (*myTheme)(nil)
+
+func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	return theme.DefaultTheme().Color(name, variant)
+}
+func (t myTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return theme.DefaultTheme().Font(style)
+}
+func (t myTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+func (t myTheme) Size(name fyne.ThemeSizeName) float32 {
+	if name == theme.SizeNamePadding {
+		return 1.0
+	}
+	return theme.DefaultTheme().Size(name)
+}
 
 var (
 	App fyne.App
@@ -38,10 +60,15 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 			return
 		case syscall.SIGHUP:
 			log.Printf("Server Statistics:")
-			num, total, avg := pixelServer.SendWatch.Stats()
-			log.Printf("   %d sends to fyne.io took %v (%v per send)", num, total, avg)
+			log.Printf("   %v", pixelServer.Watch())
 			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
 			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+			log.Printf("Current gamma values:")
+			r, g, b := pixelServer.Gamma()
+			log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
+			log.Printf("Current settings for max values (brightness):")
+			br, bg, bb := pixelServer.MaxBright()
+			log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
 		case syscall.SIGUSR1:
 			if pixelServer.ToggleTestPattern() {
 				log.Printf("Drawing test pattern is ON now.")
@@ -72,6 +99,8 @@ func main() {
 	appSize = fyne.NewSize(appWidth, appHeight)
 
 	App = app.New()
+	App.SetIcon(resourceIconIco)
+	App.Settings().SetTheme(&myTheme{})
 	Win = App.NewWindow("LedGrid Emulator")
 
 	pixelEmulator = NewPixelEmulator(width, height)

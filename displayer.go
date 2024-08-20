@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"image"
 	"log"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 )
 
 type Displayer interface {
+    Size() image.Point
 	DefaultGamma() (r, g, b float64)
 	Close()
 	Send(buffer []byte)
@@ -58,9 +60,12 @@ func (p *SPIBus) DefaultGamma() (r, g, b float64) {
 	return 3.0, 3.0, 3.0
 }
 
+func (p *SPIBus) Size() image.Point {
+    return image.Point{40, 40}
+}
+
 func (p *SPIBus) Close() {
 	p.spiPort.Close()
-
 }
 
 func (p *SPIBus) Send(buffer []byte) {

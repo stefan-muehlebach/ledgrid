@@ -138,7 +138,9 @@ func RandAlpha(a, b uint8) AlphaFuncType {
 }
 
 // Dieses Interface ist von allen Typen zu implementieren, welche
-// Animationen ausfuehren sollen/wollen.
+// Animationen ausfuehren sollen/wollen. Aktuell gibt es nur einen Typ, der
+// dieses Interface implementiert (AnimationController) und es ist auch
+// fraglich, ob es je weitere Typen geben wird.
 type Animator interface {
 	Add(anims ...Animation)
 	Del(anim Animation)
@@ -148,6 +150,11 @@ type Animator interface {
 	IsStopped() bool
 }
 
+// Das Herzstueck der ganzen Animationen ist der AnimationController. Er
+// sorgt dafuer, dass alle 30 ms (siehe Variable refreshRate) die
+// Update-Methoden aller Animationen aufgerufen werden und veranlasst im
+// Anschluss, dass alle darstellbaren Objekte neu gezeichnet werden und sendet
+// das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
 	AnimList   []Animation
 	animMutex  *sync.RWMutex
@@ -304,13 +311,18 @@ func (a *AnimationController) Now() time.Time {
 	return time.Now().Add(delay)
 }
 
+// Nun folgen die Typen, welche als Animationen ausgefuehrt werden koennen.
+// Das Interface Task wird von allen Typen implementiert, welche im
+// Hintergrund gestartet werden koennen und nichts mit dem Zeichnen zu tun
+// haben.
 type Task interface {
     Start()
     IsStopped() bool
     Duration() time.Duration
 }
 
-// Das Interface fuer jede Art von Animation (bis jetzt zumindest).
+// Das Interface Animation wird von allen Typen implementiert, welche ueber
+// laengere Zeit laufen und periodisch aktualisiert werden.
 type Animation interface {
     Task
 	SetDuration(dur time.Duration)
@@ -333,6 +345,9 @@ type AnimationImpl interface {
 	Tick(t float64)
 }
 
+// Haben Animationen eine Dauer, so koennen sie dieses Embeddable einbinden
+// und erhalten somit die klassischen Methoden fuer das Setzen und Abfragen
+// der Dauer.
 type DurationEmbed struct {
 	duration time.Duration
 }
@@ -344,6 +359,13 @@ func (d *DurationEmbed) Duration() time.Duration {
 func (d *DurationEmbed) SetDuration(dur time.Duration) {
 	d.duration = dur
 }
+
+// Animationen werden nur selten direkt dem AnimationController hinzugefuegt.
+// Meistens stehen Animationen in einer Beziehung zu weiteren Animationen
+// bspw. wenn eine Gruppe von Animationen gleichzeitig oder direkt
+// hintereinander gestartet werden sollen. Die Typen 'Group', 'Sequence' und
+// 'Timeline' sind solche Steuer-Animationen, implementieren jedoch alle
+// das Animation-Interface und koennen somit ineinander verschachtelt werden.
 
 // Eine Gruppe dient dazu, eine Anzahl von Animationen gleichzeitig zu starten.
 // Die Laufzeit der Gruppe ist gleich der laengsten Laufzeit ihrer Animationen
@@ -357,7 +379,6 @@ type Group struct {
 	RepeatCount int
 
 	taskList         []Task
-	// animList         []Animation
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -668,6 +689,76 @@ func (a *Timeline) Update(t time.Time) bool {
 	return true
 }
 
+// Mit einem BackgroundTask koennen beliebige Funktionsaufrufe in die
+// Animationsketten aufgenommen werden. Sie koennen beliebig oft gestartet
+// werden, haben als Dauer stets 0 ms und werden immer als 'gestoppt'
+// ausgewiesen. Es empfiehlt sich, nur kurze Aktionen damit zu realisieren.
+type BackgroundTask struct {
+    fn func()
+}
+func NewBackgroundTask(fn func()) *BackgroundTask {
+    a := &BackgroundTask{fn}
+    return a
+}
+func (a *BackgroundTask) Duration() time.Duration {
+    return time.Duration(0)
+}
+func (a *BackgroundTask) Start() {
+    a.fn()
+}
+func (a *BackgroundTask) IsStopped() bool {
+    return true
+}
+
+// Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
+// CanvasObjekten beeinflusst werden. Mit jedem Aufruf wird dieser Switch
+// umgestellt (also Hidden -> Shown -> Hidden -> etc.).
+type ShowHideAnimation struct {
+    obj CanvasObject
+}
+func NewShowHideAnimation(obj CanvasObject) *ShowHideAnimation {
+    a := &ShowHideAnimation{obj: obj}
+    return a
+}
+func (a *ShowHideAnimation) Duration() time.Duration {
+    return time.Duration(0)
+}
+func (a *ShowHideAnimation) Start() {
+    if a.obj.IsHidden() {
+        a.obj.Show()
+    } else {
+        a.obj.Hide()
+    }
+}
+func (a *ShowHideAnimation) IsStopped() bool {
+    return true
+}
+
+// Analog zu ShowHiddenAnimation dient StopContAnimation dazu, die Eigenschaft
+// IsStopped von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
+// Animation wechselt die Eigenschaft (Stopped -> Started -> Stopped -> etc.)
+type StopContAnimation struct {
+    obj Animation
+}
+func NewStopContAnimation(obj Animation) *StopContAnimation {
+    a := &StopContAnimation{obj: obj}
+    return a
+}
+func (a *StopContAnimation) Duration() time.Duration {
+    return time.Duration(0)
+}
+func (a *StopContAnimation) Start() {
+    if a.obj.IsStopped() {
+        a.obj.Continue()
+    } else {
+        a.obj.Stop()
+    }
+}
+func (a *StopContAnimation) IsStopped() bool {
+    return true
+}
+
+
 // Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
 // Erleichert das Erstellen von neuen Animationen gewaltig.
 type AnimationEmbed struct {
@@ -711,10 +802,6 @@ func (a *AnimationEmbed) Duration() time.Duration {
 	}
 	return time.Duration(factor) * a.duration
 }
-
-// func (a *AnimationEmbed) SetDuration(dur time.Duration) {
-// 	a.duration = dur
-// }
 
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
 // aktuell sind. Ist die Animaton bereits am Laufen ist diese Methode
@@ -804,65 +891,8 @@ func (a *AnimationEmbed) Update(t time.Time) bool {
 }
 
 // ---------------------------------------------------------------------------
+// Im folgenden Abschnitt befinden sich nun alle Typen, welche
 
-type BackgroundTask struct {
-    fn func()
-}
-func NewBackgroundTask(fn func()) *BackgroundTask {
-    a := &BackgroundTask{fn}
-    return a
-}
-func (a *BackgroundTask) Duration() time.Duration {
-    return time.Duration(0)
-}
-func (a *BackgroundTask) Start() {
-    a.fn()
-}
-func (a *BackgroundTask) IsStopped() bool {
-    return true
-}
-
-type ShowHideAnimation struct {
-    obj CanvasObject
-}
-func NewShowHideAnimation(obj CanvasObject) *ShowHideAnimation {
-    a := &ShowHideAnimation{obj: obj}
-    return a
-}
-func (a *ShowHideAnimation) Duration() time.Duration {
-    return time.Duration(0)
-}
-func (a *ShowHideAnimation) Start() {
-    if a.obj.IsHidden() {
-        a.obj.Show()
-    } else {
-        a.obj.Hide()
-    }
-}
-func (a *ShowHideAnimation) IsStopped() bool {
-    return true
-}
-
-type StopContAnimation struct {
-    obj Animation
-}
-func NewStopContAnimation(obj Animation) *StopContAnimation {
-    a := &StopContAnimation{obj: obj}
-    return a
-}
-func (a *StopContAnimation) Duration() time.Duration {
-    return time.Duration(0)
-}
-func (a *StopContAnimation) Start() {
-    if a.obj.IsStopped() {
-        a.obj.Continue()
-    } else {
-        a.obj.Stop()
-    }
-}
-func (a *StopContAnimation) IsStopped() bool {
-    return true
-}
 
 
 // Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
@@ -1223,47 +1253,47 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 
 // Animation welche auch für die Animation von BlinkenLight-Videos verwendet
 // werden kann.
-type ImageAnimation struct {
-	AnimationEmbed
-	Cont   bool
-	ValPtr *int
-	tsList []time.Duration
-}
+// type ImageAnimation struct {
+// 	AnimationEmbed
+// 	Cont   bool
+// 	ValPtr *int
+// 	tsList []time.Duration
+// }
 
-func NewImageAnimation(valPtr *int) *ImageAnimation {
-	a := &ImageAnimation{}
-	a.AnimationEmbed.Extend(a)
-	a.Curve = AnimationLinear
-	a.ValPtr = valPtr
-	return a
-}
+// func NewImageAnimation(valPtr *int) *ImageAnimation {
+// 	a := &ImageAnimation{}
+// 	a.AnimationEmbed.Extend(a)
+// 	a.Curve = AnimationLinear
+// 	a.ValPtr = valPtr
+// 	return a
+// }
 
-func (a *ImageAnimation) Add(dt time.Duration) {
-	a.duration += dt
-	a.tsList = append(a.tsList, a.duration)
-}
+// func (a *ImageAnimation) Add(dt time.Duration) {
+// 	a.duration += dt
+// 	a.tsList = append(a.tsList, a.duration)
+// }
 
-func (a *ImageAnimation) AddBlinkenLight(b *BlinkenFile) {
-	for idx := range b.NumFrames() {
-		a.Add(b.Duration(idx))
-	}
-}
+// func (a *ImageAnimation) AddBlinkenLight(b *BlinkenFile) {
+// 	for idx := range b.NumFrames() {
+// 		a.Add(b.Duration(idx))
+// 	}
+// }
 
-func (a *ImageAnimation) Init() {
-	*a.ValPtr = 0
-}
+// func (a *ImageAnimation) Init() {
+// 	*a.ValPtr = 0
+// }
 
-func (a *ImageAnimation) Tick(t float64) {
-	var idx int
+// func (a *ImageAnimation) Tick(t float64) {
+// 	var idx int
 
-	ts := time.Duration(t * float64(a.duration))
-	for idx = 0; idx < len(a.tsList); idx++ {
-		if a.tsList[idx] >= ts {
-			break
-		}
-	}
-	*a.ValPtr = idx
-}
+// 	ts := time.Duration(t * float64(a.duration))
+// 	for idx = 0; idx < len(a.tsList); idx++ {
+// 		if a.tsList[idx] >= ts {
+// 			break
+// 		}
+// 	}
+// 	*a.ValPtr = idx
+// }
 
 type ShaderFuncType func(x, y, t float64) float64
 

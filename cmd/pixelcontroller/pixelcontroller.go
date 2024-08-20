@@ -22,7 +22,6 @@ const (
 
 const (
 	defPort        = 5333
-	defGammaValues = "3.0,3.0,3.0"
 	defMissingIDs  = ""
 	defDefectIDs   = ""
 	defBaud        = 2_000_000
@@ -37,12 +36,19 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 		case os.Interrupt:
 			pixelServer.Close()
 			return
+
 		case syscall.SIGHUP:
-			log.Printf("Server Statistics:")
-			num, total, avg := pixelServer.SendWatch.Stats()
-			log.Printf("   %d sends to the Displayer took %v (%v per send)", num, total, avg)
-			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
-			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+                        log.Printf("Server Statistics:")
+                        log.Printf("   %v", pixelServer.Watch())
+                        log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
+                        log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+                        log.Printf("Current gamma values:")
+                        r, g, b := pixelServer.Gamma()
+                        log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
+                        log.Printf("Current settings for max values (brightness):")
+                        br, bg, bb := pixelServer.MaxBright()
+                        log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
+
 		case syscall.SIGUSR1:
 			if pixelServer.ToggleTestPattern() {
 				log.Printf("Drawing test pattern is ON now.")
@@ -56,9 +62,7 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 func main() {
 	var port uint
 	var baud int
-	var gammaValues string
 	var missingIDs, defectIDs string
-	var gammaValue [3]float64
 	var spiDevFile string = "/dev/spidev0.0"
     var spiBus ledgrid.Displayer
 	var pixelServer *ledgrid.PixelServer
@@ -66,22 +70,12 @@ func main() {
 	// Verarbeite als erstes die Kommandozeilen-Optionen
 	flag.UintVar(&port, "port", defPort, "UDP port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
-	flag.StringVar(&gammaValues, "gamma", defGammaValues, "Gamma values")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs")
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of LEDs to black out")
 	flag.Parse()
 
     spiBus = ledgrid.NewSPIBus(spiDevFile, baud)
 	pixelServer = ledgrid.NewPixelServer(port, spiBus)
-
-	for i, str := range strings.Split(gammaValues, ",") {
-		val, err := strconv.ParseFloat(str, 64)
-		if err != nil {
-			log.Fatalf("Failed to parse 'gamma': wrong format: %s", str)
-		}
-		gammaValue[i] = val
-	}
-	pixelServer.SetGamma(gammaValue[red], gammaValue[green], gammaValue[blue])
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {

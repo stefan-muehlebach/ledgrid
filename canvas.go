@@ -3,8 +3,10 @@ package ledgrid
 import (
 	"image"
 	"log"
+	"math"
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/image/math/f64"
 
@@ -61,6 +63,10 @@ func NewCanvas(size image.Point) *Canvas {
 
 func (c *Canvas) Close() {
 	c.Purge()
+}
+
+func (c *Canvas) Bounds() image.Rectangle {
+	return c.Rect
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
@@ -282,14 +288,9 @@ func (l *Line) Draw(c *Canvas) {
 // Will man ein einzelnes Pixel exakt an einer LED-Position zeichnen, so
 // eignet sich dieser Typ. Im Gegensatz zu den obigen Typen sind die
 // Koordinaten eines Pixels ganze Zahlen und das Zeichnen erfolgt direkt
-// in die draw.Image Struktur und nicht in gg.Context.
-// Der Typ eignet sich nicht, wenn man beabsichtigt die Pixel wandern zu
-// lassen! Da er immer auf ganze Koordinaten springt, sind seine Bewegungen
-// ziemlich "hoelzern".
-//
-//   - BorderWidth: 0.0
-//   - Size       : sqrt(2), sqrt(2)
-//   - FillColor  : (manuell setzen)
+// in die draw.Image Struktur und nicht in gg.Context. Es ist zu beachten,
+// dass bei diesem Typ die Koordinaten von pos als Spalten-, resp. Zeilenindex
+// des Led-Grids interpretiert werden!
 type Pixel struct {
 	CanvasObjectEmbed
 	Pos   image.Point
@@ -307,9 +308,35 @@ func (p *Pixel) Draw(c *Canvas) {
 	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
 }
 
-// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
-// Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
-// skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
+// Ein einzelnes Pixel, dessen Bewegungen weicher (smooth) animiert werden
+// koennen, ist der Typ Dot. Da er grosse Aehnlichkeit zum Typ Pixel aufweist,
+// werden auch hier die Koordinaten als Spalten-, resp. Zeilenindex
+// interpretiert.
+type Dot struct {
+	CanvasObjectEmbed
+	Pos   geom.Point
+	Color color.LedColor
+}
+
+func NewDot(pos geom.Point, col color.LedColor) *Dot {
+	d := &Dot{Pos: pos, Color: col}
+	d.CanvasObjectEmbed.Extend(d)
+	return d
+}
+
+func (d *Dot) Draw(c *Canvas) {
+	c.gc.DrawEllipse(d.Pos.X+0.5, d.Pos.Y+0.5, math.Sqrt2/2.0, math.Sqrt2/2.0)
+	c.gc.SetStrokeWidth(0.0)
+	c.gc.SetFillColor(d.Color)
+	c.gc.FillStroke()
+
+	// c.gc.DrawRectangle(d.Pos.X, d.Pos.Y+2.0, 1.0, 1.0)
+	// c.gc.SetStrokeWidth(0.0)
+	// c.gc.SetFillColor(d.Color)
+	// c.gc.FillStroke()
+}
+
+// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel.
 type Image struct {
 	CanvasObjectEmbed
 	Pos, Size geom.Point
@@ -343,10 +370,6 @@ func (i *Image) Draw(c *Canvas) {
 	sy := i.Size.Y / float64(i.Img.Bounds().Dy())
 	c.gc.ScaleAbout(sx, sy, i.Pos.X, i.Pos.Y)
 	c.gc.DrawImageAnchored(i.Img, i.Pos.X, i.Pos.Y, 0.5, 0.5)
-	// sx := i.Size.X / float64(i.Img.Bounds().Dx())
-	// sy := i.Size.Y / float64(i.Img.Bounds().Dy())
-	// m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
-	// draw.BiLinear.Transform(c.img, m, i.Img, i.Img.Bounds(), draw.Over, nil)
 }
 
 func DecodeImageFile(fileName string) draw.Image {
@@ -369,32 +392,40 @@ func DecodeImageFile(fileName string) draw.Image {
 // skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
 type ImageList struct {
 	CanvasObjectEmbed
+	AnimationEmbed
 	Pos, Size geom.Point
 	Angle     float64
 	ImgIdx    int
 	imgs      []draw.Image
+	durs      []time.Duration
 	imgBounds image.Rectangle
 }
 
 func NewImageList(pos geom.Point) *ImageList {
-	i := &ImageList{Pos: pos, Angle: 0.0}
+	i := &ImageList{Pos: pos, Angle: 0.0, ImgIdx: 0}
 	i.CanvasObjectEmbed.Extend(i)
+	i.AnimationEmbed.Extend(i)
+	i.Curve = AnimationLinear
 	i.imgs = make([]draw.Image, 0)
-	i.ImgIdx = 0
+
 	return i
 }
 
-func (i *ImageList) Add(img draw.Image) {
+func (i *ImageList) Add(img draw.Image, dur time.Duration) {
 	i.imgs = append(i.imgs, img)
 	i.imgBounds = img.Bounds()
 	i.Size = geom.NewPointIMG(img.Bounds().Size())
+	i.duration += dur
+	i.durs = append(i.durs, i.duration)
 }
 
 func (i *ImageList) AddBlinkenLight(b *BlinkenFile) {
 	i.imgs = i.imgs[:0]
+	i.durs = i.durs[:0]
 	for idx := range b.NumFrames() {
-		i.Add(b.Decode(idx))
+		i.Add(b.Decode(idx), b.Duration(idx))
 	}
+	// i.Size = geom.Point{float64(b.Width), float64(b.Height)}
 }
 
 func (i *ImageList) Draw(c *Canvas) {
@@ -402,6 +433,22 @@ func (i *ImageList) Draw(c *Canvas) {
 	sy := i.Size.Y / float64(i.imgBounds.Dy())
 	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
 	draw.BiLinear.Transform(c.img, m, i.imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
+}
+
+func (i *ImageList) Init() {
+	i.ImgIdx = 0
+}
+
+func (i *ImageList) Tick(t float64) {
+	var idx int
+
+	ts := time.Duration(t * float64(i.duration))
+	for idx = 0; idx < len(i.durs); idx++ {
+		if i.durs[idx] >= ts {
+			break
+		}
+	}
+	i.ImgIdx = idx
 }
 
 // Zur Darstellung von beliebigem Text.
@@ -416,19 +463,24 @@ type Text struct {
 	AX, AY   float64
 	Angle    float64
 	Color    color.LedColor
-	Font     *fonts.Font
-	FontSize float64
 	Text     string
+	font     *fonts.Font
+	fontSize float64
 	fontFace font.Face
 }
 
-func NewText(pos geom.Point, text string, color color.LedColor) *Text {
-	t := &Text{Pos: pos, Color: color, Font: defFont, FontSize: defFontSize,
-		Text: text}
+func NewText(pos geom.Point, text string, col color.LedColor) *Text {
+	t := &Text{Pos: pos, Color: col, Text: text}
 	t.CanvasObjectEmbed.Extend(t)
 	t.AX, t.AY = 0.5, 0.5
-	t.fontFace = fonts.NewFace(t.Font, t.FontSize)
+	t.SetFont(defFont, defFontSize)
 	return t
+}
+
+func (t *Text) SetFont(font *fonts.Font, size float64) {
+	t.font = font
+	t.fontSize = size
+	t.fontFace = fonts.NewFace(t.font, t.fontSize)
 }
 
 func (t *Text) Draw(c *Canvas) {
@@ -462,11 +514,15 @@ type FixedText struct {
 func NewFixedText(pos fixed.Point26_6, col color.LedColor, text string) *FixedText {
 	t := &FixedText{Pos: pos, Color: col}
 	t.CanvasObjectEmbed.Extend(t)
-	t.drawer = &font.Drawer{
-		Face: defFixedFontFace,
-	}
+	t.drawer = &font.Drawer{}
+    t.SetFont(defFixedFontFace)
 	t.SetText(text)
 	return t
+}
+
+func (t *FixedText) SetFont(font font.Face) {
+    t.drawer.Face = font
+    t.updateSize()
 }
 
 func (t *FixedText) Text() string {
@@ -475,7 +531,11 @@ func (t *FixedText) Text() string {
 
 func (t *FixedText) SetText(text string) {
 	t.text = text
-	t.rect, _ = t.drawer.BoundString(text)
+    t.updateSize()
+}
+
+func (t *FixedText) updateSize() {
+    t.rect, _ = t.drawer.BoundString(t.text)
 	t.dp = t.rect.Min.Add(t.rect.Max).Div(fixed.I(2))
 }
 
