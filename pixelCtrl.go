@@ -147,6 +147,7 @@ const (
 	TestYellow
 	TestMagenta
 	TestCyan
+	TestWhite
 	NumColorModes
 )
 
@@ -162,7 +163,7 @@ func (p *PixelServer) ToggleTestPattern() bool {
 		return false
 	} else {
 		p.drawTestPattern = true
-		colorMode = TestBlue
+		colorMode = TestRed
 	}
 
 	go func() {
@@ -213,6 +214,12 @@ func (p *PixelServer) ToggleTestPattern() bool {
 					p.buffer[3*i+1] = colorValue
 					p.buffer[3*i+2] = colorValue
 				}
+			case TestWhite:
+				for i := range numTestLeds {
+					p.buffer[3*i+0] = colorValue
+					p.buffer[3*i+1] = colorValue
+					p.buffer[3*i+2] = colorValue
+				}
 			}
 
 			if colorValue < 0xff {
@@ -224,7 +231,7 @@ func (p *PixelServer) ToggleTestPattern() bool {
 			p.sendWatch.Start()
 			p.Disp.Send(p.buffer[:testBufferSize])
 			p.sendWatch.Stop()
-			time.Sleep(time.Second)
+			time.Sleep(300 * time.Millisecond)
 		}
 		for i := range testBufferSize {
 			p.buffer[i] = 0x00
