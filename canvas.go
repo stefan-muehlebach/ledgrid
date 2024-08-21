@@ -44,8 +44,9 @@ var (
 // werden.
 type Canvas struct {
 	ObjList    []CanvasObject
-	objMutex   *sync.RWMutex
+	BackColor  color.LedColor
 	Rect       image.Rectangle
+	objMutex   *sync.RWMutex
 	img        *image.RGBA
 	gc         *gg.Context
 	paintWatch *Stopwatch
@@ -53,10 +54,11 @@ type Canvas struct {
 
 func NewCanvas(size image.Point) *Canvas {
 	c := &Canvas{}
+	c.ObjList = make([]CanvasObject, 0)
+    c.BackColor = color.Black
 	c.Rect = image.Rectangle{Max: size}
 	c.img = image.NewRGBA(c.Rect)
 	c.gc = gg.NewContextForRGBA(c.img)
-	c.ObjList = make([]CanvasObject, 0)
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
@@ -87,7 +89,7 @@ func (c *Canvas) Purge() {
 
 func (c *Canvas) Draw(lg draw.Image) {
 	c.paintWatch.Start()
-	c.gc.SetFillColor(color.Black)
+	c.gc.SetFillColor(c.BackColor)
 	c.gc.Clear()
 	c.objMutex.RLock()
 	for _, obj := range c.ObjList {
@@ -172,10 +174,10 @@ func init() {
 	gob.Register(&Dot{})
 	gob.Register(&Image{})
 	gob.Register(&ImageList{})
-    gob.Register(&Camera{})
+	gob.Register(&Camera{})
 	gob.Register(&Text{})
 	gob.Register(&FixedText{})
-    gob.Register(&image.RGBA{})
+	gob.Register(&image.RGBA{})
 }
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die

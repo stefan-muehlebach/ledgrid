@@ -4,8 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"image"
-
-	// gocolor "image/color"
+	gocolor "image/color"
 	"math"
 	"math/rand/v2"
 	"os"
@@ -73,17 +72,29 @@ var (
 
 			aPos := ledgrid.NewPositionAnimation(&r.Pos, rPos2, time.Second)
 			aPos.AutoReverse = true
-			aSize := ledgrid.NewSizeAnimation(&r.Size, rSize2, time.Second)
+			aSize := ledgrid.NewSizeAnimation(&r.Size, rSize2, 2*time.Second)
 			aSize.AutoReverse = true
-			aColor := ledgrid.NewColorAnimation(&r.BorderColor, rColor2, time.Second)
+			aColor := ledgrid.NewColorAnimation(&r.BorderColor, rColor2, 2*time.Second)
 			aColor.AutoReverse = true
-			aAngle := ledgrid.NewFloatAnimation(&r.Angle, math.Pi, time.Second)
+			aAngle := ledgrid.NewFloatAnimation(&r.Angle, math.Pi, 2*time.Second)
 			aAngle.AutoReverse = true
 
 			aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
 			aGroup.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aGroup.Start()
+
+			// time.Sleep(5 * time.Second)
+			// fmt.Printf("%[1]T %+[1]v\n", ledgrid.AnimCtrl)
+			// for i, anim := range ledgrid.AnimCtrl.AnimList {
+			// 	fmt.Printf("  [%d] %[2]T %+[2]v\n", i, anim)
+			// 	if group, ok := anim.(*ledgrid.Group); ok {
+			// 		for j, task := range group.Tasks {
+			// 			fmt.Printf("    [%d] %[2]T %+[2]v\n", j, task)
+			// 		}
+			// 	}
+			// }
+			// fmt.Printf("%+v\n", c)
 		})
 
 	SequenceTest = NewLedGridProgram("Sequence test",
@@ -215,14 +226,14 @@ var (
 			aGroup.RepeatCount = ledgrid.AnimationRepeatForever
 
 			// aShowHide := ledgrid.NewShowHideAnimation(r)
-			aOnOffPos := ledgrid.NewStopContAnimation(aPos)
+			// aOnOffPos := ledgrid.NewStartStopAnimation(aPos)
 			// aOnOffAngle := ledgrid.NewStopContAnimation(aAngle)
 
 			aTimeline := ledgrid.NewTimeline(4 * time.Second)
 			// aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aTimeline.Add(1000*time.Millisecond, aOnOffPos)
-			aTimeline.Add(3000*time.Millisecond, aOnOffPos)
+			// aTimeline.Add(1000*time.Millisecond, aOnOffPos)
+			// aTimeline.Add(3000*time.Millisecond, aOnOffPos)
 
 			// aTimeline.Add(500*time.Millisecond, aOnOffPos)
 			// aTimeline.Add(1500*time.Millisecond, aOnOffPos)
@@ -667,9 +678,9 @@ var (
 				t0 := time.Duration(4*i+1) * time.Second
 				t1 := t0 + 300*time.Millisecond
 				t2 := t1 + 3300*time.Millisecond
-				aTimeline.Add(t0, ledgrid.NewShowHideAnimation(img))
+				aTimeline.Add(t0, ledgrid.NewHideShowAnimation(img))
 				aTimeline.Add(t1, ledgrid.NewFloatAnimation(&img.Angle, 6*math.Pi, 3*time.Second))
-				aTimeline.Add(t2, ledgrid.NewShowHideAnimation(img))
+				aTimeline.Add(t2, ledgrid.NewHideShowAnimation(img))
 				c.Add(img)
 			}
 			aTimeline.Start()
@@ -729,6 +740,7 @@ var (
 
 	CameraTest = NewLedGridProgram("Camera test",
 		func(c *ledgrid.Canvas) {
+			// c.BackColor = color.DarkGray
 			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 			size := geom.Point{float64(width), float64(height)}
 
@@ -736,6 +748,50 @@ var (
 			c.Add(cam)
 			cam.Start()
 
+			go func() {
+				time.Sleep(3 * time.Second)
+				for i := range width / 2 {
+					coordList := make([]image.Point, 0)
+					col2 := width/2 + i
+					col1 := width/2 - 1 - i
+					for row := range height {
+						coordList = append(coordList, image.Point{col1, row}, image.Point{col2, row})
+					}
+
+					rand.Shuffle(2*height, func(i, j int) {
+						coordList[i], coordList[j] = coordList[j], coordList[i]
+					})
+
+					for _, val := range coordList {
+						pt := geom.NewPointIMG(val)
+						ptDest := geom.NewPoint(-5, float64(val.Y))
+						newColor := color.YellowGreen
+						if val.X >= width/2 {
+							ptDest.X = float64(width + 5)
+							newColor = color.OrangeRed
+						}
+						newColor = newColor.Alpha(0.5)
+						cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
+						pixAway := ledgrid.NewDot(pt, newColor)
+						c.Add(pixAway)
+						aDur := time.Second + rand.N(time.Second)
+
+						aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
+						aPos.Curve = ledgrid.AnimationEaseIn
+						aPos.Start()
+						time.Sleep(10 * time.Millisecond)
+					}
+					time.Sleep(time.Duration(100-4*i) * time.Millisecond)
+				}
+				time.Sleep(1 * time.Second)
+				for i := range cam.DstMask.Pix {
+					cam.DstMask.Pix[i] = 0xff
+				}
+			}()
+
+			// Kamerabild, beim dem die einzelnen Pixel nach und nach die
+			// Farbe wechseln und das Bild verlassen.
+			//
 			// go func() {
 			// 	coordList := make([]image.Point, width*height)
 			// 	for row := range height {
@@ -749,15 +805,24 @@ var (
 			// 	dur := 100 * time.Millisecond
 			// 	for _, pt := range coordList {
 			// 		time.Sleep(dur)
-			// 		pt2 := image.Point{width, pt.Y}
+			// 		if pt.X > width/2 {
+			// 			pt2 = geom.NewPoint(float64(width)+5, float64(pt.Y))
+			// 			col2 = color.OrangeRed
+			// 		} else {
+			// 			pt2 = geom.NewPoint(float64(-5), float64(pt.Y))
+			// 			col2 = color.YellowGreen
+			// 		}
 			// 		col := ledGrid.At(pt.X, pt.Y)
 			// 		cam.DstMask.SetAlpha(pt.X, pt.Y, gocolor.Alpha{0x00})
-			// 		pixAway := ledgrid.NewPixel(pt, col.(color.LedColor))
+			// 		pixAway := ledgrid.NewDot(geom.NewPointIMG(pt), col.(color.LedColor))
 			// 		c.Add(pixAway)
-			// 		aPos := ledgrid.NewIntegerPosAnimation(&pixAway.Pos, pt2,
-			// 			2*time.Second+rand.N(time.Second))
+			// 		aDur := 2*time.Second + rand.N(time.Second)
+			// 		aColor := ledgrid.NewColorAnimation(&pixAway.Color, col2, 600*time.Millisecond)
+			// 		aColor.Curve = ledgrid.AnimationEaseIn
+			// 		aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, pt2, aDur)
 			// 		aPos.Curve = ledgrid.AnimationEaseIn
-			// 		aPos.Start()
+			// 		aSeq := ledgrid.NewSequence(aColor, aPos)
+			// 		aSeq.Start()
 			// 	}
 			// 	time.Sleep(3 * time.Second)
 			// 	for i := range cam.DstMask.Pix {
@@ -1031,8 +1096,8 @@ func (b *BouncingEllipse) SetDuration(dur time.Duration) {}
 func (b *BouncingEllipse) Start()                        {}
 func (b *BouncingEllipse) Stop()                         {}
 func (b *BouncingEllipse) Continue()                     {}
-func (b *BouncingEllipse) IsStopped() bool {
-	return false
+func (b *BouncingEllipse) IsRunning() bool {
+	return true
 }
 
 func BounceAround(c *ledgrid.Canvas) {

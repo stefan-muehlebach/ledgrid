@@ -151,8 +151,9 @@ const (
 )
 
 const (
-	TestDimmed = iota
-	TestFull
+	TestBright1 = iota
+    TestBright2
+	TestBright3
 	NumBrightModes
 )
 
@@ -169,15 +170,17 @@ func (p *PixelServer) ToggleTestPattern() bool {
 	} else {
 		p.drawTestPattern = true
 		colorMode = TestBlue
-		brightMode = TestDimmed
+		brightMode = TestBright1
 	}
 
 	go func() {
 		for p.drawTestPattern {
 			switch brightMode {
-			case TestDimmed:
+			case TestBright1:
+				colorValue = 0x3f
+			case TestBright2:
 				colorValue = 0x7f
-			case TestFull:
+			case TestBright3:
 				colorValue = 0xff
 			}
 			switch colorMode {

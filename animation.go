@@ -26,7 +26,7 @@ var (
 // fuer die Anzahl Wiederholungen verwendet werden.
 const (
 	AnimationRepeatForever = -1
-	refreshRate            = 30 * time.Millisecond
+	refreshRate            = 20 * time.Millisecond
 )
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
@@ -160,8 +160,8 @@ type Animator interface {
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
 	AnimList   []Animation
-	Canvas     *Canvas
 	animMutex  *sync.RWMutex
+	Canvas     *Canvas
 	ledGrid    *LedGrid
 	pixClient  PixelClient
 	ticker     *time.Ticker
@@ -180,8 +180,8 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient PixelCli
 	}
 	a := &AnimationController{}
 	a.AnimList = make([]Animation, 0)
-	a.Canvas = canvas
 	a.animMutex = &sync.RWMutex{}
+	a.Canvas = canvas
 	a.ledGrid = ledGrid
 	a.pixClient = pixClient
 	a.ticker = time.NewTicker(refreshRate)
@@ -211,16 +211,28 @@ func (a *AnimationController) Del(anim Animation) {
 	for idx, obj := range a.AnimList {
 		if obj == anim {
 			obj.Stop()
-			a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
+			a.AnimList[idx] = nil
+			// a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
 			return
 		}
 	}
+}
+
+func (a *AnimationController) DelAt(idx int) {
+	a.animMutex.Lock()
+	a.AnimList[idx].Stop()
+	a.AnimList[idx] = nil
+	// a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
+	a.animMutex.Unlock()
 }
 
 // Loescht alle Animationen.
 func (a *AnimationController) Purge() {
 	a.animMutex.Lock()
 	for _, anim := range a.AnimList {
+		if anim == nil {
+			continue
+		}
 		anim.Stop()
 	}
 	a.AnimList = a.AnimList[:0]
@@ -256,11 +268,13 @@ func (a *AnimationController) IsStopped() bool {
 }
 
 func (a *AnimationController) backgroundThread() {
+	var wg sync.WaitGroup
+
 	startChan := make(chan int)
-	doneChan := make(chan bool)
+	// doneChan := make(chan bool)
 
 	for range a.numThreads {
-		go a.animationUpdater(startChan, doneChan)
+		go a.animationUpdater(startChan, &wg)
 	}
 
 	for pit := range a.ticker.C {
@@ -270,19 +284,41 @@ func (a *AnimationController) backgroundThread() {
 		a.animPit = pit.Add(-a.delay)
 
 		a.animWatch.Start()
+		wg.Add(a.numThreads)
 		for id := range a.numThreads {
 			startChan <- id
 		}
-		for range a.numThreads {
-			<-doneChan
-		}
+		wg.Wait()
+		// for range a.numThreads {
+		// 	<-doneChan
+		// }
 		a.animWatch.Stop()
 
 		a.Canvas.Draw(a.ledGrid)
 		a.pixClient.Send(a.ledGrid)
 	}
-	close(doneChan)
+	// close(doneChan)
 	close(startChan)
+}
+
+func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.WaitGroup) {
+	for id := range startChan {
+		a.animMutex.RLock()
+		for i := id; i < len(a.AnimList); i += a.numThreads {
+			anim := a.AnimList[i]
+			if anim == nil || !anim.IsRunning() {
+				continue
+			}
+			if !anim.Update(a.animPit) {
+				// fmt.Printf("Anim %T ist zu ende..\n", anim)
+				// fmt.Printf("  %+v\n", anim)
+				// a.AnimList[i] = nil
+			}
+		}
+		a.animMutex.RUnlock()
+		wg.Done()
+		// doneChan <- true
+	}
 }
 
 func (a *AnimationController) Save(fileName string) {
@@ -311,21 +347,6 @@ func (a *AnimationController) Load(fileName string) {
 	}
 }
 
-func (a *AnimationController) animationUpdater(startChan <-chan int, doneChan chan<- bool) {
-	for id := range startChan {
-		a.animMutex.RLock()
-		for i := id; i < len(a.AnimList); i += a.numThreads {
-			anim := a.AnimList[i]
-			if anim.IsStopped() {
-				continue
-			}
-			anim.Update(a.animPit)
-		}
-		a.animMutex.RUnlock()
-		doneChan <- true
-	}
-}
-
 func (a *AnimationController) Watch() *Stopwatch {
 	return a.animWatch
 }
@@ -344,17 +365,18 @@ func (a *AnimationController) Now() time.Time {
 // haben.
 type Task interface {
 	Start()
-	IsStopped() bool
-	Duration() time.Duration
+    Stop()
+    IsRunning() bool
 }
 
 // Das Interface Animation wird von allen Typen implementiert, welche ueber
 // laengere Zeit laufen und periodisch aktualisiert werden.
 type Animation interface {
 	Task
+    Duration() time.Duration
 	SetDuration(dur time.Duration)
-	Stop()
-	Continue()
+	// Suspend()
+	// Continue()
 	Update(t time.Time) bool
 }
 
@@ -401,8 +423,8 @@ func init() {
 	gob.Register(&Sequence{})
 	gob.Register(&Timeline{})
 	gob.Register(&BackgroundTask{})
-	gob.Register(&ShowHideAnimation{})
-	gob.Register(&StopContAnimation{})
+	gob.Register(&HideShowAnimation{})
+	// gob.Register(&StartStopAnimation{})
 	gob.Register(&AlphaAnimation{})
 	gob.Register(&ColorAnimation{})
 	gob.Register(&PaletteAnimation{})
@@ -447,9 +469,9 @@ func NewGroup(tasks ...Task) *Group {
 // Fuegt der Gruppe weitere Animationen hinzu.
 func (a *Group) Add(tasks ...Task) {
 	for _, task := range tasks {
-		if task.Duration() > a.duration {
-			a.duration = task.Duration()
-		}
+        if anim, ok := task.(Animation); ok {
+            a.duration = max(a.duration, anim.Duration())
+        }
 		a.Tasks = append(a.Tasks, task)
 	}
 }
@@ -459,6 +481,7 @@ func (a *Group) Start() {
 	if a.running {
 		return
 	}
+	// fmt.Printf("Group: starting\n")
 	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
@@ -466,6 +489,7 @@ func (a *Group) Start() {
 	for _, task := range a.Tasks {
 		task.Start()
 	}
+	// AnimCtrl.Add(a)
 }
 
 // Unterbricht die Ausfuehrung der Gruppe.
@@ -489,13 +513,13 @@ func (a *Group) Continue() {
 }
 
 // Liefert den Status der Gruppe zurueck.
-func (a *Group) IsStopped() bool {
-	return !a.running
+func (a *Group) IsRunning() bool {
+	return a.running
 }
 
 func (a *Group) Update(t time.Time) bool {
 	for _, task := range a.Tasks {
-		if !task.IsStopped() {
+		if task.IsRunning() {
 			return true
 		}
 	}
@@ -544,7 +568,9 @@ func NewSequence(tasks ...Task) *Sequence {
 // Fuegt der Sequenz weitere Animationen hinzu.
 func (a *Sequence) Add(tasks ...Task) {
 	for _, task := range tasks {
-		a.duration = a.duration + task.Duration()
+        if anim, ok := task.(Animation); ok {
+            a.duration = a.duration + anim.Duration()
+        }
 		a.Tasks = append(a.Tasks, task)
 	}
 }
@@ -583,15 +609,15 @@ func (a *Sequence) Continue() {
 }
 
 // Liefert den Status der Sequenz zurueck.
-func (a *Sequence) IsStopped() bool {
-	return !a.running
+func (a *Sequence) IsRunning() bool {
+	return a.running
 }
 
 // Wird durch den Controller periodisch aufgerufen, prueft ob Animationen
 // dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
 func (a *Sequence) Update(t time.Time) bool {
 	if a.currTask < len(a.Tasks) {
-		if !a.Tasks[a.currTask].IsStopped() {
+		if a.Tasks[a.currTask].IsRunning() {
 			return true
 		}
 		a.currTask++
@@ -706,8 +732,8 @@ func (a *Timeline) Continue() {
 }
 
 // Retourniert den Status der Timeline.
-func (a *Timeline) IsStopped() bool {
-	return !a.running
+func (a *Timeline) IsRunning() bool {
+	return a.running
 }
 
 // Wird periodisch durch den Controller aufgerufen und aktualisiert die
@@ -749,65 +775,58 @@ func NewBackgroundTask(fn func()) *BackgroundTask {
 	a := &BackgroundTask{fn}
 	return a
 }
-func (a *BackgroundTask) Duration() time.Duration {
-	return 0
-}
 func (a *BackgroundTask) Start() {
 	a.fn()
 }
-func (a *BackgroundTask) IsStopped() bool {
-	return true
+func (a *BackgroundTask) Stop() {}
+func (a *BackgroundTask) IsRunning() bool {
+	return false
 }
 
 // Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
 // CanvasObjekten beeinflusst werden. Mit jedem Aufruf wird dieser Switch
 // umgestellt (also Hidden -> Shown -> Hidden -> etc.).
-type ShowHideAnimation struct {
+type HideShowAnimation struct {
 	obj CanvasObject
 }
 
-func NewShowHideAnimation(obj CanvasObject) *ShowHideAnimation {
-	a := &ShowHideAnimation{obj: obj}
+func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
+	a := &HideShowAnimation{obj: obj}
 	return a
 }
-func (a *ShowHideAnimation) Duration() time.Duration {
-	return 0
-}
-func (a *ShowHideAnimation) Start() {
+func (a *HideShowAnimation) Start() {
 	if a.obj.IsHidden() {
 		a.obj.Show()
 	} else {
 		a.obj.Hide()
 	}
 }
-func (a *ShowHideAnimation) IsStopped() bool {
-	return true
+func (a *HideShowAnimation) Stop() {}
+func (a *HideShowAnimation) IsRunning() bool {
+	return false
 }
 
-// Analog zu ShowHiddenAnimation dient StopContAnimation dazu, die Eigenschaft
-// IsStopped von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
+// Analog zu HideShowAnimation dient SuspContAnimation dazu, die Eigenschaft
+// IsRunning von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
 // Animation wechselt die Eigenschaft (Stopped -> Started -> Stopped -> etc.)
-type StopContAnimation struct {
-	obj Animation
-}
+// type SuspContAnimation struct {
+// 	anim Animation
+// }
 
-func NewStopContAnimation(obj Animation) *StopContAnimation {
-	a := &StopContAnimation{obj: obj}
-	return a
-}
-func (a *StopContAnimation) Duration() time.Duration {
-	return 0
-}
-func (a *StopContAnimation) Start() {
-	if a.obj.IsStopped() {
-		a.obj.Continue()
-	} else {
-		a.obj.Stop()
-	}
-}
-func (a *StopContAnimation) IsStopped() bool {
-	return true
-}
+// func NewSuspContAnimation(anim Animation) *SuspContAnimation {
+// 	a := &SuspContAnimation{anim: anim}
+// 	return a
+// }
+// func (a *SuspContAnimation) Start() {
+// 	if a.anim.IsRunning() {
+// 		a.anim.Suspend()
+// 	} else {
+// 		a.anim.Continue()
+// 	}
+// }
+// func (a *SuspContAnimation) IsRunning() bool {
+// 	return false
+// }
 
 // Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
 // Erleichert das Erstellen von neuen Animationen gewaltig.
@@ -838,7 +857,7 @@ func (a *NormAnimationEmbed) Extend(wrapper NormAnimation) {
 	a.Curve = AnimationEaseInOut
 	a.RepeatCount = 0
 	a.running = false
-	AnimCtrl.Add(wrapper)
+	AnimCtrl.Add(a.wrapper)
 }
 
 func (a *NormAnimationEmbed) Duration() time.Duration {
@@ -856,6 +875,7 @@ func (a *NormAnimationEmbed) Duration() time.Duration {
 // aktuell sind. Ist die Animaton bereits am Laufen ist diese Methode
 // ein no-op.
 func (a *NormAnimationEmbed) Start() {
+	// fmt.Printf("Gestartet...\n")
 	if a.running {
 		return
 	}
@@ -866,12 +886,14 @@ func (a *NormAnimationEmbed) Start() {
 	a.reverse = false
 	a.wrapper.Init()
 	a.running = true
+	// AnimCtrl.Add(a.wrapper)
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
 // Applikation. Mit [Continue] kann eine gestoppte Animation wieder
 // fortgesetzt werden.
 func (a *NormAnimationEmbed) Stop() {
+	// fmt.Printf("Von aussen gestoppt...\n")
 	if !a.running {
 		return
 	}
@@ -892,8 +914,8 @@ func (a *NormAnimationEmbed) Continue() {
 
 // Liefert true, falls die Animation mittels [Stop] angehalten wurde oder
 // falls die Animation zu Ende ist.
-func (a *NormAnimationEmbed) IsStopped() bool {
-	return !a.running
+func (a *NormAnimationEmbed) IsRunning() bool {
+	return a.running
 }
 
 // Diese Methode ist fuer die korrekte Abwicklung (Beachtung von Reverse und
@@ -905,6 +927,8 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 			a.wrapper.Tick(a.Curve(0.0))
 			if a.repeatsLeft == 0 {
 				a.running = false
+				// fmt.Printf("erster ausstieg...\n  %+v\n", a)
+
 				return false
 			}
 			a.reverse = false
@@ -917,6 +941,7 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 		if !a.reverse {
 			if a.repeatsLeft == 0 {
 				a.running = false
+				// fmt.Printf("zweiter ausstieg...\n  %+v\n", a)
 				return false
 			}
 			if a.repeatsLeft > 0 {
@@ -1350,8 +1375,8 @@ func (a *ShaderAnimation) Continue() {
 }
 
 // Liefert den Status der Animation zurueck.
-func (a *ShaderAnimation) IsStopped() bool {
-	return !a.running
+func (a *ShaderAnimation) IsRunning() bool {
+	return a.running
 }
 
 func (a *ShaderAnimation) Update(t time.Time) bool {
