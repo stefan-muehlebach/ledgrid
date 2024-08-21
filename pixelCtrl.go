@@ -103,7 +103,7 @@ func (p *PixelServer) Close() {
 }
 
 func (p *PixelServer) Watch() *Stopwatch {
-    return p.sendWatch
+	return p.sendWatch
 }
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
@@ -150,15 +150,8 @@ const (
 	NumColorModes
 )
 
-const (
-	TestBright1 = iota
-    TestBright2
-	TestBright3
-	NumBrightModes
-)
-
 func (p *PixelServer) ToggleTestPattern() bool {
-	var colorMode, brightMode int
+	var colorMode int
 	var colorValue byte
 
 	var numTestLeds = p.Disp.Size().X * p.Disp.Size().Y
@@ -170,19 +163,19 @@ func (p *PixelServer) ToggleTestPattern() bool {
 	} else {
 		p.drawTestPattern = true
 		colorMode = TestBlue
-		brightMode = TestBright1
 	}
 
 	go func() {
+		colorValue = 0x00
 		for p.drawTestPattern {
-			switch brightMode {
-			case TestBright1:
-				colorValue = 0x3f
-			case TestBright2:
-				colorValue = 0x7f
-			case TestBright3:
-				colorValue = 0xff
-			}
+			// switch brightMode {
+			// case TestBright1:
+			// 	colorValue = 0x3f
+			// case TestBright2:
+			// 	colorValue = 0x7f
+			// case TestBright3:
+			// 	colorValue = 0xff
+			// }
 			switch colorMode {
 			case TestRed:
 				for i := range numTestLeds {
@@ -222,8 +215,10 @@ func (p *PixelServer) ToggleTestPattern() bool {
 				}
 			}
 
-			brightMode = (brightMode + 1) % NumBrightModes
-			if brightMode == 0 {
+			if colorValue < 0xff {
+				colorValue = (colorValue << 1) | 1
+			} else {
+				colorValue = 0x00
 				colorMode = (colorMode + 1) % NumColorModes
 			}
 			p.sendWatch.Start()
