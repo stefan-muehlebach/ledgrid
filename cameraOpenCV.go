@@ -102,7 +102,7 @@ func (c *Camera) Stop() {
 }
 
 func (c *Camera) captureThread(done <-chan bool) {
-	ticker := time.NewTicker(camFrameRate * time.Millisecond)
+	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
 ML:	for {
 		select {
 		case <-ticker.C:

@@ -14,8 +14,8 @@ package ledgrid
 const (
 	camDevName    = "/dev/video0"
 	camDevId      = 0
-	camWidth      = 320
-	camHeight     = 240
+	camWidth      = 640
+	camHeight     = 480
 	camFrameRate  = 30
 	camBufferSize = 4
 )
