@@ -169,14 +169,6 @@ func (p *PixelServer) ToggleTestPattern() bool {
 	go func() {
 		colorValue = 0x00
 		for p.drawTestPattern {
-			// switch brightMode {
-			// case TestBright1:
-			// 	colorValue = 0x3f
-			// case TestBright2:
-			// 	colorValue = 0x7f
-			// case TestBright3:
-			// 	colorValue = 0xff
-			// }
 			switch colorMode {
 			case TestRed:
 				for i := range numTestLeds {

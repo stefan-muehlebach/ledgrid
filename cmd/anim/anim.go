@@ -748,40 +748,99 @@ var (
 			c.Add(cam)
 			cam.Start()
 
+			// go func() {
+			// 	time.Sleep(3 * time.Second)
+			// 	for i := range width / 2 {
+			// 		coordList := make([]image.Point, 0)
+			// 		col2 := width/2 + i
+			// 		col1 := width/2 - 1 - i
+			// 		for row := range height {
+			// 			coordList = append(coordList, image.Point{col1, row}, image.Point{col2, row})
+			// 		}
+
+			// 		rand.Shuffle(2*height, func(i, j int) {
+			// 			coordList[i], coordList[j] = coordList[j], coordList[i]
+			// 		})
+
+			// 		for _, val := range coordList {
+			// 			pt := geom.NewPointIMG(val)
+			// 			ptDest := geom.NewPoint(-5, float64(val.Y))
+			// 			newColor := color.YellowGreen
+			// 			if val.X >= width/2 {
+			// 				ptDest.X = float64(width + 5)
+			// 				newColor = color.OrangeRed
+			// 			}
+			// 			newColor = newColor.Alpha(0.5)
+			// 			pixAway := ledgrid.NewDot(pt, newColor)
+			// 			c.Add(pixAway)
+			// 			aDur := time.Second + rand.N(time.Second)
+
+			// 			aMask := ledgrid.NewBackgroundTask(func() {
+			// 				cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
+			// 			})
+			// 			aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
+			// 			aPos.Curve = ledgrid.AnimationEaseIn
+			// 			aSeq := ledgrid.NewSequence(aMask, aPos)
+			// 			aSeq.Start()
+			// 			time.Sleep(30 * time.Millisecond)
+			// 		}
+			// 		time.Sleep(time.Duration(500-25*i) * time.Millisecond)
+			// 	}
+			// 	time.Sleep(1 * time.Second)
+			// 	for i := range cam.DstMask.Pix {
+			// 		cam.DstMask.Pix[i] = 0xff
+			// 	}
+			// }()
+
 			go func() {
+				var row, col int
+
 				time.Sleep(3 * time.Second)
-				for i := range width / 2 {
-					coordList := make([]image.Point, 0)
-					col2 := width/2 + i
-					col1 := width/2 - 1 - i
-					for row := range height {
-						coordList = append(coordList, image.Point{col1, row}, image.Point{col2, row})
-					}
-
-					rand.Shuffle(2*height, func(i, j int) {
-						coordList[i], coordList[j] = coordList[j], coordList[i]
-					})
-
-					for _, val := range coordList {
-						pt := geom.NewPointIMG(val)
-						ptDest := geom.NewPoint(-5, float64(val.Y))
-						newColor := color.YellowGreen
-						if val.X >= width/2 {
-							ptDest.X = float64(width + 5)
-							newColor = color.OrangeRed
+				rowLists := make([][]image.Point, 2*height)
+				for i := range rowLists {
+					row = i % height
+					rowLists[i] = make([]image.Point, width/2)
+					for j := range rowLists[i] {
+						if i < height {
+							col = width/2 - j - 1
+						} else {
+							col = width/2 + j
 						}
-						newColor = newColor.Alpha(0.5)
-						cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
-						pixAway := ledgrid.NewDot(pt, newColor)
-						c.Add(pixAway)
-						aDur := time.Second + rand.N(time.Second)
-
-						aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
-						aPos.Curve = ledgrid.AnimationEaseIn
-						aPos.Start()
-						time.Sleep(10 * time.Millisecond)
+						rowLists[i][j] = image.Point{col, row}
 					}
-					time.Sleep(time.Duration(100-4*i) * time.Millisecond)
+				}
+				coordList := make([]image.Point, width*height)
+				for i := range width * height {
+					idx := rand.IntN(2 * height)
+					for len(rowLists[idx]) == 0 {
+						idx = (idx + 1) % (2 * height)
+					}
+					coordList[i] = rowLists[idx][0]
+					rowLists[idx] = rowLists[idx][1:]
+				}
+
+				for _, val := range coordList {
+					pt := geom.NewPointIMG(val)
+					ptDest := geom.NewPoint(-5, float64(val.Y))
+					newColor := color.YellowGreen
+					if val.X >= width/2 {
+						ptDest.X = float64(width + 5)
+						newColor = color.OrangeRed
+					}
+					newColor = newColor.Alpha(0.5)
+					pixAway := ledgrid.NewDot(pt, newColor)
+					c.Add(pixAway)
+					aDur := time.Second + rand.N(time.Second)
+
+					aMask := ledgrid.NewBackgroundTask(func() {
+						cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
+					})
+					aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
+					aPos.Curve = ledgrid.AnimationEaseIn
+					aSeq := ledgrid.NewSequence(aMask, aPos)
+					aSeq.Start()
+					time.Sleep(20 * time.Millisecond)
+
 				}
 				time.Sleep(1 * time.Second)
 				for i := range cam.DstMask.Pix {
@@ -833,9 +892,10 @@ var (
 
 	BlinkenAnimation = NewLedGridProgram("Blinken animation",
 		func(c *ledgrid.Canvas) {
-			posFlame1 := geom.Point{5.0, float64(height) - 4.0}
-			posFlame2 := geom.Point{float64(width) - 5.0, float64(height) - 4.0}
-			posMario := geom.Point{float64(width) / 2.0, float64(height) - 9.0}
+			posFlame1 := geom.Point{3.0, float64(height) - 4.0}
+			posFlame2 := geom.Point{float64(width) - 3.0, float64(height) - 4.0}
+			pos1Mario := geom.Point{10.0, float64(height) / 2.0}
+			pos2Mario := geom.Point{float64(width) - 10.0, float64(height) / 2.0}
 
 			bmlFlame := ledgrid.ReadBlinkenFile("blinken/flameNew.bml")
 			bmlFlame.SetAllDuration(32)
@@ -850,16 +910,20 @@ var (
 			flame2.AddBlinkenLight(bmlFlame)
 			flame2.RepeatCount = ledgrid.AnimationRepeatForever
 
-			bmlMario := ledgrid.ReadBlinkenFile("blinken/mario.bml")
+			bmlMario := ledgrid.ReadBlinkenFile("blinken/marioWalkRight.bml")
 
-			mario := ledgrid.NewImageList(posMario)
+			mario := ledgrid.NewImageList(pos1Mario)
 			mario.AddBlinkenLight(bmlMario)
 			mario.RepeatCount = ledgrid.AnimationRepeatForever
-			mario.Size = geom.Point{18.0, 18.0}
+			// mario.Size = geom.Point{10.0, 10.0}
+
+			aPos := ledgrid.NewPositionAnimation(&mario.Pos, pos2Mario, 4*time.Second)
+			aPos.Curve = ledgrid.AnimationLinear
+			aPos.RepeatCount = ledgrid.AnimationRepeatForever
 
 			c.Add(flame1, flame2, mario)
 
-			aGrp := ledgrid.NewGroup(flame1, flame2, mario)
+			aGrp := ledgrid.NewGroup(flame1, flame2, mario, aPos)
 			aGrp.Start()
 		})
 

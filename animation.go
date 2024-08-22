@@ -359,20 +359,22 @@ func (a *AnimationController) Now() time.Time {
 	return time.Now().Add(delay)
 }
 
-// Nun folgen die Typen, welche als Animationen ausgefuehrt werden koennen.
-// Das Interface Task wird von allen Typen implementiert, welche im
-// Hintergrund gestartet werden koennen und nichts mit dem Zeichnen zu tun
-// haben.
+// Die folgenden Interfaces geben einen guten Ueberblick ueber die Arten
+// von Hintergrundaktivitaeten.
 type Task interface {
 	Start()
-    Stop()
     IsRunning() bool
+}
+
+type Job interface {
+    Task
+    Stop()
 }
 
 // Das Interface Animation wird von allen Typen implementiert, welche ueber
 // laengere Zeit laufen und periodisch aktualisiert werden.
 type Animation interface {
-	Task
+	Job
     Duration() time.Duration
 	SetDuration(dur time.Duration)
 	// Suspend()
