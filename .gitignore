@@ -1,6 +1,7 @@
 cmd/anim/anim
 cmd/anim/animation.log
 cmd/anim/canvas.log
+cmd/anim/imagesSave/
 cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
 cmd/colorEdit/ledgrid.png
