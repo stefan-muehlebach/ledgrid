@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"flag"
 	"image/color"
 	"log"
@@ -101,7 +102,8 @@ func main() {
 	App = app.New()
 	App.SetIcon(resourceIconIco)
 	App.Settings().SetTheme(&myTheme{})
-	Win = App.NewWindow("LedGrid Emulator")
+    winTitle := fmt.Sprintf("LEDGrid Emulator (%d x %d)", width, height)
+	Win = App.NewWindow(winTitle)
 
 	pixelEmulator = NewPixelEmulator(width, height)
 	pixelServer = ledgrid.NewPixelServer(port, pixelEmulator)

@@ -648,16 +648,13 @@ var (
 			aColor.Start()
 		})
 
-	FlyingImages = NewLedGridProgram("Stretched images",
+	SlideTheShow = NewLedGridProgram("Slide-the-Show",
 		func(c *ledgrid.Canvas) {
 			pos2 := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 			files := []string{
-				"images/colormap01.png",
-				"images/colormap02.png",
-				"images/colormap03.png",
-				"images/lotr01.png",
 				"images/raster.png",
-				"images/testbild.png",
+				"images/square1.png",
+				"images/square2.png",
 			}
 			aTimeline := ledgrid.NewTimeline(time.Duration(2*len(files)) * time.Second)
 			dstSize := geom.NewPointIMG(c.Bounds().Size())
@@ -748,50 +745,6 @@ var (
 			c.Add(cam)
 			cam.Start()
 
-			// go func() {
-			// 	time.Sleep(3 * time.Second)
-			// 	for i := range width / 2 {
-			// 		coordList := make([]image.Point, 0)
-			// 		col2 := width/2 + i
-			// 		col1 := width/2 - 1 - i
-			// 		for row := range height {
-			// 			coordList = append(coordList, image.Point{col1, row}, image.Point{col2, row})
-			// 		}
-
-			// 		rand.Shuffle(2*height, func(i, j int) {
-			// 			coordList[i], coordList[j] = coordList[j], coordList[i]
-			// 		})
-
-			// 		for _, val := range coordList {
-			// 			pt := geom.NewPointIMG(val)
-			// 			ptDest := geom.NewPoint(-5, float64(val.Y))
-			// 			newColor := color.YellowGreen
-			// 			if val.X >= width/2 {
-			// 				ptDest.X = float64(width + 5)
-			// 				newColor = color.OrangeRed
-			// 			}
-			// 			newColor = newColor.Alpha(0.5)
-			// 			pixAway := ledgrid.NewDot(pt, newColor)
-			// 			c.Add(pixAway)
-			// 			aDur := time.Second + rand.N(time.Second)
-
-			// 			aMask := ledgrid.NewBackgroundTask(func() {
-			// 				cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
-			// 			})
-			// 			aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
-			// 			aPos.Curve = ledgrid.AnimationEaseIn
-			// 			aSeq := ledgrid.NewSequence(aMask, aPos)
-			// 			aSeq.Start()
-			// 			time.Sleep(30 * time.Millisecond)
-			// 		}
-			// 		time.Sleep(time.Duration(500-25*i) * time.Millisecond)
-			// 	}
-			// 	time.Sleep(1 * time.Second)
-			// 	for i := range cam.DstMask.Pix {
-			// 		cam.DstMask.Pix[i] = 0xff
-			// 	}
-			// }()
-
 			go func() {
 				var row, col int
 
@@ -847,47 +800,6 @@ var (
 					cam.DstMask.Pix[i] = 0xff
 				}
 			}()
-
-			// Kamerabild, beim dem die einzelnen Pixel nach und nach die
-			// Farbe wechseln und das Bild verlassen.
-			//
-			// go func() {
-			// 	coordList := make([]image.Point, width*height)
-			// 	for row := range height {
-			// 		for col := range width {
-			// 			coordList[row*width+col] = image.Point{col, row}
-			// 		}
-			// 	}
-			// 	rand.Shuffle(width*height, func(i, j int) {
-			// 		coordList[i], coordList[j] = coordList[j], coordList[i]
-			// 	})
-			// 	dur := 100 * time.Millisecond
-			// 	for _, pt := range coordList {
-			// 		time.Sleep(dur)
-			// 		if pt.X > width/2 {
-			// 			pt2 = geom.NewPoint(float64(width)+5, float64(pt.Y))
-			// 			col2 = color.OrangeRed
-			// 		} else {
-			// 			pt2 = geom.NewPoint(float64(-5), float64(pt.Y))
-			// 			col2 = color.YellowGreen
-			// 		}
-			// 		col := ledGrid.At(pt.X, pt.Y)
-			// 		cam.DstMask.SetAlpha(pt.X, pt.Y, gocolor.Alpha{0x00})
-			// 		pixAway := ledgrid.NewDot(geom.NewPointIMG(pt), col.(color.LedColor))
-			// 		c.Add(pixAway)
-			// 		aDur := 2*time.Second + rand.N(time.Second)
-			// 		aColor := ledgrid.NewColorAnimation(&pixAway.Color, col2, 600*time.Millisecond)
-			// 		aColor.Curve = ledgrid.AnimationEaseIn
-			// 		aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, pt2, aDur)
-			// 		aPos.Curve = ledgrid.AnimationEaseIn
-			// 		aSeq := ledgrid.NewSequence(aColor, aPos)
-			// 		aSeq.Start()
-			// 	}
-			// 	time.Sleep(3 * time.Second)
-			// 	for i := range cam.DstMask.Pix {
-			// 		cam.DstMask.Pix[i] = 0xff
-			// 	}
-			// }()
 		})
 
 	BlinkenAnimation = NewLedGridProgram("Blinken animation",
@@ -1113,7 +1025,7 @@ var (
 				for col := range c.Rect.Dx() {
 					pix := ledgrid.NewPixel(image.Point{col, row}, color.Black)
 					c.Add(pix)
-					anim := ledgrid.NewShaderAnimation(&pix.Color, fader, x, y, TestShaderFunc)
+					anim := ledgrid.NewShaderAnimation(&pix.Color, fader, x, y, PlasmaShaderFunc)
 					aGrp.Add(anim)
 					x += dPix
 				}
@@ -1229,7 +1141,7 @@ var (
 		BlinkenAnimation,
 		MovingText,
 		BitmapText,
-		FlyingImages,
+		SlideTheShow,
 		ShowTheShader,
 	}
 )
