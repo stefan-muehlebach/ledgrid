@@ -102,7 +102,7 @@ func main() {
 	App = app.New()
 	App.SetIcon(resourceIconIco)
 	App.Settings().SetTheme(&myTheme{})
-    winTitle := fmt.Sprintf("LEDGrid Emulator (%d x %d)", width, height)
+    winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
 	Win = App.NewWindow(winTitle)
 
 	pixelEmulator = NewPixelEmulator(width, height)
