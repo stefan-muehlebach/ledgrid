@@ -591,13 +591,6 @@ var (
 
 	MovingText = NewLedGridProgram("Moving text",
 		func(c *ledgrid.Canvas) {
-			pts = []geom.Point{
-				geom.Point{0, 0},
-				geom.Point{0, float64(height)},
-				geom.Point{float64(width), float64(height)},
-				geom.Point{float64(width), 0},
-			}
-
 			t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", color.LightSeaGreen)
 			t1.AX = 0.0
 			t2 := ledgrid.NewText(geom.Point{float64(width), float64(height) / 2.0}, "Beni", color.YellowGreen)
@@ -741,7 +734,7 @@ var (
 			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 			size := geom.Point{float64(width), float64(height)}
 
-			cam := ledgrid.NewCamera(pos, size)
+			cam := NewCamera(pos, size)
 			c.Add(cam)
 			cam.Start()
 
@@ -913,7 +906,7 @@ var (
 					c.Add(pix)
 
 					dur := time.Second + time.Duration(x)*time.Millisecond
-					aAlpha := ledgrid.NewAlphaAnimation(&pix.Color.A, 196, dur)
+					aAlpha := ledgrid.NewUint8Animation(&pix.Color.A, ledgrid.Uint8Const(196), dur)
 					aAlpha.AutoReverse = true
 					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 					aAlpha.Start()
@@ -1034,6 +1027,14 @@ var (
 			aPalTl.Start()
 			aGrp.Start()
 		})
+
+	WaterDrops = NewLedGridProgram("Water drops",
+		func(c *ledgrid.Canvas) {
+
+		})
+
+
+
 )
 
 //----------------------------------------------------------------------------
@@ -1070,7 +1071,7 @@ func (b *BouncingEllipse) Duration() time.Duration {
 }
 func (b *BouncingEllipse) SetDuration(dur time.Duration) {}
 func (b *BouncingEllipse) Start()                        {}
-func (b *BouncingEllipse) Stop()                         {}
+func (b *BouncingEllipse) Suspend()                      {}
 func (b *BouncingEllipse) Continue()                     {}
 func (b *BouncingEllipse) IsRunning() bool {
 	return true
@@ -1092,24 +1093,6 @@ func BounceAround(c *ledgrid.Canvas) {
 
 	c.Add(obj1, obj2)
 	ledgrid.AnimCtrl.Add(obj1, obj2)
-}
-
-//----------------------------------------------------------------------------
-
-var (
-	pts     []geom.Point
-	lastIdx = -1
-)
-
-func randPoint() geom.Point {
-	idx0 := rand.IntN(len(pts))
-	for idx0 == lastIdx {
-		idx0 = rand.IntN(len(pts))
-	}
-	lastIdx = idx0
-	idx1 := (idx0 + 1) % len(pts)
-
-	return pts[idx0].Interpolate(pts[idx1], rand.Float64())
 }
 
 //----------------------------------------------------------------------------
@@ -1231,7 +1214,7 @@ func main() {
 				ledgrid.AnimCtrl.Save("gobs/program01.gob")
 			}
 			if ch == 'L' {
-				ledgrid.AnimCtrl.Stop()
+				ledgrid.AnimCtrl.Suspend()
 				ledgrid.AnimCtrl.Purge()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Purge()
@@ -1266,7 +1249,7 @@ func main() {
 		SignalHandler()
 	}
 
-	ledgrid.AnimCtrl.Stop()
+	ledgrid.AnimCtrl.Suspend()
 	ledGrid.Clear(color.Black)
 	pixClient.Send(ledGrid)
 	pixClient.Close()

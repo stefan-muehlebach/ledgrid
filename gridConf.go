@@ -301,31 +301,47 @@ func (idxMap IndexMap) CoordMap() CoordMap {
 // Methoden (Plot und Draw).
 
 var (
-    scaleFactor = 0.75
+	scaleFactor = 1.0
 
-	marginSize = 100.0 * scaleFactor
+	marginTop  = 30.0 * scaleFactor
+	marginLeft = 30.0 * scaleFactor
+	marginSize = 5.0 * scaleFactor
+
+	axesSep       = 5.0 * scaleFactor
+	axesHeight    = 20.0 * scaleFactor
+	axesTickWidth = 1.0
+	axesTickColor = color.Black
+	axesTextFont  = fonts.GoMono
+	axesTextSize  = 12.0 * scaleFactor
+	axesTextColor = color.Black
 
 	moduleSize        = 400.0 * scaleFactor
 	moduleBorderWidth = 2.0
 	moduleBorderColor = color.Black
-	moduleFillColor   = color.Ivory
-
-	moduleTextFont  = fonts.GoBold
-	moduleTextSize  = 60.0 * scaleFactor
-	moduleTextColor = color.Gainsboro
+	moduleFillColor   = color.NavajoWhite
+	moduleTextFont    = fonts.GoBold
+	moduleTextSize    = 60.0 * scaleFactor
+	moduleTextColor   = color.Gainsboro
 
 	ledFieldSize        = moduleSize / float64(ModuleSize.X)
 	ledSize             = ledFieldSize - 2.0
 	ledInputFieldColor  = color.OrangeRed.Alpha(0.3)
 	ledOutputFieldColor = color.Teal.Alpha(0.3)
-	ledBorderWidth      = 1.5
+	ledBorderWidth      = 1.0
 	ledBorderColor      = color.Black
-	ledFillColor        = color.White
+	ledFillColor        = color.White.Alpha(0.7)
 	ledInputFillColor   = color.Teal.Alpha(0.5)
 	ledOutputFillColor  = color.OrangeRed.Alpha(0.5)
+	ledTextFont         = fonts.GoMono
+	ledTextSize         = 16.0 * scaleFactor
+	ledTextColor        = color.Black
 
-    arrowStartOffset = 1.0 / 5.0
-    arrowEndOffset   = 1.0 / 8.0
+	traceWidth     = 20.0
+	traceColor     = color.Black.Alpha(0.2)
+	traceBezierPos = 0.8
+
+	arrowStartOffset = 1.0 / 5.0
+	arrowEndOffset   = 1.0 / 8.0
 	arrowSize        = 2.0 * ledSize / 3.0
 	arrowStrokeWidth = 2.5
 	arrowWidth       = 10.0
@@ -334,8 +350,8 @@ var (
 
 func (conf ModuleConfig) Plot(fileName string) {
 	size := conf.Size()
-	gc := gg.NewContext(size.X*int(moduleSize)+2*int(marginSize),
-		size.Y*int(moduleSize)+2*int(marginSize))
+	gc := gg.NewContext(size.X*int(moduleSize)+int(marginLeft+marginSize),
+		size.Y*int(moduleSize)+int(marginTop+marginSize))
 	gc.SetFillColor(color.White)
 	gc.Clear()
 
@@ -348,15 +364,53 @@ func (conf ModuleConfig) Plot(fileName string) {
 }
 
 func (conf ModuleConfig) Draw(gc *gg.Context) {
-	p0 := geom.Point{marginSize, marginSize}.AddXY(moduleSize/2.0, moduleSize/2.0)
-	for _, modPos := range conf {
+	p0 := geom.Point{marginLeft, marginTop}.AddXY(moduleSize/2.0, moduleSize/2.0)
+	for i, modPos := range conf {
 		pt := p0.Add(geom.Point{float64(modPos.Col), float64(modPos.Row)}.Mul(moduleSize))
 
 		gc.Push()
 		gc.Translate(pt.X, pt.Y)
 		gc.Rotate(math.Pi * float64(-modPos.Mod.Rot) / 180.0)
-		modPos.Mod.Draw(gc)
+		modPos.Mod.Draw(gc, i)
 		gc.Pop()
+	}
+
+	// Anbringen der Zeilen und Spaltenbeschriftungen (Indizes)
+	p0 = geom.Point{marginLeft, marginTop}
+	gc.SetStrokeWidth(axesTickWidth)
+	gc.SetStrokeColor(axesTickColor)
+	gc.SetFontFace(fonts.NewFace(axesTextFont, axesTextSize))
+
+	p1 := p0.AddXY(0, -axesSep)
+	p2 := p1.AddXY(0, -axesHeight)
+	gc.DrawLine(p1.X, p1.Y, p2.X, p2.Y)
+	gc.Stroke()
+	for col := range ModuleSize.X * conf.Size().X {
+		p1 = p0.AddXY(float64(col+1)*ledFieldSize, -axesSep)
+		p2 = p1.AddXY(0, -axesHeight)
+		gc.DrawLine(p1.X, p1.Y, p2.X, p2.Y)
+		gc.Stroke()
+
+		pm := p1.Interpolate(p2, 0.5).AddXY(-ledFieldSize/2.0, 0.0)
+		gc.SetFontFace(fonts.NewFace(axesTextFont, axesTextSize))
+		gc.SetStrokeColor(axesTextColor)
+		gc.DrawStringAnchored(fmt.Sprintf("%d", col), pm.X, pm.Y, 0.5, 0.5)
+
+	}
+	p1 = p0.AddXY(-axesSep, 0)
+	p2 = p1.AddXY(-axesHeight, 0)
+	gc.DrawLine(p1.X, p1.Y, p2.X, p2.Y)
+	gc.Stroke()
+	for row := range ModuleSize.Y * conf.Size().Y {
+		p1 = p0.AddXY(-axesSep, float64(row+1)*ledFieldSize)
+		p2 = p1.AddXY(-axesHeight, 0)
+		gc.DrawLine(p1.X, p1.Y, p2.X, p2.Y)
+		gc.Stroke()
+
+		pm := p1.Interpolate(p2, 0.5).AddXY(0.0, -ledFieldSize/2.0)
+		gc.SetFontFace(fonts.NewFace(axesTextFont, axesTextSize))
+		gc.SetStrokeColor(axesTextColor)
+		gc.DrawStringAnchored(fmt.Sprintf("%d", row), pm.X, pm.Y, 0.5, 0.5)
 	}
 }
 
@@ -364,18 +418,19 @@ func (conf ModuleConfig) Draw(gc *gg.Context) {
 // Methode/Funktion muss mittels Translation und ggf. Rotation dafuer sorgen,
 // dass der Ursprung des Koordinatensystems im Mittelpunkt des Modules zu
 // liegen kommt.
-func (mod Module) Draw(gc *gg.Context) {
+func (mod Module) Draw(gc *gg.Context, modIdx int) {
 	// p0 und p1 sind Referenzpunkte, die in den Ecken eines Modules
 	// platziert werden: p0 links oben, p1 rechts oben.
 	p0 := geom.Point{-moduleSize / 2.0, -moduleSize / 2.0}
 	p1 := p0.Add(geom.Point{moduleSize, 0})
 
+	mp0 := geom.Point{}
 	mp := geom.Point{}
 	dx := geom.Point{}
-    dy := geom.Point{}
-    dp := geom.Point{}
-    dir := math.Pi
-    turn := 0.0
+	dy := geom.Point{}
+	dp := geom.Point{}
+	dir := math.Pi
+	turn := 0.0
 
 	// Feldfuellung fuer das Modul
 	gc.DrawRectangle(p0.X, p0.Y, moduleSize, moduleSize)
@@ -388,72 +443,104 @@ func (mod Module) Draw(gc *gg.Context) {
 	gc.SetStrokeColor(moduleTextColor)
 	gc.DrawStringAnchored(fmt.Sprintf("%v", mod), 0.0, 0.0, 0.5, 0.5)
 
-	// Erste Spalte mit LED
-    // Iterationseinstellungen, die abhängig von der Hauptverkabelung sind.
-    if mod.Type == ModLR {
-        mp = p0.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
-        dx = geom.Point{ledFieldSize, 0.0}
-        dy = geom.Point{0.0, ledFieldSize}
-        turn = -math.Pi/2.0
-    } else {
-        mp = p1.AddXY(-ledFieldSize/2.0, ledFieldSize/2.0)
-        dx = geom.Point{-ledFieldSize, 0.0}
-        dy = geom.Point{0.0, ledFieldSize}
-        turn = math.Pi/2.0
-    }
+	// Die LEDs resp. Tischtennisbaelle im LEDGrid zeichnen.
+	// Iterationseinstellungen, die abhängig von der Hauptverkabelung sind.
+	if mod.Type == ModLR {
+		mp0 = p0.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
+		dx = geom.Point{ledFieldSize, 0.0}
+		dy = geom.Point{0.0, ledFieldSize}
+		turn = -math.Pi / 2.0
+	} else {
+		mp0 = p1.AddXY(-ledFieldSize/2.0, ledFieldSize/2.0)
+		dx = geom.Point{-ledFieldSize, 0.0}
+		dy = geom.Point{0.0, ledFieldSize}
+		turn = math.Pi / 2.0
+	}
 
-    mode := 0
-    dp = dy
-    for ledIdx := range ModuleSize.X * ModuleSize.Y {
-        switch mode {
-        case 0:
-            if ledIdx % ModuleSize.Y == 9 {
-                dir += turn
-                dp = dx
-                mode++
-            }
-        case 1:
-            dir += turn
-            dp = dy.Neg()
-            mode++
-        case 2:
-            if ledIdx % ModuleSize.Y == 9 {
-                dir -= turn
-                dp = dx
-                mode++
-            }
-        case 3:
-            dir -= turn
-            dp = dy
-            mode = 0
-        }
+	mp = mp0
+	mode := 0
+	dp = dy
 
-        if ledIdx < 15 || ledIdx >= 85 {
-            // Kreis für PingPong-Ball zeichnen, falls Anfangs- oder End-LED mit
-            // entsprechender Farbe.
-            gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
-            gc.SetStrokeWidth(ledBorderWidth)
-            gc.SetStrokeColor(ledBorderColor)
-            if ledIdx == 0 {
-                gc.SetFillColor(ledInputFillColor)
-            } else if ledIdx == ModuleSize.X * ModuleSize.Y - 1 {
-                gc.SetFillColor(ledOutputFillColor)
-            } else {
-    			gc.SetFillColor(ledFillColor)
-            }
-            gc.FillStroke()
+	// Und hier werden ueber alle 100 LEDs des Panels iteriert.
+	for ledIdx := range ModuleSize.X * ModuleSize.Y {
+		switch mode {
+		case 0:
+			if ledIdx%ModuleSize.Y == 9 {
+				dir += turn
+				dp = dx
+				mode++
+			}
+		case 1:
+			dir += turn
+			dp = dy.Neg()
+			mode++
+		case 2:
+			if ledIdx%ModuleSize.Y == 9 {
+				dir -= turn
+				dp = dx
+				mode++
+			}
+		case 3:
+			dir -= turn
+			dp = dy
+			mode = 0
+		}
 
-            if ledIdx < ModuleSize.X * ModuleSize.Y - 1 {
-                // Pfeil in LED, welcher die Verkabelungsrichtung anzeigt.
-                gc.DrawRegularPolygon(3, mp.X, mp.Y, ledSize/4.0, dir)
-                gc.SetStrokeWidth(0.0)
-                gc.SetFillColor(arrowColor)
-                gc.Fill()
-            }
-        }
+		// Pixel, resp. Tischtennisball als Kreis (ev. faerbt) darstellen.
+		gc.DrawCircle(mp.X, mp.Y, ledSize/2.0)
+		gc.SetStrokeWidth(ledBorderWidth)
+		gc.SetStrokeColor(ledBorderColor)
+		if ledIdx == 0 {
+			gc.SetFillColor(ledInputFillColor)
+		} else if ledIdx == ModuleSize.X*ModuleSize.Y-1 {
+			gc.SetFillColor(ledOutputFillColor)
+		} else {
+			gc.SetFillColor(ledFillColor)
+		}
+		gc.FillStroke()
 
-        mp = mp.Add(dp)
-    }
+		// LED-Beschriftung
+		gc.SetFontFace(fonts.NewFace(ledTextFont, ledTextSize))
+		gc.SetStrokeColor(ledTextColor)
+		gc.DrawStringAnchored(fmt.Sprintf("%d", 100*modIdx+ledIdx), mp.X, mp.Y, 0.5, 0.5)
+
+		mp = mp.Add(dp)
+	}
+
+	// Verlauf der Verkabelung als graues, maeandrierendes Band darstellen.
+	var mpA, mpB, mpANew, mpBNew, mpC1, mpC2 geom.Point
+
+	mpA = mp0.Add(dy.Div(2))
+	mpB = mpA.Add(dy.Mul(8))
+	gc.SetStrokeWidth(traceWidth)
+	gc.SetStrokeColor(traceColor)
+	gc.MoveTo(mp0.AsCoord())
+	gc.LineTo(mpA.AsCoord())
+	for i := range 10 {
+		if i%2 == 0 {
+			gc.LineTo(mpB.AsCoord())
+		} else {
+			gc.LineTo(mpA.AsCoord())
+		}
+		mpANew = mpA.Add(dx)
+		mpBNew = mpB.Add(dx)
+		if i < 9 {
+			if i%2 == 0 {
+				mpC1 = mpB.Add(dy.Mul(traceBezierPos))
+				mpC2 = mpBNew.Add(dy.Mul(traceBezierPos))
+				gc.CubicTo(mpC1.X, mpC1.Y, mpC2.X, mpC2.Y, mpBNew.X, mpBNew.Y)
+			} else {
+				mpC1 = mpA.Sub(dy.Mul(traceBezierPos))
+				mpC2 = mpANew.Sub(dy.Mul(traceBezierPos))
+				gc.CubicTo(mpC1.X, mpC1.Y, mpC2.X, mpC2.Y, mpANew.X, mpANew.Y)
+			}
+		}
+		mpA = mpANew
+		mpB = mpBNew
+	}
+	gc.LineTo(mp0.Add(dx.Mul(9)).AsCoord())
+	gc.Stroke()
+
 	// for i := range 2 {
 	// 	if mod.Type == ModLR {
 	// 		mp = p0.AddXY(ledFieldSize/2.0, ledFieldSize/2.0)
@@ -510,7 +597,6 @@ func (mod Module) Draw(gc *gg.Context) {
 	gc.SetStrokeColor(moduleBorderColor)
 	gc.Stroke()
 }
-
 
 // Hilfsfunktioenchen (sogar generisch!)
 func abs[T ~int | ~float64](i T) T {

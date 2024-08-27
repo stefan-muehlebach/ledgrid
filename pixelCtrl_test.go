@@ -10,6 +10,7 @@ var (
 	gammaValue [3]float64
 	gamma      [3][256]byte
 	buffer     []byte
+    bufferSize = 3 * 40 * 10
 )
 
 func init() {

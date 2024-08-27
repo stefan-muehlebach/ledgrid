@@ -67,7 +67,9 @@ func AnimationEaseInOutNew(t float64) float64 {
 }
 
 // Dies ist ein etwas unbeholfener Versuch, die Zielwerte bestimmter
-// Animationen dynamisch berechnen zu lassen.
+// Animationen dynamisch berechnen zu lassen. Alle XXXFuncType sind
+// Funktionstypen fuer einen bestimmten Datentyp, der in den Animationen
+// verwendet wird und dessen dynamische Berechnung Sinn macht.
 type PaletteFuncType func() ColorSource
 type ColorFuncType func() color.LedColor
 type PointFuncType func() geom.Point
@@ -78,15 +80,18 @@ var (
 	palId int = 0
 )
 
+// SeqPalette liefert eine Funktion, die bei jedem Aufruf die naechste Palette
+// als Resultat zurueckgibt.
 func SeqPalette() PaletteFuncType {
 	return func() ColorSource {
 		name := PaletteNames[palId]
-		// log.Printf("%s", name)
 		palId = (palId + 1) % len(PaletteNames)
 		return PaletteMap[name]
 	}
 }
 
+// RandPalette liefert eine Funktion, die bei jedem Aufruf eine zufaellig
+// gewaehlte Palette retourniert.
 func RandPalette() PaletteFuncType {
 	return func() ColorSource {
 		name := PaletteNames[rand.IntN(len(PaletteNames))]
@@ -140,6 +145,8 @@ func RandAlpha(a, b uint8) AlphaFuncType {
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 // Dieses Interface ist von allen Typen zu implementieren, welche
 // Animationen ausfuehren sollen/wollen. Aktuell gibt es nur einen Typ, der
 // dieses Interface implementiert (AnimationController) und es ist auch
@@ -148,9 +155,9 @@ type Animator interface {
 	Add(anims ...Animation)
 	Del(anim Animation)
 	Purge()
-	Stop()
+	Suspend()
 	Continue()
-	IsStopped() bool
+	IsRunning() bool
 }
 
 // Das Herzstueck der ganzen Animationen ist der AnimationController. Er
@@ -210,7 +217,7 @@ func (a *AnimationController) Del(anim Animation) {
 	defer a.animMutex.Unlock()
 	for idx, obj := range a.AnimList {
 		if obj == anim {
-			obj.Stop()
+			obj.Suspend()
 			a.AnimList[idx] = nil
 			// a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
 			return
@@ -220,7 +227,7 @@ func (a *AnimationController) Del(anim Animation) {
 
 func (a *AnimationController) DelAt(idx int) {
 	a.animMutex.Lock()
-	a.AnimList[idx].Stop()
+	a.AnimList[idx].Suspend()
 	a.AnimList[idx] = nil
 	// a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
 	a.animMutex.Unlock()
@@ -233,7 +240,7 @@ func (a *AnimationController) Purge() {
 		if anim == nil {
 			continue
 		}
-		anim.Stop()
+		anim.Suspend()
 	}
 	a.AnimList = a.AnimList[:0]
 	a.animMutex.Unlock()
@@ -241,7 +248,7 @@ func (a *AnimationController) Purge() {
 
 // Mit Stop koennen die Animationen und die Darstellung auf der Hardware
 // unterbunden werden.
-func (a *AnimationController) Stop() {
+func (a *AnimationController) Suspend() {
 	if !a.running {
 		return
 	}
@@ -263,8 +270,8 @@ func (a *AnimationController) Continue() {
 	a.running = true
 }
 
-func (a *AnimationController) IsStopped() bool {
-	return !a.running
+func (a *AnimationController) IsRunning() bool {
+	return a.running
 }
 
 func (a *AnimationController) backgroundThread() {
@@ -361,24 +368,31 @@ func (a *AnimationController) Now() time.Time {
 
 // Die folgenden Interfaces geben einen guten Ueberblick ueber die Arten
 // von Hintergrundaktivitaeten.
+// Ein Task hat nur die Moeglichkeit, gestartet zu werden. Anschl. lauft er
+// asynchron ohne weitere Moeglichkeiten der Einflussnahme. Einzig der aktuelle
+// Status ('laeuft'/'laeuft nicht') kann noch ermittelt werden.
 type Task interface {
 	Start()
-    IsRunning() bool
+	IsRunning() bool
 }
 
-type Job interface {
-    Task
-    Stop()
-}
+// Ein Job besitzt alle Eigenschaften und Moeglichkeiten eines Tasks, bietet
+// jedoch zusaetzlich die Moeglichkeit, von aussen bewusst gestoppt zu werden.
+// type Job interface {
+// 	Task
+// 	Stop()
+// }
 
-// Das Interface Animation wird von allen Typen implementiert, welche ueber
-// laengere Zeit laufen und periodisch aktualisiert werden.
+// Animationen schliesslich sind Jobs, koennen also gestoppt und gestartet
+// werden, haben jedoch zusaetzlich klare Laufzeiten und werden periodisch
+// durch den AnimationController aufgerufen, damit sie ihren Animations-Kram
+// erledigen koennen. Man kann sie ausserdem Suspendieren und Fortsetzen.
 type Animation interface {
-	Job
-    Duration() time.Duration
+	Task
+	Duration() time.Duration
 	SetDuration(dur time.Duration)
-	// Suspend()
-	// Continue()
+	Suspend()
+	Continue()
 	Update(t time.Time) bool
 }
 
@@ -471,9 +485,9 @@ func NewGroup(tasks ...Task) *Group {
 // Fuegt der Gruppe weitere Animationen hinzu.
 func (a *Group) Add(tasks ...Task) {
 	for _, task := range tasks {
-        if anim, ok := task.(Animation); ok {
-            a.duration = max(a.duration, anim.Duration())
-        }
+		if anim, ok := task.(Animation); ok {
+			a.duration = max(a.duration, anim.Duration())
+		}
 		a.Tasks = append(a.Tasks, task)
 	}
 }
@@ -495,7 +509,7 @@ func (a *Group) Start() {
 }
 
 // Unterbricht die Ausfuehrung der Gruppe.
-func (a *Group) Stop() {
+func (a *Group) Suspend() {
 	if !a.running {
 		return
 	}
@@ -570,9 +584,9 @@ func NewSequence(tasks ...Task) *Sequence {
 // Fuegt der Sequenz weitere Animationen hinzu.
 func (a *Sequence) Add(tasks ...Task) {
 	for _, task := range tasks {
-        if anim, ok := task.(Animation); ok {
-            a.duration = a.duration + anim.Duration()
-        }
+		if anim, ok := task.(Animation); ok {
+			a.duration = a.duration + anim.Duration()
+		}
 		a.Tasks = append(a.Tasks, task)
 	}
 }
@@ -591,7 +605,7 @@ func (a *Sequence) Start() {
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
-func (a *Sequence) Stop() {
+func (a *Sequence) Suspend() {
 	if !a.running {
 		return
 	}
@@ -714,7 +728,7 @@ func (a *Timeline) Start() {
 }
 
 // Unterbricht die Ausfuehrung der Timeline.
-func (a *Timeline) Stop() {
+func (a *Timeline) Suspend() {
 	if !a.running {
 		return
 	}
@@ -780,7 +794,6 @@ func NewBackgroundTask(fn func()) *BackgroundTask {
 func (a *BackgroundTask) Start() {
 	a.fn()
 }
-func (a *BackgroundTask) Stop() {}
 func (a *BackgroundTask) IsRunning() bool {
 	return false
 }
@@ -803,7 +816,6 @@ func (a *HideShowAnimation) Start() {
 		a.obj.Hide()
 	}
 }
-func (a *HideShowAnimation) Stop() {}
 func (a *HideShowAnimation) IsRunning() bool {
 	return false
 }
@@ -894,7 +906,7 @@ func (a *NormAnimationEmbed) Start() {
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
 // Applikation. Mit [Continue] kann eine gestoppte Animation wieder
 // fortgesetzt werden.
-func (a *NormAnimationEmbed) Stop() {
+func (a *NormAnimationEmbed) Suspend() {
 	// fmt.Printf("Von aussen gestoppt...\n")
 	if !a.running {
 		return
@@ -998,6 +1010,41 @@ func (a *AlphaAnimation) Init() {
 
 func (a *AlphaAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.Val1) + t*float64(a.Val2))
+}
+
+type Uint8FuncType func() uint8
+
+func Uint8Const(v uint8) Uint8FuncType {
+    return func() uint8 {
+        return v
+    }
+}
+
+type Uint8Animation struct {
+	NormAnimationEmbed
+	ValPtr     *uint8
+	val1, val2 uint8
+	Val1, Val2 Uint8FuncType
+	Cont       bool
+}
+
+func NewUint8Animation(valPtr *uint8, val2 Uint8FuncType, dur time.Duration) *Uint8Animation {
+    a := &Uint8Animation{ValPtr: valPtr, Val1: Uint8Const(*valPtr), Val2: val2}
+    a.NormAnimationEmbed.Extend(a)
+    a.SetDuration(dur)
+    return a
+}
+
+func (a *Uint8Animation) Init() {
+    if a.Cont {
+        a.Val1 = Uint8Const(*a.ValPtr)
+    }
+    a.val1 = a.Val1()
+    a.val2 = a.Val2()
+}
+
+func (a *Uint8Animation) Tick(t float64) {
+	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
 }
 
 // Animation fuer einen Verlauf zwischen zwei Farben.
@@ -1180,12 +1227,17 @@ func (a *PathAnimation) Init() {
 
 func (a *PathAnimation) Tick(t float64) {
 	var dp geom.Point
+	var s geom.Point
 
 	if !a.Size.Eq(geom.Point{}) {
-		dp = a.PathFunc(t).Scale(a.Size)
+		dp = a.PathFunc(t)
+		s = a.Size
 	} else {
-		dp = a.PathFunc(t).Scale(a.Val2.Sub(a.Val1))
+		dp = a.PathFunc(t)
+		s = a.Val2.Sub(a.Val1)
 	}
+	dp.X *= s.X
+	dp.Y *= s.Y
 	*a.ValPtr = a.Val1.Add(dp)
 }
 
@@ -1358,7 +1410,7 @@ func (a *ShaderAnimation) Start() {
 }
 
 // Unterbricht die Ausfuehrung der Animation.
-func (a *ShaderAnimation) Stop() {
+func (a *ShaderAnimation) Suspend() {
 	if !a.running {
 		return
 	}

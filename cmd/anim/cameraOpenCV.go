@@ -1,6 +1,6 @@
 //go:build cameraOpenCV
 
-package ledgrid
+package main
 
 import (
 	"image"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
+	"github.com/stefan-muehlebach/ledgrid"
 
 	"gocv.io/x/gocv"
 	"golang.org/x/image/draw"
@@ -19,7 +20,7 @@ import (
 // auch dazu verwendet werden, wenn statt der Kamera-Bilder eine Interpretation
 // davon angezeigt werden soll.
 type Camera struct {
-	CanvasObjectEmbed
+	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
 	dev       *gocv.VideoCapture
 	img       image.Image
@@ -58,7 +59,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c.matIdx = -1
 	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
 	c.doneChan = make(chan bool)
-	AnimCtrl.Add(c)
+	ledgrid.AnimCtrl.Add(c)
 	return c
 }
 
@@ -85,7 +86,7 @@ func (c *Camera) Start() {
 	c.running = true
 }
 
-func (c *Camera) Stop() {
+func (c *Camera) Suspend() {
 	var err error
 
 	if !c.running {
@@ -127,9 +128,6 @@ func (c *Camera) IsRunning() bool {
 }
 
 func (c *Camera) Update(pit time.Time) bool {
-	// if !c.dev.Read(&c.mat) {
-	// 	log.Fatalf("Failed to grab and decode frames")
-	// }
 	return true
 }
 
@@ -141,7 +139,7 @@ func (c *Camera) Set(prop gocv.VideoCaptureProperties, param float64) {
 	c.dev.Set(prop, param)
 }
 
-func (c *Camera) Draw(canv *Canvas) {
+func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	var err error
 	idx := c.matIdx
 	if idx < 0 {
@@ -155,6 +153,6 @@ func (c *Camera) Draw(canv *Canvas) {
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
+	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
 		&draw.Options{DstMask: c.DstMask})
 }

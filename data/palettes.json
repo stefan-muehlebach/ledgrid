@@ -115,7 +115,6 @@
   {
     "ID": 208,
     "Title": "Hipster",
-    "IsCyclic": true,
     "Colors": [
         "8d0e6b",
         "053434",
@@ -127,7 +126,6 @@
   {
     "ID": 209,
     "Title": "Neon",
-    "IsCyclic": true,
     "Colors": [
         "ffffff",
         "0099cc",
@@ -137,7 +135,6 @@
   {
     "ID": 210,
 	"Title": "HotFire",
-    "IsCyclic": true,
     "Colors": [
     		"be1013",
 		"d23008",
@@ -154,7 +151,6 @@
   {
     "ID": 211,
 	"Title": "DarkJungle",
-    "IsCyclic": true,
     "Colors": [
 		"184918",
 		"406a3a",
@@ -169,7 +165,6 @@
   {
     "ID": 212,
 	"Title": "Kitty",
-    "IsCyclic": true,
     "Colors": [
 	    "9f456b",
 	    "4f7a9a",
@@ -179,7 +174,6 @@
   {
     "ID": 213,
 	"Title": "Lantern",
-    "IsCyclic": true,
     "Colors": [
 	    "000000",
 	    "0D9A0D",
@@ -189,7 +183,6 @@
   {
     "ID": 214,
 	"Title": "Lemming",
-    "IsCyclic": true,
     "Colors": [
 	    "000000",
 	    "0000ff",
@@ -200,7 +193,6 @@
   {
     "ID": 215,
     "Title": "MiamiVice",
-    "IsCyclic": true,
     "Colors": [
 	    "1be3ff",
 	    "ff82dc",
@@ -210,7 +202,6 @@
   {
     "ID": 216,
 	"Title": "Nightspell",
-    "IsCyclic": true,
     "Colors": [
 	    "EDEEBA",
 	    "FEA81C",
@@ -222,7 +213,6 @@
   {
     "ID": 217,
 	"Title": "Wayyou",
-    "IsCyclic": true,
     "Colors": [
 	    "1C2130",
 	    "028F76",
@@ -234,7 +224,6 @@
   {
     "ID": 218,
 	"Title": "Weparted",
-    "IsCyclic": true,
     "Colors": [
 	    "027B7F",
 	    "FFA588",
@@ -246,7 +235,6 @@
   {
     "ID": 219,
 	"Title": "Pico08",
-    "IsCyclic": false,
     "IsSlice": true,
     "Colors": [
 		"000000",

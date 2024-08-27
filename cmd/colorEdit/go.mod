@@ -1,8 +1,6 @@
-module ledgrid/cmd/colorEdit
+module github.com/stefan-muehlebach/ledgrid/cmd/colorEdit
 
 go 1.23.0
-
-replace github.com/stefan-muehlebach/gg => ../../../gg
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 
@@ -17,7 +15,7 @@ require (
 	github.com/vladimirvivien/go4vl v0.0.5 // indirect
 	gocv.io/x/gocv v0.37.0 // indirect
 	golang.org/x/image v0.19.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	periph.io/x/conn/v3 v3.7.1 // indirect
 	periph.io/x/host/v3 v3.8.2 // indirect

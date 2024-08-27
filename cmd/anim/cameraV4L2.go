@@ -1,6 +1,6 @@
 //go:build cameraV4L2
 
-package ledgrid
+package main
 
 import (
 	"bytes"
@@ -8,28 +8,46 @@ import (
 	"image"
 	"image/jpeg"
 	"log"
+	"math"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
+	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 	"golang.org/x/image/draw"
 )
 
 type Camera struct {
-	CanvasObjectEmbed
+	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
+	DstMask   *image.Alpha
 	dev       *device.Device
 	img       image.Image
-	cut       image.Rectangle
+	mask       image.Rectangle
 	cancel    context.CancelFunc
 	running   bool
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
-	c := &Camera{Pos: pos, Size: size, cut: image.Rect(0, 80, 320, 160)}
-	c.CanvasObjectEmbed.ExtendCanvasObject(c)
-	animCtrl.Add(c)
+	c := &Camera{Pos: pos, Size: size}
+	c.CanvasObjectEmbed.Extend(c)
+	dstRatio := size.X / size.Y
+	srcRatio := float64(camWidth) / float64(camHeight)
+	if dstRatio > srcRatio {
+		h := camWidth / dstRatio
+		m := (camHeight - h) / 2.0
+		c.mask = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+	} else {
+		w := camHeight * dstRatio
+		m := (camWidth - w) / 2.0
+		c.mask = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
+	}
+	c.DstMask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+	for i := range c.DstMask.Pix {
+		c.DstMask.Pix[i] = 0xff
+	}
+	ledgrid.AnimCtrl.Add(c)
 	return c
 }
 
@@ -67,6 +85,9 @@ func (c *Camera) Start() {
 }
 
 func (c *Camera) Stop() {
+}
+
+func (c *Camera) Suspend() {
 	var err error
 
 	if !c.running {
@@ -82,8 +103,8 @@ func (c *Camera) Stop() {
 
 func (c *Camera) Continue() {}
 
-func (c *Camera) IsStopped() bool {
-	return !c.running
+func (c *Camera) IsRunning() bool {
+	return c.running
 }
 
 func (c *Camera) Update(pit time.Time) bool {
@@ -103,11 +124,12 @@ func (c *Camera) Update(pit time.Time) bool {
 	return true
 }
 
-func (c *Camera) Draw(canv *Canvas) {
+func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	if c.img == nil {
 		return
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.img, rect.Add(refPt).Int(), c.img, c.cut, draw.Over, nil)
+	draw.CatmullRom.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
+        &draw.Options{DstMask: c.DstMask})
 }

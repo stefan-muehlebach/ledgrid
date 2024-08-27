@@ -110,7 +110,7 @@ func TestModuleConfig(t *testing.T) {
 }
 
 func TestPlotModuleConfig(t *testing.T) {
-	conf := DefaultModuleConfig(image.Point{40, 20})
+	conf := DefaultModuleConfig(image.Point{40, 10})
 	conf.Plot("moduleConfig.png")
 }
 

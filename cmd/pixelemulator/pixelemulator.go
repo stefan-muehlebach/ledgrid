@@ -3,8 +3,8 @@
 package main
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
 	"image/color"
 	"log"
 	"os"
@@ -60,23 +60,31 @@ func SignalHandler(pixelServer *ledgrid.PixelServer) {
 			pixelServer.Close()
 			return
 		case syscall.SIGHUP:
-			log.Printf("Server Statistics:")
-			log.Printf("   %v", pixelServer.Watch())
-			log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
-			log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
-			log.Printf("Current gamma values:")
-			r, g, b := pixelServer.Gamma()
-			log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
-			log.Printf("Current settings for max values (brightness):")
-			br, bg, bb := pixelServer.MaxBright()
-			log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
+			PrintStatistics(pixelServer)
 		case syscall.SIGUSR1:
-			if pixelServer.ToggleTestPattern() {
-				log.Printf("Drawing test pattern is ON now.")
-			} else {
-				log.Printf("Drawing test pattern is OFF now.")
-			}
+			ToggleTests(pixelServer)
 		}
+	}
+}
+
+func PrintStatistics(pixelServer *ledgrid.PixelServer) {
+	log.Printf("Server Statistics:")
+	log.Printf("   %v", pixelServer.Watch())
+	log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
+	log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+	log.Printf("Current gamma values:")
+	r, g, b := pixelServer.Gamma()
+	log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
+	log.Printf("Current settings for max values (brightness):")
+	br, bg, bb := pixelServer.MaxBright()
+	log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
+}
+
+func ToggleTests(pixelServer *ledgrid.PixelServer) {
+	if pixelServer.ToggleTestPattern() {
+		log.Printf("Drawing test pattern is ON now.")
+	} else {
+		log.Printf("Drawing test pattern is OFF now.")
 	}
 }
 
@@ -102,7 +110,7 @@ func main() {
 	App = app.New()
 	App.SetIcon(resourceIconIco)
 	App.Settings().SetTheme(&myTheme{})
-    winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
+	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
 	Win = App.NewWindow(winTitle)
 
 	pixelEmulator = NewPixelEmulator(width, height)
@@ -112,6 +120,17 @@ func main() {
 		switch evt.Name {
 		case fyne.KeyEscape, fyne.KeyQ:
 			App.Quit()
+		case fyne.KeyH:
+			fmt.Printf("Use the following keys to control the software:\n")
+			fmt.Printf("  h   Show this help (again)\n")
+			fmt.Printf("  s   Show some statistics\n")
+			fmt.Printf("  t   Start test pattern, press 't' again to stop\n")
+			fmt.Printf("  q   Quit the program\n")
+			fmt.Printf(" ESC  Same as 'q'\n")
+        case fyne.KeyS:
+            PrintStatistics(pixelServer)
+        case fyne.KeyT:
+            ToggleTests(pixelServer)
 		}
 	})
 

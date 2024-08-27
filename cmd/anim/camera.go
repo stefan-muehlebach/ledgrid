@@ -1,4 +1,4 @@
-package ledgrid
+package main
 
 // Dient dazu, ein Live-Bild ab einer beliebigen, aber ansprechbaren Kamera
 // auf dem LED-Grid darzustellen. Als erstes eine Implementation mit Hilfe
@@ -19,4 +19,3 @@ const (
 	camFrameRate  = 30
 	camBufferSize = 4
 )
-

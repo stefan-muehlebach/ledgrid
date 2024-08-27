@@ -46,9 +46,9 @@ type Canvas struct {
 	ObjList    []CanvasObject
 	BackColor  color.LedColor
 	Rect       image.Rectangle
+	Img        *image.RGBA
+	GC         *gg.Context
 	objMutex   *sync.RWMutex
-	img        *image.RGBA
-	gc         *gg.Context
 	paintWatch *Stopwatch
 }
 
@@ -57,8 +57,8 @@ func NewCanvas(size image.Point) *Canvas {
 	c.ObjList = make([]CanvasObject, 0)
     c.BackColor = color.Black
 	c.Rect = image.Rectangle{Max: size}
-	c.img = image.NewRGBA(c.Rect)
-	c.gc = gg.NewContextForRGBA(c.img)
+	c.Img = image.NewRGBA(c.Rect)
+	c.GC = gg.NewContextForRGBA(c.Img)
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
@@ -89,8 +89,8 @@ func (c *Canvas) Purge() {
 
 func (c *Canvas) Draw(lg draw.Image) {
 	c.paintWatch.Start()
-	c.gc.SetFillColor(c.BackColor)
-	c.gc.Clear()
+	c.GC.SetFillColor(c.BackColor)
+	c.GC.Clear()
 	c.objMutex.RLock()
 	for _, obj := range c.ObjList {
 		if obj.IsHidden() {
@@ -99,7 +99,7 @@ func (c *Canvas) Draw(lg draw.Image) {
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-	draw.Draw(lg, lg.Bounds(), c.img, image.Point{}, draw.Over)
+	draw.Draw(lg, lg.Bounds(), c.Img, image.Point{}, draw.Over)
 	c.paintWatch.Stop()
 }
 
@@ -174,7 +174,7 @@ func init() {
 	gob.Register(&Dot{})
 	gob.Register(&Image{})
 	gob.Register(&ImageList{})
-	gob.Register(&Camera{})
+	// gob.Register(&Camera{})
 	gob.Register(&Text{})
 	gob.Register(&FixedText{})
 	gob.Register(&image.RGBA{})
@@ -208,19 +208,19 @@ func NewEllipse(pos, size geom.Point, borderColor color.LedColor) *Ellipse {
 
 func (e *Ellipse) Draw(c *Canvas) {
 	if e.Angle != 0.0 {
-		c.gc.Push()
-		c.gc.RotateAbout(e.Angle, e.Pos.X, e.Pos.Y)
-		defer c.gc.Pop()
+		c.GC.Push()
+		c.GC.RotateAbout(e.Angle, e.Pos.X, e.Pos.Y)
+		defer c.GC.Pop()
 	}
-	c.gc.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
-	c.gc.SetStrokeWidth(e.BorderWidth)
-	c.gc.SetStrokeColor(e.BorderColor)
+	c.GC.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
+	c.GC.SetStrokeWidth(e.BorderWidth)
+	c.GC.SetStrokeColor(e.BorderColor)
 	if e.FillColor == color.Transparent && e.FillColorFnc != "" {
-		c.gc.SetFillColor(colorFncMap[e.FillColorFnc](e.BorderColor))
+		c.GC.SetFillColor(colorFncMap[e.FillColorFnc](e.BorderColor))
 	} else {
-		c.gc.SetFillColor(e.FillColor)
+		c.GC.SetFillColor(e.FillColor)
 	}
-	c.gc.FillStroke()
+	c.GC.FillStroke()
 }
 
 // Rectangle ist fuer alle rechteckigen Objekte vorgesehen. Pos bezeichnet
@@ -244,19 +244,19 @@ func NewRectangle(pos, size geom.Point, borderColor color.LedColor) *Rectangle {
 
 func (r *Rectangle) Draw(c *Canvas) {
 	if r.Angle != 0.0 {
-		c.gc.Push()
-		c.gc.RotateAbout(r.Angle, r.Pos.X, r.Pos.Y)
-		defer c.gc.Pop()
+		c.GC.Push()
+		c.GC.RotateAbout(r.Angle, r.Pos.X, r.Pos.Y)
+		defer c.GC.Pop()
 	}
-	c.gc.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
-	c.gc.SetStrokeWidth(r.BorderWidth)
-	c.gc.SetStrokeColor(r.BorderColor)
+	c.GC.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
+	c.GC.SetStrokeWidth(r.BorderWidth)
+	c.GC.SetStrokeColor(r.BorderColor)
 	if r.FillColor == color.Transparent && r.FillColorFnc != "" {
-		c.gc.SetFillColor(colorFncMap[r.FillColorFnc](r.BorderColor))
+		c.GC.SetFillColor(colorFncMap[r.FillColorFnc](r.BorderColor))
 	} else {
-		c.gc.SetFillColor(r.FillColor)
+		c.GC.SetFillColor(r.FillColor)
 	}
-	c.gc.FillStroke()
+	c.GC.FillStroke()
 }
 
 // Auch gleichmaessige Polygone duerfen nicht fehlen.
@@ -279,15 +279,15 @@ func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor color.Le
 }
 
 func (p *RegularPolygon) Draw(c *Canvas) {
-	c.gc.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
-	c.gc.SetStrokeWidth(p.BorderWidth)
-	c.gc.SetStrokeColor(p.BorderColor)
+	c.GC.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
+	c.GC.SetStrokeWidth(p.BorderWidth)
+	c.GC.SetStrokeColor(p.BorderColor)
 	if p.FillColor == color.Transparent && p.FillColorFnc != "" {
-		c.gc.SetFillColor(colorFncMap[p.FillColorFnc](p.BorderColor))
+		c.GC.SetFillColor(colorFncMap[p.FillColorFnc](p.BorderColor))
 	} else {
-		c.gc.SetFillColor(p.FillColor)
+		c.GC.SetFillColor(p.FillColor)
 	}
-	c.gc.FillStroke()
+	c.GC.FillStroke()
 }
 
 // Fuer Geraden ist dieser Datentyp vorgesehen, der von Pos1 nach Pos2
@@ -307,10 +307,10 @@ func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
 }
 
 func (l *Line) Draw(c *Canvas) {
-	c.gc.SetStrokeWidth(l.Width)
-	c.gc.SetStrokeColor(l.Color)
-	c.gc.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
-	c.gc.Stroke()
+	c.GC.SetStrokeWidth(l.Width)
+	c.GC.SetStrokeColor(l.Color)
+	c.GC.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
+	c.GC.Stroke()
 }
 
 // Will man ein einzelnes Pixel exakt an einer LED-Position zeichnen, so
@@ -333,8 +333,8 @@ func NewPixel(pos image.Point, col color.LedColor) *Pixel {
 }
 
 func (p *Pixel) Draw(c *Canvas) {
-	bgColor := color.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
-	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
+	bgColor := color.LedColorModel.Convert(c.Img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
+	c.Img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
 }
 
 // Ein einzelnes Pixel, dessen Bewegungen weicher (smooth) animiert werden
@@ -355,10 +355,10 @@ func NewDot(pos geom.Point, col color.LedColor) *Dot {
 }
 
 func (d *Dot) Draw(c *Canvas) {
-	c.gc.DrawEllipse(d.Pos.X+0.5, d.Pos.Y+0.5, math.Sqrt2/2.0, math.Sqrt2/2.0)
-	c.gc.SetStrokeWidth(0.0)
-	c.gc.SetFillColor(d.Color)
-	c.gc.FillStroke()
+	c.GC.DrawEllipse(d.Pos.X+0.5, d.Pos.Y+0.5, math.Sqrt2/2.0, math.Sqrt2/2.0)
+	c.GC.SetStrokeWidth(0.0)
+	c.GC.SetFillColor(d.Color)
+	c.GC.FillStroke()
 
 	// c.gc.DrawRectangle(d.Pos.X, d.Pos.Y+2.0, 1.0, 1.0)
 	// c.gc.SetStrokeWidth(0.0)
@@ -391,15 +391,15 @@ func (i *Image) Read(fileName string) {
 }
 
 func (i *Image) Draw(c *Canvas) {
-	c.gc.Push()
-	defer c.gc.Pop()
+	c.GC.Push()
+	defer c.GC.Pop()
 	if i.Angle != 0.0 {
-		c.gc.RotateAbout(i.Angle, i.Pos.X, i.Pos.Y)
+		c.GC.RotateAbout(i.Angle, i.Pos.X, i.Pos.Y)
 	}
 	sx := i.Size.X / float64(i.Img.Bounds().Dx())
 	sy := i.Size.Y / float64(i.Img.Bounds().Dy())
-	c.gc.ScaleAbout(sx, sy, i.Pos.X, i.Pos.Y)
-	c.gc.DrawImageAnchored(i.Img, i.Pos.X, i.Pos.Y, 0.5, 0.5)
+	c.GC.ScaleAbout(sx, sy, i.Pos.X, i.Pos.Y)
+	c.GC.DrawImageAnchored(i.Img, i.Pos.X, i.Pos.Y, 0.5, 0.5)
 }
 
 func DecodeImageFile(fileName string) draw.Image {
@@ -462,7 +462,7 @@ func (i *ImageList) Draw(c *Canvas) {
 	sx := i.Size.X / float64(i.imgBounds.Dx())
 	sy := i.Size.Y / float64(i.imgBounds.Dy())
 	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
-	draw.BiLinear.Transform(c.img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
+	draw.BiLinear.Transform(c.Img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
 }
 
 func (i *ImageList) Init() {
@@ -515,13 +515,13 @@ func (t *Text) SetFont(font *fonts.Font, size float64) {
 
 func (t *Text) Draw(c *Canvas) {
 	if t.Angle != 0.0 {
-		c.gc.Push()
-		c.gc.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
-		defer c.gc.Pop()
+		c.GC.Push()
+		c.GC.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
+		defer c.GC.Pop()
 	}
-	c.gc.SetStrokeColor(t.Color)
-	c.gc.SetFontFace(t.fontFace)
-	c.gc.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, t.AX, t.AY)
+	c.GC.SetStrokeColor(t.Color)
+	c.GC.SetFontFace(t.fontFace)
+	c.GC.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, t.AX, t.AY)
 }
 
 // Fuer das direkte Zeichnen von Text auf dem LED-Grid, existieren einige
@@ -570,7 +570,7 @@ func (t *FixedText) updateSize() {
 }
 
 func (t *FixedText) Draw(c *Canvas) {
-	t.drawer.Dst = c.img
+	t.drawer.Dst = c.Img
 	t.drawer.Src = image.NewUniform(t.Color)
 	t.drawer.Dot = t.Pos.Sub(t.dp)
 	t.drawer.DrawString(t.text)
