@@ -6,6 +6,11 @@
 package ledgrid
 
 import (
+	"fmt"
+	"image"
+	"log"
+	"os"
+
 	"golang.org/x/image/font/basicfont"
 )
 
@@ -23,22 +28,63 @@ var glyphRange = []basicfont.Range{
 	{'\u007b', '\u007f', 91}, // '{' '|' '}' '~'                    (4 Glyphs)
 }
 
-var Face3x5 = &basicfont.Face{
+// Original Pico-8 font in the original size (3x5 Pixels!)
+var Pico3x5 = &basicfont.Face{
 	Advance: 4,
 	Width:   3,
-	Height:  5,
+	Height:  8,
 	Ascent:  5,
 	Descent: 0,
-	Mask:    mask3x5,
+	Mask:    maskPico3x5,
 	Ranges:  glyphRange,
 }
 
 var Face5x7 = &basicfont.Face{
 	Advance: 6,
-	Width:   5,
-	Height:  7,
-	Ascent:  7,
+	Width:   5, // Dies ist die Breite eines Buchstabens gem. Maske
+	Height:  9,
+	Ascent:  7, // Dies ist die Hoehe eines Buchstabens gem. Maske
 	Descent: 0,
 	Mask:    mask5x7,
 	Ranges:  glyphRange,
+}
+
+func ScaleFace(face *basicfont.Face, factor int, newName string) {
+	width := face.Width
+	height := face.Ascent
+	mask := face.Mask.(*image.Alpha)
+	fileName := fmt.Sprintf("mask%s.go", newName)
+	fh, err := os.Create(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't create file: %v", err)
+	}
+	defer fh.Close()
+	fmt.Fprintf(fh, "package ledgrid\n\n")
+	fmt.Fprintf(fh, "import (\n")
+	fmt.Fprintf(fh, "    \"image\"\n")
+	fmt.Fprintf(fh, ")\n\n")
+	fmt.Fprintf(fh, "var mask%s = &image.Alpha{\n", newName)
+	fmt.Fprintf(fh, "    Stride: %d,\n", factor*width)
+	fmt.Fprintf(fh, "    Rect:   image.Rectangle{Max: image.Point{%d, %d}},\n",
+		factor*mask.Rect.Max.X, factor*mask.Rect.Max.Y)
+	fmt.Fprintf(fh, "    Pix: []byte{\n")
+	idx := 0
+	for idx < len(mask.Pix) {
+		row := mask.Pix[idx : idx+mask.Stride]
+		for range factor {
+			fmt.Fprintf(fh, "        ")
+			for _, val := range row {
+				for range factor {
+					fmt.Fprintf(fh, "0x%02x, ", val)
+				}
+			}
+			fmt.Fprintf(fh, "\n")
+		}
+		idx += mask.Stride
+		if idx%(height*width) == 0 {
+			fmt.Fprintf(fh, "\n")
+		}
+	}
+	fmt.Fprintf(fh, "    },\n")
+	fmt.Fprintf(fh, "}\n")
 }

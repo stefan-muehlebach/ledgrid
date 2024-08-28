@@ -528,7 +528,7 @@ func (t *Text) Draw(c *Canvas) {
 // 'fixed size' Bitmap-Schriften, die ohne Rastern und Rendern sehr schnell
 // dargestellt werden koennen.
 var (
-	defFixedFontFace = Face3x5
+	defFixedFontFace = Pico3x5
 )
 
 type FixedText struct {
