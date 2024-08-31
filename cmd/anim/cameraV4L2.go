@@ -130,6 +130,6 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
+	draw.CatmullRom.Scale(canv, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
         &draw.Options{DstMask: c.DstMask})
 }

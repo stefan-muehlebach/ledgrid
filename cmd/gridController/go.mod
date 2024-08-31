@@ -1,4 +1,4 @@
-module github.com/stefan-muehlebach/ledgrid/cmd/pixelcontroller
+module github.com/stefan-muehlebach/ledgrid/cmd/gridController
 
 go 1.23.0
 

@@ -1,8 +1,10 @@
 package ledgrid
 
 import (
+	"container/list"
 	"encoding/gob"
 	"image"
+	gocolor "image/color"
 	"log"
 	"math"
 	"os"
@@ -43,10 +45,11 @@ var (
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
 type Canvas struct {
-	ObjList    []CanvasObject
+	ObjList    *list.List
 	BackColor  color.LedColor
 	Rect       image.Rectangle
-	Img        *image.RGBA
+	img        draw.Image
+	fnc        FilterFunc
 	GC         *gg.Context
 	objMutex   *sync.RWMutex
 	paintWatch *Stopwatch
@@ -54,11 +57,16 @@ type Canvas struct {
 
 func NewCanvas(size image.Point) *Canvas {
 	c := &Canvas{}
-	c.ObjList = make([]CanvasObject, 0)
-    c.BackColor = color.Black
+	c.ObjList = list.New()
+	c.BackColor = color.Black
 	c.Rect = image.Rectangle{Max: size}
-	c.Img = image.NewRGBA(c.Rect)
-	c.GC = gg.NewContextForRGBA(c.Img)
+	img := image.NewRGBA(c.Rect)
+	c.img = img
+    c.fnc = nil
+    // c.fnc = func(x, y int) (int, int) {
+		// return (size.X - 1) - x, y
+	// }
+	c.GC = gg.NewContextForRGBA(img)
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
@@ -68,43 +76,112 @@ func (c *Canvas) Close() {
 	c.Purge()
 }
 
+func (c *Canvas) ColorModel() gocolor.Model {
+	return gocolor.RGBAModel
+}
+
 func (c *Canvas) Bounds() image.Rectangle {
 	return c.Rect
+}
+
+func (c *Canvas) At(x, y int) gocolor.Color {
+    if c.fnc != nil {
+        x, y = c.fnc(x, y)
+    }
+	return c.img.At(x, y)
+}
+
+func (c *Canvas) Set(x, y int, col gocolor.Color) {
+	c.img.Set(x, y, col)
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
 func (c *Canvas) Add(objs ...CanvasObject) {
 	c.objMutex.Lock()
-	c.ObjList = append(c.ObjList, objs...)
+	for _, obj := range objs {
+		c.ObjList.PushBack(obj)
+	}
 	c.objMutex.Unlock()
 }
 
 // Loescht alle Objekte von der Zeichenflaeche.
 func (c *Canvas) Purge() {
 	c.objMutex.Lock()
-	c.ObjList = c.ObjList[:0]
+	c.ObjList.Init()
 	c.objMutex.Unlock()
 }
 
-func (c *Canvas) Draw(lg draw.Image) {
+func (c *Canvas) Refresh() {
 	c.paintWatch.Start()
 	c.GC.SetFillColor(c.BackColor)
 	c.GC.Clear()
 	c.objMutex.RLock()
-	for _, obj := range c.ObjList {
+	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
+		obj := ele.Value.(CanvasObject)
 		if obj.IsHidden() {
 			continue
 		}
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-	draw.Draw(lg, lg.Bounds(), c.Img, image.Point{}, draw.Over)
 	c.paintWatch.Stop()
 }
 
 func (c *Canvas) Watch() *Stopwatch {
 	return c.paintWatch
+}
+
+// Erster Versuch eines Filter-Objektes, das vor Canvas geschaltet werden
+// kann. Wird beim Uebertragen der Pixel in das LedGrid-Objekt angewandt.
+type PixelFilter struct {
+	img draw.Image
+	fnc FilterFunc
+	// xMap, yMap [][]int
+}
+
+type FilterFunc func(x, y int) (int, int)
+
+// func flipHorizontal(x, y int) (int, int) {
+
+func NewPixelFilter(imgPtr *draw.Image) *PixelFilter {
+	p := &PixelFilter{}
+	p.img = *imgPtr
+	*imgPtr = p
+	width := p.img.Bounds().Dx()
+	// height := p.img.Bounds().Dy()
+	p.fnc = func(x, y int) (int, int) {
+		return (width - 1) - x, y
+	}
+	// p.xMap = make([][]int, width)
+	// p.yMap = make([][]int, width)
+	// for col := range width {
+	//     p.xMap[col] = make([]int, height)
+	//     p.yMap[col] = make([]int, height)
+	//     for row := range height {
+	//         p.xMap[col][row] = (width-1) - col
+	//         p.yMap[col][row] = (height-1) - row
+	//     }
+	// }
+	return p
+}
+
+func (p *PixelFilter) ColorModel() gocolor.Model {
+	return p.img.ColorModel()
+}
+
+func (p *PixelFilter) Bounds() image.Rectangle {
+	return p.img.Bounds()
+}
+
+func (p *PixelFilter) At(x, y int) gocolor.Color {
+	// x, y = p.xMap[x][y], p.yMap[x][y]
+	x, y = p.fnc(x, y)
+	return p.img.At(x, y)
+}
+
+func (p *PixelFilter) Set(x, y int, c gocolor.Color) {
+	p.img.Set(x, y, c)
 }
 
 // Alle Objekte, die durch den Controller auf dem LED-Grid dargestellt werden
@@ -333,8 +410,8 @@ func NewPixel(pos image.Point, col color.LedColor) *Pixel {
 }
 
 func (p *Pixel) Draw(c *Canvas) {
-	bgColor := color.LedColorModel.Convert(c.Img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
-	c.Img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
+	bgColor := color.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
+	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
 }
 
 // Ein einzelnes Pixel, dessen Bewegungen weicher (smooth) animiert werden
@@ -462,7 +539,7 @@ func (i *ImageList) Draw(c *Canvas) {
 	sx := i.Size.X / float64(i.imgBounds.Dx())
 	sy := i.Size.Y / float64(i.imgBounds.Dy())
 	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
-	draw.BiLinear.Transform(c.Img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
+	draw.BiLinear.Transform(c.img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
 }
 
 func (i *ImageList) Init() {
@@ -570,7 +647,7 @@ func (t *FixedText) updateSize() {
 }
 
 func (t *FixedText) Draw(c *Canvas) {
-	t.drawer.Dst = c.Img
+	t.drawer.Dst = c.img
 	t.drawer.Src = image.NewUniform(t.Color)
 	t.drawer.Dot = t.Pos.Sub(t.dp)
 	t.drawer.DrawString(t.text)

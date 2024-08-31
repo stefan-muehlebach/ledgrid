@@ -1,11 +1,11 @@
 [Unit]
-Description=Slave Daemon for PixelController
+Description=Network Daemon for LEDGrid
 Wants=network-online.target
 After=network-online.target remote-fs.target
 
 [Service]
 User=dietpi
-ExecStart=/usr/local/sbin/pixelcontroller -missing 63 -defect 160,299
+ExecStart=/usr/local/sbin/gridController
 KillSignal=INT
 
 [Install]

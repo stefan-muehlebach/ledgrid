@@ -65,8 +65,8 @@ func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	p := &GradientPalette{}
 	p.NameableEmbed.Init(name)
 	p.stops = []ColorStop{
-		{0.0, ledcolor.NewLedColor(0x000000)},
-		{1.0, ledcolor.NewLedColor(0xFFFFFF)},
+		{0.0, ledcolor.NewLedColorHex(0x000000)},
+		{1.0, ledcolor.NewLedColorHex(0xFFFFFF)},
 	}
 	for _, cs := range cl {
 		p.SetColorStop(cs)

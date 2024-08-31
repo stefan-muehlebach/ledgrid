@@ -3,6 +3,7 @@ package ledgrid
 import (
 	"encoding/gob"
 	"image"
+	"image/draw"
 	"log"
 	"math"
 	"math/rand/v2"
@@ -71,9 +72,6 @@ func AnimationEaseInOutNew(t float64) float64 {
 // Funktionstypen fuer einen bestimmten Datentyp, der in den Animationen
 // verwendet wird und dessen dynamische Berechnung Sinn macht.
 type PaletteFuncType func() ColorSource
-type ColorFuncType func() color.LedColor
-type PointFuncType func() geom.Point
-type FloatFuncType func() float64
 type AlphaFuncType func() uint8
 
 var (
@@ -278,7 +276,6 @@ func (a *AnimationController) backgroundThread() {
 	var wg sync.WaitGroup
 
 	startChan := make(chan int)
-	// doneChan := make(chan bool)
 
 	for range a.numThreads {
 		go a.animationUpdater(startChan, &wg)
@@ -296,15 +293,12 @@ func (a *AnimationController) backgroundThread() {
 			startChan <- id
 		}
 		wg.Wait()
-		// for range a.numThreads {
-		// 	<-doneChan
-		// }
 		a.animWatch.Stop()
 
-		a.Canvas.Draw(a.ledGrid)
+		a.Canvas.Refresh()
+		draw.Draw(a.ledGrid, a.ledGrid.Bounds(), a.Canvas, image.Point{}, draw.Over)
 		a.pixClient.Send(a.ledGrid)
 	}
-	// close(doneChan)
 	close(startChan)
 }
 
@@ -373,22 +367,22 @@ func (a *AnimationController) Now() time.Time {
 // Status ('laeuft'/'laeuft nicht') kann noch ermittelt werden.
 type Task interface {
 	Start()
-	IsRunning() bool
 }
 
 // Ein Job besitzt alle Eigenschaften und Moeglichkeiten eines Tasks, bietet
 // jedoch zusaetzlich die Moeglichkeit, von aussen bewusst gestoppt zu werden.
-// type Job interface {
-// 	Task
-// 	Stop()
-// }
+type Job interface {
+	Task
+	IsRunning() bool
+	// Stop()
+}
 
 // Animationen schliesslich sind Jobs, koennen also gestoppt und gestartet
 // werden, haben jedoch zusaetzlich klare Laufzeiten und werden periodisch
 // durch den AnimationController aufgerufen, damit sie ihren Animations-Kram
 // erledigen koennen. Man kann sie ausserdem Suspendieren und Fortsetzen.
 type Animation interface {
-	Task
+	Job
 	Duration() time.Duration
 	SetDuration(dur time.Duration)
 	Suspend()
@@ -441,7 +435,7 @@ func init() {
 	gob.Register(&BackgroundTask{})
 	gob.Register(&HideShowAnimation{})
 	// gob.Register(&StartStopAnimation{})
-	gob.Register(&AlphaAnimation{})
+	gob.Register(&Uint8Animation{})
 	gob.Register(&ColorAnimation{})
 	gob.Register(&PaletteAnimation{})
 	gob.Register(&PaletteFadeAnimation{})
@@ -535,8 +529,10 @@ func (a *Group) IsRunning() bool {
 
 func (a *Group) Update(t time.Time) bool {
 	for _, task := range a.Tasks {
-		if task.IsRunning() {
-			return true
+		if job, ok := task.(Job); ok {
+			if job.IsRunning() {
+				return true
+			}
 		}
 	}
 	if t.After(a.end) {
@@ -633,8 +629,10 @@ func (a *Sequence) IsRunning() bool {
 // dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
 func (a *Sequence) Update(t time.Time) bool {
 	if a.currTask < len(a.Tasks) {
-		if a.Tasks[a.currTask].IsRunning() {
-			return true
+		if job, ok := a.Tasks[a.currTask].(Job); ok {
+			if job.IsRunning() {
+				return true
+			}
 		}
 		a.currTask++
 	}
@@ -984,40 +982,50 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 // Will man allerdings nur die Durchsichtigkeit (den Alpha-Wert) einer Farbe
 // veraendern und kennt beispielsweise die Farbe selber gar nicht, dann ist
 // die AlphaAnimation genau das Richtige.
-type AlphaAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *uint8
-	Val1, Val2 uint8
-	ValFunc    AlphaFuncType
-	Cont       bool
-}
+// type AlphaAnimation struct {
+// 	NormAnimationEmbed
+// 	ValPtr     *uint8
+// 	Val1, Val2 uint8
+// 	ValFunc    AlphaFuncType
+// 	Cont       bool
+// }
 
-func NewAlphaAnimation(valPtr *uint8, val2 uint8, dur time.Duration) *AlphaAnimation {
-	a := &AlphaAnimation{ValPtr: valPtr, Val1: *valPtr, Val2: val2}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	return a
-}
+// func NewAlphaAnimation(valPtr *uint8, val2 uint8, dur time.Duration) *AlphaAnimation {
+// 	a := &AlphaAnimation{ValPtr: valPtr, Val1: *valPtr, Val2: val2}
+// 	a.NormAnimationEmbed.Extend(a)
+// 	a.SetDuration(dur)
+// 	return a
+// }
 
-func (a *AlphaAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-	if a.ValFunc != nil {
-		a.Val2 = a.ValFunc()
-	}
-}
+// func (a *AlphaAnimation) Init() {
+// 	if a.Cont {
+// 		a.Val1 = *a.ValPtr
+// 	}
+// 	if a.ValFunc != nil {
+// 		a.Val2 = a.ValFunc()
+// 	}
+// }
 
-func (a *AlphaAnimation) Tick(t float64) {
-	*a.ValPtr = uint8((1.0-t)*float64(a.Val1) + t*float64(a.Val2))
-}
+// func (a *AlphaAnimation) Tick(t float64) {
+// 	*a.ValPtr = uint8((1.0-t)*float64(a.Val1) + t*float64(a.Val2))
+// }
 
 type Uint8FuncType func() uint8
+type FloatFuncType func() float64
+type ColorFuncType func() color.LedColor
+type PointFuncType func() geom.Point
 
-func Uint8Const(v uint8) Uint8FuncType {
-    return func() uint8 {
-        return v
-    }
+func ConstUint8(v uint8) Uint8FuncType {
+	return func() uint8 { return v }
+}
+func ConstFloat(v float64) FloatFuncType {
+	return func() float64 { return v }
+}
+func ConstColor(v color.LedColor) ColorFuncType {
+	return func() color.LedColor { return v }
+}
+func ConstPoint(v geom.Point) PointFuncType {
+	return func() geom.Point { return v }
 }
 
 type Uint8Animation struct {
@@ -1028,36 +1036,69 @@ type Uint8Animation struct {
 	Cont       bool
 }
 
-func NewUint8Animation(valPtr *uint8, val2 Uint8FuncType, dur time.Duration) *Uint8Animation {
-    a := &Uint8Animation{ValPtr: valPtr, Val1: Uint8Const(*valPtr), Val2: val2}
-    a.NormAnimationEmbed.Extend(a)
-    a.SetDuration(dur)
-    return a
+func NewUint8Animation(valPtr *uint8, val2 uint8, dur time.Duration) *Uint8Animation {
+	a := &Uint8Animation{ValPtr: valPtr, Val1: ConstUint8(*valPtr), Val2: ConstUint8(val2)}
+	a.NormAnimationEmbed.Extend(a)
+	a.SetDuration(dur)
+	return a
 }
 
 func (a *Uint8Animation) Init() {
-    if a.Cont {
-        a.Val1 = Uint8Const(*a.ValPtr)
-    }
-    a.val1 = a.Val1()
-    a.val2 = a.Val2()
+	if a.Cont {
+		a.Val1 = ConstUint8(*a.ValPtr)
+	}
+	a.val1 = a.Val1()
+	a.val2 = a.Val2()
 }
 
 func (a *Uint8Animation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
 }
 
+// Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
+// werden (geom.Point), ist die Animation einer Groesse und einer Position
+// im Wesentlichen das gleiche. Die Funktion NewSizeAnimation ist als
+// syntaktische Vereinfachung zu verstehen.
+
+// Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen.
+type FloatAnimation struct {
+	NormAnimationEmbed
+	ValPtr     *float64
+	val1, val2 float64
+	Val1, Val2 FloatFuncType
+	Cont       bool
+}
+
+func NewFloatAnimation(valPtr *float64, val2 float64, dur time.Duration) *FloatAnimation {
+	a := &FloatAnimation{ValPtr: valPtr, Val1: ConstFloat(*valPtr), Val2: ConstFloat(val2)}
+	a.NormAnimationEmbed.Extend(a)
+	a.SetDuration(dur)
+	return a
+}
+
+func (a *FloatAnimation) Init() {
+	if a.Cont {
+		a.Val1 = ConstFloat(*a.ValPtr)
+	}
+	a.val1 = a.Val1()
+	a.val2 = a.Val2()
+}
+
+func (a *FloatAnimation) Tick(t float64) {
+	*a.ValPtr = (1-t)*a.val1 + t*a.val2
+}
+
 // Animation fuer einen Verlauf zwischen zwei Farben.
 type ColorAnimation struct {
 	NormAnimationEmbed
 	ValPtr     *color.LedColor
-	Val1, Val2 color.LedColor
-	ValFunc    ColorFuncType
+	val1, val2 color.LedColor
+	Val1, Val2 ColorFuncType
 	Cont       bool
 }
 
 func NewColorAnimation(valPtr *color.LedColor, val2 color.LedColor, dur time.Duration) *ColorAnimation {
-	a := &ColorAnimation{ValPtr: valPtr, Val1: *valPtr, Val2: val2}
+	a := &ColorAnimation{ValPtr: valPtr, Val1: ConstColor(*valPtr), Val2: ConstColor(val2)}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	return a
@@ -1065,16 +1106,15 @@ func NewColorAnimation(valPtr *color.LedColor, val2 color.LedColor, dur time.Dur
 
 func (a *ColorAnimation) Init() {
 	if a.Cont {
-		a.Val1 = *a.ValPtr
+		a.Val1 = ConstColor(*a.ValPtr)
 	}
-	if a.ValFunc != nil {
-		a.Val2 = a.ValFunc()
-	}
+	a.val1 = a.Val1()
+	a.val2 = a.Val2()
 }
 
 func (a *ColorAnimation) Tick(t float64) {
 	alpha := (*a.ValPtr).A
-	*a.ValPtr = a.Val1.Interpolate(a.Val2, t)
+	*a.ValPtr = a.val1.Interpolate(a.val2, t)
 	(*a.ValPtr).A = alpha
 }
 
@@ -1137,120 +1177,64 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 	}
 }
 
-// Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
-// werden (geom.Point), ist die Animation einer Groesse und einer Position
-// im Wesentlichen das gleiche. Die Funktion NewSizeAnimation ist als
-// syntaktische Vereinfachung zu verstehen.
-
-// Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen.
-type FloatAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *float64
-	Val1, Val2 float64
-	ValFunc    FloatFuncType
-	Cont       bool
-}
-
-func NewFloatAnimation(valPtr *float64, val2 float64, dur time.Duration) *FloatAnimation {
-	a := &FloatAnimation{}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
-
-func (a *FloatAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-	if a.ValFunc != nil {
-		a.Val2 = a.ValFunc()
-	}
-}
-
-func (a *FloatAnimation) Tick(t float64) {
-	*a.ValPtr = (1-t)*a.Val1 + t*a.Val2
-}
-
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnimation struct {
 	NormAnimationEmbed
 	ValPtr     *geom.Point
-	Val1, Val2 geom.Point
-	Size       geom.Point
-	ValFunc    PointFuncType
+	val1, val2 geom.Point
+	Val1, Val2 PointFuncType
 	PathFunc   PathFunctionType
 	Cont       bool
 }
 
 func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{}
+	a := &PathAnimation{ValPtr: valPtr, Val1: ConstPoint(*valPtr), PathFunc: pathFunc}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Size = size
-	a.PathFunc = pathFunc
+	a.Val2 = func() geom.Point {
+		return a.Val1().Add(size)
+	}
 	return a
 }
 
 func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{}
+	a := &PathAnimation{ValPtr: valPtr, Val1: ConstPoint(*valPtr), Val2: ConstPoint(val2), PathFunc: LinearPath}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	a.PathFunc = LinearPath
 	return a
 }
 
-var (
-	NewSizeAnimation = NewPositionAnimation
-)
+func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
+    return NewPositionAnimation(valPtr, val2, dur)
+}
 
 func (a *PathAnimation) Init() {
 	if a.Cont {
-		a.Val1 = *a.ValPtr
+		a.Val1 = ConstPoint(*a.ValPtr)
 	}
-	if a.ValFunc != nil {
-		if !a.Size.Eq(geom.Point{}) {
-			a.Size = a.ValFunc()
-		} else {
-			a.Val2 = a.ValFunc()
-		}
-	}
+	a.val1 = a.Val1()
+	a.val2 = a.Val2()
 }
 
 func (a *PathAnimation) Tick(t float64) {
 	var dp geom.Point
 	var s geom.Point
 
-	if !a.Size.Eq(geom.Point{}) {
-		dp = a.PathFunc(t)
-		s = a.Size
-	} else {
-		dp = a.PathFunc(t)
-		s = a.Val2.Sub(a.Val1)
-	}
+	dp = a.PathFunc(t)
+	s = a.val2.Sub(a.val1)
 	dp.X *= s.X
 	dp.Y *= s.Y
-	*a.ValPtr = a.Val1.Add(dp)
+	*a.ValPtr = a.val1.Add(dp)
 }
 
 //----------------------------------------------------------------------------
 
 func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{}
+	a := &PathAnimation{ValPtr: valPtr, Val1: ConstPoint(*valPtr),
+		Val2: ConstPoint((*valPtr).AddXY(1, 1)), PathFunc: polyPath.RelPoint}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Size = geom.Point{1, 1}
-	a.PathFunc = polyPath.RelPoint
 	return a
 }
 

@@ -7,8 +7,8 @@ fi
 
 DST_DIR=/usr/local/sbin
 
-systemctl stop pixelcontroller
-cp pixelcontroller $DST_DIR
-systemctl start pixelcontroller
+systemctl stop grid-controller
+cp gridController $DST_DIR
+systemctl start grid-controller
 
 

@@ -17,7 +17,7 @@ func RandColor() LedColor {
 func RandGroupColor(group ColorGroup) LedColor {
 	nameList, ok := Groups[group]
 	if !ok {
-		return LedColor{0, 0, 0, 1}
+		return NewLedColorRGB(0, 0, 0)
 	}
 	name := nameList[rand.IntN(len(nameList))]
 	return Map[name]

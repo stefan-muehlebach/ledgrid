@@ -1,4 +1,4 @@
-module github.com/stefan-muehlebach/ledgrid/cmd/pixelemulator
+module github.com/stefan-muehlebach/ledgrid/cmd/gridEmulator
 
 go 1.23.0
 

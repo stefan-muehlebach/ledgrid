@@ -31,6 +31,7 @@ var (
 	// animCtrl      *ledgrid.AnimationController
 	ledGrid *ledgrid.LedGrid
 	canvas  *ledgrid.Canvas
+    pixFilter *ledgrid.PixelFilter
 )
 
 //----------------------------------------------------------------------------
@@ -349,12 +350,12 @@ var (
 
 			aPos1 := ledgrid.NewPositionAnimation(&c1.Pos, geom.Point{}, 1300*time.Millisecond)
 			aPos1.Cont = true
-			aPos1.ValFunc = ledgrid.RandPointTrunc(rect, 1.0)
+			aPos1.Val2 = ledgrid.RandPointTrunc(rect, 1.0)
 			aPos1.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aPos2 := ledgrid.NewPositionAnimation(&c2.Pos, geom.Point{}, 901*time.Millisecond)
 			aPos2.Cont = true
-			aPos2.ValFunc = ledgrid.RandPoint(rect)
+			aPos2.Val2 = ledgrid.RandPoint(rect)
 			aPos2.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aPos1.Start()
@@ -797,8 +798,8 @@ var (
 
 	BlinkenAnimation = NewLedGridProgram("Blinken animation",
 		func(c *ledgrid.Canvas) {
-			posFlame1 := geom.Point{3.0, float64(height) - 4.0}
-			posFlame2 := geom.Point{float64(width) - 3.0, float64(height) - 4.0}
+			posFlame1 := geom.Point{4.5, float64(height) - 4.5}
+			posFlame2 := geom.Point{float64(width) - 4.5, float64(height) - 4.5}
 			pos1Mario := geom.Point{10.0, float64(height) / 2.0}
 			pos2Mario := geom.Point{float64(width) - 10.0, float64(height) / 2.0}
 
@@ -820,7 +821,7 @@ var (
 			mario := ledgrid.NewImageList(pos1Mario)
 			mario.AddBlinkenLight(bmlMario)
 			mario.RepeatCount = ledgrid.AnimationRepeatForever
-			// mario.Size = geom.Point{10.0, 10.0}
+			mario.Size = geom.Point{10.0, 10.0}
 
 			aPos := ledgrid.NewPositionAnimation(&mario.Pos, pos2Mario, 4*time.Second)
 			aPos.Curve = ledgrid.AnimationLinear
@@ -906,7 +907,7 @@ var (
 					c.Add(pix)
 
 					dur := time.Second + time.Duration(x)*time.Millisecond
-					aAlpha := ledgrid.NewUint8Animation(&pix.Color.A, ledgrid.Uint8Const(196), dur)
+					aAlpha := ledgrid.NewUint8Animation(&pix.Color.A, 196, dur)
 					aAlpha.AutoReverse = true
 					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 					aAlpha.Start()
@@ -930,13 +931,13 @@ var (
 			}
 
 			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
-			aTxt1 := ledgrid.NewAlphaAnimation(&txt1.Color.A, 255, 2*time.Second)
+			aTxt1 := ledgrid.NewUint8Animation(&txt1.Color.A, 255, 2*time.Second)
 			aTxt1.AutoReverse = true
 			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
-			aTxt2 := ledgrid.NewAlphaAnimation(&txt2.Color.A, 255, 2*time.Second)
+			aTxt2 := ledgrid.NewUint8Animation(&txt2.Color.A, 255, 2*time.Second)
 			aTxt2.AutoReverse = true
 			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
-			aTxt3 := ledgrid.NewAlphaAnimation(&txt3.Color.A, 255, 2*time.Second)
+			aTxt3 := ledgrid.NewUint8Animation(&txt3.Color.A, 255, 2*time.Second)
 			aTxt3.AutoReverse = true
 			c.Add(txt1, txt2, txt3)
 
@@ -1032,9 +1033,6 @@ var (
 		func(c *ledgrid.Canvas) {
 
 		})
-
-
-
 )
 
 //----------------------------------------------------------------------------
@@ -1160,6 +1158,7 @@ func main() {
 	}
 
 	canvas = ledgrid.NewCanvas(gridSize)
+    // pixFilter = ledgrid.NewPixelFilter(&canvas.Img)
 	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
 	pixClient := ledgrid.NewNetPixelClient(host, port)
 
@@ -1223,11 +1222,15 @@ func main() {
 				ledgrid.AnimCtrl.Load("gobs/program01.gob")
 				ledgrid.AnimCtrl.Continue()
 				// fmt.Printf("canvas  >>> %+v\n", canvas)
-				for i, obj := range canvas.ObjList {
+				// for i, obj := range canvas.ObjList {
+				i := 0
+				for ele := canvas.ObjList.Front(); ele != nil; ele = ele.Next() {
+					obj := ele.Value.(ledgrid.CanvasObject)
 					if obj == nil {
 						continue
 					}
 					fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
+					i++
 				}
 				// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
 				for i, anim := range ledgrid.AnimCtrl.AnimList {
