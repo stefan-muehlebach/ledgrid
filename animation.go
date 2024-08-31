@@ -27,7 +27,7 @@ var (
 // fuer die Anzahl Wiederholungen verwendet werden.
 const (
 	AnimationRepeatForever = -1
-	refreshRate            = 20 * time.Millisecond
+	refreshRate            = 30 * time.Millisecond
 )
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation

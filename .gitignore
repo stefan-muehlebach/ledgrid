@@ -12,3 +12,5 @@ cmd/paletteGui/paletteGui
 old/
 old_20240815/
 *.swp
+*.*_save
+*.*_old
