@@ -821,24 +821,24 @@ func (a *HideShowAnimation) IsRunning() bool {
 // Analog zu HideShowAnimation dient SuspContAnimation dazu, die Eigenschaft
 // IsRunning von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
 // Animation wechselt die Eigenschaft (Stopped -> Started -> Stopped -> etc.)
-// type SuspContAnimation struct {
-// 	anim Animation
-// }
+type SuspContAnimation struct {
+	anim Animation
+}
 
-// func NewSuspContAnimation(anim Animation) *SuspContAnimation {
-// 	a := &SuspContAnimation{anim: anim}
-// 	return a
-// }
-// func (a *SuspContAnimation) Start() {
-// 	if a.anim.IsRunning() {
-// 		a.anim.Suspend()
-// 	} else {
-// 		a.anim.Continue()
-// 	}
-// }
-// func (a *SuspContAnimation) IsRunning() bool {
-// 	return false
-// }
+func NewSuspContAnimation(anim Animation) *SuspContAnimation {
+	a := &SuspContAnimation{anim: anim}
+	return a
+}
+func (a *SuspContAnimation) Start() {
+	if a.anim.IsRunning() {
+		a.anim.Suspend()
+	} else {
+		a.anim.Continue()
+	}
+}
+func (a *SuspContAnimation) IsRunning() bool {
+	return false
+}
 
 // Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
 // Erleichert das Erstellen von neuen Animationen gewaltig.

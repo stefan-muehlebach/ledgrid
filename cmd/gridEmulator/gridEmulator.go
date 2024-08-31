@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/stefan-muehlebach/ledgrid"
 
@@ -53,19 +52,31 @@ var (
 
 func SignalHandler(pixelServer *ledgrid.PixelServer) {
 	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+	signal.Notify(sigChan, os.Interrupt)
 	for sig := range sigChan {
 		switch sig {
 		case os.Interrupt:
 			pixelServer.Close()
 			return
-		case syscall.SIGHUP:
-			PrintStatistics(pixelServer)
-		case syscall.SIGUSR1:
-			ToggleTests(pixelServer)
 		}
 	}
 }
+
+// func SignalHandler(pixelServer *ledgrid.PixelServer) {
+// 	sigChan := make(chan os.Signal)
+// 	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+// 	for sig := range sigChan {
+// 		switch sig {
+// 		case os.Interrupt:
+// 			pixelServer.Close()
+// 			return
+// 		case syscall.SIGHUP:
+// 			PrintStatistics(pixelServer)
+// 		case syscall.SIGUSR1:
+// 			ToggleTests(pixelServer)
+// 		}
+// 	}
+// }
 
 func PrintStatistics(pixelServer *ledgrid.PixelServer) {
 	log.Printf("Server Statistics:")
@@ -127,10 +138,10 @@ func main() {
 			fmt.Printf("  t   Start test pattern, press 't' again to stop\n")
 			fmt.Printf("  q   Quit the program\n")
 			fmt.Printf(" ESC  Same as 'q'\n")
-        case fyne.KeyS:
-            PrintStatistics(pixelServer)
-        case fyne.KeyT:
-            ToggleTests(pixelServer)
+		case fyne.KeyS:
+			PrintStatistics(pixelServer)
+		case fyne.KeyT:
+			ToggleTests(pixelServer)
 		}
 	})
 

@@ -29,9 +29,9 @@ var (
 	gridSize      image.Point
 	backAlpha     = 1.0
 	// animCtrl      *ledgrid.AnimationController
-	ledGrid *ledgrid.LedGrid
-	canvas  *ledgrid.Canvas
-    pixFilter *ledgrid.PixelFilter
+	ledGrid   *ledgrid.LedGrid
+	canvas    *ledgrid.Canvas
+	pixFilter *ledgrid.PixelFilter
 )
 
 //----------------------------------------------------------------------------
@@ -84,18 +84,6 @@ var (
 			aGroup.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aGroup.Start()
-
-			// time.Sleep(5 * time.Second)
-			// fmt.Printf("%[1]T %+[1]v\n", ledgrid.AnimCtrl)
-			// for i, anim := range ledgrid.AnimCtrl.AnimList {
-			// 	fmt.Printf("  [%d] %[2]T %+[2]v\n", i, anim)
-			// 	if group, ok := anim.(*ledgrid.Group); ok {
-			// 		for j, task := range group.Tasks {
-			// 			fmt.Printf("    [%d] %[2]T %+[2]v\n", j, task)
-			// 		}
-			// 	}
-			// }
-			// fmt.Printf("%+v\n", c)
 		})
 
 	SequenceTest = NewLedGridProgram("Sequence test",
@@ -202,12 +190,12 @@ var (
 			tl.Start()
 		})
 
-	StopContShowHideTest = NewLedGridProgram("Stop/Continue, Show/Hide test",
+	StopContShowHideTest = NewLedGridProgram("Hide/Show vs. Suspend/Continue by Tasks",
 		func(c *ledgrid.Canvas) {
 			rPos1 := geom.Point{5.0, float64(height) / 2.0}
 			rPos2 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
 			rSize1 := geom.Point{7.0, 7.0}
-			rSize2 := geom.Point{1.0, 1.0}
+			rSize2 := geom.Point{6.0, 6.0}
 			rColor1 := color.SkyBlue
 			rColor2 := color.GreenYellow
 
@@ -216,35 +204,30 @@ var (
 
 			aPos := ledgrid.NewPositionAnimation(&r.Pos, rPos2, 4*time.Second)
 			aPos.AutoReverse = true
+			aPos.RepeatCount = ledgrid.AnimationRepeatForever
 			aSize := ledgrid.NewSizeAnimation(&r.Size, rSize2, 4*time.Second)
 			aSize.AutoReverse = true
+			aSize.RepeatCount = ledgrid.AnimationRepeatForever
 			aColor := ledgrid.NewColorAnimation(&r.BorderColor, rColor2, 4*time.Second)
 			aColor.AutoReverse = true
+			aColor.RepeatCount = ledgrid.AnimationRepeatForever
 			aAngle := ledgrid.NewFloatAnimation(&r.Angle, math.Pi, 4*time.Second)
 			aAngle.AutoReverse = true
+			aAngle.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
-			aGroup.RepeatCount = ledgrid.AnimationRepeatForever
-
-			// aShowHide := ledgrid.NewShowHideAnimation(r)
-			// aOnOffPos := ledgrid.NewStartStopAnimation(aPos)
-			// aOnOffAngle := ledgrid.NewStopContAnimation(aAngle)
 
 			aTimeline := ledgrid.NewTimeline(4 * time.Second)
-			// aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
-
-			// aTimeline.Add(1000*time.Millisecond, aOnOffPos)
-			// aTimeline.Add(3000*time.Millisecond, aOnOffPos)
-
-			// aTimeline.Add(500*time.Millisecond, aOnOffPos)
-			// aTimeline.Add(1500*time.Millisecond, aOnOffPos)
-			// aTimeline.Add(3500*time.Millisecond, aShowHide)
-			// aTimeline.Add(3800*time.Millisecond, aShowHide)
-
-			aGroup.Add(aTimeline)
+			aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
+			aTimeline.Add(1000*time.Millisecond, ledgrid.NewSuspContAnimation(aColor))
+			aTimeline.Add(1500*time.Millisecond, ledgrid.NewSuspContAnimation(aColor))
+			aTimeline.Add(2500*time.Millisecond, ledgrid.NewSuspContAnimation(aAngle))
+			aTimeline.Add(3000*time.Millisecond, ledgrid.NewSuspContAnimation(aAngle))
+			aTimeline.Add(1900*time.Millisecond, ledgrid.NewHideShowAnimation(r))
+			aTimeline.Add(2100*time.Millisecond, ledgrid.NewHideShowAnimation(r))
 
 			aGroup.Start()
-			// aTimeline.Start()
+			aTimeline.Start()
 		})
 
 	PathTest = NewLedGridProgram("Path test",
@@ -989,11 +972,19 @@ var (
 	ShowTheShader = NewLedGridProgram("Show the shader!",
 		func(c *ledgrid.Canvas) {
 			var xMin, yMax float64
+			var txt *ledgrid.FixedText
+			var palId int
 
 			pal := ledgrid.PaletteMap["Hipster"]
 			fader := ledgrid.NewPaletteFader(pal)
 			aPal := ledgrid.NewPaletteFadeAnimation(fader, pal, 2*time.Second)
-			aPal.ValFunc = ledgrid.SeqPalette()
+			aPal.ValFunc = func() ledgrid.ColorSource {
+				name := ledgrid.PaletteNames[palId]
+				palId = (palId + 1) % len(ledgrid.PaletteNames)
+				txt.SetText(name)
+				// log.Printf(">>> %s", name)
+				return ledgrid.PaletteMap[name]
+			}
 
 			aPalTl := ledgrid.NewTimeline(10 * time.Second)
 			aPalTl.Add(7*time.Second, aPal)
@@ -1025,6 +1016,8 @@ var (
 				}
 				y -= dPix
 			}
+			txt = ledgrid.NewFixedText(fixed.P(1, height-1), color.YellowGreen, "Hipster")
+			c.Add(txt)
 			aPalTl.Start()
 			aGrp.Start()
 		})
@@ -1158,7 +1151,7 @@ func main() {
 	}
 
 	canvas = ledgrid.NewCanvas(gridSize)
-    // pixFilter = ledgrid.NewPixelFilter(&canvas.Img)
+	// pixFilter = ledgrid.NewPixelFilter(&canvas.Img)
 	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
 	pixClient := ledgrid.NewNetPixelClient(host, port)
 

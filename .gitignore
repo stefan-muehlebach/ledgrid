@@ -6,8 +6,8 @@ cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
 cmd/colorEdit/ledgrid.png
 cmd/gui/gui
-cmd/pixelcontroller/pixelcontroller
-cmd/pixelemulator/pixelemulator
+cmd/gridController/gridController
+cmd/gridEmulator/gridEmulator
 cmd/paletteGui/paletteGui
 old/
 old_20240815/

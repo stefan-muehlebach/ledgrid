@@ -649,6 +649,7 @@ func (t *FixedText) updateSize() {
 func (t *FixedText) Draw(c *Canvas) {
 	t.drawer.Dst = c.img
 	t.drawer.Src = image.NewUniform(t.Color)
-	t.drawer.Dot = t.Pos.Sub(t.dp)
+	t.drawer.Dot = t.Pos
+	// t.drawer.Dot = t.Pos.Sub(t.dp)
 	t.drawer.DrawString(t.text)
 }
