@@ -1,4 +1,4 @@
-package ledgrid
+package conf
 
 import (
 	"image"

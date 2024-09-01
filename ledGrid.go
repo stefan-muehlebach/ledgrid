@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"github.com/stefan-muehlebach/ledgrid/conf"
 	"image"
 	"image/color"
     ledcolor "github.com/stefan-muehlebach/ledgrid/color"
@@ -19,21 +20,21 @@ type LedGrid struct {
 	Pix []uint8
 	// Mit dieser Struktur (slice of slices) werden Pixel-Koordinaten in
 	// Indizes uebersetzt.
-	idxMap IndexMap
+	idxMap conf.IndexMap
 }
 
 // Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
 // Panels. Wird bei modConf nil uebergeben, so wird eine Default-Konfiguration
 // der Module angenommen, welche bei DefaultModuleConfig naeher beschrieben
 // wird.
-func NewLedGrid(size image.Point, modConf ModuleConfig) *LedGrid {
+func NewLedGrid(size image.Point, modConf conf.ModuleConfig) *LedGrid {
 	g := &LedGrid{}
 	g.Rect = image.Rectangle{Max: size}
 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
 
 	// Autom. Formatwahl
 	if modConf == nil {
-		modConf = DefaultModuleConfig(g.Rect.Size())
+		modConf = conf.DefaultModuleConfig(g.Rect.Size())
 	}
 
 	g.idxMap = modConf.IndexMap()

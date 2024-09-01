@@ -17,5 +17,5 @@ const (
 	camWidth      = 640
 	camHeight     = 480
 	camFrameRate  = 30
-	camBufferSize = 4
+	camBufferSize = 1
 )

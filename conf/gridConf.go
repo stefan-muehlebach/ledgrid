@@ -1,4 +1,4 @@
-package ledgrid
+package conf
 
 import (
 	"errors"
@@ -230,7 +230,7 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 	return conf
 }
 
-// Fuegt der Modul-Konfiguration hinter c ein weiteres Modul hinzu und (falls
+// Fuegt der Modul-Konfiguration hinter conf ein weiteres Modul hinzu und (falls
 // erfolgreich) retourniert die neue Modul-Konfiguration. Falls ein Fehler
 // erkannt wird, wird die alte Modul-Konfiguration retourniert und der zweite
 // Rueckgabewert beschreibt die Art des Fehlers.
@@ -261,14 +261,18 @@ func (conf ModuleConfig) Size() image.Point {
 	return size
 }
 
-// Mit dieser Struktur wird die Koordinate einer LED auf dem Panel auf den
-// Index dieser LED innerhalb der Lichterkette gemappt.
+// Mit diesem Typ koennen die Koordinaten der Pixel auf dem LEDGrid auf
+// Indizes innerhalb der Lichterkette gemappt werden.
 type IndexMap [][]int
 
+// Mit dem Typ CoordMap koennen Indizes der Lichterkette auf Koordinaten
+// auf dem LEDGrid gemapped werden.
 type CoordMap []image.Point
 
-// Erstellt ein Feld (Slice of slice) fuer die direkte Uebersetzung von
-// Pixel-Koordinaten zur Position (Index) innerhalb der Lichterkette.
+// Erstellt ein Feld (Slice of Slices) fuer die direkte Uebersetzung von
+// Pixel-Koordinaten zum Index innerhalb der Lichterkette. Das Feld ist
+// Spalten-orientiert, damit ist die Verwendung der Koordinaten vergleichbar
+// mit anderen Graphik-Funktionen.
 func (conf ModuleConfig) IndexMap() IndexMap {
 	var idxMap IndexMap
 
@@ -286,6 +290,9 @@ func (conf ModuleConfig) IndexMap() IndexMap {
 	return idxMap
 }
 
+// Mit dieser Methode kann ausgehend von einem IndexMap der entsprechende
+// CoordMap erstellt werden.
+// TO DO: waere besser eine Methode von ModuleConfig.
 func (idxMap IndexMap) CoordMap() CoordMap {
 	coordMap := make([]image.Point, len(idxMap)*len(idxMap[0]))
 	for col, idxColumn := range idxMap {
@@ -294,6 +301,128 @@ func (idxMap IndexMap) CoordMap() CoordMap {
 		}
 	}
 	return coordMap
+}
+
+// Diese Methode ergaenzt den Slice idxMap um die Koordinaten und Indizes des
+// Modules m. basePt sind die Pixel-Koordinaten der linken oberen Ecke des
+// Moduls und baseIdx ist der Index der ersten LED des Moduls.
+// Der Rueckgabewert ist der Index der ersten LED des nachfolgenden Moduls.
+func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
+	var idx int
+
+	switch m.Type {
+	case ModLR:
+		switch m.Rot {
+		case Rot000:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if col%2 == 0 {
+						idx = (col * ModuleSize.Y) + row
+					} else {
+						idx = (col * ModuleSize.Y) + (ModuleSize.Y - row - 1)
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot090:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + (ModuleSize.Y - col - 1)
+					} else {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + col
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot180:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if col%2 == 0 {
+						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + row
+					} else {
+						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + (ModuleSize.Y - row - 1)
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot270:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = (row * ModuleSize.Y) + (ModuleSize.Y - col - 1)
+					} else {
+						idx = (row * ModuleSize.Y) + col
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		}
+	case ModRL:
+		switch m.Rot {
+		case Rot000:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if col%2 == 0 {
+						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + (ModuleSize.Y - row - 1)
+					} else {
+						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + row
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot090:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = (row * ModuleSize.Y) + col
+					} else {
+						idx = (row * ModuleSize.Y) + (ModuleSize.X - col - 1)
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot180:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if col%2 == 0 {
+						idx = (col * ModuleSize.Y) + (ModuleSize.Y - row - 1)
+					} else {
+						idx = (col * ModuleSize.Y) + row
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		case Rot270:
+			for row := range ModuleSize.Y {
+				y := basePt.Y + row
+				for col := range ModuleSize.X {
+					x := basePt.X + col
+					if row%2 == 0 {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + col
+					} else {
+						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + (ModuleSize.X - col - 1)
+					}
+					idxMap[x][y] = baseIdx + 3*idx
+				}
+			}
+		}
+	}
+	return baseIdx + 3*ModuleSize.X*ModuleSize.Y
 }
 
 // Fuer die graphische Ausgabe des Verkabelungsplanes werden viele Konstanten
@@ -607,124 +736,3 @@ func abs[T ~int | ~float64](i T) T {
 	}
 }
 
-// Diese Methode ergaenzt den Slice idxMap um die Koordinaten und Indizes des
-// Modules m. basePt sind die Pixel-Koordinaten der linken oberen Ecke des
-// Moduls und baseIdx ist der Index der ersten LED des Moduls.
-// Der Rueckgabewert ist der Index der ersten LED des nachfolgenden Moduls.
-func (idxMap IndexMap) Append(m Module, basePt image.Point, baseIdx int) int {
-	var idx int
-
-	switch m.Type {
-	case ModLR:
-		switch m.Rot {
-		case Rot000:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if col%2 == 0 {
-						idx = (col * ModuleSize.Y) + row
-					} else {
-						idx = (col * ModuleSize.Y) + (ModuleSize.Y - row - 1)
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		case Rot090:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if row%2 == 0 {
-						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + (ModuleSize.Y - col - 1)
-					} else {
-						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + col
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		case Rot180:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if col%2 == 0 {
-						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + row
-					} else {
-						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + (ModuleSize.Y - row - 1)
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		case Rot270:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if row%2 == 0 {
-						idx = (row * ModuleSize.Y) + (ModuleSize.Y - col - 1)
-					} else {
-						idx = (row * ModuleSize.Y) + col
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		}
-	case ModRL:
-		switch m.Rot {
-		case Rot000:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if col%2 == 0 {
-						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + (ModuleSize.Y - row - 1)
-					} else {
-						idx = ((ModuleSize.X - col - 1) * ModuleSize.Y) + row
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		case Rot090:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if row%2 == 0 {
-						idx = (row * ModuleSize.Y) + col
-					} else {
-						idx = (row * ModuleSize.Y) + (ModuleSize.X - col - 1)
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		case Rot180:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if col%2 == 0 {
-						idx = (col * ModuleSize.Y) + (ModuleSize.Y - row - 1)
-					} else {
-						idx = (col * ModuleSize.Y) + row
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		case Rot270:
-			for row := range ModuleSize.Y {
-				y := basePt.Y + row
-				for col := range ModuleSize.X {
-					x := basePt.X + col
-					if row%2 == 0 {
-						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + col
-					} else {
-						idx = ((ModuleSize.X - row - 1) * ModuleSize.Y) + (ModuleSize.X - col - 1)
-					}
-					idxMap[x][y] = baseIdx + 3*idx
-				}
-			}
-		}
-	}
-	return baseIdx + 3*ModuleSize.X*ModuleSize.Y
-}

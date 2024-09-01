@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	"log"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -23,8 +24,12 @@ type Camera struct {
 	Pos, Size geom.Point
 	DstMask   *image.Alpha
 	dev       *device.Device
-	img       image.Image
-	mask       image.Rectangle
+	imgIdx    int
+	img       [2]image.Image
+	imgMutex  [2]*sync.RWMutex
+	scaler    draw.Scaler
+	doneChan  chan bool
+	mask      image.Rectangle
 	cancel    context.CancelFunc
 	running   bool
 }
@@ -47,6 +52,11 @@ func NewCamera(pos, size geom.Point) *Camera {
 	for i := range c.DstMask.Pix {
 		c.DstMask.Pix[i] = 0xff
 	}
+	c.imgIdx = -1
+	c.imgMutex[0] = &sync.RWMutex{}
+	c.imgMutex[1] = &sync.RWMutex{}
+    c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
+	c.doneChan = make(chan bool)
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -81,10 +91,8 @@ func (c *Camera) Start() {
 	if err = c.dev.Start(ctx); err != nil {
 		log.Fatalf("failed to start stream: %v", err)
 	}
+	go c.captureThread(c.doneChan)
 	c.running = true
-}
-
-func (c *Camera) Stop() {
 }
 
 func (c *Camera) Suspend() {
@@ -93,12 +101,44 @@ func (c *Camera) Suspend() {
 	if !c.running {
 		return
 	}
+	c.doneChan <- true
 	c.cancel()
 	if err = c.dev.Close(); err != nil {
 		log.Fatalf("failed to close device: %v", err)
 	}
 	c.dev = nil
 	c.running = false
+}
+
+func (c *Camera) captureThread(done <-chan bool) {
+	var err error
+	var frame []byte
+	var ok bool
+
+	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
+ML:
+	for {
+		select {
+		case <-ticker.C:
+			if frame, ok = <-c.dev.GetOutput(); !ok {
+				log.Printf("no frame to process")
+				continue
+			}
+			reader := bytes.NewReader(frame)
+
+			idx := (c.imgIdx + 1) % 2
+			c.imgMutex[idx].Lock()
+			c.img[idx], err = jpeg.Decode(reader)
+			if err != nil {
+				log.Fatalf("failed to decode data: %v", err)
+			}
+			c.imgMutex[idx].Unlock()
+			c.imgIdx = idx
+
+		case <-done:
+			break ML
+		}
+	}
 }
 
 func (c *Camera) Continue() {}
@@ -108,28 +148,18 @@ func (c *Camera) IsRunning() bool {
 }
 
 func (c *Camera) Update(pit time.Time) bool {
-	var err error
-	var frame []byte
-	var ok bool
-
-	if frame, ok = <-c.dev.GetOutput(); !ok {
-		log.Printf("no frame to process")
-		return true
-	}
-	reader := bytes.NewReader(frame)
-	c.img, err = jpeg.Decode(reader)
-	if err != nil {
-		log.Fatalf("failed to decode data: %v", err)
-	}
 	return true
 }
 
 func (c *Camera) Draw(canv *ledgrid.Canvas) {
-	if c.img == nil {
+	idx := c.imgIdx
+	if idx < 0 {
 		return
 	}
+	c.imgMutex[idx].RLock()
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	draw.CatmullRom.Scale(canv, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
-        &draw.Options{DstMask: c.DstMask})
+	c.scaler.Scale(canv, rect.Add(refPt).Int(), c.img[idx], c.mask, draw.Over,
+		&draw.Options{DstMask: c.DstMask})
+	c.imgMutex[idx].RUnlock()
 }

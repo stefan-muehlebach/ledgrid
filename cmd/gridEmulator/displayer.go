@@ -7,14 +7,14 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"github.com/stefan-muehlebach/ledgrid"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // Die Emulation des LedGrids als fyne-Applikation
 type PixelEmulator struct {
 	Grid      *fyne.Container
-	gridConf  ledgrid.ModuleConfig
-	coordMap  ledgrid.CoordMap
+	gridConf  conf.ModuleConfig
+	coordMap  conf.CoordMap
 	field     [][]*canvas.Circle
 	size      image.Point
 	numPixels int
@@ -23,7 +23,7 @@ type PixelEmulator struct {
 func NewPixelEmulator(width, height int) *PixelEmulator {
 	e := &PixelEmulator{}
 	e.Grid = container.NewGridWithRows(height)
-	e.gridConf = ledgrid.DefaultModuleConfig(image.Point{width, height})
+	e.gridConf = conf.DefaultModuleConfig(image.Point{width, height})
 	e.coordMap = e.gridConf.IndexMap().CoordMap()
 	e.field = make([][]*canvas.Circle, width)
 	for i := range e.field {
