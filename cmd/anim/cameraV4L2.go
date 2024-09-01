@@ -3,7 +3,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"image"
 	"image/jpeg"
@@ -12,10 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/korandiz/v4l"
+	"github.com/korandiz/v4l/fmt/mjpeg"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/vladimirvivien/go4vl/device"
-	"github.com/vladimirvivien/go4vl/v4l2"
 	"golang.org/x/image/draw"
 )
 
@@ -23,7 +22,7 @@ type Camera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
 	DstMask   *image.Alpha
-	dev       *device.Device
+	dev       *v4l.Device
 	imgIdx    int
 	img       [2]image.Image
 	imgMutex  [2]*sync.RWMutex
@@ -55,7 +54,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c.imgIdx = -1
 	c.imgMutex[0] = &sync.RWMutex{}
 	c.imgMutex[1] = &sync.RWMutex{}
-    c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
+	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
 	c.doneChan = make(chan bool)
 	ledgrid.AnimCtrl.Add(c)
 	return c
@@ -68,67 +67,78 @@ func (c *Camera) Duration() time.Duration {
 func (c *Camera) SetDuration(dur time.Duration) {}
 
 func (c *Camera) Start() {
-	var ctx context.Context
 	var err error
 
 	if c.running {
 		return
 	}
-	c.dev, err = device.Open(camDevName,
-		device.WithIOType(v4l2.IOTypeMMAP),
-		device.WithPixFormat(v4l2.PixFormat{
-			PixelFormat: v4l2.PixelFmtMJPEG,
-			Width:       camWidth,
-			Height:      camHeight,
-		}),
-		device.WithFPS(camFrameRate),
-		device.WithBufferSize(camBufferSize),
-	)
+	c.dev, err = v4l.Open(camDevName)
 	if err != nil {
 		log.Fatalf("failed to open device: %v", err)
 	}
-	ctx, c.cancel = context.WithCancel(context.TODO())
-	if err = c.dev.Start(ctx); err != nil {
-		log.Fatalf("failed to start stream: %v", err)
+	cfg, err := c.dev.GetConfig()
+	if err != nil {
+		log.Fatalf("failed to read configuration: %v", err)
 	}
+	cfg.Format = mjpeg.FourCC
+	cfg.Width = camWidth
+	cfg.Height = camHeight
+	cfg.FPS = v4l.Frac{uint32(camFrameRate), 1}
+	err = c.dev.SetConfig(cfg)
+	if err != nil {
+		log.Fatalf("failed to write configuration back: %v", err)
+	}
+
+	err = c.dev.TurnOn()
+	if err != nil {
+		log.Fatalf("failed to turn on camera: %v", err)
+	}
+
+	// device.WithIOType(v4l2.IOTypeMMAP),
+	// device.WithPixFormat(v4l2.PixFormat{
+	// 	PixelFormat: v4l2.PixelFmtMJPEG,
+	// 	Width:       camWidth,
+	// 	Height:      camHeight,
+	// }),
+	// device.WithFPS(camFrameRate),
+	// device.WithBufferSize(camBufferSize),
+	// )
+	// if err != nil {
+	// log.Fatalf("failed to open device: %v", err)
+	// }
+	// ctx, c.cancel = context.WithCancel(context.TODO())
+	// if err = c.dev.Start(ctx); err != nil {
+	// log.Fatalf("failed to start stream: %v", err)
+	// }
 	go c.captureThread(c.doneChan)
 	c.running = true
 }
 
 func (c *Camera) Suspend() {
-	var err error
-
 	if !c.running {
 		return
 	}
 	c.doneChan <- true
-	c.cancel()
-	if err = c.dev.Close(); err != nil {
-		log.Fatalf("failed to close device: %v", err)
-	}
-	c.dev = nil
+	c.dev.TurnOff()
 	c.running = false
 }
 
 func (c *Camera) captureThread(done <-chan bool) {
 	var err error
-	var frame []byte
-	var ok bool
+	var buf *v4l.Buffer
 
 	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
 ML:
 	for {
 		select {
 		case <-ticker.C:
-			if frame, ok = <-c.dev.GetOutput(); !ok {
-				log.Printf("no frame to process")
-				continue
+			buf, err = c.dev.Capture()
+			if err != nil {
+				log.Fatalf("failed to capture image data: %v", err)
 			}
-			reader := bytes.NewReader(frame)
-
 			idx := (c.imgIdx + 1) % 2
 			c.imgMutex[idx].Lock()
-			c.img[idx], err = jpeg.Decode(reader)
+			c.img[idx], err = jpeg.Decode(buf)
 			if err != nil {
 				log.Fatalf("failed to decode data: %v", err)
 			}
