@@ -1153,7 +1153,7 @@ func main() {
 	canvas = ledgrid.NewCanvas(gridSize)
 	// pixFilter = ledgrid.NewPixelFilter(&canvas.Img)
 	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
-	pixClient := ledgrid.NewNetPixelClient(host, port)
+	pixClient := ledgrid.NewNetGridClient(host, port)
 
 	ledgrid.NewAnimationController(canvas, ledGrid, pixClient)
 

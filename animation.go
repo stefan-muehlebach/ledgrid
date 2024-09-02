@@ -168,7 +168,7 @@ type AnimationController struct {
 	animMutex  *sync.RWMutex
 	Canvas     *Canvas
 	ledGrid    *LedGrid
-	pixClient  PixelClient
+	pixClient  GridClient
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
@@ -179,7 +179,7 @@ type AnimationController struct {
 	running    bool
 }
 
-func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient PixelClient) *AnimationController {
+func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient GridClient) *AnimationController {
 	if AnimCtrl != nil {
 		return AnimCtrl
 	}

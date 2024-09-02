@@ -22,14 +22,14 @@ const (
 type PixelStatusType byte
 
 const (
-	PixelFine PixelStatusType = iota
+	PixelOK PixelStatusType = iota
 	PixelMissing
 	PixelDefect
 )
 
 // Der PixelServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
-type PixelServer struct {
+type GridServer struct {
 	Disp                 Displayer
 	udpAddr              *net.UDPAddr
 	udpConn              *net.UDPConn
@@ -49,12 +49,12 @@ type PixelServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewPixelServer(port uint, disp Displayer) *PixelServer {
+func NewGridServer(port uint, disp Displayer) *GridServer {
 	var err error
 	var addrPort netip.AddrPort
 	var bufferSize int
 
-	p := &PixelServer{Disp: disp}
+	p := &GridServer{Disp: disp}
 	bufferSize = 3 * disp.Size().X * disp.Size().Y
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
@@ -97,41 +97,41 @@ func NewPixelServer(port uint, disp Displayer) *PixelServer {
 }
 
 // Schliesst die diversen Verbindungen.
-func (p *PixelServer) Close() {
+func (p *GridServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
 }
 
-func (p *PixelServer) Watch() *Stopwatch {
+func (p *GridServer) Watch() *Stopwatch {
 	return p.sendWatch
 }
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
-func (p *PixelServer) Gamma() (r, g, b float64) {
+func (p *GridServer) Gamma() (r, g, b float64) {
 	return p.gammaValue[0], p.gammaValue[1], p.gammaValue[2]
 }
 
 // Setzt die Gamma-Werte fuer die Farben und aktualisiert die Mapping-Tabelle.
-func (p *PixelServer) SetGamma(r, g, b float64) {
+func (p *GridServer) SetGamma(r, g, b float64) {
 	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = r, g, b
 	p.updateGammaTable()
 }
 
 // Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
-func (p *PixelServer) MaxBright() (r, g, b uint8) {
+func (p *GridServer) MaxBright() (r, g, b uint8) {
 	return p.maxValue[0], p.maxValue[1], p.maxValue[2]
 }
 
-func (p *PixelServer) SetMaxBright(r, g, b uint8) {
+func (p *GridServer) SetMaxBright(r, g, b uint8) {
 	p.maxValue[0], p.maxValue[1], p.maxValue[2] = r, g, b
 	p.updateGammaTable()
 }
 
-func (p *PixelServer) SetPixelStatus(idx int, stat PixelStatusType) {
+func (p *GridServer) SetPixelStatus(idx int, stat PixelStatusType) {
 	p.statusList[idx] = stat
 }
 
-func (p *PixelServer) updateGammaTable() {
+func (p *GridServer) updateGammaTable() {
 	for color, val := range p.gammaValue {
 		max := float64(p.maxValue[color])
 		for i := range 256 {
@@ -151,7 +151,7 @@ const (
 	NumColorModes
 )
 
-func (p *PixelServer) ToggleTestPattern() bool {
+func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
 	var colorValue byte
 
@@ -241,7 +241,7 @@ func (p *PixelServer) ToggleTestPattern() bool {
 // Gamma-Korrektur umgeschrieben und via SPI-Bus auf das LED-Grid uebertragen.
 // Die genaue Konfiguration des LED-Grids (Anordnung der Lichterketten) ist
 // dem Pixel-Controller nicht bekannt.
-func (p *PixelServer) Handle() {
+func (p *GridServer) Handle() {
 	var bufferSize, numLEDs int
 	var src, dst []byte
 	var err error
@@ -293,7 +293,7 @@ func (p *PixelServer) Handle() {
 // Die Methode RPCDraw ist nur der Vollstaendigkeit halber vorhanden. In
 // der Praxis hat sich das Senden der Bilddaten via RPC als zu langsam
 // erwiesen und wurde auf UDP umgestellt.
-func (p *PixelServer) RPCDraw(grid *LedGrid, reply *int) error {
+func (p *GridServer) RPCDraw(grid *LedGrid, reply *int) error {
 	var err error
 
 	for i := 0; i < len(grid.Pix); i++ {
@@ -307,12 +307,12 @@ type GammaArg struct {
 	RedVal, GreenVal, BlueVal float64
 }
 
-func (p *PixelServer) RPCSetGamma(arg GammaArg, reply *int) error {
+func (p *GridServer) RPCSetGamma(arg GammaArg, reply *int) error {
 	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
 
-func (p *PixelServer) RPCGamma(arg int, reply *GammaArg) error {
+func (p *GridServer) RPCGamma(arg int, reply *GammaArg) error {
 	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
 	return nil
 }
@@ -321,12 +321,12 @@ type BrightArg struct {
 	RedVal, GreenVal, BlueVal uint8
 }
 
-func (p *PixelServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
+func (p *GridServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
 	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
 
-func (p *PixelServer) RPCMaxBright(arg int, reply *BrightArg) error {
+func (p *GridServer) RPCMaxBright(arg int, reply *BrightArg) error {
 	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
 	return nil
 }
@@ -337,7 +337,7 @@ func (p *PixelServer) RPCMaxBright(arg int, reply *BrightArg) error {
 // - LocalPixelClient
 // - NetPixelClient
 // - DummyPixelClient
-type PixelClient interface {
+type GridClient interface {
 	Close()
 	Send(lg *LedGrid)
 	Gamma() (r, g, b float64)
@@ -358,18 +358,18 @@ type PixelClient interface {
 // }
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
-type NetPixelClient struct {
+type NetGridClient struct {
 	addr      *net.UDPAddr
 	conn      *net.UDPConn
 	rpcClient *rpc.Client
 	sendWatch *Stopwatch
 }
 
-func NewNetPixelClient(host string, port uint) PixelClient {
+func NewNetGridClient(host string, port uint) GridClient {
 	var hostPort string
 	var err error
 
-	p := &NetPixelClient{}
+	p := &NetGridClient{}
 	hostPort = fmt.Sprintf("%s:%d", host, port)
 	p.addr, err = net.ResolveUDPAddr("udp", hostPort)
 	if err != nil {
@@ -390,12 +390,12 @@ func NewNetPixelClient(host string, port uint) PixelClient {
 }
 
 // Schliesst die Verbindung zum Controller.
-func (p *NetPixelClient) Close() {
+func (p *NetGridClient) Close() {
 	p.conn.Close()
 }
 
 // Sendet die Bilddaten in der LedGrid-Struktur zum Controller.
-func (p *NetPixelClient) Send(lg *LedGrid) {
+func (p *NetGridClient) Send(lg *LedGrid) {
 	var err error
 
 	p.sendWatch.Start()
@@ -406,7 +406,7 @@ func (p *NetPixelClient) Send(lg *LedGrid) {
 	p.sendWatch.Stop()
 }
 
-func (p *NetPixelClient) Gamma() (r, g, b float64) {
+func (p *NetGridClient) Gamma() (r, g, b float64) {
 	var reply GammaArg
 	var err error
 
@@ -417,7 +417,7 @@ func (p *NetPixelClient) Gamma() (r, g, b float64) {
 	return reply.RedVal, reply.GreenVal, reply.BlueVal
 }
 
-func (p *NetPixelClient) SetGamma(r, g, b float64) {
+func (p *NetGridClient) SetGamma(r, g, b float64) {
 	var reply int
 	var err error
 
@@ -427,7 +427,7 @@ func (p *NetPixelClient) SetGamma(r, g, b float64) {
 	}
 }
 
-func (p *NetPixelClient) MaxBright() (r, g, b uint8) {
+func (p *NetGridClient) MaxBright() (r, g, b uint8) {
 	var reply BrightArg
 	var err error
 
@@ -438,7 +438,7 @@ func (p *NetPixelClient) MaxBright() (r, g, b uint8) {
 	return reply.RedVal, reply.GreenVal, reply.BlueVal
 }
 
-func (p *NetPixelClient) SetMaxBright(r, g, b uint8) {
+func (p *NetGridClient) SetMaxBright(r, g, b uint8) {
 	var reply int
 	var err error
 
@@ -448,44 +448,44 @@ func (p *NetPixelClient) SetMaxBright(r, g, b uint8) {
 	}
 }
 
-func (p *NetPixelClient) Watch() *Stopwatch {
+func (p *NetGridClient) Watch() *Stopwatch {
 	return p.sendWatch
 }
 
 // Mit dieser Implementation des PixelClient-Interfaces kann man ohne Zugriff
 // auf ein reales LED-Grid Software testen.
-type DummyPixelClient struct {
+type DummyGridClient struct {
 }
 
-func NewDummyPixelClient() PixelClient {
-	p := &DummyPixelClient{}
+func NewDummyGridClient() GridClient {
+	p := &DummyGridClient{}
 	return p
 }
 
-func (p *DummyPixelClient) Close() {
+func (p *DummyGridClient) Close() {
 
 }
 
-func (p *DummyPixelClient) Send(lg *LedGrid) {
+func (p *DummyGridClient) Send(lg *LedGrid) {
 
 }
 
-func (p *DummyPixelClient) Gamma() (r, g, b float64) {
+func (p *DummyGridClient) Gamma() (r, g, b float64) {
 	return 1.0, 1.0, 1.0
 }
 
-func (p *DummyPixelClient) SetGamma(r, g, b float64) {
+func (p *DummyGridClient) SetGamma(r, g, b float64) {
 
 }
 
-func (p *DummyPixelClient) MaxBright() (r, g, b uint8) {
+func (p *DummyGridClient) MaxBright() (r, g, b uint8) {
 	return 0xff, 0xff, 0xff
 }
 
-func (p *DummyPixelClient) SetMaxBright(r, g, b uint8) {
+func (p *DummyGridClient) SetMaxBright(r, g, b uint8) {
 
 }
 
-func (p *DummyPixelClient) Watch() *Stopwatch {
+func (p *DummyGridClient) Watch() *Stopwatch {
 	return nil
 }
