@@ -28,7 +28,7 @@ const (
 	defUseTCP      = false
 )
 
-func SignalHandler(pixelServer *ledgrid.PixelServer) {
+func SignalHandler(pixelServer *ledgrid.GridServer) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
 	for sig := range sigChan {
@@ -65,7 +65,7 @@ func main() {
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
     var spiBus ledgrid.Displayer
-	var pixelServer *ledgrid.PixelServer
+	var gridServer *ledgrid.GridServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
 	flag.UintVar(&port, "port", defPort, "UDP port")
@@ -75,7 +75,7 @@ func main() {
 	flag.Parse()
 
     spiBus = ledgrid.NewSPIBus(spiDevFile, baud)
-	pixelServer = ledgrid.NewPixelServer(port, spiBus)
+	gridServer = ledgrid.NewGridServer(port, spiBus)
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {
@@ -83,7 +83,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to parse 'missing': wrong format: %s", str)
 			}
-			pixelServer.SetPixelStatus(int(val), ledgrid.PixelMissing)
+			gridServer.SetPixelStatus(int(val), ledgrid.PixelMissing)
 		}
 	}
 
@@ -93,14 +93,14 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to parse 'defect': wrong format: %s", str)
 			}
-			pixelServer.SetPixelStatus(int(val), ledgrid.PixelDefect)
+			gridServer.SetPixelStatus(int(val), ledgrid.PixelDefect)
 		}
 	}
 
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
-	go SignalHandler(pixelServer)
+	go SignalHandler(gridServer)
 
-	pixelServer.Handle()
+	gridServer.Handle()
 }
