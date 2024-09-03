@@ -72,7 +72,7 @@ func (p *NetGridClient) Size() (size image.Point) {
 	var reply SizeArg
 	var err error
 
-	err = p.rpcClient.Call("GridServer.Size", 0, &reply)
+	err = p.rpcClient.Call("GridServer.RPCSize", 0, &reply)
 	if err != nil {
 		log.Fatal("Size error:", err)
 	}
