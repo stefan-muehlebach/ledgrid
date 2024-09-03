@@ -10,8 +10,10 @@ import (
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
-// Die Emulation des LedGrids als fyne-Applikation
-type PixelEmulator struct {
+// Die Emulation des LedGrids als fyne-Objekt. Implementiert die Methoden
+// des Displayer-Interfaces und kann daher GridServer direkt als Anzeigegeraet
+// uebergeben werden.
+type GridEmulator struct {
 	Grid      *fyne.Container
 	gridConf  conf.ModuleConfig
 	coordMap  conf.CoordMap
@@ -20,17 +22,17 @@ type PixelEmulator struct {
 	numPixels int
 }
 
-func NewPixelEmulator(width, height int) *PixelEmulator {
-	e := &PixelEmulator{}
-	e.Grid = container.NewGridWithRows(height)
-	e.gridConf = conf.DefaultModuleConfig(image.Point{width, height})
+func NewGridEmulator(size image.Point) *GridEmulator {
+	e := &GridEmulator{size: size}
+	e.Grid = container.NewGridWithRows(size.Y)
+	e.gridConf = conf.DefaultModuleConfig(size)
 	e.coordMap = e.gridConf.IndexMap().CoordMap()
-	e.field = make([][]*canvas.Circle, width)
+	e.field = make([][]*canvas.Circle, size.X)
 	for i := range e.field {
-		e.field[i] = make([]*canvas.Circle, height)
+		e.field[i] = make([]*canvas.Circle, size.Y)
 	}
-	for col := range width {
-		for row := range height {
+	for col := range size.X {
+		for row := range size.Y {
 			ledColor := color.Black
 			led := canvas.NewCircle(ledColor)
 			led.StrokeWidth = 0.0
@@ -38,22 +40,21 @@ func NewPixelEmulator(width, height int) *PixelEmulator {
 			e.Grid.Add(led)
 		}
 	}
-	e.size = image.Point{width, height}
-	e.numPixels = width * height
+	e.numPixels = size.X * size.Y
 	return e
 }
 
-func (e *PixelEmulator) DefaultGamma() (r, g, b float64) {
+func (e *GridEmulator) DefaultGamma() (r, g, b float64) {
 	return 1.0, 1.0, 1.0
 }
 
-func (e *PixelEmulator) Close() {}
+func (e *GridEmulator) Close() {}
 
-func (e *PixelEmulator) Size() image.Point {
+func (e *GridEmulator) Size() image.Point {
 	return e.size
 }
 
-func (e *PixelEmulator) Send(buffer []byte) {
+func (e *GridEmulator) Send(buffer []byte) {
 	var r, g, b uint8
 	var idx int
 	var src []byte

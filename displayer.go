@@ -2,82 +2,25 @@ package ledgrid
 
 import (
 	"image"
-	"log"
-	"time"
-
-	"periph.io/x/conn/v3/physic"
-	"periph.io/x/conn/v3/spi"
-	"periph.io/x/conn/v3/spi/spireg"
-	"periph.io/x/host/v3"
-	"periph.io/x/host/v3/sysfs"
 )
 
+// The output device can be realized in several ways. For example a SPI bus
+// with a chain of WS2801 chips, driving combined LED's - this for sure is
+// the default. But think of development: there may be an emulation of this
+// (quite expensive) hardware. Every "thing" which can be used as a display
+// must implement this interface.
 type Displayer interface {
+    // Returns the width and height of the display. Is mainly used by the
+    // GridServer to determine the size of the receiving buffer.
     Size() image.Point
+    // Returns the gamma values that should by default be used on this
+    // type of hardware.
 	DefaultGamma() (r, g, b float64)
-	Close()
+    // Sends all the bytes in buffer to the displaying hardware.
+    // The correct order of the pixel values as well as the order of the
+    // colors is up to the sending part.
 	Send(buffer []byte)
-}
-
-// Um einerseits nicht nur von einer Library zum Ansteuern des SPI-Bus
-// abhaengig zu sein, aber auch um verschiedene SPI-Libraries miteinander zu
-// vergleichen, wird die Verbindung zu den LEDs via SPI mit periph.io und
-// gobot.io realisiert.
-
-type SPIBus struct {
-	spiPort   spi.PortCloser
-	spiConn   spi.Conn
-	maxTxSize int
-}
-
-func NewSPIBus(spiDev string, baud int) *SPIBus {
-	var err error
-	p := &SPIBus{}
-
-	_, err = host.Init()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	spiFs, _ := sysfs.NewSPI(0, 0)
-	p.maxTxSize = spiFs.MaxTxSize()
-	spiFs.Close()
-
-	p.spiPort, err = spireg.Open(spiDev)
-	if err != nil {
-		log.Fatal(err)
-	}
-	p.spiConn, err = p.spiPort.Connect(physic.Frequency(baud)*physic.Hertz,
-		spi.Mode0, 8)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return p
-}
-
-func (p *SPIBus) DefaultGamma() (r, g, b float64) {
-	return 3.0, 3.0, 3.0
-}
-
-func (p *SPIBus) Size() image.Point {
-    return image.Point{40, 40}
-}
-
-func (p *SPIBus) Close() {
-	p.spiPort.Close()
-}
-
-func (p *SPIBus) Send(buffer []byte) {
-	var err error
-	var bufferSize int
-
-	bufferSize = len(buffer)
-	for idx := 0; idx < bufferSize; idx += p.maxTxSize {
-		txSize := min(p.maxTxSize, bufferSize-idx)
-		if err = p.spiConn.Tx(buffer[idx:idx+txSize:idx+txSize], nil); err != nil {
-			log.Fatalf("Couldn't send data: %v", err)
-		}
-	}
-	time.Sleep(20 * time.Microsecond)
+    // Closes the connection to the displaying hardware and releases any
+    // allocated ressources.
+	Close()
 }

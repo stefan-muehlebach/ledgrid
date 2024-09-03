@@ -3,12 +3,14 @@
 package main
 
 import (
+	"image"
 	"flag"
 	"fmt"
 	"image/color"
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/stefan-muehlebach/ledgrid"
 
@@ -50,49 +52,49 @@ var (
 	Win fyne.Window
 )
 
-func SignalHandler(pixelServer *ledgrid.PixelServer) {
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
-	for sig := range sigChan {
-		switch sig {
-		case os.Interrupt:
-			pixelServer.Close()
-			return
-		}
-	}
-}
-
-// func SignalHandler(pixelServer *ledgrid.PixelServer) {
+// func SignalHandler(gridServer *ledgrid.GridServer) {
 // 	sigChan := make(chan os.Signal)
-// 	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+// 	signal.Notify(sigChan, os.Interrupt)
 // 	for sig := range sigChan {
 // 		switch sig {
 // 		case os.Interrupt:
-// 			pixelServer.Close()
+// 			gridServer.Close()
 // 			return
-// 		case syscall.SIGHUP:
-// 			PrintStatistics(pixelServer)
-// 		case syscall.SIGUSR1:
-// 			ToggleTests(pixelServer)
 // 		}
 // 	}
 // }
 
-func PrintStatistics(pixelServer *ledgrid.PixelServer) {
+func SignalHandler(gridServer *ledgrid.GridServer) {
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+	for sig := range sigChan {
+		switch sig {
+		case os.Interrupt:
+			gridServer.Close()
+			return
+		case syscall.SIGHUP:
+			PrintStatistics(gridServer)
+		case syscall.SIGUSR1:
+			ToggleTests(gridServer)
+		}
+	}
+}
+
+func PrintStatistics(gridServer *ledgrid.GridServer) {
 	log.Printf("Server Statistics:")
-	log.Printf("   %v", pixelServer.Watch())
-	log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
-	log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
+	log.Printf("   %v", gridServer.Watch())
+	log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
+	log.Printf("   %d bytes sent by the controller", gridServer.SentBytes)
 	log.Printf("Current gamma values:")
-	r, g, b := pixelServer.Gamma()
+	r, g, b := gridServer.Gamma()
 	log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
 	log.Printf("Current settings for max values (brightness):")
-	br, bg, bb := pixelServer.MaxBright()
+	br, bg, bb := gridServer.MaxBright()
 	log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
 }
 
-func ToggleTests(pixelServer *ledgrid.PixelServer) {
-	if pixelServer.ToggleTestPattern() {
+func ToggleTests(gridServer *ledgrid.GridServer) {
+	if gridServer.ToggleTestPattern() {
 		log.Printf("Drawing test pattern is ON now.")
 	} else {
 		log.Printf("Drawing test pattern is OFF now.")
@@ -105,8 +107,8 @@ func main() {
 	var appWidth, appHeight float32
 	var pixelSize float64
 	var appSize fyne.Size
-	var pixelServer *ledgrid.PixelServer
-	var pixelEmulator *PixelEmulator
+	var gridServer *ledgrid.GridServer
+	var gridEmulator *GridEmulator
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
@@ -124,8 +126,8 @@ func main() {
 	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
 	Win = App.NewWindow(winTitle)
 
-	pixelEmulator = NewPixelEmulator(width, height)
-	pixelServer = ledgrid.NewPixelServer(port, pixelEmulator)
+	gridEmulator = NewGridEmulator(image.Pt(width, height))
+	gridServer = ledgrid.NewGridServer(port, gridEmulator)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
@@ -139,16 +141,16 @@ func main() {
 			fmt.Printf("  q   Quit the program\n")
 			fmt.Printf(" ESC  Same as 'q'\n")
 		case fyne.KeyS:
-			PrintStatistics(pixelServer)
+			PrintStatistics(gridServer)
 		case fyne.KeyT:
-			ToggleTests(pixelServer)
+			ToggleTests(gridServer)
 		}
 	})
 
-	go SignalHandler(pixelServer)
-	go pixelServer.Handle()
+	go SignalHandler(gridServer)
+	go gridServer.Handle()
 
-	Win.SetContent(pixelEmulator.Grid)
+	Win.SetContent(gridEmulator.Grid)
 	Win.Resize(appSize)
 	Win.ShowAndRun()
 }

@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	defWidth  = 40
-	defHeight = 10
-	defHost   = "raspi-3"
-	defPort   = 5333
+	// defWidth  = 40
+	// defHeight = 10
+	defHost = "raspi-3"
+	defPort = 5333
 )
 
 var (
@@ -1134,14 +1134,14 @@ func main() {
 		progList += ("\n" + string(id) + " - " + prog.Name())
 	}
 
-	flag.IntVar(&width, "width", defWidth, "Width of panel")
-	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	// flag.IntVar(&width, "width", defWidth, "Width of panel")
+	// flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.Parse()
 
-	gridSize = image.Point{width, height}
+	// gridSize = image.Point{width, height}
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -1150,12 +1150,15 @@ func main() {
 		runInteractive = true
 	}
 
-	canvas = ledgrid.NewCanvas(gridSize)
-	// pixFilter = ledgrid.NewPixelFilter(&canvas.Img)
-	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
-	pixClient := ledgrid.NewNetGridClient(host, port)
+	gridClient := ledgrid.NewNetGridClient(host, port)
+	gridSize = gridClient.Size()
+    width = gridSize.X
+    height = gridSize.Y
 
-	ledgrid.NewAnimationController(canvas, ledGrid, pixClient)
+	canvas = ledgrid.NewCanvas(gridSize)
+	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
+
+	ledgrid.NewAnimationController(canvas, ledGrid, gridClient)
 
 	if runInteractive {
 		progId = -1
@@ -1193,13 +1196,13 @@ func main() {
 				fmt.Printf("Program statistics:\n")
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
-				fmt.Printf("  sending  : %v\n", pixClient.Watch())
+				fmt.Printf("  sending  : %v\n", gridClient.Watch())
 				ledgrid.AnimCtrl.Purge()
 				// ledgrid.AnimCtrl.Continue()
 				canvas.Purge()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
-				pixClient.Watch().Reset()
+				gridClient.Watch().Reset()
 				programList[progId].Run(canvas)
 			}
 			if ch == 'S' {
@@ -1247,11 +1250,11 @@ func main() {
 
 	ledgrid.AnimCtrl.Suspend()
 	ledGrid.Clear(color.Black)
-	pixClient.Send(ledGrid)
-	pixClient.Close()
+	gridClient.Send(ledGrid)
+	gridClient.Close()
 
 	fmt.Printf("Program statistics:\n")
 	fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 	fmt.Printf("  painting : %v\n", canvas.Watch())
-	fmt.Printf("  sending  : %v\n", pixClient.Watch())
+	fmt.Printf("  sending  : %v\n", gridClient.Watch())
 }

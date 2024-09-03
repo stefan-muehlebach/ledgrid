@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"flag"
 	"log"
 	"os"
@@ -21,36 +22,38 @@ const (
 )
 
 const (
-	defPort        = 5333
-	defMissingIDs  = ""
-	defDefectIDs   = ""
-	defBaud        = 2_000_000
-	defUseTCP      = false
+	defPort       = 5333
+	defMissingIDs = ""
+	defDefectIDs  = ""
+	defBaud       = 2_000_000
+	defUseTCP     = false
+    defWidth      = 40
+    defHeight     = 10
 )
 
-func SignalHandler(pixelServer *ledgrid.GridServer) {
+func SignalHandler(gridServer *ledgrid.GridServer) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
 	for sig := range sigChan {
 		switch sig {
 		case os.Interrupt:
-			pixelServer.Close()
+			gridServer.Close()
 			return
 
 		case syscall.SIGHUP:
-                        log.Printf("Server Statistics:")
-                        log.Printf("   %v", pixelServer.Watch())
-                        log.Printf("   %d bytes received by the controller", pixelServer.RecvBytes)
-                        log.Printf("   %d bytes sent by the controller", pixelServer.SentBytes)
-                        log.Printf("Current gamma values:")
-                        r, g, b := pixelServer.Gamma()
-                        log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
-                        log.Printf("Current settings for max values (brightness):")
-                        br, bg, bb := pixelServer.MaxBright()
-                        log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
+			log.Printf("Some server statistics:")
+			log.Printf("   %v", gridServer.Watch())
+			log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
+			log.Printf("   %d bytes sent by the controller", gridServer.SentBytes)
+			log.Printf("Current gamma values:")
+			r, g, b := gridServer.Gamma()
+			log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
+			log.Printf("Current settings for max values (brightness):")
+			br, bg, bb := gridServer.MaxBright()
+			log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
 
 		case syscall.SIGUSR1:
-			if pixelServer.ToggleTestPattern() {
+			if gridServer.ToggleTestPattern() {
 				log.Printf("Drawing test pattern is ON now.")
 			} else {
 				log.Printf("Drawing test pattern is OFF now.")
@@ -60,21 +63,24 @@ func SignalHandler(pixelServer *ledgrid.GridServer) {
 }
 
 func main() {
+    var width, height int
 	var port uint
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
-    var spiBus ledgrid.Displayer
+	var spiBus ledgrid.Displayer
 	var gridServer *ledgrid.GridServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
+    flag.IntVar(&width, "width", defWidth, "Width of panel")
+    flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.UintVar(&port, "port", defPort, "UDP port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs")
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of LEDs to black out")
 	flag.Parse()
 
-    spiBus = ledgrid.NewSPIBus(spiDevFile, baud)
+	spiBus = ledgrid.NewSPIBus(spiDevFile, baud, image.Pt(width, height))
 	gridServer = ledgrid.NewGridServer(port, spiBus)
 
 	if len(missingIDs) > 0 {
