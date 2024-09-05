@@ -141,7 +141,7 @@ var (
 	GroupTest = NewLedGridProgram("Group test",
 		func(c *ledgrid.Canvas) {
 			rPos1 := geom.Point{5.0, float64(height) / 2.0}
-			rPos2 := geom.Point{float64(width) - 2.0, float64(height) / 2.0}
+			rPos2 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
 			rSize1 := geom.Point{7.0, 7.0}
 			rSize2 := geom.Point{1.0, 1.0}
 			rColor1 := color.SkyBlue
