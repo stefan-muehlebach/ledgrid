@@ -14,7 +14,7 @@ import (
 // - NetGridClient
 // - DummyGridClient
 type GridClient interface {
-	Send(lg *LedGrid)
+	Send(buffer []byte)
 	Size() image.Point
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
@@ -57,11 +57,11 @@ func NewNetGridClient(host string, port uint) GridClient {
 }
 
 // Sendet die Bilddaten in der LedGrid-Struktur zum Controller.
-func (p *NetGridClient) Send(lg *LedGrid) {
+func (p *NetGridClient) Send(buffer []byte) {
 	var err error
 
 	p.sendWatch.Start()
-	_, err = p.conn.Write(lg.Pix)
+	_, err = p.conn.Write(buffer)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func NewDummyGridClient(size image.Point) GridClient {
 	return p
 }
 
-func (p *DummyGridClient) Send(lg *LedGrid) { }
+func (p *DummyGridClient) Send(buffer []byte) { }
 
 func (p *DummyGridClient) Size() image.Point {
 	return p.size

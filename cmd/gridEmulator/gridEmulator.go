@@ -3,14 +3,11 @@
 package main
 
 import (
-	"image"
 	"flag"
 	"fmt"
+	"image"
 	"image/color"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/stefan-muehlebach/ledgrid"
 
@@ -27,6 +24,9 @@ const (
 	defPixelSize = 50.0
 )
 
+// Since the default padding between adjacent elements in a GridContainer is
+// waaaay to large, we had to define a custom theme with only one divergent
+// property: theme.SizeNamePadding
 type myTheme struct{}
 
 var _ fyne.Theme = (*myTheme)(nil)
@@ -52,36 +52,8 @@ var (
 	Win fyne.Window
 )
 
-// func SignalHandler(gridServer *ledgrid.GridServer) {
-// 	sigChan := make(chan os.Signal)
-// 	signal.Notify(sigChan, os.Interrupt)
-// 	for sig := range sigChan {
-// 		switch sig {
-// 		case os.Interrupt:
-// 			gridServer.Close()
-// 			return
-// 		}
-// 	}
-// }
-
-func SignalHandler(gridServer *ledgrid.GridServer) {
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
-	for sig := range sigChan {
-		switch sig {
-		case os.Interrupt:
-			gridServer.Close()
-			return
-		case syscall.SIGHUP:
-			PrintStatistics(gridServer)
-		case syscall.SIGUSR1:
-			ToggleTests(gridServer)
-		}
-	}
-}
-
 func PrintStatistics(gridServer *ledgrid.GridServer) {
-	log.Printf("Server Statistics:")
+	log.Printf("Emulator statistics:")
 	log.Printf("   %v", gridServer.Watch())
 	log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
 	log.Printf("   %d bytes sent by the controller", gridServer.SentBytes)
@@ -108,7 +80,7 @@ func main() {
 	var pixelSize float64
 	var appSize fyne.Size
 	var gridServer *ledgrid.GridServer
-	var gridEmulator *GridEmulator
+	var gridEmulator *GridWindow
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
@@ -126,13 +98,11 @@ func main() {
 	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
 	Win = App.NewWindow(winTitle)
 
-	gridEmulator = NewGridEmulator(image.Pt(width, height))
+	gridEmulator = NewGridWindow(image.Pt(width, height))
 	gridServer = ledgrid.NewGridServer(port, gridEmulator)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
-		case fyne.KeyEscape, fyne.KeyQ:
-			App.Quit()
 		case fyne.KeyH:
 			fmt.Printf("Use the following keys to control the software:\n")
 			fmt.Printf("  h   Show this help (again)\n")
@@ -144,10 +114,11 @@ func main() {
 			PrintStatistics(gridServer)
 		case fyne.KeyT:
 			ToggleTests(gridServer)
+		case fyne.KeyEscape, fyne.KeyQ:
+			App.Quit()
 		}
 	})
 
-	go SignalHandler(gridServer)
 	go gridServer.Handle()
 
 	Win.SetContent(gridEmulator.Grid)

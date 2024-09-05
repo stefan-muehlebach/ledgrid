@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	gocolor "image/color"
 	"math"
 	"math/rand/v2"
 	"os"
@@ -18,8 +17,6 @@ import (
 )
 
 const (
-	// defWidth  = 40
-	// defHeight = 10
 	defHost = "raspi-3"
 	defPort = 5333
 )
@@ -28,10 +25,8 @@ var (
 	width, height int
 	gridSize      image.Point
 	backAlpha     = 1.0
-	// animCtrl      *ledgrid.AnimationController
-	ledGrid   *ledgrid.LedGrid
-	canvas    *ledgrid.Canvas
-	pixFilter *ledgrid.PixelFilter
+	ledGrid       *ledgrid.LedGrid
+	canvas        *ledgrid.Canvas
 )
 
 //----------------------------------------------------------------------------
@@ -56,6 +51,90 @@ func (p *simpleProgram) Name() string {
 
 func (p *simpleProgram) Run(c *ledgrid.Canvas) {
 	p.runFunc(c)
+}
+
+type ScanDir int
+type ScanLine int
+type ExitDir int
+
+const (
+	// Die Konstanten fuer ScanDir
+	Top2Bottom ScanDir = iota
+	Bottom2Top
+	Left2Right
+	Right2Left
+
+	// Die Konstanten fuer ScanLine
+	Forward ScanLine = iota
+	Backward
+	Alternate
+
+	// Die Konstanten fuer ExitDir
+	ExitAway ExitDir = iota
+	ExitOver
+)
+
+func StartEndPoints(idx int, scanDir ScanDir, scanLine ScanLine, exitDir ExitDir) (startPt, endPt image.Point) {
+	var col, row, endCol, endRow int
+
+	switch scanDir {
+	case Top2Bottom:
+		row = idx / width
+		if scanLine == Forward || (scanLine == Alternate && row%2 == 0) {
+			col = idx % width
+		} else {
+			col = (width - 1) - idx%width
+		}
+		endCol = col
+		if exitDir == ExitAway {
+			endRow = row - (height + 2)
+		} else {
+			endRow = row + (height + 2)
+		}
+	case Bottom2Top:
+		row = (height - 1) - idx/width
+		if scanLine == Forward || (scanLine == Alternate && row%2 == 0) {
+			col = idx % width
+		} else {
+			col = (width - 1) - idx%width
+		}
+		endCol = col
+		if exitDir == ExitAway {
+			endRow = row + (height + 2)
+		} else {
+			endRow = row - (height + 2)
+		}
+	case Left2Right:
+		col = idx / height
+		if scanLine == Forward || (scanLine == Alternate && col%2 == 0) {
+			row = idx % height
+		} else {
+			row = (height - 1) - idx%height
+		}
+		endRow = row
+		if exitDir == ExitAway {
+			endCol = col - (width + 2)
+		} else {
+			endCol = col + (width + 2)
+		}
+	case Right2Left:
+		col = (width - 1) - idx/height
+		if scanLine == Forward || (scanLine == Alternate && col%2 == 0) {
+			row = idx % height
+		} else {
+			row = (height - 1) - idx%height
+		}
+		endRow = row
+		if exitDir == ExitAway {
+			endCol = col + (width + 2)
+		} else {
+			endCol = col - (width + 2)
+		}
+	}
+	startPt = image.Pt(col, row)
+	endPt = image.Pt(endCol, endRow)
+
+	return
 }
 
 var (
@@ -723,60 +802,97 @@ var (
 			cam.Start()
 
 			go func() {
-				var row, col int
+				var pt, ptDest geom.Point
+				scanDirList := []ScanDir{Top2Bottom, Bottom2Top, Left2Right, Right2Left}
+				scanLineList := []ScanLine{Forward, Alternate, Backward, Alternate}
+				exitDirList := []ExitDir{ExitOver, ExitAway, ExitOver, ExitAway}
 
 				time.Sleep(3 * time.Second)
-				rowLists := make([][]image.Point, 2*height)
-				for i := range rowLists {
-					row = i % height
-					rowLists[i] = make([]image.Point, width/2)
-					for j := range rowLists[i] {
-						if i < height {
-							col = width/2 - j - 1
-						} else {
-							col = width/2 + j
-						}
-						rowLists[i][j] = image.Point{col, row}
+				for i, scanDir := range scanDirList {
+					scanLine := scanLineList[i]
+					exitDir := exitDirList[i]
+					for i := range width * height {
+						p0, p1 := StartEndPoints(i, scanDir, scanLine, exitDir)
+						pt = geom.NewPointIMG(p0)
+						ptDest = geom.NewPointIMG(p1)
+						pixAway := ledgrid.NewDot(pt, color.GreenYellow)
+						c.Add(pixAway)
+						aDur := time.Second + rand.N(time.Second)
+						aColor := ledgrid.NewUint8Animation(&pixAway.Color.A, 0, aDur)
+						aColor.Curve = ledgrid.AnimationEaseIn
+						aMask := ledgrid.NewBackgroundTask(func() {
+							idx := cam.DstMask.PixOffset(p0.X, p0.Y)
+							cam.DstMask.Pix[idx] = 0x00
+						})
+						aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
+						aPos.Curve = ledgrid.AnimationEaseIn
+						aSeq := ledgrid.NewGroup(aMask, aPos, aColor)
+						aSeq.Start()
+						time.Sleep(30 * time.Millisecond)
 					}
-				}
-				coordList := make([]image.Point, width*height)
-				for i := range width * height {
-					idx := rand.IntN(2 * height)
-					for len(rowLists[idx]) == 0 {
-						idx = (idx + 1) % (2 * height)
+					time.Sleep(2 * time.Second)
+					for i := range cam.DstMask.Pix {
+						cam.DstMask.Pix[i] = 0xff
 					}
-					coordList[i] = rowLists[idx][0]
-					rowLists[idx] = rowLists[idx][1:]
-				}
-
-				for _, val := range coordList {
-					pt := geom.NewPointIMG(val)
-					ptDest := geom.NewPoint(-5, float64(val.Y))
-					newColor := color.YellowGreen
-					if val.X >= width/2 {
-						ptDest.X = float64(width + 5)
-						newColor = color.OrangeRed
-					}
-					newColor = newColor.Alpha(0.5)
-					pixAway := ledgrid.NewDot(pt, newColor)
-					c.Add(pixAway)
-					aDur := time.Second + rand.N(time.Second)
-
-					aMask := ledgrid.NewBackgroundTask(func() {
-						cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
-					})
-					aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
-					aPos.Curve = ledgrid.AnimationEaseIn
-					aSeq := ledgrid.NewSequence(aMask, aPos)
-					aSeq.Start()
-					time.Sleep(20 * time.Millisecond)
-
-				}
-				time.Sleep(1 * time.Second)
-				for i := range cam.DstMask.Pix {
-					cam.DstMask.Pix[i] = 0xff
 				}
 			}()
+
+			/*
+				go func() {
+					var row, col int
+
+					time.Sleep(3 * time.Second)
+					rowLists := make([][]image.Point, 2*height)
+					for i := range rowLists {
+						row = i % height
+						rowLists[i] = make([]image.Point, width/2)
+						for j := range rowLists[i] {
+							if i < height {
+								col = width/2 - j - 1
+							} else {
+								col = width/2 + j
+							}
+							rowLists[i][j] = image.Point{col, row}
+						}
+					}
+					coordList := make([]image.Point, width*height)
+					for i := range width * height {
+						idx := rand.IntN(2 * height)
+						for len(rowLists[idx]) == 0 {
+							idx = (idx + 1) % (2 * height)
+						}
+						coordList[i] = rowLists[idx][0]
+						rowLists[idx] = rowLists[idx][1:]
+					}
+					for _, val := range coordList {
+						pt := geom.NewPointIMG(val)
+						ptDest := geom.NewPoint(-5, float64(val.Y))
+						newColor := color.YellowGreen
+						if val.X >= width/2 {
+							ptDest.X = float64(width + 5)
+							newColor = color.OrangeRed
+						}
+						newColor = newColor.Alpha(0.5)
+						pixAway := ledgrid.NewDot(pt, newColor)
+						c.Add(pixAway)
+						aDur := time.Second + rand.N(time.Second)
+
+						aMask := ledgrid.NewBackgroundTask(func() {
+							cam.DstMask.SetAlpha(val.X, val.Y, gocolor.Alpha{0x00})
+						})
+						aPos := ledgrid.NewPositionAnimation(&pixAway.Pos, ptDest, aDur)
+						aPos.Curve = ledgrid.AnimationEaseIn
+						aSeq := ledgrid.NewSequence(aMask, aPos)
+						aSeq.Start()
+						time.Sleep(20 * time.Millisecond)
+
+					}
+					time.Sleep(1 * time.Second)
+					for i := range cam.DstMask.Pix {
+						cam.DstMask.Pix[i] = 0xff
+					}
+				}()
+			*/
 		})
 
 	BlinkenAnimation = NewLedGridProgram("Blinken animation",
@@ -913,13 +1029,13 @@ var (
 				}
 			}
 
-			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
+			txt1 := ledgrid.NewFixedText(fixed.P(1, height-1), color.GreenYellow.Alpha(0.0), "LORENZ")
 			aTxt1 := ledgrid.NewUint8Animation(&txt1.Color.A, 255, 2*time.Second)
 			aTxt1.AutoReverse = true
-			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
+			txt2 := ledgrid.NewFixedText(fixed.P(1, height-1), color.DarkViolet.Alpha(0.0), "SIMON")
 			aTxt2 := ledgrid.NewUint8Animation(&txt2.Color.A, 255, 2*time.Second)
 			aTxt2.AutoReverse = true
-			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
+			txt3 := ledgrid.NewFixedText(fixed.P(1, height-1), color.OrangeRed.Alpha(0.0), "REBEKKA")
 			aTxt3 := ledgrid.NewUint8Animation(&txt3.Color.A, 255, 2*time.Second)
 			aTxt3.AutoReverse = true
 			c.Add(txt1, txt2, txt3)
@@ -1134,14 +1250,10 @@ func main() {
 		progList += ("\n" + string(id) + " - " + prog.Name())
 	}
 
-	// flag.IntVar(&width, "width", defWidth, "Width of panel")
-	// flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.Parse()
-
-	// gridSize = image.Point{width, height}
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -1150,15 +1262,14 @@ func main() {
 		runInteractive = true
 	}
 
-	gridClient := ledgrid.NewNetGridClient(host, port)
-	gridSize = gridClient.Size()
-    width = gridSize.X
-    height = gridSize.Y
+	ledGrid = ledgrid.NewLedGridV2(host, port)
+
+	gridSize = ledGrid.Rect.Size()
+	width = gridSize.X
+	height = gridSize.Y
 
 	canvas = ledgrid.NewCanvas(gridSize)
-	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
-
-	ledgrid.NewAnimationController(canvas, ledGrid, gridClient)
+	ledgrid.NewAnimationController(canvas, ledGrid)
 
 	if runInteractive {
 		progId = -1
@@ -1196,13 +1307,13 @@ func main() {
 				fmt.Printf("Program statistics:\n")
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
-				fmt.Printf("  sending  : %v\n", gridClient.Watch())
+				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
 				ledgrid.AnimCtrl.Purge()
 				// ledgrid.AnimCtrl.Continue()
 				canvas.Purge()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
-				gridClient.Watch().Reset()
+				ledGrid.Client.Watch().Reset()
 				programList[progId].Run(canvas)
 			}
 			if ch == 'S' {
@@ -1250,11 +1361,10 @@ func main() {
 
 	ledgrid.AnimCtrl.Suspend()
 	ledGrid.Clear(color.Black)
-	gridClient.Send(ledGrid)
-	gridClient.Close()
+	ledGrid.Close()
 
 	fmt.Printf("Program statistics:\n")
 	fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 	fmt.Printf("  painting : %v\n", canvas.Watch())
-	fmt.Printf("  sending  : %v\n", gridClient.Watch())
+	fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
 }

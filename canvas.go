@@ -433,14 +433,8 @@ func NewDot(pos geom.Point, col color.LedColor) *Dot {
 
 func (d *Dot) Draw(c *Canvas) {
 	c.GC.DrawEllipse(d.Pos.X+0.5, d.Pos.Y+0.5, math.Sqrt2/2.0, math.Sqrt2/2.0)
-	c.GC.SetStrokeWidth(0.0)
 	c.GC.SetFillColor(d.Color)
-	c.GC.FillStroke()
-
-	// c.gc.DrawRectangle(d.Pos.X, d.Pos.Y+2.0, 1.0, 1.0)
-	// c.gc.SetStrokeWidth(0.0)
-	// c.gc.SetFillColor(d.Color)
-	// c.gc.FillStroke()
+	c.GC.Fill()
 }
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel.

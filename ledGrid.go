@@ -1,10 +1,11 @@
 package ledgrid
 
 import (
-	"github.com/stefan-muehlebach/ledgrid/conf"
 	"image"
 	"image/color"
-    ledcolor "github.com/stefan-muehlebach/ledgrid/color"
+
+	ledcolor "github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.
@@ -18,6 +19,7 @@ type LedGrid struct {
 	// das LedGrid ausmachen. Die Reihenfolge entspricht dabei der
 	// Verkabelung!
 	Pix []uint8
+    Client GridClient
 	// Mit dieser Struktur (slice of slices) werden Pixel-Koordinaten in
 	// Indizes uebersetzt.
 	idxMap conf.IndexMap
@@ -41,6 +43,26 @@ func NewLedGrid(size image.Point, modConf conf.ModuleConfig) *LedGrid {
 	return g
 }
 
+// Dies ist die neue Art, ein LedGrid-Objekt zu erstellen. Der GridClient
+// (d.h. der Client-seitige Teil fuer die Ansteuerung) ist dabei Teil von
+// LedGrid. Mit Angaben von host und port kann die Groesse des Panels (oder
+// Emulations-Fensters) selbst. ermittelt werden.
+func NewLedGridV2(host string, port uint) *LedGrid {
+    g := &LedGrid{}
+    g.Client = NewNetGridClient(host, port)
+    g.Rect = image.Rectangle{Max: g.Client.Size()}
+    g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
+	modConf := conf.DefaultModuleConfig(g.Rect.Size())
+	g.idxMap = modConf.IndexMap()
+	return g
+}
+
+func (g *LedGrid) Close() {
+    g.Client.Close()
+}
+
+// Die folgenden Methoden implementieren das image.Image Interface (resp.
+// draw.Image).
 func (g *LedGrid) ColorModel() color.Model {
 	return ledcolor.LedColorModel
 }
@@ -91,7 +113,8 @@ func (g *LedGrid) PixOffset(x, y int) int {
 }
 
 // Mit Clear kann das ganze Grid geloescht, resp. alle LEDs auf die gleiche
-// Farbe gebracht werden.
+// Farbe gebracht werden. Das Anzeigen, resp. der Refresh des Panel ist
+// Teil dieser Methode.
 func (g *LedGrid) Clear(c ledcolor.LedColor) {
 	for idx := 0; idx < len(g.Pix); idx += 3 {
 		dst := g.Pix[idx : idx+3 : idx+3]
@@ -99,4 +122,11 @@ func (g *LedGrid) Clear(c ledcolor.LedColor) {
 		dst[1] = c.G
 		dst[2] = c.B
 	}
+    g.Show()
+}
+
+// Zeigt den aktuellen Inhalt des Grid auf der beim Erstellen spezifizierten
+// Hardware dar.
+func (g *LedGrid) Show() {
+    g.Client.Send(g.Pix)
 }

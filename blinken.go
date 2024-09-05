@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"io"
 	"encoding/xml"
 	"image"
 	"image/color"
@@ -11,6 +12,31 @@ import (
 	"strconv"
 	"time"
 )
+
+// Der Typ BLM und die gleich danach definierten Methoden/Funktionen sind
+// nach Vorbild 'image/gif' implementiert und koennen zum Laden von
+// BlinkenLight-Animationen verwendet werden.
+type BLM struct {
+    Image []*image.RGBA
+    Delay []int
+    LoopCount int
+    Config image.Config
+}
+
+func Decode(r io.Reader) (image.Image, error) {
+    return nil, nil
+}
+
+func DecodeConfig(r io.Reader) (image.Config, error) {
+    return image.Config{ColorModel: color.RGBAModel, Width: 0, Height: 0}, nil
+}
+
+func DecodeAll(r io.Reader) (*BLM, error) {
+    return nil, nil
+}
+
+
+// ---------------------------------------------------------------------------
 
 // Fuer die Einbindung von Animationen im BlinkenLight-Format sind hier erst
 // mal die Typen für die Verarbeitung der XML-Dateien.

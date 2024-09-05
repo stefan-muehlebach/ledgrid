@@ -168,7 +168,6 @@ type AnimationController struct {
 	animMutex  *sync.RWMutex
 	Canvas     *Canvas
 	ledGrid    *LedGrid
-	pixClient  GridClient
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
@@ -179,7 +178,7 @@ type AnimationController struct {
 	running    bool
 }
 
-func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient GridClient) *AnimationController {
+func NewAnimationController(canvas *Canvas, ledGrid *LedGrid /*, pixClient GridClient*/) *AnimationController {
 	if AnimCtrl != nil {
 		return AnimCtrl
 	}
@@ -188,7 +187,6 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid, pixClient GridClie
 	a.animMutex = &sync.RWMutex{}
 	a.Canvas = canvas
 	a.ledGrid = ledGrid
-	a.pixClient = pixClient
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = NewStopwatch()
 	a.numThreads = runtime.NumCPU()
@@ -297,7 +295,7 @@ func (a *AnimationController) backgroundThread() {
 
 		a.Canvas.Refresh()
 		draw.Draw(a.ledGrid, a.ledGrid.Bounds(), a.Canvas, image.Point{}, draw.Over)
-		a.pixClient.Send(a.ledGrid)
+        a.ledGrid.Show()
 	}
 	close(startChan)
 }

@@ -12,19 +12,22 @@ import (
 	"time"
 )
 
-const (
-// Dies ist die Groesse des Buffers, welcher fuer den Empfang der
-// LED-Daten zur Verfuegung steht. Er ist bewusst extrem grosszuegig
-// dimensioniert... ;-)
-// bufferSize = 320 * 240 * 3
-)
-
-type PixelStatusType byte
+// This type has been introduced in order to mark some LEDs on the chain as
+// 'ok', defect or missing (see constants PixelOK, PixelDefect, PixelMissing)
+type LedStatusType byte
 
 const (
-	PixelOK PixelStatusType = iota
-	PixelMissing
-	PixelDefect
+    // This is the default state of a LED
+	LedOK LedStatusType = iota
+    // LEDs with this status will be blacked out, this mean we send color data
+    // for this LED, but we send (0,0,0). This status can be used if a NeoPixel
+    // receives data but does not display them correctly.
+	LedDefect
+    // This status can be used, if a NeoPixel does not even transmit the data
+    // to the NeoPixels further down the chain. Such a pixel needs to be cut
+    // out of the chain and for the time till a replacement Pixel is organized
+    // and soldered in, the pixel has status missing.
+	LedMissing
 )
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
@@ -36,7 +39,7 @@ type GridServer struct {
 	tcpAddr              *net.TCPAddr
 	tcpListener          *net.TCPListener
 	buffer               []byte
-	statusList           []PixelStatusType
+	statusList           []LedStatusType
 	gammaValue           [3]float64
 	maxValue             [3]uint8
 	gamma                [3][256]byte
@@ -61,7 +64,7 @@ func NewGridServer(port uint, disp Displayer) *GridServer {
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
 	// als Farbe immer Schwarz erhalten sollen).
 	p.buffer = make([]byte, bufferSize)
-	p.statusList = make([]PixelStatusType, bufferSize/3)
+	p.statusList = make([]LedStatusType, bufferSize/3)
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
 	// maximale Helligkeit erstellt.
@@ -102,6 +105,59 @@ func (p *GridServer) Close() {
 	p.tcpListener.Close()
 }
 
+// Dies ist die zentrale Verarbeitungs-Funktion des GridServers. In ihr
+// wird laufend ein Datenpaket via UDP empfangen, die empfangenen Werte gem.
+// Gamma-Korrektur umgeschrieben und auf ein Ausgabegeraet uebertragen
+// (SPI-Bus, Emulation, etc.) Die genaue Konfiguration des LED-Grids
+// (Anordnung der Lichterketten) ist dem GridServer nicht bekannt.
+func (p *GridServer) Handle() {
+	var bufferSize, numLEDs int
+	var src, dst []byte
+	var err error
+
+	for {
+		bufferSize, err = p.udpConn.Read(p.buffer)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				break
+			}
+			log.Fatal(err)
+		}
+		p.RecvBytes += bufferSize
+		p.sendWatch.Start()
+		numLEDs = bufferSize / 3
+		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
+			if p.statusList[srcIdx] == LedMissing {
+				continue
+			}
+			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
+			if p.statusList[srcIdx] == LedDefect {
+				dst[0] = 0x00
+				dst[1] = 0x00
+				dst[2] = 0x00
+			} else {
+				src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
+				dst[0] = p.gamma[0][src[0]]
+				dst[1] = p.gamma[1][src[1]]
+				dst[2] = p.gamma[2][src[2]]
+			}
+			dstIdx++
+		}
+		p.Disp.Send(p.buffer[:bufferSize])
+		p.SentBytes += bufferSize
+		p.sendWatch.Stop()
+	}
+
+	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
+	// damit das Panel dunkel wird.
+	for i := range p.buffer {
+		p.buffer[i] = 0x00
+	}
+	p.Disp.Send(p.buffer)
+	p.SentBytes += len(p.buffer)
+	p.Disp.Close()
+}
+
 func (p *GridServer) Watch() *Stopwatch {
 	return p.sendWatch
 }
@@ -127,7 +183,7 @@ func (p *GridServer) SetMaxBright(r, g, b uint8) {
 	p.updateGammaTable()
 }
 
-func (p *GridServer) SetPixelStatus(idx int, stat PixelStatusType) {
+func (p *GridServer) SetPixelStatus(idx int, stat LedStatusType) {
 	p.statusList[idx] = stat
 }
 
@@ -236,58 +292,6 @@ func (p *GridServer) ToggleTestPattern() bool {
 	return true
 }
 
-// Dies ist die zentrale Verarbeitungs-Funktion des Grid-Controllers. In ihr
-// wird laufend ein Datenpaket via UDP empfangen, die empfangenen Werte gem.
-// Gamma-Korrektur umgeschrieben und via SPI-Bus auf das LED-Grid uebertragen.
-// Die genaue Konfiguration des LED-Grids (Anordnung der Lichterketten) ist
-// dem Grid-Controller nicht bekannt.
-func (p *GridServer) Handle() {
-	var bufferSize, numLEDs int
-	var src, dst []byte
-	var err error
-
-	for {
-		bufferSize, err = p.udpConn.Read(p.buffer)
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				break
-			}
-			log.Fatal(err)
-		}
-		p.RecvBytes += bufferSize
-		p.sendWatch.Start()
-		numLEDs = bufferSize / 3
-		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
-			if p.statusList[srcIdx] == PixelMissing {
-				continue
-			}
-			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
-			if p.statusList[srcIdx] == PixelDefect {
-				dst[0] = 0x00
-				dst[1] = 0x00
-				dst[2] = 0x00
-			} else {
-				src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
-				dst[0] = p.gamma[0][src[0]]
-				dst[1] = p.gamma[1][src[1]]
-				dst[2] = p.gamma[2][src[2]]
-			}
-			dstIdx++
-		}
-		p.Disp.Send(p.buffer[:bufferSize])
-		p.SentBytes += bufferSize
-		p.sendWatch.Stop()
-	}
-
-	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
-	// damit das Panel dunkel wird.
-	for i := range p.buffer {
-		p.buffer[i] = 0x00
-	}
-	p.Disp.Send(p.buffer)
-	p.SentBytes += len(p.buffer)
-	p.Disp.Close()
-}
 
 // Die folgenden Methoden koennen via RPC vom Client aufgerufen werden.
 // Die Methode RPCDraw ist nur der Vollstaendigkeit halber vorhanden. In
