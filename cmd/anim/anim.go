@@ -1379,7 +1379,7 @@ var (
 				}
 				y -= dPix
 			}
-			txt = ledgrid.NewFixedText(fixed.P(1, height-1), color.YellowGreen, "Hipster")
+			txt = ledgrid.NewFixedText(fixed.P(width/2, height/2), color.YellowGreen, "Hipster")
 			c.Add(txt)
 			aPalTl.Start()
 			aGrp.Start()
