@@ -25,7 +25,7 @@ type Camera struct {
 	dev       *gocv.VideoCapture
 	img       image.Image
 	mask      image.Rectangle
-	DstMask   *image.Alpha
+	Mask   *image.Alpha
 	mat       [2]gocv.Mat
 	matMutex  [2]*sync.RWMutex
 	matIdx    int
@@ -48,9 +48,9 @@ func NewCamera(pos, size geom.Point) *Camera {
 		m := (camWidth - w) / 2.0
 		c.mask = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
 	}
-	c.DstMask = image.NewAlpha(image.Rectangle{Max: size.Int()})
-	for i := range c.DstMask.Pix {
-		c.DstMask.Pix[i] = 0xff
+	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+	for i := range c.Mask.Pix {
+		c.Mask.Pix[i] = 0xff
 	}
 	for i := range 2 {
 		c.mat[i] = gocv.NewMatWithSize(camWidth, camHeight, gocv.MatTypeCV8UC3)
@@ -154,5 +154,5 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
 	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
-		&draw.Options{DstMask: c.DstMask})
+		&draw.Options{DstMask: c.Mask})
 }

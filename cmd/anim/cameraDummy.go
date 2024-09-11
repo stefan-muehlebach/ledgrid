@@ -20,7 +20,7 @@ type Camera struct {
 func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
-	c.DstMask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
