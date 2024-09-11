@@ -52,7 +52,7 @@ type Canvas struct {
 	GC         *gg.Context
 	objMutex   *sync.RWMutex
 	paintWatch *Stopwatch
-    sync1, sync2 chan bool
+    syncAnim, syncSend chan bool
 }
 
 func NewCanvas(size image.Point) *Canvas {
@@ -105,7 +105,6 @@ func (c *Canvas) Purge() {
 }
 
 func (c *Canvas) Refresh() {
-	c.paintWatch.Start()
 	c.GC.SetFillColor(c.BackColor)
 	c.GC.Clear()
 	c.objMutex.RLock()
@@ -117,24 +116,25 @@ func (c *Canvas) Refresh() {
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-	c.paintWatch.Stop()
 }
 
-func (c *Canvas) StartRefresh(sync1, sync2 chan bool) {
-    c.sync1 = sync1
-    c.sync2 = sync2
+func (c *Canvas) StartRefresh(syncAnim, syncSend chan bool) {
+    c.syncAnim = syncAnim
+    c.syncSend = syncSend
     go c.refreshThread()
 }
 
 func (c *Canvas) refreshThread() {
     for {
-        <-c.sync1
-        <-c.sync2
+        <-c.syncSend
+        <-c.syncAnim
+        	c.paintWatch.Start()
         c.Refresh()
-        c.sync1 <- true
+        c.syncAnim <- true
     		draw.Draw(AnimCtrl.ledGrid, AnimCtrl.ledGrid.Bounds(), AnimCtrl.Filter,
             image.Point{}, draw.Over)
-        c.sync2 <- true
+        	c.paintWatch.Stop()
+        c.syncSend <- true
     }
 }
 

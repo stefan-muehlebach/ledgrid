@@ -222,7 +222,6 @@ func (a *AnimationController) Del(anim Animation) {
 		if obj == anim {
 			obj.Suspend()
 			a.AnimList[idx] = nil
-			// a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
 			return
 		}
 	}
@@ -232,7 +231,6 @@ func (a *AnimationController) DelAt(idx int) {
 	a.animMutex.Lock()
 	a.AnimList[idx].Suspend()
 	a.AnimList[idx] = nil
-	// a.AnimList = slices.Delete(a.AnimList, idx, idx+1)
 	a.animMutex.Unlock()
 }
 
@@ -302,10 +300,6 @@ func (a *AnimationController) backgroundThread() {
 
 		a.syncChan <- true
 		<-a.syncChan
-		// a.Canvas.Refresh()
-
-		// draw.Draw(a.ledGrid, a.ledGrid.Bounds(), a.Filter, image.Point{}, draw.Over)
-		// a.ledGrid.Show()
 	}
 	close(startChan)
 }
@@ -319,14 +313,10 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.Wa
 				continue
 			}
 			if !anim.Update(a.animPit) {
-				// fmt.Printf("Anim %T ist zu ende..\n", anim)
-				// fmt.Printf("  %+v\n", anim)
-				// a.AnimList[i] = nil
 			}
 		}
 		a.animMutex.RUnlock()
 		wg.Done()
-		// doneChan <- true
 	}
 }
 
@@ -568,7 +558,7 @@ type Sequence struct {
 	RepeatCount int
 
 	Tasks            []Task
-	currTask         int
+	activeTask       int
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -602,10 +592,10 @@ func (a *Sequence) Start() {
 	}
 	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
-	a.currTask = 0
+	a.activeTask = 0
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	a.Tasks[a.currTask].Start()
+	a.Tasks[a.activeTask].Start()
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
@@ -636,15 +626,15 @@ func (a *Sequence) IsRunning() bool {
 // Wird durch den Controller periodisch aufgerufen, prueft ob Animationen
 // dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
 func (a *Sequence) Update(t time.Time) bool {
-	if a.currTask < len(a.Tasks) {
-		if job, ok := a.Tasks[a.currTask].(Job); ok {
+	if a.activeTask < len(a.Tasks) {
+		if job, ok := a.Tasks[a.activeTask].(Job); ok {
 			if job.IsRunning() {
 				return true
 			}
 		}
-		a.currTask++
+		a.activeTask++
 	}
-	if a.currTask >= len(a.Tasks) {
+	if a.activeTask >= len(a.Tasks) {
 		if t.After(a.end) {
 			if a.repeatsLeft == 0 {
 				a.running = false
@@ -654,12 +644,12 @@ func (a *Sequence) Update(t time.Time) bool {
 			}
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
-			a.currTask = 0
-			a.Tasks[a.currTask].Start()
+			a.activeTask = 0
+			a.Tasks[a.activeTask].Start()
 		}
 		return true
 	}
-	a.Tasks[a.currTask].Start()
+	a.Tasks[a.activeTask].Start()
 	return true
 }
 
@@ -800,10 +790,6 @@ func NewTask(fn func()) *SimpleTask {
 func (a *SimpleTask) Start() {
 	a.fn()
 }
-
-// func (a *SimpleTask) IsRunning() bool {
-// 	return false
-// }
 
 // Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
 // CanvasObjekten beeinflusst werden. Mit jedem Aufruf wird dieser Switch
