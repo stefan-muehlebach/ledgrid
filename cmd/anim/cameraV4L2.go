@@ -21,14 +21,14 @@ import (
 type Camera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
-	DstMask   *image.Alpha
 	dev       *v4l.Device
 	imgIdx    int
 	img       [2]image.Image
 	imgMutex  [2]*sync.RWMutex
 	scaler    draw.Scaler
+	srcRect      image.Rectangle
+    Mask      *image.Alpha
 	doneChan  chan bool
-	mask      image.Rectangle
 	cancel    context.CancelFunc
 	running   bool
 }
@@ -41,21 +41,21 @@ func NewCamera(pos, size geom.Point) *Camera {
 	if dstRatio > srcRatio {
 		h := camWidth / dstRatio
 		m := (camHeight - h) / 2.0
-		c.mask = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+		c.srcRect = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
 	} else {
 		w := camHeight * dstRatio
 		m := (camWidth - w) / 2.0
-		c.mask = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
-	}
-	c.DstMask = image.NewAlpha(image.Rectangle{Max: size.Int()})
-	for i := range c.DstMask.Pix {
-		c.DstMask.Pix[i] = 0xff
+		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
 	}
 	c.imgIdx = -1
 	c.imgMutex[0] = &sync.RWMutex{}
 	c.imgMutex[1] = &sync.RWMutex{}
-	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
+	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
+    c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+    for i := range c.Mask.Pix {
+        c.Mask.Pix[i] = 0xff
+    }
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -169,7 +169,8 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	c.imgMutex[idx].RLock()
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv, rect.Add(refPt).Int(), c.img[idx], c.mask, draw.Over,
-		&draw.Options{DstMask: c.DstMask})
+	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img[idx], c.srcRect, draw.Over, &draw.Options{
+        DstMask: c.Mask,
+    })
 	c.imgMutex[idx].RUnlock()
 }

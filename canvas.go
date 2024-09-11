@@ -48,11 +48,11 @@ type Canvas struct {
 	ObjList    *list.List
 	BackColor  color.LedColor
 	Rect       image.Rectangle
-	img        draw.Image
-	fnc        FilterFunc
+	Img        draw.Image
 	GC         *gg.Context
 	objMutex   *sync.RWMutex
 	paintWatch *Stopwatch
+    sync1, sync2 chan bool
 }
 
 func NewCanvas(size image.Point) *Canvas {
@@ -60,13 +60,8 @@ func NewCanvas(size image.Point) *Canvas {
 	c.ObjList = list.New()
 	c.BackColor = color.Black
 	c.Rect = image.Rectangle{Max: size}
-	img := image.NewRGBA(c.Rect)
-	c.img = img
-    c.fnc = nil
-    // c.fnc = func(x, y int) (int, int) {
-		// return (size.X - 1) - x, y
-	// }
-	c.GC = gg.NewContextForRGBA(img)
+	c.Img = image.NewRGBA(c.Rect)
+	c.GC = gg.NewContextForRGBA(c.Img.(*image.RGBA))
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
@@ -85,14 +80,11 @@ func (c *Canvas) Bounds() image.Rectangle {
 }
 
 func (c *Canvas) At(x, y int) gocolor.Color {
-    if c.fnc != nil {
-        x, y = c.fnc(x, y)
-    }
-	return c.img.At(x, y)
+	return c.Img.At(x, y)
 }
 
 func (c *Canvas) Set(x, y int, col gocolor.Color) {
-	c.img.Set(x, y, col)
+	c.Img.Set(x, y, col)
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
@@ -128,60 +120,26 @@ func (c *Canvas) Refresh() {
 	c.paintWatch.Stop()
 }
 
+func (c *Canvas) StartRefresh(sync1, sync2 chan bool) {
+    c.sync1 = sync1
+    c.sync2 = sync2
+    go c.refreshThread()
+}
+
+func (c *Canvas) refreshThread() {
+    for {
+        <-c.sync1
+        <-c.sync2
+        c.Refresh()
+        c.sync1 <- true
+    		draw.Draw(AnimCtrl.ledGrid, AnimCtrl.ledGrid.Bounds(), AnimCtrl.Filter,
+            image.Point{}, draw.Over)
+        c.sync2 <- true
+    }
+}
+
 func (c *Canvas) Watch() *Stopwatch {
 	return c.paintWatch
-}
-
-// Erster Versuch eines Filter-Objektes, das vor Canvas geschaltet werden
-// kann. Wird beim Uebertragen der Pixel in das LedGrid-Objekt angewandt.
-type PixelFilter struct {
-	img draw.Image
-	fnc FilterFunc
-	// xMap, yMap [][]int
-}
-
-type FilterFunc func(x, y int) (int, int)
-
-// func flipHorizontal(x, y int) (int, int) {
-
-func NewPixelFilter(imgPtr *draw.Image) *PixelFilter {
-	p := &PixelFilter{}
-	p.img = *imgPtr
-	*imgPtr = p
-	width := p.img.Bounds().Dx()
-	// height := p.img.Bounds().Dy()
-	p.fnc = func(x, y int) (int, int) {
-		return (width - 1) - x, y
-	}
-	// p.xMap = make([][]int, width)
-	// p.yMap = make([][]int, width)
-	// for col := range width {
-	//     p.xMap[col] = make([]int, height)
-	//     p.yMap[col] = make([]int, height)
-	//     for row := range height {
-	//         p.xMap[col][row] = (width-1) - col
-	//         p.yMap[col][row] = (height-1) - row
-	//     }
-	// }
-	return p
-}
-
-func (p *PixelFilter) ColorModel() gocolor.Model {
-	return p.img.ColorModel()
-}
-
-func (p *PixelFilter) Bounds() image.Rectangle {
-	return p.img.Bounds()
-}
-
-func (p *PixelFilter) At(x, y int) gocolor.Color {
-	// x, y = p.xMap[x][y], p.yMap[x][y]
-	x, y = p.fnc(x, y)
-	return p.img.At(x, y)
-}
-
-func (p *PixelFilter) Set(x, y int, c gocolor.Color) {
-	p.img.Set(x, y, c)
 }
 
 // Alle Objekte, die durch den Controller auf dem LED-Grid dargestellt werden
@@ -410,15 +368,14 @@ func NewPixel(pos image.Point, col color.LedColor) *Pixel {
 }
 
 func (p *Pixel) Draw(c *Canvas) {
-	bgColor := color.LedColorModel.Convert(c.img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
-	c.img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
+	bgColor := color.LedColorModel.Convert(c.Img.At(p.Pos.X, p.Pos.Y)).(color.LedColor)
+	c.Img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, color.Blend))
 }
 
 // Ein einzelnes Pixel, dessen Bewegungen weicher (smooth) animiert werden
 // koennen, ist der Typ Dot. Da er grosse Aehnlichkeit zum Typ Pixel aufweist,
 // werden auch hier die Koordinaten als Spalten-, resp. Zeilenindex
 // interpretiert.
-
 type Dot struct {
 	CanvasObjectEmbed
 	Pos   geom.Point
@@ -437,7 +394,7 @@ func (d *Dot) Draw(c *Canvas) {
 	c.GC.Fill()
 }
 
-// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel.
+// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc)
 type Image struct {
 	CanvasObjectEmbed
 	Pos, Size geom.Point
@@ -491,7 +448,6 @@ func DecodeImageFile(fileName string) draw.Image {
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
 // Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
 // skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
-
 type ImageList struct {
 	Pos, Size geom.Point
 	Angle     float64
@@ -533,7 +489,7 @@ func (i *ImageList) Draw(c *Canvas) {
 	sx := i.Size.X / float64(i.imgBounds.Dx())
 	sy := i.Size.Y / float64(i.imgBounds.Dy())
 	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
-	draw.BiLinear.Transform(c.img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
+	draw.BiLinear.Transform(c.Img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
 }
 
 func (i *ImageList) Init() {
@@ -552,17 +508,17 @@ func (i *ImageList) Tick(t float64) {
 	i.ImgIdx = idx
 }
 
-// Zur Darstellung von beliebigem Text.
 var (
 	defFont     = fonts.GoMedium
 	defFontSize = 10.0
 )
 
+// Zur Darstellung von Text mit TrueType-Schriften
 type Text struct {
 	CanvasObjectEmbed
 	Pos      geom.Point
-	AX, AY   float64
 	Angle    float64
+	AX, AY   float64
 	Color    color.LedColor
 	Text     string
 	font     *fonts.Font
@@ -590,7 +546,7 @@ func (t *Text) Draw(c *Canvas) {
 		c.GC.RotateAbout(t.Angle, t.Pos.X, t.Pos.Y)
 		defer c.GC.Pop()
 	}
-	c.GC.SetStrokeColor(t.Color)
+	c.GC.SetTextColor(t.Color)
 	c.GC.SetFontFace(t.fontFace)
 	c.GC.DrawStringAnchored(t.Text, t.Pos.X, t.Pos.Y, t.AX, t.AY)
 }
@@ -641,9 +597,8 @@ func (t *FixedText) updateSize() {
 }
 
 func (t *FixedText) Draw(c *Canvas) {
-	t.drawer.Dst = c.img
+	t.drawer.Dst = c.Img
 	t.drawer.Src = image.NewUniform(t.Color)
-	t.drawer.Dot = t.Pos
-	// t.drawer.Dot = t.Pos.Sub(t.dp)
+	t.drawer.Dot = t.Pos.Sub(t.dp)
 	t.drawer.DrawString(t.text)
 }

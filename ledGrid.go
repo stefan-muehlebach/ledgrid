@@ -23,6 +23,7 @@ type LedGrid struct {
 	// Mit dieser Struktur (slice of slices) werden Pixel-Koordinaten in
 	// Indizes uebersetzt.
 	idxMap conf.IndexMap
+    syncChan chan bool
 }
 
 // Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
@@ -40,6 +41,8 @@ func NewLedGrid(size image.Point, modConf conf.ModuleConfig) *LedGrid {
 	}
 
 	g.idxMap = modConf.IndexMap()
+    g.syncChan = make(chan bool)
+    go g.refreshThread()
 	return g
 }
 
@@ -54,6 +57,8 @@ func NewLedGridV2(host string, port uint) *LedGrid {
     g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
 	modConf := conf.DefaultModuleConfig(g.Rect.Size())
 	g.idxMap = modConf.IndexMap()
+    g.syncChan = make(chan bool)
+    go g.refreshThread()
 	return g
 }
 
@@ -109,7 +114,7 @@ func (g *LedGrid) SetLedColor(x, y int, c ledcolor.LedColor) {
 // schlangenfoermig angeordnet sind, und der Beginn der LED-Kette frei
 // waehlbar in einer Ecke des Panels liegen kann.
 func (g *LedGrid) PixOffset(x, y int) int {
-	return g.idxMap[x][y]
+	return 3*g.idxMap[x][y]
 }
 
 // Mit Clear kann das ganze Grid geloescht, resp. alle LEDs auf die gleiche
@@ -130,3 +135,13 @@ func (g *LedGrid) Clear(c ledcolor.LedColor) {
 func (g *LedGrid) Show() {
     g.Client.Send(g.Pix)
 }
+
+func (g *LedGrid) refreshThread() {
+    g.syncChan <- true
+    for {
+        <- g.syncChan
+        g.Client.Send(g.Pix)
+        g.syncChan <- true
+    }
+}
+

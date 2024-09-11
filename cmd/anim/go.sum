@@ -4,8 +4,6 @@ github.com/jonboulle/clockwork v0.4.0 h1:p4Cf1aMWXnXAUh8lVfewRBx1zaTSYKrKMF2g3ST
 github.com/jonboulle/clockwork v0.4.0/go.mod h1:xgRqUGwRcjKCO1vbZUEtSLrqKoPSsUpK7fnezOII0kc=
 github.com/korandiz/v4l v1.1.0 h1:VbzaWlhqNzVPfHEYEM+V8T7184ndiEzljJgDHSHc7pc=
 github.com/korandiz/v4l v1.1.0/go.mod h1:pftxPG7hkuUgepioAY6PAE81mShaVjzd95X/WF4Izus=
-github.com/stefan-muehlebach/gg v1.3.4 h1:7jp0dz//LRENmVhFhfTk2RXYH6sDnW+3Blsz4wUb6Rw=
-github.com/stefan-muehlebach/gg v1.3.4/go.mod h1:oOpo41er0HL+jYaBxGy/nYE6du7MsRMkEeqDbBBLQY0=
 gocv.io/x/gocv v0.37.0 h1:sISHvnApErjoJodz1Dxb8UAkFdITOB3vXGslbVu6Knk=
 gocv.io/x/gocv v0.37.0/go.mod h1:lmS802zoQmnNvXETpmGriBqWrENPei2GxYx5KUxJsMA=
 golang.org/x/image v0.19.0 h1:D9FX4QWkLfkeqaC62SonffIIuYdOk/UE2XKUBgRIBIQ=

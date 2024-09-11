@@ -56,7 +56,7 @@ func main() {
 	var err error
 	var ledGrid *ledgrid.LedGrid
 	var ledColor color.LedColor
-	var pixelClient ledgrid.PixelClient
+	var gridClient ledgrid.GridClient
 	var curColorChanged bool
 	var redrawGrid bool
 	var cursorMoved bool
@@ -91,8 +91,8 @@ func main() {
 	selRect = image.Rect(0, 0, 1, 1)
 
 	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
-	pixelClient = ledgrid.NewNetPixelClient(host, port)
-	gammaValues[0], gammaValues[1], gammaValues[2] = pixelClient.Gamma()
+	gridClient = ledgrid.NewNetGridClient(host, port)
+	gammaValues[0], gammaValues[1], gammaValues[2] = gridClient.Gamma()
 
 	stdscr, err = gc.Init()
 	if err != nil {
@@ -160,7 +160,7 @@ func main() {
 	winGrid.Refresh()
 	winHelp.Refresh()
 
-	pixelClient.Send(ledGrid)
+	gridClient.Send(ledGrid.Pix)
 
 main:
 	for {
@@ -319,15 +319,15 @@ main:
 			gammaValues[0] -= 0.1
 			gammaValues[1] -= 0.1
 			gammaValues[2] -= 0.1
-			pixelClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
-			pixelClient.Send(ledGrid)
+			gridClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
+			gridClient.Send(ledGrid.Pix)
 
 		case 'G':
 			gammaValues[0] += 0.1
 			gammaValues[1] += 0.1
 			gammaValues[2] += 0.1
-			pixelClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
-			pixelClient.Send(ledGrid)
+			gridClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
+			gridClient.Send(ledGrid.Pix)
 
 		case 'i':
 			for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
@@ -566,10 +566,10 @@ main:
 		}
 
 		if redrawGrid {
-			pixelClient.Send(ledGrid)
+			gridClient.Send(ledGrid.Pix)
 			redrawGrid = false
 		}
 	}
 	winGrid.Delete()
-	pixelClient.Close()
+	gridClient.Close()
 }

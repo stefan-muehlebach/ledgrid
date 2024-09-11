@@ -39,13 +39,13 @@ var Pico3x5 = &basicfont.Face{
 	Ranges:  glyphRange,
 }
 
-var Face5x7 = &basicfont.Face{
+var Fixed5x7 = &basicfont.Face{
 	Advance: 6,
 	Width:   5, // Dies ist die Breite eines Buchstabens gem. Maske
 	Height:  9,
 	Ascent:  7, // Dies ist die Hoehe eines Buchstabens gem. Maske
 	Descent: 0,
-	Mask:    mask5x7,
+	Mask:    maskFixed5x7,
 	Ranges:  glyphRange,
 }
 

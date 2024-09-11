@@ -12,9 +12,11 @@ import (
 // solche Funktion sind beim Funktionstyp [PathFunctionType] beschrieben.
 
 // Die PathFunctionType muss folgende Bedingungen erfuellen:
-//  1. t ist in [0,1]
-//  2. f(0) = (0,0)
-//  3. max(f(t).X) - min(f(t).X) = 1.0 und
+//  1. Wird mit einer Fliesskommazahl (t) aufgerufen und retourniert einen
+//     2D-Punkt
+//  2. t ist in [0,1]
+//  3. f(0) muss (0,0) sein
+//  4. max(f(t).X) - min(f(t).X) = 1.0 und
 //     max(f(t).Y) - min(f(t).Y) = 1.0
 type PathFunctionType func(t float64) geom.Point
 

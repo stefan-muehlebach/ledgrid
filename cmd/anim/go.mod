@@ -4,9 +4,11 @@ go 1.23.0
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 
+replace github.com/stefan-muehlebach/gg => ../../../gg
+
 require (
 	github.com/korandiz/v4l v1.1.0
-	github.com/stefan-muehlebach/gg v1.3.4
+	github.com/stefan-muehlebach/gg v0.0.0-00010101000000-000000000000
 	github.com/stefan-muehlebach/ledgrid v0.0.0-00010101000000-000000000000
 	gocv.io/x/gocv v0.37.0
 	golang.org/x/image v0.19.0

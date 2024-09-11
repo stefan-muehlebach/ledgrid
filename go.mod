@@ -2,8 +2,10 @@ module github.com/stefan-muehlebach/ledgrid
 
 go 1.23.0
 
+replace github.com/stefan-muehlebach/gg => ../gg
+
 require (
-	github.com/stefan-muehlebach/gg v1.3.4
+	github.com/stefan-muehlebach/gg v0.0.0-00010101000000-000000000000
 	golang.org/x/image v0.19.0
 	periph.io/x/conn/v3 v3.7.1
 	periph.io/x/host/v3 v3.8.2

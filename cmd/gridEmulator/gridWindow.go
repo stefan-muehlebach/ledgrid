@@ -34,7 +34,7 @@ func NewGridWindow(size image.Point) *GridWindow {
 	e := &GridWindow{size: size}
 	e.Grid = container.NewGridWithRows(size.Y)
 	e.gridConf = conf.DefaultModuleConfig(size)
-	e.coordMap = e.gridConf.IndexMap().CoordMap()
+	e.coordMap = e.gridConf.CoordMap()
 	e.field = make([][]*canvas.Circle, size.X)
 	for i := range e.field {
 		e.field[i] = make([]*canvas.Circle, size.Y)
