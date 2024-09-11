@@ -88,13 +88,18 @@ type PointPair struct {
 }
 
 var (
-	spiralMap = [][]PointPair{}
+	spiralMap = [][]PointPair{
+        []PointPair{},
+        []PointPair{},
+    }
 )
 
 func initSpiralMap(dir ScanLine) {
 	var dx, dy, m12, m21, w, h int
 	var pt0, pt1 image.Point
 	var segList []int
+
+    spiralMap[dir] = make([]PointPair, 0)
 
 	switch dir {
 	case CW:
@@ -131,17 +136,6 @@ LOOP:
 		}
 		w, h = w-2, h-2
 	}
-}
-
-func init() {
-	spiralMap = make([][]PointPair, 2)
-	spiralMap[Forward] = make([]PointPair, 0)
-	spiralMap[Backward] = make([]PointPair, 0)
-
-	width, height = 20, 10
-
-	initSpiralMap(CW)
-	initSpiralMap(CCW)
 }
 
 func StartEndPoints(idx int, scanDir ScanDir, scanLine ScanLine,
@@ -1525,6 +1519,9 @@ func main() {
 
 	canvas = ledgrid.NewCanvas(gridSize)
 	ledgrid.NewAnimationController(canvas, ledGrid)
+
+    	initSpiralMap(CW)
+	initSpiralMap(CCW)
 
 	if runInteractive {
 		progId = -1
