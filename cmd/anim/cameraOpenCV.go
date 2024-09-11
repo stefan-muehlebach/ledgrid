@@ -24,7 +24,7 @@ type Camera struct {
 	Pos, Size geom.Point
 	dev       *gocv.VideoCapture
 	img       image.Image
-	mask      image.Rectangle
+	srcRect      image.Rectangle
 	Mask   *image.Alpha
 	mat       [2]gocv.Mat
 	matMutex  [2]*sync.RWMutex
@@ -42,11 +42,11 @@ func NewCamera(pos, size geom.Point) *Camera {
 	if dstRatio > srcRatio {
 		h := camWidth / dstRatio
 		m := (camHeight - h) / 2.0
-		c.mask = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+		c.srcRect = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
 	} else {
 		w := camHeight * dstRatio
 		m := (camWidth - w) / 2.0
-		c.mask = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
+		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
 	}
 	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
 	for i := range c.Mask.Pix {
@@ -57,7 +57,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 		c.matMutex[i] = &sync.RWMutex{}
 	}
 	c.matIdx = -1
-	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.mask.Dx(), c.mask.Dy())
+	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
 	ledgrid.AnimCtrl.Add(c)
 	return c
@@ -153,6 +153,6 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	}
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.mask, draw.Over,
-		&draw.Options{DstMask: c.Mask})
+	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.srcRect,
+        draw.Over, &draw.Options{DstMask: c.Mask})
 }

@@ -169,8 +169,7 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	c.imgMutex[idx].RLock()
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img[idx], c.srcRect, draw.Over, &draw.Options{
-        DstMask: c.Mask,
-    })
+	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img[idx], c.srcRect,
+        draw.Over, &draw.Options{DstMask: c.Mask})
 	c.imgMutex[idx].RUnlock()
 }
