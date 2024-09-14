@@ -585,6 +585,16 @@ func (a *Sequence) Add(tasks ...Task) {
 	}
 }
 
+func (a *Sequence) Put(tasks ...Task) {
+	for _, task := range tasks {
+		if anim, ok := task.(Animation); ok {
+			a.duration = a.duration + anim.Duration()
+		}
+		a.Tasks = append([]Task{task}, a.Tasks...)
+	}
+}
+
+
 // Startet die Sequenz.
 func (a *Sequence) Start() {
 	if a.running {
@@ -1199,6 +1209,58 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 	}
 }
 
+
+// Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
+// Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
+type PathAnim struct {
+	NormAnimationEmbed
+	ValPtr     *geom.Point
+	val1, val2 geom.Point
+	Val1, Val2 AnimValueFunc[geom.Point]
+	Path   *Path
+	Cont       bool
+}
+
+func NewPathAnimation(valPtr *geom.Point, path *Path, size geom.Point, dur time.Duration) *PathAnim {
+	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Path: path}
+	a.NormAnimationEmbed.Extend(a)
+	a.SetDuration(dur)
+	a.Val2 = func() geom.Point {
+		return a.Val1().Add(size)
+	}
+	return a
+}
+
+func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnim {
+	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2), Path: LinearPath}
+	a.NormAnimationEmbed.Extend(a)
+	a.SetDuration(dur)
+	return a
+}
+
+func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnim {
+	return NewPositionAnimation(valPtr, val2, dur)
+}
+
+func (a *PathAnim) Init() {
+	if a.Cont {
+		a.Val1 = Const(*a.ValPtr)
+	}
+	a.val1 = a.Val1()
+	a.val2 = a.Val2()
+}
+
+func (a *PathAnim) Tick(t float64) {
+	var dp geom.Point
+	var s geom.Point
+
+	dp = a.Path.Pos(t)
+	s = a.val2.Sub(a.val1)
+	dp.X *= s.X
+	dp.Y *= s.Y
+	*a.ValPtr = a.val1.Add(dp)
+}
+
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnimation struct {
@@ -1210,26 +1272,26 @@ type PathAnimation struct {
 	Cont       bool
 }
 
-func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), PathFunc: pathFunc}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	a.Val2 = func() geom.Point {
-		return a.Val1().Add(size)
-	}
-	return a
-}
+// func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
+// 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), PathFunc: pathFunc}
+// 	a.NormAnimationEmbed.Extend(a)
+// 	a.SetDuration(dur)
+// 	a.Val2 = func() geom.Point {
+// 		return a.Val1().Add(size)
+// 	}
+// 	return a
+// }
 
-func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2), PathFunc: LinearPath}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	return a
-}
+// func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
+// 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2), PathFunc: LinearPath}
+// 	a.NormAnimationEmbed.Extend(a)
+// 	a.SetDuration(dur)
+// 	return a
+// }
 
-func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
-	return NewPositionAnimation(valPtr, val2, dur)
-}
+// func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
+// 	return NewPositionAnimation(valPtr, val2, dur)
+// }
 
 func (a *PathAnimation) Init() {
 	if a.Cont {
