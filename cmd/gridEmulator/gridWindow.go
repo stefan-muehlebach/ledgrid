@@ -18,10 +18,10 @@ import (
 // configuration of the original LedGrid using 10x10 modules as well as the
 // snake cabeling.
 type GridWindow struct {
-    // This is the fyne object, which must be added to a fyne application in
-    // order to experience the whole glory of the emulation.
+	// This is the fyne object, which must be added to a fyne application in
+	// order to experience the whole glory of the emulation.
 	Grid      *fyne.Container
-	modConf  conf.ModuleConfig
+	modConf   conf.ModuleConfig
 	coordMap  conf.CoordMap
 	field     [][]*canvas.Circle
 	size      image.Point
@@ -31,14 +31,14 @@ type GridWindow struct {
 // A new grid object must only know it's size in order to get the
 // configuration of the emulated modules.
 func NewGridWindowBySize(size image.Point) *GridWindow {
-    modConf := conf.DefaultModuleConfig(size)
-    return NewGridWindow(size, modConf)
+	modConf := conf.DefaultModuleConfig(size)
+	return NewGridWindow(size, modConf)
 }
 
 func NewGridWindow(size image.Point, modConf conf.ModuleConfig) *GridWindow {
 	e := &GridWindow{size: size}
 	e.Grid = container.NewGridWithRows(size.Y)
-    	e.modConf = modConf
+	e.modConf = modConf
 	e.coordMap = e.modConf.CoordMap()
 	e.field = make([][]*canvas.Circle, size.X)
 	for i := range e.field {
@@ -46,8 +46,10 @@ func NewGridWindow(size image.Point, modConf conf.ModuleConfig) *GridWindow {
 	}
 	for col := range size.X {
 		for row := range size.Y {
-			ledColor := color.Black
-			led := canvas.NewCircle(ledColor)
+			led := canvas.NewCircle(color.Black)
+			if !e.modConf.Contains(image.Pt(col, row)) {
+				led.FillColor = color.Transparent
+			}
 			led.StrokeWidth = 0.0
 			e.field[col][row] = led
 			e.Grid.Add(led)
@@ -67,7 +69,7 @@ func (e *GridWindow) DefaultGamma() (r, g, b float64) {
 func (e *GridWindow) Close() {}
 
 func (e *GridWindow) Size() int {
-	return e.size.X*e.size.Y
+	return e.size.X * e.size.Y
 }
 
 // Takes the bytes in buffer, and uses them exactly as the real hardware

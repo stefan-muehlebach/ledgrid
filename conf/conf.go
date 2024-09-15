@@ -325,6 +325,15 @@ func (conf ModuleConfig) Coord(idx int) image.Point {
     return modPos.Coord(idx)
 }
 
+func (conf ModuleConfig) Contains(pt image.Point) bool {
+    for _, modPos := range conf {
+        if pt.In(modPos.Bounds()) {
+            return true
+        }
+    }
+    return false
+}
+
 func (conf ModuleConfig) Module(pt image.Point) ModulePosition {
     for _, modPos := range conf {
         if pt.In(modPos.Bounds()) {

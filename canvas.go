@@ -2,7 +2,6 @@ package ledgrid
 
 import (
 	"container/list"
-	"encoding/gob"
 	"image"
 	gocolor "image/color"
 	"log"
@@ -45,14 +44,14 @@ var (
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
 type Canvas struct {
-	ObjList    *list.List
-	BackColor  color.LedColor
-	Rect       image.Rectangle
-	Img        draw.Image
-	GC         *gg.Context
-	objMutex   *sync.RWMutex
-	paintWatch *Stopwatch
-    syncAnim, syncSend chan bool
+	ObjList            *list.List
+	BackColor          color.LedColor
+	Rect               image.Rectangle
+	Img                draw.Image
+	GC                 *gg.Context
+	objMutex           *sync.RWMutex
+	paintWatch         *Stopwatch
+	syncAnim, syncSend chan bool
 }
 
 func NewCanvas(size image.Point) *Canvas {
@@ -119,23 +118,23 @@ func (c *Canvas) Refresh() {
 }
 
 func (c *Canvas) StartRefresh(syncAnim, syncSend chan bool) {
-    c.syncAnim = syncAnim
-    c.syncSend = syncSend
-    go c.refreshThread()
+	c.syncAnim = syncAnim
+	c.syncSend = syncSend
+	go c.refreshThread()
 }
 
 func (c *Canvas) refreshThread() {
-    for {
-        <-c.syncSend
-        <-c.syncAnim
-        	c.paintWatch.Start()
-        c.Refresh()
-        c.syncAnim <- true
-    		draw.Draw(AnimCtrl.ledGrid, AnimCtrl.ledGrid.Bounds(), AnimCtrl.Filter,
-            image.Point{}, draw.Over)
-        	c.paintWatch.Stop()
-        c.syncSend <- true
-    }
+	for {
+		<-c.syncSend
+		<-c.syncAnim
+		c.paintWatch.Start()
+		c.Refresh()
+		c.syncAnim <- true
+		draw.Draw(AnimCtrl.ledGrid, AnimCtrl.ledGrid.Bounds(), AnimCtrl.Filter,
+			image.Point{}, draw.Over)
+		c.paintWatch.Stop()
+		c.syncSend <- true
+	}
 }
 
 func (c *Canvas) Watch() *Stopwatch {
@@ -183,6 +182,7 @@ func (c *CanvasObjectEmbed) IsHidden() bool {
 	return !c.Visible
 }
 
+// Und hier etwas mit Farben...
 type ColorFunc func(color.LedColor) color.LedColor
 
 func ApplyAlpha(c color.LedColor) color.LedColor {
@@ -196,24 +196,21 @@ var (
 	}
 )
 
-//
 // Basic geometric shapes
-//
-
-func init() {
-	gob.Register(&Ellipse{})
-	gob.Register(&Rectangle{})
-	gob.Register(&RegularPolygon{})
-	gob.Register(&Line{})
-	gob.Register(&Pixel{})
-	gob.Register(&Dot{})
-	gob.Register(&Image{})
-	gob.Register(&ImageList{})
+// func init() {
+	// gob.Register(&Ellipse{})
+	// gob.Register(&Rectangle{})
+	// gob.Register(&RegularPolygon{})
+	// gob.Register(&Line{})
+	// gob.Register(&Pixel{})
+	// gob.Register(&Dot{})
+	// gob.Register(&Image{})
+	// gob.Register(&ImageList{})
 	// gob.Register(&Camera{})
-	gob.Register(&Text{})
-	gob.Register(&FixedText{})
-	gob.Register(&image.RGBA{})
-}
+	// gob.Register(&Text{})
+	// gob.Register(&FixedText{})
+	// gob.Register(&image.RGBA{})
+// }
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
 // Position des Mittelpunktes und mit Size ist die Breite und Hoehe des

@@ -14,7 +14,7 @@ import (
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
-    "github.com/stefan-muehlebach/ledgrid/conf"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -318,6 +318,86 @@ func (f *ShuffleFilter) SwapCols(i, j int) {
 // ---------------------------------------------------------------------------
 
 var (
+	FarewellGery = NewLedGridProgram("Farewell Gery!",
+		func(c *ledgrid.Canvas) {
+			aGrpPurple := ledgrid.NewGroup()
+			aGrpYellow := ledgrid.NewGroup()
+			aGrpGreen := ledgrid.NewGroup()
+			aGrpGrey := ledgrid.NewGroup()
+			aGrpRed := ledgrid.NewGroup()
+			aGrpBlack := ledgrid.NewGroup()
+			aSeqColor := ledgrid.NewSequence(aGrpRed, aGrpGreen)
+
+			for y := range c.Rect.Dy() {
+				for x := range c.Rect.Dx() {
+					pt := image.Point{x, y}
+					pos := geom.NewPointIMG(pt)
+					t := rand.Float64()
+					col := (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t)
+					pix := ledgrid.NewDot(pos, col)
+					c.Add(pix)
+
+					dur := time.Second + time.Duration(10*x+20*y)*time.Millisecond
+					aAlpha := ledgrid.NewUint8Animation(&pix.Color.A, 196, dur)
+					aAlpha.AutoReverse = true
+					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
+					aAlpha.Start()
+
+					aColor := ledgrid.NewColorAnimation(&pix.Color, col, 1*time.Second)
+					aColor.Cont = true
+					aGrpGrey.Add(aColor)
+
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
+					aColor.Cont = true
+					aGrpPurple.Add(aColor)
+
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Gold.Interpolate(color.Khaki, t), 4*time.Second)
+					aColor.Cont = true
+					aGrpYellow.Add(aColor)
+
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Crimson.Interpolate(color.Orange, t), 4*time.Second)
+					aColor.Cont = true
+					aGrpRed.Add(aColor)
+
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.LightSeaGreen.Interpolate(color.GreenYellow, t), 500*time.Millisecond)
+					aColor.Cont = true
+					aGrpGreen.Add(aColor)
+
+					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Black, 2*time.Second)
+					aColor.Cont = true
+					aGrpBlack.Add(aColor)
+				}
+			}
+
+			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LIEBER")
+			aTxt1 := ledgrid.NewUint8Animation(&txt1.Color.A, 255, 1*time.Second)
+			aTxt1.AutoReverse = true
+			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "GERY")
+			aTxt2 := ledgrid.NewUint8Animation(&txt2.Color.A, 255, 2*time.Second)
+			aTxt2.AutoReverse = true
+			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "FAREWELL")
+			aTxt3 := ledgrid.NewUint8Animation(&txt3.Color.A, 255, 5*time.Second)
+			aTxt3.AutoReverse = true
+			c.Add(txt1, txt2, txt3)
+
+			aTimel := ledgrid.NewTimeline(40 * time.Second)
+			aTimel.Add(5*time.Second, aGrpPurple)
+			aTimel.Add(8*time.Second, aTxt1)
+			aTimel.Add(9*time.Second, aGrpGrey)
+
+			aTimel.Add(15*time.Second, aGrpYellow)
+			aTimel.Add(18*time.Second, aTxt2)
+			aTimel.Add(19*time.Second, aGrpGrey)
+
+			aTimel.Add(25*time.Second, aSeqColor)
+			aTimel.Add(28*time.Second, aTxt3)
+			aTimel.Add(30*time.Second, aGrpBlack)
+			aTimel.Add(38*time.Second, aGrpGrey)
+			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
+
+			aTimel.Start()
+		})
+
 	GroupTest = NewLedGridProgram("Group test",
 		func(c *ledgrid.Canvas) {
 			rPos1 := geom.Point{5.0, float64(height) / 2.0}
@@ -1113,7 +1193,7 @@ var (
 
 				xMin, xMax := float64(i), float64(width-i)
 				yMin, yMax := float64(i), float64(height-i)
-				col := color.RandGroupColor(color.Purples).Dark(float64(5-i)*0.1)
+				col := color.RandGroupColor(color.Purples).Dark(float64(5-i) * 0.1)
 				posList := []geom.Point{
 					geom.Point{0.0, yMin},
 					geom.Point{0.0, yMax - 1},
@@ -1222,86 +1302,6 @@ var (
 			aTimel.Start()
 		})
 
-	FarewellGery = NewLedGridProgram("Farewell Gery!",
-		func(c *ledgrid.Canvas) {
-			aGrpPurple := ledgrid.NewGroup()
-			aGrpYellow := ledgrid.NewGroup()
-			aGrpGreen := ledgrid.NewGroup()
-			aGrpGrey := ledgrid.NewGroup()
-			aGrpRed := ledgrid.NewGroup()
-			aGrpBlack := ledgrid.NewGroup()
-			aSeqColor := ledgrid.NewSequence(aGrpRed, aGrpGreen)
-
-			for y := range c.Rect.Dy() {
-				for x := range c.Rect.Dx() {
-					pt := image.Point{x, y}
-					pos := geom.NewPointIMG(pt)
-					t := rand.Float64()
-					col := (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t)
-					pix := ledgrid.NewDot(pos, col)
-					c.Add(pix)
-
-					dur := time.Second + time.Duration(10*x+20*y)*time.Millisecond
-					aAlpha := ledgrid.NewUint8Animation(&pix.Color.A, 196, dur)
-					aAlpha.AutoReverse = true
-					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
-					aAlpha.Start()
-
-					aColor := ledgrid.NewColorAnimation(&pix.Color, col, 1*time.Second)
-					aColor.Cont = true
-					aGrpGrey.Add(aColor)
-
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
-					aColor.Cont = true
-					aGrpPurple.Add(aColor)
-
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Gold.Interpolate(color.Khaki, t), 4*time.Second)
-					aColor.Cont = true
-					aGrpYellow.Add(aColor)
-
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Crimson.Interpolate(color.Orange, t), 4*time.Second)
-					aColor.Cont = true
-					aGrpRed.Add(aColor)
-
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.LightSeaGreen.Interpolate(color.GreenYellow, t), 500*time.Millisecond)
-					aColor.Cont = true
-					aGrpGreen.Add(aColor)
-
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Black, 2*time.Second)
-					aColor.Cont = true
-					aGrpBlack.Add(aColor)
-				}
-			}
-
-			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LIEBER")
-			aTxt1 := ledgrid.NewUint8Animation(&txt1.Color.A, 255, 1*time.Second)
-			aTxt1.AutoReverse = true
-			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "GERY")
-			aTxt2 := ledgrid.NewUint8Animation(&txt2.Color.A, 255, 2*time.Second)
-			aTxt2.AutoReverse = true
-			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "FAREWELL")
-			aTxt3 := ledgrid.NewUint8Animation(&txt3.Color.A, 255, 5*time.Second)
-			aTxt3.AutoReverse = true
-			c.Add(txt1, txt2, txt3)
-
-			aTimel := ledgrid.NewTimeline(40 * time.Second)
-			aTimel.Add(5*time.Second, aGrpPurple)
-			aTimel.Add(8*time.Second, aTxt1)
-			aTimel.Add(9*time.Second, aGrpGrey)
-
-			aTimel.Add(15*time.Second, aGrpYellow)
-			aTimel.Add(18*time.Second, aTxt2)
-			aTimel.Add(19*time.Second, aGrpGrey)
-
-			aTimel.Add(25*time.Second, aSeqColor)
-			aTimel.Add(28*time.Second, aTxt3)
-			aTimel.Add(30*time.Second, aGrpBlack)
-			aTimel.Add(38*time.Second, aGrpGrey)
-			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
-
-			aTimel.Start()
-		})
-
 	TestShaderFunc = func(x, y, t float64) float64 {
 		t = t/4.0 + x
 		_, f := math.Modf(math.Abs(t))
@@ -1383,11 +1383,56 @@ var (
 			aGrp.Start()
 		})
 
-	WaterDrops = NewLedGridProgram("Water drops",
+	ColorFields = NewLedGridProgram("Fields of named colors",
 		func(c *ledgrid.Canvas) {
+			var input int
+			var colGrp color.ColorGroup
 
+			cs := NewColorSampler(color.Purples)
+			c.Add(cs)
+
+			for {
+				fmt.Printf("Enter a number in 0..%d (or 99 to quit): ", color.NumColorGroups-1)
+				fmt.Scanf("%d\n", &input)
+				if input == 99 {
+					return
+				}
+				colGrp = color.ColorGroup(input)
+				if colGrp >= color.NumColorGroups {
+					continue
+				}
+				fmt.Printf("Selected color group: %v\n", colGrp)
+				cs.colGrp = colGrp
+			}
 		})
 )
+
+type ColorSampler struct {
+	ledgrid.CanvasObjectEmbed
+	colGrp color.ColorGroup
+}
+
+func NewColorSampler(colGrp color.ColorGroup) *ColorSampler {
+	c := &ColorSampler{}
+	c.CanvasObjectEmbed.Extend(c)
+	c.colGrp = colGrp
+	return c
+}
+
+func (c *ColorSampler) Draw(canv *ledgrid.Canvas) {
+	for i, colorName := range color.Groups[c.colGrp] {
+		col := color.Map[colorName]
+		for j := range 2 {
+			x := 2*i + j
+			if x >= width {
+				return
+			}
+			for y := range height {
+				canv.GC.SetPixel(x, y, col)
+			}
+		}
+	}
+}
 
 //----------------------------------------------------------------------------
 
@@ -1480,6 +1525,7 @@ var (
 		BitmapText,
 		SlideTheShow,
 		ShowTheShader,
+		ColorFields,
 	}
 )
 
@@ -1500,20 +1546,21 @@ func main() {
 	var ch byte
 	var progId int
 	var runInteractive bool
-    var useCustomLayout bool
+	var useCustomLayout bool
 	var progList string
+	var gR, gG, gB float64
 
 	for i, prog := range programList {
 		id := 'a' + i
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
-    flag.IntVar(&width, "width", 40, "Width of LedGrid")
-    flag.IntVar(&height, "height", 10, "Height of LedGrid")
+	flag.IntVar(&width, "width", 40, "Width of LedGrid")
+	flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
-    flag.BoolVar(&useCustomLayout, "custom", false, "Use custom module configuration")
+	flag.BoolVar(&useCustomLayout, "custom", false, "Use custom module configuration")
 	flag.Parse()
 
 	if len(input) > 0 {
@@ -1523,11 +1570,12 @@ func main() {
 		runInteractive = true
 	}
 
-    if useCustomLayout {
-        ledGrid = ledgrid.NewLedGrid(host, port, customConf)
-    } else {
-        	ledGrid = ledgrid.NewLedGridBySize(host, port, image.Pt(width, height))
-    }
+	if useCustomLayout {
+		ledGrid = ledgrid.NewLedGrid(host, port, customConf)
+	} else {
+		ledGrid = ledgrid.NewLedGridBySize(host, port, image.Pt(width, height))
+	}
+	gR, gG, gB = ledGrid.Client.Gamma()
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X
@@ -1543,7 +1591,7 @@ func main() {
 		progId = -1
 		for {
 			fmt.Printf("---------------------------------------\n")
-			fmt.Printf("Program\n")
+			fmt.Printf("  Program\n")
 			fmt.Printf("---------------------------------------\n")
 			for i, prog := range programList {
 				if ch >= 'a' && ch <= 'z' && i == progId {
@@ -1554,8 +1602,8 @@ func main() {
 				fmt.Printf("[%c] %s\n", 'a'+i, prog.Name())
 			}
 			fmt.Printf("---------------------------------------\n")
-			fmt.Printf("  S - Save Canvas\n")
-			fmt.Printf("  L - Load Canvas from File\n")
+			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
+			fmt.Printf("   +/-: increase/decreases by 0.1\n")
 			fmt.Printf("---------------------------------------\n")
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
@@ -1613,6 +1661,20 @@ func main() {
 						continue
 					}
 					fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
+				}
+			}
+			if ch == '+' {
+				gR += 0.1
+				gG += 0.1
+				gB += 0.1
+				ledGrid.Client.SetGamma(gR, gG, gB)
+			}
+			if ch == '-' {
+				if gR > 0.1 {
+					gR -= 0.1
+					gG -= 0.1
+					gB -= 0.1
+					ledGrid.Client.SetGamma(gR, gG, gB)
 				}
 			}
 		}

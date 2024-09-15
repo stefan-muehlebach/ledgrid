@@ -51,7 +51,7 @@ func NewSPIBus(spiDev string, baud int, size int) *SPIBus {
 }
 
 func (p *SPIBus) DefaultGamma() (r, g, b float64) {
-	return 3.0, 3.0, 3.0
+	return 2.5, 2.5, 2.5
 }
 
 func (p *SPIBus) Size() int {
