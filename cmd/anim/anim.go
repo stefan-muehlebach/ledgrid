@@ -14,6 +14,7 @@ import (
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
+    "github.com/stefan-muehlebach/ledgrid/conf"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -1112,7 +1113,7 @@ var (
 
 				xMin, xMax := float64(i), float64(width-i)
 				yMin, yMax := float64(i), float64(height-i)
-				col := color.RandColor().Dark(float64(5-i)*0.1)
+				col := color.RandGroupColor(color.Purples).Dark(float64(5-i)*0.1)
 				posList := []geom.Point{
 					geom.Point{0.0, yMin},
 					geom.Point{0.0, yMax - 1},
@@ -1482,6 +1483,16 @@ var (
 	}
 )
 
+var (
+	customSize = image.Point{30, 20}
+	customConf = conf.ModuleConfig{
+		conf.ModulePosition{Col: 0, Row: 0, Idx: 0, Mod: conf.Module{conf.ModLR, conf.Rot000}},
+		conf.ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: conf.Module{conf.ModRL, conf.Rot090}},
+		conf.ModulePosition{Col: 1, Row: 1, Idx: 200, Mod: conf.Module{conf.ModLR, conf.Rot000}},
+		conf.ModulePosition{Col: 2, Row: 1, Idx: 300, Mod: conf.Module{conf.ModLR, conf.Rot000}},
+	}
+)
+
 func main() {
 	var host string
 	var port uint
@@ -1489,6 +1500,7 @@ func main() {
 	var ch byte
 	var progId int
 	var runInteractive bool
+    var useCustomLayout bool
 	var progList string
 
 	for i, prog := range programList {
@@ -1496,9 +1508,12 @@ func main() {
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
+    flag.IntVar(&width, "width", 40, "Width of LedGrid")
+    flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.UintVar(&port, "port", defPort, "Controller port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
+    flag.BoolVar(&useCustomLayout, "custom", false, "Use custom module configuration")
 	flag.Parse()
 
 	if len(input) > 0 {
@@ -1508,7 +1523,11 @@ func main() {
 		runInteractive = true
 	}
 
-	ledGrid = ledgrid.NewLedGridV2(host, port)
+    if useCustomLayout {
+        ledGrid = ledgrid.NewLedGrid(host, port, customConf)
+    } else {
+        	ledGrid = ledgrid.NewLedGridBySize(host, port, image.Pt(width, height))
+    }
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X

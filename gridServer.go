@@ -2,7 +2,6 @@ package ledgrid
 
 import (
 	"errors"
-	"image"
 	"log"
 	"math"
 	"net"
@@ -17,16 +16,16 @@ import (
 type LedStatusType byte
 
 const (
-    // This is the default state of a LED
+	// This is the default state of a LED
 	LedOK LedStatusType = iota
-    // LEDs with this status will be blacked out, this mean we send color data
-    // for this LED, but we send (0,0,0). This status can be used if a NeoPixel
-    // receives data but does not display them correctly.
+	// LEDs with this status will be blacked out, this mean we send color data
+	// for this LED, but we send (0,0,0). This status can be used if a NeoPixel
+	// receives data but does not display them correctly.
 	LedDefect
-    // This status can be used, if a NeoPixel does not even transmit the data
-    // to the NeoPixels further down the chain. Such a pixel needs to be cut
-    // out of the chain and for the time till a replacement Pixel is organized
-    // and soldered in, the pixel has status missing.
+	// This status can be used, if a NeoPixel does not even transmit the data
+	// to the NeoPixels further down the chain. Such a pixel needs to be cut
+	// out of the chain and for the time till a replacement Pixel is organized
+	// and soldered in, the pixel has status missing.
 	LedMissing
 )
 
@@ -58,7 +57,7 @@ func NewGridServer(port uint, disp Displayer) *GridServer {
 	var bufferSize int
 
 	p := &GridServer{Disp: disp}
-	bufferSize = 3 * disp.Size().X * disp.Size().Y
+	bufferSize = 3 * disp.Size()
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
@@ -211,7 +210,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
 	var colorValue byte
 
-	var numTestLeds = p.Disp.Size().X * p.Disp.Size().Y
+	var numTestLeds = p.Disp.Size()
 	var testBufferSize = 3 * numTestLeds
 
 	if p.drawTestPattern {
@@ -292,7 +291,6 @@ func (p *GridServer) ToggleTestPattern() bool {
 	return true
 }
 
-
 // Die folgenden Methoden koennen via RPC vom Client aufgerufen werden.
 // Die Methode RPCDraw ist nur der Vollstaendigkeit halber vorhanden. In
 // der Praxis hat sich das Senden der Bilddaten via RPC als zu langsam
@@ -307,7 +305,7 @@ func (p *GridServer) RPCDraw(grid *LedGrid, reply *int) error {
 	return err
 }
 
-type SizeArg image.Point
+type SizeArg int
 
 func (p *GridServer) RPCSize(arg int, reply *SizeArg) error {
 	*reply = SizeArg(p.Disp.Size())

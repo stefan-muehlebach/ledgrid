@@ -312,8 +312,12 @@ func (conf ModuleConfig) Size() image.Point {
 }
 
 func (conf ModuleConfig) Index(pt image.Point) int {
-    modPos := conf.Module(pt)
-    return modPos.Index(pt)
+    for _, modPos := range conf {
+        if pt.In(modPos.Bounds()) {
+            return modPos.Index(pt)
+        }
+    }
+    return -1
 }
 
 func (conf ModuleConfig) Coord(idx int) image.Point {
@@ -363,9 +367,8 @@ func (conf ModuleConfig) IndexMap() IndexMap {
 // CoordMap erstellt werden.
 // TO DO: waere besser eine Methode von ModuleConfig.
 func (conf ModuleConfig) CoordMap() CoordMap {
-    size := conf.Size()
-	coordMap := make([]image.Point, size.X*size.Y)
-	for idx := range size.X*size.Y {
+	coordMap := make([]image.Point, len(conf) * ModuleDim.X * ModuleDim.Y)
+	for idx := range coordMap {
         coordMap[idx] = conf.Coord(idx)
 	}
 	return coordMap

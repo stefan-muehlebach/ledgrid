@@ -21,7 +21,7 @@ type GridWindow struct {
     // This is the fyne object, which must be added to a fyne application in
     // order to experience the whole glory of the emulation.
 	Grid      *fyne.Container
-	gridConf  conf.ModuleConfig
+	modConf  conf.ModuleConfig
 	coordMap  conf.CoordMap
 	field     [][]*canvas.Circle
 	size      image.Point
@@ -30,11 +30,16 @@ type GridWindow struct {
 
 // A new grid object must only know it's size in order to get the
 // configuration of the emulated modules.
-func NewGridWindow(size image.Point) *GridWindow {
+func NewGridWindowBySize(size image.Point) *GridWindow {
+    modConf := conf.DefaultModuleConfig(size)
+    return NewGridWindow(size, modConf)
+}
+
+func NewGridWindow(size image.Point, modConf conf.ModuleConfig) *GridWindow {
 	e := &GridWindow{size: size}
 	e.Grid = container.NewGridWithRows(size.Y)
-	e.gridConf = conf.DefaultModuleConfig(size)
-	e.coordMap = e.gridConf.CoordMap()
+    	e.modConf = modConf
+	e.coordMap = e.modConf.CoordMap()
 	e.field = make([][]*canvas.Circle, size.X)
 	for i := range e.field {
 		e.field[i] = make([]*canvas.Circle, size.Y)
@@ -61,8 +66,8 @@ func (e *GridWindow) DefaultGamma() (r, g, b float64) {
 
 func (e *GridWindow) Close() {}
 
-func (e *GridWindow) Size() image.Point {
-	return e.size
+func (e *GridWindow) Size() int {
+	return e.size.X*e.size.Y
 }
 
 // Takes the bytes in buffer, and uses them exactly as the real hardware

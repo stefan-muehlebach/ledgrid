@@ -30,32 +30,36 @@ type LedGrid struct {
 // Panels. Wird bei modConf nil uebergeben, so wird eine Default-Konfiguration
 // der Module angenommen, welche bei DefaultModuleConfig naeher beschrieben
 // wird.
-func NewLedGrid(size image.Point, modConf conf.ModuleConfig) *LedGrid {
-	g := &LedGrid{}
-	g.Rect = image.Rectangle{Max: size}
-	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
+// func NewLedGrid(size image.Point, modConf conf.ModuleConfig) *LedGrid {
+// 	g := &LedGrid{}
+// 	g.Rect = image.Rectangle{Max: size}
+// 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
 
-	// Autom. Formatwahl
-	if modConf == nil {
-		modConf = conf.DefaultModuleConfig(g.Rect.Size())
-	}
+// 	// Autom. Formatwahl
+// 	if modConf == nil {
+// 		modConf = conf.DefaultModuleConfig(g.Rect.Size())
+// 	}
 
-	g.idxMap = modConf.IndexMap()
-    g.syncChan = make(chan bool)
-    go g.refreshThread()
-	return g
-}
+// 	g.idxMap = modConf.IndexMap()
+//     g.syncChan = make(chan bool)
+//     go g.refreshThread()
+// 	return g
+// }
 
 // Dies ist die neue Art, ein LedGrid-Objekt zu erstellen. Der GridClient
 // (d.h. der Client-seitige Teil fuer die Ansteuerung) ist dabei Teil von
 // LedGrid. Mit Angaben von host und port kann die Groesse des Panels (oder
 // Emulations-Fensters) selbst. ermittelt werden.
-func NewLedGridV2(host string, port uint) *LedGrid {
+func NewLedGridBySize(host string, port uint, size image.Point) *LedGrid {
+    modConf := conf.DefaultModuleConfig(size)
+    return NewLedGrid(host, port, modConf)
+}
+
+func NewLedGrid(host string, port uint, modConf conf.ModuleConfig) *LedGrid {
     g := &LedGrid{}
     g.Client = NewNetGridClient(host, port)
-    g.Rect = image.Rectangle{Max: g.Client.Size()}
-    g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
-	modConf := conf.DefaultModuleConfig(g.Rect.Size())
+    g.Rect = image.Rectangle{Max: modConf.Size()}
+    g.Pix = make([]uint8, 3*len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 	g.idxMap = modConf.IndexMap()
     g.syncChan = make(chan bool)
     go g.refreshThread()
@@ -93,6 +97,9 @@ func (g *LedGrid) LedColorAt(x, y int) ledcolor.LedColor {
 		return ledcolor.LedColor{}
 	}
 	idx := g.PixOffset(x, y)
+    if idx < 0 {
+        return ledcolor.Black
+    }
 	src := g.Pix[idx : idx+3 : idx+3]
 	return ledcolor.NewLedColorRGB(src[0], src[1], src[2])
 }
@@ -103,6 +110,9 @@ func (g *LedGrid) SetLedColor(x, y int, c ledcolor.LedColor) {
 		return
 	}
 	idx := g.PixOffset(x, y)
+    if idx < 0 {
+        return
+    }
 	dst := g.Pix[idx : idx+3 : idx+3]
 	dst[0] = c.R
 	dst[1] = c.G

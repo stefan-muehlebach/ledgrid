@@ -438,7 +438,7 @@ func init() {
 	gob.Register(&PaletteAnimation{})
 	gob.Register(&PaletteFadeAnimation{})
 	gob.Register(&FloatAnimation{})
-	gob.Register(&PathAnimation{})
+	// gob.Register(&PathAnimation{})
 	gob.Register(&FixedPosAnimation{})
 	gob.Register(&IntegerPosAnimation{})
 	gob.Register(&ShaderAnimation{})
@@ -593,7 +593,6 @@ func (a *Sequence) Put(tasks ...Task) {
 		a.Tasks = append([]Task{task}, a.Tasks...)
 	}
 }
-
 
 // Startet die Sequenz.
 func (a *Sequence) Start() {
@@ -1209,7 +1208,6 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 	}
 }
 
-
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type PathAnim struct {
@@ -1217,17 +1215,24 @@ type PathAnim struct {
 	ValPtr     *geom.Point
 	val1, val2 geom.Point
 	Val1, Val2 AnimValueFunc[geom.Point]
-	Path   *Path
+	Path       Path
 	Cont       bool
 }
 
-func NewPathAnimation(valPtr *geom.Point, path *Path, size geom.Point, dur time.Duration) *PathAnim {
+func NewPathAnimation(valPtr *geom.Point, path *GeomPath, size geom.Point, dur time.Duration) *PathAnim {
 	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Path: path}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	a.Val2 = func() geom.Point {
 		return a.Val1().Add(size)
 	}
+	return a
+}
+
+func NewPolyPathAnimation(valPtr *geom.Point, path *PolygonPath, dur time.Duration) *PathAnim {
+	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const((*valPtr).AddXY(1, 1)), Path: path}
+	a.NormAnimationEmbed.Extend(a)
+	a.SetDuration(dur)
 	return a
 }
 
@@ -1263,14 +1268,14 @@ func (a *PathAnim) Tick(t float64) {
 
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
-type PathAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *geom.Point
-	val1, val2 geom.Point
-	Val1, Val2 AnimValueFunc[geom.Point]
-	PathFunc   PathFunctionType
-	Cont       bool
-}
+// type PathAnimation struct {
+// 	NormAnimationEmbed
+// 	ValPtr     *geom.Point
+// 	val1, val2 geom.Point
+// 	Val1, Val2 AnimValueFunc[geom.Point]
+// 	PathFunc   PathFunctionType
+// 	Cont       bool
+// }
 
 // func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
 // 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), PathFunc: pathFunc}
@@ -1293,34 +1298,34 @@ type PathAnimation struct {
 // 	return NewPositionAnimation(valPtr, val2, dur)
 // }
 
-func (a *PathAnimation) Init() {
-	if a.Cont {
-		a.Val1 = Const(*a.ValPtr)
-	}
-	a.val1 = a.Val1()
-	a.val2 = a.Val2()
-}
+// func (a *PathAnimation) Init() {
+// 	if a.Cont {
+// 		a.Val1 = Const(*a.ValPtr)
+// 	}
+// 	a.val1 = a.Val1()
+// 	a.val2 = a.Val2()
+// }
 
-func (a *PathAnimation) Tick(t float64) {
-	var dp geom.Point
-	var s geom.Point
+// func (a *PathAnimation) Tick(t float64) {
+// 	var dp geom.Point
+// 	var s geom.Point
 
-	dp = a.PathFunc(t)
-	s = a.val2.Sub(a.val1)
-	dp.X *= s.X
-	dp.Y *= s.Y
-	*a.ValPtr = a.val1.Add(dp)
-}
+// 	dp = a.PathFunc(t)
+// 	s = a.val2.Sub(a.val1)
+// 	dp.X *= s.X
+// 	dp.Y *= s.Y
+// 	*a.ValPtr = a.val1.Add(dp)
+// }
 
 //----------------------------------------------------------------------------
 
-func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr),
-		Val2: Const((*valPtr).AddXY(1, 1)), PathFunc: polyPath.RelPoint}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	return a
-}
+// func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
+// 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr),
+// 		Val2: Const((*valPtr).AddXY(1, 1)), PathFunc: polyPath.Pos}
+// 	a.NormAnimationEmbed.Extend(a)
+// 	a.SetDuration(dur)
+// 	return a
+// }
 
 // Neben den vorhandenen Pfaden (Kreise, Halbkreise, Viertelkreise) koennen
 // Positions-Animationen auch entlang komplett frei definierten Pfaden
@@ -1361,7 +1366,7 @@ func NewPolygonPath(points ...geom.Point) *PolygonPath {
 
 // Diese Methode ist bei der Erstellung einer Pfad-Animation als Parameter
 // fnc anzugeben.
-func (p *PolygonPath) RelPoint(t float64) geom.Point {
+func (p *PolygonPath) Pos(t float64) geom.Point {
 	dist := t * p.stopList[len(p.stopList)-1].len
 	for i, stop := range p.stopList[1:] {
 		if dist < stop.len {
@@ -1439,9 +1444,9 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 	*a.ValPtr = np.Int()
 }
 
+// Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
 type ShaderFuncType func(x, y, t float64) float64
 
-// Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
 type ShaderAnimation struct {
 	ValPtr      *color.LedColor
 	Pal         ColorSource

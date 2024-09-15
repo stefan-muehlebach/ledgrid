@@ -1,7 +1,6 @@
 package ledgrid
 
 import (
-	"image"
 	"log"
 	"time"
 
@@ -18,13 +17,14 @@ import (
 // gobot.io realisiert.
 
 type SPIBus struct {
-	size      image.Point
+	// size      image.Point
+	size      int
 	spiPort   spi.PortCloser
 	spiConn   spi.Conn
 	maxTxSize int
 }
 
-func NewSPIBus(spiDev string, baud int, size image.Point) *SPIBus {
+func NewSPIBus(spiDev string, baud int, size int) *SPIBus {
 	var err error
 	p := &SPIBus{size: size}
 
@@ -54,7 +54,7 @@ func (p *SPIBus) DefaultGamma() (r, g, b float64) {
 	return 3.0, 3.0, 3.0
 }
 
-func (p *SPIBus) Size() image.Point {
+func (p *SPIBus) Size() int {
 	return p.size
 }
 

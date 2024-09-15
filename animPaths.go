@@ -7,23 +7,27 @@ import (
 )
 
 var (
-    CirclePath = NewPath(circleFunc, 0, 1)
-    LinearPath = NewPath(linearFunc, 0, 1)
-    RectanglePath = NewPath(rectangleFunc, 0, 1)
+    CirclePath = NewGeomPath(circleFunc, 0, 1)
+    LinearPath = NewGeomPath(linearFunc, 0, 1)
+    RectanglePath = NewGeomPath(rectangleFunc, 0, 1)
 )
 
-type Path struct {
+type Path interface {
+    Pos(t float64) geom.Point
+}
+
+type GeomPath struct {
     t0, l float64
     p0 geom.Point
     fnc PathFunctionType
 }
 
-func NewPath(fnc PathFunctionType, t0, l float64) *Path {
-    p := &Path{t0: t0, l: l, p0: fnc(t0), fnc: fnc}
+func NewGeomPath(fnc PathFunctionType, t0, l float64) *GeomPath {
+    p := &GeomPath{t0: t0, l: l, p0: fnc(t0), fnc: fnc}
     return p
 }
 
-func (p *Path) Pos(t float64) geom.Point {
+func (p *GeomPath) Pos(t float64) geom.Point {
     t *= p.l
     t += p.t0
     if t > 1.0 {
@@ -32,13 +36,13 @@ func (p *Path) Pos(t float64) geom.Point {
     return p.fnc(t).Sub(p.p0)
 }
 
-func (p *Path) NewStart(t0 float64) *Path {
-    q := NewPath(p.fnc, t0, p.l)
+func (p *GeomPath) NewStart(t0 float64) *GeomPath {
+    q := NewGeomPath(p.fnc, t0, p.l)
     return q
 }
 
-func (p *Path) NewStartLen(t0, l float64) *Path {
-    q := NewPath(p.fnc, t0, l)
+func (p *GeomPath) NewStartLen(t0, l float64) *GeomPath {
+    q := NewGeomPath(p.fnc, t0, l)
     return q
 }
 

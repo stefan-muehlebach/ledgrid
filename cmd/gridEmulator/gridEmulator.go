@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/stefan-muehlebach/ledgrid"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -18,10 +19,11 @@ import (
 )
 
 const (
-	defPort      = 5333
-	defWidth     = 40
-	defHeight    = 10
-	defPixelSize = 50.0
+	defPort            = 5333
+	defWidth           = 40
+	defHeight          = 10
+	defPixelSize       = 50.0
+	defUseCustomLayout = false
 )
 
 // Since the default padding between adjacent elements in a GridContainer is
@@ -73,6 +75,16 @@ func ToggleTests(gridServer *ledgrid.GridServer) {
 	}
 }
 
+var (
+	customSize = image.Point{30, 20}
+	customConf = conf.ModuleConfig{
+		conf.ModulePosition{Col: 0, Row: 0, Idx: 0, Mod: conf.Module{conf.ModLR, conf.Rot000}},
+		conf.ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: conf.Module{conf.ModRL, conf.Rot090}},
+		conf.ModulePosition{Col: 1, Row: 1, Idx: 200, Mod: conf.Module{conf.ModLR, conf.Rot000}},
+		conf.ModulePosition{Col: 2, Row: 1, Idx: 300, Mod: conf.Module{conf.ModLR, conf.Rot000}},
+	}
+)
+
 func main() {
 	var width, height int
 	var port uint
@@ -81,12 +93,25 @@ func main() {
 	var appSize fyne.Size
 	var gridServer *ledgrid.GridServer
 	var gridEmulator *GridWindow
+	var useCustomLayout bool
+    var gridSize image.Point
+    var modConf conf.ModuleConfig
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.UintVar(&port, "port", defPort, "UDP port")
 	flag.Float64Var(&pixelSize, "size", defPixelSize, "Size of one LED")
+	flag.BoolVar(&useCustomLayout, "custom", defUseCustomLayout, "Use a non standard module configuration")
 	flag.Parse()
+
+    if useCustomLayout {
+        width, height = customSize.X, customSize.Y
+        gridSize = customSize
+        modConf = customConf
+    } else {
+        gridSize = image.Pt(width, height)
+        modConf = conf.DefaultModuleConfig(gridSize)
+    }
 
 	appWidth = float32(width) * float32(pixelSize)
 	appHeight = float32(height) * float32(pixelSize)
@@ -98,8 +123,8 @@ func main() {
 	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
 	Win = App.NewWindow(winTitle)
 
-	gridEmulator = NewGridWindow(image.Pt(width, height))
-	gridServer = ledgrid.NewGridServer(port, gridEmulator)
+    gridEmulator = NewGridWindow(gridSize, modConf)
+ 	gridServer = ledgrid.NewGridServer(port, gridEmulator)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {

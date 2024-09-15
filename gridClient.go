@@ -15,7 +15,7 @@ import (
 // - DummyGridClient
 type GridClient interface {
 	Send(buffer []byte)
-	Size() image.Point
+	Size() int
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
 	MaxBright() (r, g, b uint8)
@@ -68,7 +68,7 @@ func (p *NetGridClient) Send(buffer []byte) {
 	p.sendWatch.Stop()
 }
 
-func (p *NetGridClient) Size() (size image.Point) {
+func (p *NetGridClient) Size() int {
 	var reply SizeArg
 	var err error
 
@@ -76,7 +76,7 @@ func (p *NetGridClient) Size() (size image.Point) {
 	if err != nil {
 		log.Fatal("Size error:", err)
 	}
-	return image.Point(reply)
+	return int(reply)
 }
 
 func (p *NetGridClient) Gamma() (r, g, b float64) {
@@ -143,8 +143,8 @@ func NewDummyGridClient(size image.Point) GridClient {
 
 func (p *DummyGridClient) Send(buffer []byte) { }
 
-func (p *DummyGridClient) Size() image.Point {
-	return p.size
+func (p *DummyGridClient) Size() int {
+	return p.size.X * p.size.Y
 }
 
 func (p *DummyGridClient) Gamma() (r, g, b float64) {

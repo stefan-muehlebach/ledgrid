@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"flag"
 	"log"
 	"os"
@@ -27,8 +26,8 @@ const (
 	defDefectIDs  = ""
 	defBaud       = 2_000_000
 	defUseTCP     = false
-    defWidth      = 40
-    defHeight     = 10
+	defWidth      = 40
+	defHeight     = 10
 )
 
 func SignalHandler(gridServer *ledgrid.GridServer) {
@@ -63,7 +62,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 }
 
 func main() {
-    var width, height int
+	var width, height, numPix int
 	var port uint
 	var baud int
 	var missingIDs, defectIDs string
@@ -72,15 +71,20 @@ func main() {
 	var gridServer *ledgrid.GridServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
-    flag.IntVar(&width, "width", defWidth, "Width of panel")
-    flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.IntVar(&numPix, "numpix", -1, "Number of pixels (for fancy module configurations)")
 	flag.UintVar(&port, "port", defPort, "UDP port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs")
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of LEDs to black out")
 	flag.Parse()
 
-	spiBus = ledgrid.NewSPIBus(spiDevFile, baud, image.Pt(width, height))
+	if numPix < 0 {
+		numPix = width * height
+	}
+
+	spiBus = ledgrid.NewSPIBus(spiDevFile, baud, numPix)
 	gridServer = ledgrid.NewGridServer(port, spiBus)
 
 	if len(missingIDs) > 0 {
@@ -89,7 +93,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to parse 'missing': wrong format: %s", str)
 			}
-			gridServer.SetPixelStatus(int(val), ledgrid.PixelMissing)
+			gridServer.SetPixelStatus(int(val), ledgrid.LedMissing)
 		}
 	}
 
@@ -99,7 +103,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to parse 'defect': wrong format: %s", str)
 			}
-			gridServer.SetPixelStatus(int(val), ledgrid.PixelDefect)
+			gridServer.SetPixelStatus(int(val), ledgrid.LedDefect)
 		}
 	}
 
