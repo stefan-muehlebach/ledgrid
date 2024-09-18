@@ -1100,8 +1100,9 @@ var (
 			cam := NewCamera(pos, size)
 			c.Add(cam)
 			cam.Start()
-			mask := cam.Mask
+			// mask := cam.Mask
 
+/*
 			go func() {
 				var pt, ptDest geom.Point
 				// scanDirList := []ScanDir{Top2Bottom, Border2Center, Center2Border, Bottom2Top, Left2Right, Right2Left}
@@ -1145,6 +1146,7 @@ var (
 					}
 				}
 			}()
+*/
 		})
 
 	BlinkenAnimation = NewLedGridProgram("Blinken animation",
@@ -1274,13 +1276,13 @@ var (
 				}
 			}
 
-			txt1 := ledgrid.NewFixedText(fixed.P(1, height-1), color.GreenYellow.Alpha(0.0), "LORENZ")
+			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
 			aTxt1 := ledgrid.NewUint8Animation(&txt1.Color.A, 255, 2*time.Second)
 			aTxt1.AutoReverse = true
-			txt2 := ledgrid.NewFixedText(fixed.P(1, height-1), color.DarkViolet.Alpha(0.0), "SIMON")
+			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
 			aTxt2 := ledgrid.NewUint8Animation(&txt2.Color.A, 255, 2*time.Second)
 			aTxt2.AutoReverse = true
-			txt3 := ledgrid.NewFixedText(fixed.P(1, height-1), color.OrangeRed.Alpha(0.0), "REBEKKA")
+			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
 			aTxt3 := ledgrid.NewUint8Animation(&txt3.Color.A, 255, 2*time.Second)
 			aTxt3.AutoReverse = true
 			c.Add(txt1, txt2, txt3)
@@ -1529,16 +1531,6 @@ var (
 	}
 )
 
-var (
-	customSize = image.Point{30, 20}
-	customConf = conf.ModuleConfig{
-		conf.ModulePosition{Col: 0, Row: 0, Idx: 0, Mod: conf.Module{conf.ModLR, conf.Rot000}},
-		conf.ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: conf.Module{conf.ModRL, conf.Rot090}},
-		conf.ModulePosition{Col: 1, Row: 1, Idx: 200, Mod: conf.Module{conf.ModLR, conf.Rot000}},
-		conf.ModulePosition{Col: 2, Row: 1, Idx: 300, Mod: conf.Module{conf.ModLR, conf.Rot000}},
-	}
-)
-
 func main() {
 	var host string
 	var port uint
@@ -1549,6 +1541,7 @@ func main() {
 	var useCustomLayout bool
 	var progList string
 	var gR, gG, gB float64
+    var customConf conf.ModuleConfig = conf.ChessBoard
 
 	for i, prog := range programList {
 		id := 'a' + i

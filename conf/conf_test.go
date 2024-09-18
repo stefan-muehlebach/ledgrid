@@ -36,6 +36,30 @@ var (
         Module{ModLR, Rot180},
         Module{ModRL, Rot090},
     }
+
+	goodConf01 = ModuleConfig{
+		ModulePosition{Col: 0, Row: 1, Idx: 0,   Mod: ModLR000},
+		ModulePosition{Col: 0, Row: 0, Idx: 100, Mod: ModLR180},
+	}
+	goodConf02 = ModuleConfig{
+		ModulePosition{Col: 0, Row: 1, Idx: 0,   Mod: ModLR000},
+		ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: ModRL180},
+	}
+	goodConf03 = ModuleConfig{
+		ModulePosition{Col: 0, Row: 0, Idx: 0,   Mod: ModRL180},
+		ModulePosition{Col: 1, Row: 1, Idx: 100, Mod: ModLR000},
+		ModulePosition{Col: 2, Row: 0, Idx: 200, Mod: ModRL180},
+		ModulePosition{Col: 3, Row: 1, Idx: 300, Mod: ModLR000},
+	}
+
+	badConf01 = ModuleConfig{
+		ModulePosition{Col: 0, Row: 0, Idx: 0,   Mod: ModLR000},
+		ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: ModLR180},
+	}
+	badConf02 = ModuleConfig{
+		ModulePosition{Col: 0, Row: 0, Idx: 0,   Mod: ModLR000},
+		ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: ModRL000},
+	}
 )
 
 func TestModuleTypeIndex(t *testing.T) {
@@ -97,59 +121,68 @@ func TestDefaultModuleConfig(t *testing.T) {
     }
 }
 
-// func TestCoordMap(t *testing.T) {
-// 	modConf := DefaultModuleConfig(image.Point{20, 20})
-// 	t.Logf("module config: %v", modConf)
-// 	idxMap := modConf.IndexMap()
-//     coordMap := modConf.CoordMap()
-// 	t.Logf("  idxMap: %v", idxMap)
-// 	t.Logf("  coordMap: %v", coordMap)
-// }
+func TestVerify(t *testing.T) {
+    t.Logf("Verify Default Configuration")
+    modConf := DefaultModuleConfig(image.Point{30, 30})
+    err := modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// func TestModuleConfig(t *testing.T) {
-// 	var modConf ModuleConfig
+    t.Logf("Verify Custom Configuration (Tetris)")
+    modConf = TetrisTile
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-//     modConf = DefaultModuleConfig(image.Point{30, 30})
-// 	t.Logf("module configuration: %v", modConf)
-// }
+    t.Logf("Verify Custom Configuration (LowerCurve)")
+    modConf = LowerCurve
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// func TestPixOffset(t *testing.T) {
-// 	for _, rec := range coordList {
-// 		pt := rec.coord
-// 		refIdx := rec.idx
-// 		idx = lg.PixOffset(pt.X, pt.Y)
-// 		if refIdx == idx {
-// 			t.Logf("(%d,%d) -> %d, OK", pt.X, pt.Y, idx)
-// 		} else {
-// 			t.Errorf("(%d,%d) -> %d, should be %d", pt.X, pt.Y, idx, refIdx)
-// 		}
-// 	}
-// }
+    t.Logf("Verify Custom Configuration (SquareWithHole)")
+    modConf = SquareWithHole
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// func TestMarkDefect(t *testing.T) {
-//     lg.idxMap.MarkDefect(image.Point{6,3})
-// }
+    t.Logf("Verify Good Config 01")
+    modConf = goodConf01
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// func BenchmarkPixOffsetCalc(b *testing.B) {
-// 	rand.Seed(RandSeed)
-// 	for i := 0; i < b.N; i++ {
-// 		x, y := rand.Intn(Width), rand.Intn(Height)
-// 		idx = lg.pixOffset(x, y)
-// 	}
-// }
+    t.Logf("Verify Good Config 02")
+    modConf = goodConf02
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// func BenchmarkPixOffset(b *testing.B) {
-// 	rand.Seed(RandSeed)
-// 	for i := 0; i < b.N; i++ {
-// 		x, y := rand.Intn(Width), rand.Intn(Height)
-// 		idx = lg.PixOffset(x, y)
-// 	}
-// }
+    t.Logf("Verify Good Config 03")
+    modConf = goodConf03
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// func TestModuleScanner(t *testing.T) {
-// 	var mod Module
-// 	input := "LR:90"
+    t.Logf("Verify Bad Config 01")
+    modConf = badConf01
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
 
-// 	n, err := fmt.Sscanf(input, "%v", &mod)
-// 	t.Logf("n: %d, err: %v, mod: %+v", n, err, mod)
-// }
+    t.Logf("Verify Bad Config 02")
+    modConf = badConf02
+    err = modConf.Verify()
+    if err != nil {
+        t.Error(err)
+    }
+
+}

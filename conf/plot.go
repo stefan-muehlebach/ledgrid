@@ -82,6 +82,11 @@ func init() {
 // the cabeling and the mapping between pixel coordinates and index on the
 // LED chain.
 func (conf ModuleConfig) Plot(fileName string) {
+    err := conf.Verify()
+	if err != nil {
+        log.Fatalf("Cannot plot configuration: %v", err)
+    }
+
 	size := conf.Size()
 	gc := gg.NewContext(size.X*int(LedFieldSize)+int(MarginLeft+MarginRight),
 		size.Y*int(LedFieldSize)+int(MarginTop+MarginBottom))
@@ -90,7 +95,7 @@ func (conf ModuleConfig) Plot(fileName string) {
 
 	conf.Draw(gc)
 
-	err := gc.SavePNG(fileName)
+	err = gc.SavePNG(fileName)
 	if err != nil {
 		log.Fatalf("Couldn't save configuration: %v", err)
 	}
@@ -322,10 +327,10 @@ func (mod Module) DrawTrace(gc *gg.Context) {
 }
 
 // Hilfsfunktioenchen (sogar generisch!)
-// func abs[T ~int | ~float64](i T) T {
-// 	if i < 0 {
-// 		return -i
-// 	} else {
-// 		return i
-// 	}
-// }
+func abs[T ~int | ~float64](i T) T {
+	if i < 0 {
+		return -i
+	} else {
+		return i
+	}
+}

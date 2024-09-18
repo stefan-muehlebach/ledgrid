@@ -5,6 +5,7 @@
 package conf
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"log"
@@ -193,6 +194,19 @@ type Module struct {
 	Rot  RotationType
 }
 
+// Because they are used quite frequently and there are 8 of them in total,
+// I decided to create constants for each of them.
+var (
+	ModLR000 = Module{ModLR, Rot000}
+	ModLR090 = Module{ModLR, Rot090}
+	ModLR180 = Module{ModLR, Rot180}
+	ModLR270 = Module{ModLR, Rot270}
+	ModRL000 = Module{ModRL, Rot000}
+	ModRL090 = Module{ModRL, Rot090}
+	ModRL180 = Module{ModRL, Rot180}
+	ModRL270 = Module{ModRL, Rot270}
+)
+
 // Die textuelle Darstellung eines Moduls ist in der Einleitung am Anfang des
 // Packages zu sehen: Modul-Typ und Rotationsart werden mit Doppelpunkt
 // getrennt als zusammenhaengende Zeichenkette dargestell.
@@ -247,9 +261,9 @@ type ModulePosition struct {
 }
 
 func (m ModulePosition) Bounds() image.Rectangle {
-    x0, y0 := m.Col * ModuleDim.X, m.Row * ModuleDim.Y
-    x1, y1 := x0 + ModuleDim.X, y0 + ModuleDim.Y
-    return image.Rect(x0, y0, x1, y1)
+	x0, y0 := m.Col*ModuleDim.X, m.Row*ModuleDim.Y
+	x1, y1 := x0+ModuleDim.X, y0+ModuleDim.Y
+	return image.Rect(x0, y0, x1, y1)
 }
 
 func (m ModulePosition) Index(pt image.Point) int {
@@ -272,7 +286,6 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 	var col, row int
 	var conf ModuleConfig
 	var mod Module
-	// var err error
 
 	if size.X < ModuleDim.X || size.Y < ModuleDim.Y ||
 		size.X%ModuleDim.X != 0 || size.Y%ModuleDim.Y != 0 {
@@ -301,47 +314,64 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 	return conf
 }
 
+func (conf ModuleConfig) Verify() error {
+    numLeds := ModuleDim.X * ModuleDim.Y
+    for i := range conf[:len(conf)-1] {
+        idxA := numLeds * (i+1) - 1
+        idxB := numLeds * (i+1)
+        coordA := conf.Coord(idxA)
+        coordB := conf.Coord(idxB)
+        // fmt.Printf("%+v -> %+v\n", coordA, coordB)
+        dx := abs(coordA.X - coordB.X)
+        dy := abs(coordA.Y - coordB.Y)
+        if dx > 1 || dy > 1 {
+            return errors.New(fmt.Sprintf("error between module %d and %d: coordinates %v and %v do not match", i, i+1, coordA, coordB))
+        }
+    }
+    return nil
+}
+
 // Bestimmt die Groesse des gesamten Panels in Anzahl Pixel
 func (conf ModuleConfig) Size() image.Point {
 	size := image.Point{}
 	for _, modPos := range conf {
-		size.X = max(size.X, ModuleDim.X * (modPos.Col+1))
-		size.Y = max(size.Y, ModuleDim.Y * (modPos.Row+1))
+		size.X = max(size.X, ModuleDim.X*(modPos.Col+1))
+		size.Y = max(size.Y, ModuleDim.Y*(modPos.Row+1))
 	}
 	return size
 }
 
 func (conf ModuleConfig) Index(pt image.Point) int {
-    for _, modPos := range conf {
-        if pt.In(modPos.Bounds()) {
-            return modPos.Index(pt)
-        }
-    }
-    return -1
+	for _, modPos := range conf {
+		if pt.In(modPos.Bounds()) {
+			return modPos.Index(pt)
+		}
+	}
+	return -1
 }
 
 func (conf ModuleConfig) Coord(idx int) image.Point {
-    modPos := conf[idx / (ModuleDim.X * ModuleDim.Y)]
-    return modPos.Coord(idx)
+	modPos := conf[idx/(ModuleDim.X*ModuleDim.Y)]
+	return modPos.Coord(idx)
 }
 
 func (conf ModuleConfig) Contains(pt image.Point) bool {
-    for _, modPos := range conf {
-        if pt.In(modPos.Bounds()) {
-            return true
-        }
-    }
-    return false
+	for _, modPos := range conf {
+		if pt.In(modPos.Bounds()) {
+			return true
+		}
+	}
+	return false
 }
 
 func (conf ModuleConfig) Module(pt image.Point) ModulePosition {
-    for _, modPos := range conf {
-        if pt.In(modPos.Bounds()) {
-            return modPos
-        }
-    }
-    log.Fatalf("Coordinates not within this grid: %v", pt)
-    return ModulePosition{}
+	for _, modPos := range conf {
+		if pt.In(modPos.Bounds()) {
+			return modPos
+		}
+	}
+	log.Fatalf("Coordinates not within this grid: %v", pt)
+	return ModulePosition{}
 }
 
 // Mit diesem Typ koennen die Koordinaten der Pixel auf dem LEDGrid auf
@@ -365,20 +395,18 @@ func (conf ModuleConfig) IndexMap() IndexMap {
 		idxMap[col] = make([]int, size.Y)
 	}
 	for row := range size.Y {
-        for col := range size.X {
-            idxMap[col][row] = conf.Index(image.Point{col, row})
-        }
-    }
+		for col := range size.X {
+			idxMap[col][row] = conf.Index(image.Point{col, row})
+		}
+	}
 	return idxMap
 }
 
-// Mit dieser Methode kann ausgehend von einem IndexMap der entsprechende
-// CoordMap erstellt werden.
-// TO DO: waere besser eine Methode von ModuleConfig.
+// Mit dieser Methode kann der entsprechende CoordMap erstellt werden.
 func (conf ModuleConfig) CoordMap() CoordMap {
-	coordMap := make([]image.Point, len(conf) * ModuleDim.X * ModuleDim.Y)
+	coordMap := make([]image.Point, len(conf)*ModuleDim.X*ModuleDim.Y)
 	for idx := range coordMap {
-        coordMap[idx] = conf.Coord(idx)
+		coordMap[idx] = conf.Coord(idx)
 	}
 	return coordMap
 }

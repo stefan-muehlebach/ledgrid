@@ -75,16 +75,6 @@ func ToggleTests(gridServer *ledgrid.GridServer) {
 	}
 }
 
-var (
-	customSize = image.Point{30, 20}
-	customConf = conf.ModuleConfig{
-		conf.ModulePosition{Col: 0, Row: 0, Idx: 0, Mod: conf.Module{conf.ModLR, conf.Rot000}},
-		conf.ModulePosition{Col: 1, Row: 0, Idx: 100, Mod: conf.Module{conf.ModRL, conf.Rot090}},
-		conf.ModulePosition{Col: 1, Row: 1, Idx: 200, Mod: conf.Module{conf.ModLR, conf.Rot000}},
-		conf.ModulePosition{Col: 2, Row: 1, Idx: 300, Mod: conf.Module{conf.ModLR, conf.Rot000}},
-	}
-)
-
 func main() {
 	var width, height int
 	var port uint
@@ -105,9 +95,9 @@ func main() {
 	flag.Parse()
 
     if useCustomLayout {
-        width, height = customSize.X, customSize.Y
-        gridSize = customSize
-        modConf = customConf
+        modConf = conf.ChessBoard
+        gridSize = modConf.Size()
+        width, height = gridSize.X, gridSize.Y
     } else {
         gridSize = image.Pt(width, height)
         modConf = conf.DefaultModuleConfig(gridSize)
