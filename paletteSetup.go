@@ -4,11 +4,12 @@ import (
 	"embed"
 	"encoding/json"
 	"log"
-	"path/filepath"
+	"path"
+
 	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
-//go:embed data/*.json
+//go:embed data
 var colorFiles embed.FS
 
 type JsonPalette struct {
@@ -23,7 +24,7 @@ type JsonPalette struct {
 func ReadJsonData(fileName string) []JsonPalette {
 	var jsonPaletteList []JsonPalette
 
-	data, err := colorFiles.ReadFile(filepath.Join("data", fileName))
+	data, err := colorFiles.ReadFile(path.Join("data", fileName))
 	if err != nil {
 		log.Fatalf("ReadFile failed: %v", err)
 	}
@@ -41,7 +42,7 @@ func ReadJsonData(fileName string) []JsonPalette {
 func ReadJsonPalette(fileName string) {
 	var colorListJson []JsonPalette
 
-	data, err := colorFiles.ReadFile(filepath.Join("data", fileName))
+	data, err := colorFiles.ReadFile(path.Join("data", fileName))
 	if err != nil {
 		log.Fatalf("ReadFile failed: %v", err)
 	}

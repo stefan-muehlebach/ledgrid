@@ -13,7 +13,7 @@ import (
 type Camera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
-	DstMask   *image.Alpha
+	Mask   *image.Alpha
 	running   bool
 }
 

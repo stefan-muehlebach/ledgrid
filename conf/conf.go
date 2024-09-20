@@ -81,7 +81,7 @@ var (
 	ModuleDim = image.Point{10, 10}
 )
 
-// There are two module types.
+// There are two module types (with respect to the cabeling).
 type ModuleType int
 
 const (
@@ -94,28 +94,6 @@ const (
 	ModRL
 )
 
-func (m ModuleType) String() (s string) {
-	switch m {
-	case ModLR:
-		s = "LR"
-	case ModRL:
-		s = "RL"
-	}
-	return
-}
-
-// Die Set-Methode ist eigentlich etwas aus dem Setter-Interface des Packages
-// 'flag', wird hier aber verwendet um bestimmte Konfigurationen einfacher
-// verarbeiten zu koennen.
-func (m *ModuleType) Set(v string) error {
-	switch v {
-	case "LR":
-		*m = ModLR
-	case "RL":
-		*m = ModRL
-	}
-	return nil
-}
 
 func (m ModuleType) Index(pt image.Point) int {
 	idx := 0
@@ -146,6 +124,29 @@ func (m ModuleType) Coord(idx int) image.Point {
 		row = (ModuleDim.Y - 1 - y)
 	}
 	return image.Point{col, row}
+}
+
+func (m ModuleType) String() (s string) {
+	switch m {
+	case ModLR:
+		s = "LR"
+	case ModRL:
+		s = "RL"
+	}
+	return
+}
+
+// Die Set-Methode ist eigentlich etwas aus dem Setter-Interface des Packages
+// 'flag', wird hier aber verwendet um bestimmte Konfigurationen einfacher
+// verarbeiten zu koennen.
+func (m *ModuleType) Set(v string) error {
+	switch v {
+	case "LR":
+		*m = ModLR
+	case "RL":
+		*m = ModRL
+	}
+	return nil
 }
 
 // Each module can be rotated in steps of 90 degrees with respect to the base
@@ -187,13 +188,6 @@ func (r *RotationType) Set(v string) error {
 	return nil
 }
 
-// With values of type Module, you describe a certain module type, rotated
-// by a specific angle.
-type Module struct {
-	Type ModuleType
-	Rot  RotationType
-}
-
 // Because they are used quite frequently and there are 8 of them in total,
 // I decided to create constants for each of them.
 var (
@@ -207,11 +201,11 @@ var (
 	ModRL270 = Module{ModRL, Rot270}
 )
 
-// Die textuelle Darstellung eines Moduls ist in der Einleitung am Anfang des
-// Packages zu sehen: Modul-Typ und Rotationsart werden mit Doppelpunkt
-// getrennt als zusammenhaengende Zeichenkette dargestell.
-func (m Module) String() string {
-	return fmt.Sprintf("%v:%v", m.Type, m.Rot)
+// With values of type Module, you describe a certain module type, rotated
+// by a specific angle.
+type Module struct {
+	Type ModuleType
+	Rot  RotationType
 }
 
 func (m Module) Index(pt image.Point) int {
@@ -237,6 +231,13 @@ func (m Module) Coord(idx int) image.Point {
 		pt.X, pt.Y = (ModuleDim.X - 1 - pt.Y), pt.X
 	}
 	return pt
+}
+
+// Die textuelle Darstellung eines Moduls ist in der Einleitung am Anfang des
+// Packages zu sehen: Modul-Typ und Rotationsart werden mit Doppelpunkt
+// getrennt als zusammenhaengende Zeichenkette dargestell.
+func (m Module) String() string {
+	return fmt.Sprintf("%v:%v", m.Type, m.Rot)
 }
 
 // Module implementiert das Scanner-Interface, ist also in der Lage, via
@@ -292,46 +293,77 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 		log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleDim)
 	}
 	cols, rows := size.X/ModuleDim.X, size.Y/ModuleDim.Y
-	conf = make([]ModulePosition, 0)
 
-	idx := 0
 	for row = range rows {
 		for i := range cols {
 			if row%2 == 0 {
 				col = i
-				mod = Module{ModLR, Rot000}
+				mod = ModLR000
 			} else {
 				col = cols - i - 1
-				mod = Module{ModLR, Rot180}
+				mod = ModLR180
 			}
 			if col == cols-1 {
-				mod = Module{ModRL, Rot090}
+				mod = ModRL090
 			}
-			conf = append(conf, ModulePosition{Col: col, Row: row, Idx: idx, Mod: mod})
-			idx += ModuleDim.X * ModuleDim.Y
+			conf.AddMod(col, row, mod)
 		}
 	}
 	return conf
 }
 
+// Helps to build up a module configuration. Important: the Add's must
+// be done along the LED chain. The configuration will be verified after
+// each add.
+func (conf *ModuleConfig) AddMod(col, row int, mod Module) {
+    modPos := ModulePosition{col, row, len(*conf)*ModuleDim.X*ModuleDim.Y, mod}
+    *conf = append(*conf, modPos)
+    if err := conf.VerifyModule(len(*conf)-1); err != nil {
+        log.Fatalf("Can't add module: %v", err)
+    }
+}
+
+type ModuleSpec struct {
+    Col, Row int
+    Mod Module
+}
+
+func (conf *ModuleConfig) AddMods(mods []ModuleSpec) {
+    for _, mod := range mods {
+        conf.AddMod(mod.Col, mod.Row, mod.Mod)
+    }
+}
+
+func (conf ModuleConfig) VerifyModule(i int) error {
+    if i == 0 {
+        return nil
+    }
+    if i >= len(conf) {
+        return errors.New(fmt.Sprintf("no module with index %d", i))
+    }
+    idxA := i*ModuleDim.X*ModuleDim.Y-1
+    idxB := idxA + 1
+    ptA := conf.Coord(idxA)
+    ptB := conf.Coord(idxB)
+    dx := abs(ptA.X - ptB.X)
+    dy := abs(ptA.Y - ptB.Y)
+    if dx > 1 || dy > 1 {
+        return errors.New(fmt.Sprintf("from module %d to %d: %v and %v are not adjacent", i-1, i, ptA, ptB))
+    }
+    return nil
+}
+
 func (conf ModuleConfig) Verify() error {
-    numLeds := ModuleDim.X * ModuleDim.Y
-    for i := range conf[:len(conf)-1] {
-        idxA := numLeds * (i+1) - 1
-        idxB := numLeds * (i+1)
-        coordA := conf.Coord(idxA)
-        coordB := conf.Coord(idxB)
-        // fmt.Printf("%+v -> %+v\n", coordA, coordB)
-        dx := abs(coordA.X - coordB.X)
-        dy := abs(coordA.Y - coordB.Y)
-        if dx > 1 || dy > 1 {
-            return errors.New(fmt.Sprintf("error between module %d and %d: coordinates %v and %v do not match", i, i+1, coordA, coordB))
+    for i := range conf[1:] {
+        err := conf.VerifyModule(i+1)
+        if err != nil {
+            return err
         }
     }
     return nil
 }
 
-// Bestimmt die Groesse des gesamten Panels in Anzahl Pixel
+// Returns the size of the LEDGrid as number of pixels.
 func (conf ModuleConfig) Size() image.Point {
 	size := image.Point{}
 	for _, modPos := range conf {
@@ -341,6 +373,8 @@ func (conf ModuleConfig) Size() image.Point {
 	return size
 }
 
+// Returns the index of the position pt within the LED chain or -1 if this
+// position is not on a module.
 func (conf ModuleConfig) Index(pt image.Point) int {
 	for _, modPos := range conf {
 		if pt.In(modPos.Bounds()) {
@@ -350,11 +384,13 @@ func (conf ModuleConfig) Index(pt image.Point) int {
 	return -1
 }
 
+// Returns the coordinates of the LED with index idx.
 func (conf ModuleConfig) Coord(idx int) image.Point {
 	modPos := conf[idx/(ModuleDim.X*ModuleDim.Y)]
 	return modPos.Coord(idx)
 }
 
+// Returns true if position pt is really visible on this LEDGrid.
 func (conf ModuleConfig) Contains(pt image.Point) bool {
 	for _, modPos := range conf {
 		if pt.In(modPos.Bounds()) {
@@ -364,15 +400,17 @@ func (conf ModuleConfig) Contains(pt image.Point) bool {
 	return false
 }
 
-func (conf ModuleConfig) Module(pt image.Point) ModulePosition {
-	for _, modPos := range conf {
-		if pt.In(modPos.Bounds()) {
-			return modPos
-		}
-	}
-	log.Fatalf("Coordinates not within this grid: %v", pt)
-	return ModulePosition{}
-}
+// // Returns the ModulePosition information of a module, containing position
+// // pt.
+// func (conf ModuleConfig) Module(pt image.Point) ModulePosition {
+// 	for _, modPos := range conf {
+// 		if pt.In(modPos.Bounds()) {
+// 			return modPos
+// 		}
+// 	}
+// 	log.Fatalf("Coordinates not within this grid: %v", pt)
+// 	return ModulePosition{}
+// }
 
 // Mit diesem Typ koennen die Koordinaten der Pixel auf dem LEDGrid auf
 // Indizes innerhalb der Lichterkette gemappt werden.

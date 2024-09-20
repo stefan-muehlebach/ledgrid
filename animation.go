@@ -47,9 +47,19 @@ func AnimationEaseIn(t float64) float64 {
 	return t * t
 }
 
+// Beginnt langsam und nimmt immer mehr an Fahrt auf.
+func AnimationLazeIn(t float64) float64 {
+	return t * t * t
+}
+
 // Beginnt schnell und bremst zum Ende immer mehr ab.
 func AnimationEaseOut(t float64) float64 {
 	return t * (2 - t)
+}
+
+// Beginnt langsam und nimmt immer mehr an Fahrt auf.
+func AnimationLazeOut(t float64) float64 {
+	return t * (t*(t-3) + 3)
 }
 
 // Anfang und Ende der Animation werden abgebremst.
@@ -143,31 +153,16 @@ func RandAlpha(a, b uint8) AnimValueFunc[uint8] {
 	}
 }
 
-// ----------------------------------------------------------------------------
-
-// Dieses Interface ist von allen Typen zu implementieren, welche
-// Animationen ausfuehren sollen/wollen. Aktuell gibt es nur einen Typ, der
-// dieses Interface implementiert (AnimationController) und es ist auch
-// fraglich, ob es je weitere Typen geben wird.
-type Animator interface {
-	Add(anims ...Animation)
-	Del(anim Animation)
-	Purge()
-	Suspend()
-	Continue()
-	IsRunning() bool
-}
-
 // Das Herzstueck der ganzen Animationen ist der AnimationController. Er
 // sorgt dafuer, dass alle 30 ms (siehe Variable refreshRate) die
 // Update-Methoden aller Animationen aufgerufen werden und veranlasst im
 // Anschluss, dass alle darstellbaren Objekte neu gezeichnet werden und sendet
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
-	AnimList   []Animation
-	animMutex  *sync.RWMutex
-	Canvas     *Canvas
-	Filter     Filter
+	AnimList  []Animation
+	animMutex *sync.RWMutex
+	Canvas    *Canvas
+	// Filter     Filter
 	ledGrid    *LedGrid
 	ticker     *time.Ticker
 	quit       bool
@@ -188,7 +183,7 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationControll
 	a.AnimList = make([]Animation, 0)
 	a.animMutex = &sync.RWMutex{}
 	a.Canvas = canvas
-	a.Filter = NewFilterIdent(canvas)
+	// a.Filter = NewFilterIdent(canvas)
 	a.ledGrid = ledGrid
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = NewStopwatch()
@@ -433,7 +428,7 @@ func init() {
 	gob.Register(&SimpleTask{})
 	gob.Register(&HideShowAnimation{})
 	// gob.Register(&StartStopAnimation{})
-	gob.Register(&Uint8Animation{})
+	gob.Register(&FadeAnimation{})
 	gob.Register(&ColorAnimation{})
 	gob.Register(&PaletteAnimation{})
 	gob.Register(&PaletteFadeAnimation{})
@@ -812,7 +807,7 @@ func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
 	return a
 }
 func (a *HideShowAnimation) Start() {
-	if a.obj.IsHidden() {
+	if a.obj.IsVisible() {
 		a.obj.Show()
 	} else {
 		a.obj.Hide()
@@ -1032,7 +1027,16 @@ func Const[T AnimValue](v T) AnimValueFunc[T] {
 	return func() T { return v }
 }
 
-type Uint8Animation struct {
+// ---------------------------------------------------------------------------
+
+type FadeType int
+
+const (
+	FadeOut FadeType = 0x00
+	FadeIn = 0xff
+)
+
+type FadeAnimation struct {
 	NormAnimationEmbed
 	ValPtr     *uint8
 	val1, val2 uint8
@@ -1040,14 +1044,14 @@ type Uint8Animation struct {
 	Cont       bool
 }
 
-func NewUint8Animation(valPtr *uint8, val2 uint8, dur time.Duration) *Uint8Animation {
-	a := &Uint8Animation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2)}
+func NewFadeAnimation(valPtr *uint8, fade FadeType, dur time.Duration) *FadeAnimation {
+	a := &FadeAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(uint8(fade))}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)
 	return a
 }
 
-func (a *Uint8Animation) Init() {
+func (a *FadeAnimation) Init() {
 	if a.Cont {
 		a.Val1 = Const(*a.ValPtr)
 	}
@@ -1055,7 +1059,7 @@ func (a *Uint8Animation) Init() {
 	a.val2 = a.Val2()
 }
 
-func (a *Uint8Animation) Tick(t float64) {
+func (a *FadeAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
 }
 

@@ -54,6 +54,12 @@ var (
 	Win fyne.Window
 )
 
+func ResetStatistics(gridServer *ledgrid.GridServer) {
+	gridServer.Watch().Reset()
+	gridServer.RecvBytes = 0
+	gridServer.SentBytes = 0
+}
+
 func PrintStatistics(gridServer *ledgrid.GridServer) {
 	log.Printf("Emulator statistics:")
 	log.Printf("   %v", gridServer.Watch())
@@ -84,8 +90,8 @@ func main() {
 	var gridServer *ledgrid.GridServer
 	var gridEmulator *GridWindow
 	var useCustomLayout bool
-    var gridSize image.Point
-    var modConf conf.ModuleConfig
+	var gridSize image.Point
+	var modConf conf.ModuleConfig
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
@@ -94,14 +100,17 @@ func main() {
 	flag.BoolVar(&useCustomLayout, "custom", defUseCustomLayout, "Use a non standard module configuration")
 	flag.Parse()
 
-    if useCustomLayout {
-        modConf = conf.ChessBoard
-        gridSize = modConf.Size()
-        width, height = gridSize.X, gridSize.Y
-    } else {
-        gridSize = image.Pt(width, height)
-        modConf = conf.DefaultModuleConfig(gridSize)
-    }
+    StartProfiling()
+    defer StopProfiling()
+
+	if useCustomLayout {
+		modConf = conf.ChessBoard
+		gridSize = modConf.Size()
+		width, height = gridSize.X, gridSize.Y
+	} else {
+		gridSize = image.Pt(width, height)
+		modConf = conf.DefaultModuleConfig(gridSize)
+	}
 
 	appWidth = float32(width) * float32(pixelSize)
 	appHeight = float32(height) * float32(pixelSize)
@@ -113,8 +122,8 @@ func main() {
 	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
 	Win = App.NewWindow(winTitle)
 
-    gridEmulator = NewGridWindow(gridSize, modConf)
- 	gridServer = ledgrid.NewGridServer(port, gridEmulator)
+	gridEmulator = NewGridWindow(pixelSize, modConf)
+	gridServer = ledgrid.NewGridServer(port, gridEmulator)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
@@ -127,6 +136,7 @@ func main() {
 			fmt.Printf(" ESC  Same as 'q'\n")
 		case fyne.KeyS:
 			PrintStatistics(gridServer)
+			ResetStatistics(gridServer)
 		case fyne.KeyT:
 			ToggleTests(gridServer)
 		case fyne.KeyEscape, fyne.KeyQ:
