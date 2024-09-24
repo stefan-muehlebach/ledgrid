@@ -8,7 +8,6 @@ import (
 	"math/rand/v2"
 	"os"
 	"runtime"
-	"slices"
 	"sync"
 	"time"
 
@@ -65,9 +64,17 @@ func AnimationLazeOut(t float64) float64 {
 // Anfang und Ende der Animation werden abgebremst.
 func AnimationEaseInOut(t float64) float64 {
 	if t <= 0.5 {
-		return t * t * 2
+		return 2 * t * t
 	}
-	return -1 + (4-t*2)*t
+	return (4-2*t)*t - 1
+}
+
+// Anfang und Ende der Animation werden abgebremst.
+func AnimationLazeInOut(t float64) float64 {
+	if t <= 0.5 {
+		return 4 * t * t * t
+	}
+	return 4*(t-1)*(t-1)*(t-1) + 1
 }
 
 // Alternative Funktion mit einer kubischen Funktion:
@@ -355,9 +362,10 @@ func (a *AnimationController) Now() time.Time {
 
 // Die folgenden Interfaces geben einen guten Ueberblick ueber die Arten
 // von Hintergrundaktivitaeten.
+//
 // Ein Task hat nur die Moeglichkeit, gestartet zu werden. Anschl. lauft er
-// asynchron ohne weitere Moeglichkeiten der Einflussnahme. Einzig der aktuelle
-// Status ('laeuft'/'laeuft nicht') kann noch ermittelt werden.
+// asynchron ohne weitere Moeglichkeiten der Einflussnahme. Es ist sinnvoll,
+// wenn der Code hinter einem Task so kurz wie moeglich gehalten wird.
 type Task interface {
 	Start()
 }
@@ -376,17 +384,21 @@ type Job interface {
 // erledigen koennen. Man kann sie ausserdem Suspendieren und Fortsetzen.
 type Animation interface {
 	Job
-	Duration() time.Duration
-	SetDuration(dur time.Duration)
 	Suspend()
 	Continue()
 	Update(t time.Time) bool
 }
 
+type TimedAnimation interface {
+	Animation
+	Duration() time.Duration
+	SetDuration(dur time.Duration)
+}
+
 // Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
 // Interface AnimationImpl implementieren.
 type NormAnimation interface {
-	Animation
+	TimedAnimation
 	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
 	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
 	// zaehlen nicht als Start!
@@ -394,7 +406,7 @@ type NormAnimation interface {
 	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
 	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
 	// t=0: Animation wurde eben gestartet
-	// t=1: Die Animation ist fertig gelaufen.
+	// t=1: Die Animation ist fertig
 	Tick(t float64)
 }
 
@@ -403,7 +415,7 @@ type NormAnimation interface {
 // der Dauer.
 type DurationEmbed struct {
 	duration time.Duration
-	Dummy    int
+	// Dummy    int
 }
 
 func (d *DurationEmbed) Duration() time.Duration {
@@ -440,345 +452,6 @@ func init() {
 	gob.Register(&NormAnimationEmbed{})
 }
 
-// Eine Gruppe dient dazu, eine Anzahl von Animationen gleichzeitig zu starten.
-// Die Laufzeit der Gruppe ist gleich der laengsten Laufzeit ihrer Animationen
-// oder einer festen Dauer (je nach dem was groesser ist).
-// Die Animationen, welche ueber eine Gruppe gestartet werden, sollten keine
-// Endlos-Animationen sein, da sonst die Laufzeit der Gruppe ebenfalls
-// unendlich wird.
-type Group struct {
-	DurationEmbed
-	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
-	RepeatCount int
-
-	Tasks            []Task
-	start, stop, end time.Time
-	repeatsLeft      int
-	running          bool
-}
-
-// Erstellt eine neue Gruppe, welche die Animationen in [anims] zusammen
-// startet. Per Default ist die Laufzeit der Gruppe gleich der laengsten
-// Laufzeit der hinzugefuegten Animationen.
-func NewGroup(tasks ...Task) *Group {
-	a := &Group{}
-	a.duration = 0
-	a.RepeatCount = 0
-	a.Add(tasks...)
-	AnimCtrl.Add(a)
-	return a
-}
-
-// Fuegt der Gruppe weitere Animationen hinzu.
-func (a *Group) Add(tasks ...Task) {
-	for _, task := range tasks {
-		if anim, ok := task.(Animation); ok {
-			a.duration = max(a.duration, anim.Duration())
-		}
-		a.Tasks = append(a.Tasks, task)
-	}
-}
-
-// Startet die Gruppe.
-func (a *Group) Start() {
-	if a.running {
-		return
-	}
-	// fmt.Printf("Group: starting\n")
-	a.start = AnimCtrl.Now()
-	a.end = a.start.Add(a.duration)
-	a.repeatsLeft = a.RepeatCount
-	a.running = true
-	for _, task := range a.Tasks {
-		task.Start()
-	}
-	// AnimCtrl.Add(a)
-}
-
-// Unterbricht die Ausfuehrung der Gruppe.
-func (a *Group) Suspend() {
-	if !a.running {
-		return
-	}
-	a.stop = AnimCtrl.Now()
-	a.running = false
-}
-
-// Setzt die Ausfuehrung der Gruppe fort.
-func (a *Group) Continue() {
-	if a.running {
-		return
-	}
-	dt := AnimCtrl.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
-
-// Liefert den Status der Gruppe zurueck.
-func (a *Group) IsRunning() bool {
-	return a.running
-}
-
-func (a *Group) Update(t time.Time) bool {
-	for _, task := range a.Tasks {
-		if job, ok := task.(Job); ok {
-			if job.IsRunning() {
-				return true
-			}
-		}
-	}
-	if t.After(a.end) {
-		if a.repeatsLeft == 0 {
-			a.running = false
-			return false
-		} else if a.repeatsLeft > 0 {
-			a.repeatsLeft--
-		}
-		a.start = a.end
-		a.end = a.start.Add(a.duration)
-		for _, task := range a.Tasks {
-			task.Start()
-		}
-	}
-	return true
-}
-
-// Mit einer Sequence lassen sich eine Reihe von Animationen hintereinander
-// ausfuehren. Dabei wird eine nachfolgende Animation erst dann gestartet,
-// wenn die vorangehende beendet wurde.
-type Sequence struct {
-	DurationEmbed
-	// Gibt an, wie oft diese Sequenz wiederholt werden soll.
-	RepeatCount int
-
-	Tasks            []Task
-	activeTask       int
-	start, stop, end time.Time
-	repeatsLeft      int
-	running          bool
-}
-
-// Erstellt eine neue Sequenz welche die Animationen in [anims] hintereinander
-// ausfuehrt.
-func NewSequence(tasks ...Task) *Sequence {
-	a := &Sequence{}
-	a.duration = 0
-	a.RepeatCount = 0
-	a.Add(tasks...)
-	AnimCtrl.Add(a)
-	return a
-}
-
-// Fuegt der Sequenz weitere Animationen hinzu.
-func (a *Sequence) Add(tasks ...Task) {
-	for _, task := range tasks {
-		if anim, ok := task.(Animation); ok {
-			a.duration = a.duration + anim.Duration()
-		}
-		a.Tasks = append(a.Tasks, task)
-	}
-}
-
-func (a *Sequence) Put(tasks ...Task) {
-	for _, task := range tasks {
-		if anim, ok := task.(Animation); ok {
-			a.duration = a.duration + anim.Duration()
-		}
-		a.Tasks = append([]Task{task}, a.Tasks...)
-	}
-}
-
-// Startet die Sequenz.
-func (a *Sequence) Start() {
-	if a.running {
-		return
-	}
-	a.start = AnimCtrl.Now()
-	a.end = a.start.Add(a.duration)
-	a.activeTask = 0
-	a.repeatsLeft = a.RepeatCount
-	a.running = true
-	a.Tasks[a.activeTask].Start()
-}
-
-// Unterbricht die Ausfuehrung der Sequenz.
-func (a *Sequence) Suspend() {
-	if !a.running {
-		return
-	}
-	a.stop = AnimCtrl.Now()
-	a.running = false
-}
-
-// Setzt die Ausfuehrung der Sequenz fort.
-func (a *Sequence) Continue() {
-	if a.running {
-		return
-	}
-	dt := AnimCtrl.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
-
-// Liefert den Status der Sequenz zurueck.
-func (a *Sequence) IsRunning() bool {
-	return a.running
-}
-
-// Wird durch den Controller periodisch aufgerufen, prueft ob Animationen
-// dieser Sequenz noch am Laufen sind und startet ggf. die naechste.
-func (a *Sequence) Update(t time.Time) bool {
-	if a.activeTask < len(a.Tasks) {
-		if job, ok := a.Tasks[a.activeTask].(Job); ok {
-			if job.IsRunning() {
-				return true
-			}
-		}
-		a.activeTask++
-	}
-	if a.activeTask >= len(a.Tasks) {
-		if t.After(a.end) {
-			if a.repeatsLeft == 0 {
-				a.running = false
-				return false
-			} else if a.repeatsLeft > 0 {
-				a.repeatsLeft--
-			}
-			a.start = a.end
-			a.end = a.start.Add(a.duration)
-			a.activeTask = 0
-			a.Tasks[a.activeTask].Start()
-		}
-		return true
-	}
-	a.Tasks[a.activeTask].Start()
-	return true
-}
-
-// Mit einer Timeline koennen einzelne oder mehrere Animationen zu
-// bestimmten Zeiten gestartet werden. Die Zeit ist relativ zur Startzeit
-// der Timeline selber zu verstehen. Nach dem Start werden die Animationen
-// nicht mehr weiter kontrolliert.
-type Timeline struct {
-	DurationEmbed
-	// Gibt an, wie oft diese Timeline wiederholt werden soll.
-	RepeatCount int
-
-	Slots            []*TimelineSlot
-	nextSlot         int
-	start, stop, end time.Time
-	repeatsLeft      int
-	running          bool
-}
-
-// Interner Typ, mit dem Ausfuehrungszeitpunkt und Animationen festgehalten
-// werden koennen.
-type TimelineSlot struct {
-	Duration time.Duration
-	Tasks    []Task
-}
-
-// Erstellt eine neue Timeline mit Ausfuehrungsdauer d. Als d kann auch Null
-// angegeben werden, dann ist die Laufzeit der Timeline gleich dem groessten
-// Ausfuehrungszeitpunkt der hinterlegten Animationen.
-func NewTimeline(d time.Duration) *Timeline {
-	a := &Timeline{}
-	a.duration = d
-	a.RepeatCount = 0
-	a.Slots = make([]*TimelineSlot, 0)
-	AnimCtrl.Add(a)
-	return a
-}
-
-// Fuegt der Timeline die Animation anim hinzu mit Ausfuehrungszeitpunkt
-// dt nach Start der Timeline. Im Moment muessen die Animationen noch in
-// der Reihenfolge ihres Ausfuehrungszeitpunktes hinzugefuegt werden.
-func (a *Timeline) Add(pit time.Duration, tasks ...Task) {
-	var i int
-
-	if pit > a.duration {
-		a.duration = pit
-	}
-
-	for i = 0; i < len(a.Slots); i++ {
-		pos := a.Slots[i]
-		if pos.Duration == pit {
-			pos.Tasks = append(pos.Tasks, tasks...)
-			return
-		}
-		if pos.Duration > pit {
-			break
-		}
-	}
-	a.Slots = slices.Insert(a.Slots, i, &TimelineSlot{pit, tasks})
-}
-
-// Startet die Timeline.
-func (a *Timeline) Start() {
-	if a.running {
-		return
-	}
-	a.start = AnimCtrl.Now()
-	a.end = a.start.Add(a.duration)
-	a.repeatsLeft = a.RepeatCount
-	a.nextSlot = 0
-	a.running = true
-}
-
-// Unterbricht die Ausfuehrung der Timeline.
-func (a *Timeline) Suspend() {
-	if !a.running {
-		return
-	}
-	a.stop = AnimCtrl.Now()
-	a.running = false
-}
-
-// Setzt die Ausfuehrung der Timeline fort.
-func (a *Timeline) Continue() {
-	if a.running {
-		return
-	}
-	dt := AnimCtrl.Now().Sub(a.stop)
-	a.start = a.start.Add(dt)
-	a.end = a.end.Add(dt)
-	a.running = true
-}
-
-// Retourniert den Status der Timeline.
-func (a *Timeline) IsRunning() bool {
-	return a.running
-}
-
-// Wird periodisch durch den Controller aufgerufen und aktualisiert die
-// Timeline.
-func (a *Timeline) Update(t time.Time) bool {
-	if a.nextSlot >= len(a.Slots) {
-		if t.After(a.end) {
-			if a.repeatsLeft == 0 {
-				a.running = false
-				return false
-			} else if a.repeatsLeft > 0 {
-				a.repeatsLeft--
-			}
-			a.start = a.end
-			a.end = a.start.Add(a.duration)
-			a.nextSlot = 0
-		}
-		return true
-	}
-	slot := a.Slots[a.nextSlot]
-	if t.Sub(a.start) >= slot.Duration {
-		for _, task := range slot.Tasks {
-			task.Start()
-		}
-		a.nextSlot++
-	}
-	return true
-}
-
 // Mit einem Task koennen beliebige Funktionsaufrufe in die
 // Animationsketten aufgenommen werden. Sie koennen beliebig oft gestartet
 // werden, haben als Dauer stets 0 ms und werden immer als 'gestoppt'
@@ -806,13 +479,15 @@ func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
 	a := &HideShowAnimation{obj: obj}
 	return a
 }
+
 func (a *HideShowAnimation) Start() {
 	if a.obj.IsVisible() {
-		a.obj.Show()
-	} else {
 		a.obj.Hide()
+	} else {
+		a.obj.Show()
 	}
 }
+
 func (a *HideShowAnimation) IsRunning() bool {
 	return false
 }
@@ -886,7 +561,6 @@ func (a *NormAnimationEmbed) Duration() time.Duration {
 // aktuell sind. Ist die Animaton bereits am Laufen ist diese Methode
 // ein no-op.
 func (a *NormAnimationEmbed) Start() {
-	// fmt.Printf("Gestartet...\n")
 	if a.running {
 		return
 	}
@@ -897,7 +571,6 @@ func (a *NormAnimationEmbed) Start() {
 	a.reverse = false
 	a.wrapper.Init()
 	a.running = true
-	// AnimCtrl.Add(a.wrapper)
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
@@ -977,48 +650,8 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 
 // ---------------------------------------------------------------------------
 
-// type AnimValue interface {
-//     Add(AnimValue) AnimValue
-//     Mul(float64) AnimValue
-// }
-
-// type AnimValueFunc[T AnimValue] func() T
-
-// func Const[T AnimValue](v T) AnimValueFunc[T] {
-//     return func() T { return v }
-// }
-
-// type ValueAnimation[T AnimValue] struct {
-//     NormAnimationEmbed
-//     ValPtr *T
-//     val1, val2 T
-//     Val1, Val2 AnimValueFunc[T]
-//     Cont bool
-// }
-
-// func NewValueAnimation[T AnimValue](valPtr *T, val2 T, dur time.Duration) *ValueAnimation[T] {
-//     a := &ValueAnimation[T]{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2)}
-//     a.NormAnimationEmbed.Extend(a)
-//     a.SetDuration(dur)
-//     return a
-// }
-
-// func (a *ValueAnimation[T]) Init() {
-// 	if a.Cont {
-// 		a.Val1 = Const(*a.ValPtr)
-// 	}
-// 	a.val1 = a.Val1()
-// 	a.val2 = a.Val2()
-// }
-
-// func (a *ValueAnimation[T]) Tick(t float64) {
-// 	*a.ValPtr = a.val1.Add(a.val2).(T)
-// }
-
-// ---------------------------------------------------------------------------
-
 type AnimValue interface {
-	~float64 | ~uint8 | ~int | geom.Point | color.LedColor
+	~float64 | ~uint8 | ~int | geom.Point | image.Point | fixed.Point26_6 | color.LedColor
 }
 
 type AnimValueFunc[T AnimValue] func() T
@@ -1027,96 +660,80 @@ func Const[T AnimValue](v T) AnimValueFunc[T] {
 	return func() T { return v }
 }
 
+type GenericAnimation[T AnimValue] struct {
+	NormAnimationEmbed
+	ValPtr     *T
+	val1, val2 T
+	Val1, Val2 AnimValueFunc[T]
+	Cont       bool
+}
+
+func (a *GenericAnimation[T]) InitAnim(valPtr *T, val2 T, dur time.Duration) {
+	a.ValPtr = valPtr
+	a.Val1 = Const(*valPtr)
+	a.Val2 = Const(val2)
+	a.SetDuration(dur)
+}
+
+func (a *GenericAnimation[T]) Init() {
+	if a.Cont {
+		a.Val1 = Const(*a.ValPtr)
+	}
+	a.val1 = a.Val1()
+	a.val2 = a.Val2()
+}
+
 // ---------------------------------------------------------------------------
 
 type FadeType int
 
 const (
 	FadeOut FadeType = 0x00
-	FadeIn = 0xff
+	FadeIn           = 0xff
 )
 
 type FadeAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *uint8
-	val1, val2 uint8
-	Val1, Val2 AnimValueFunc[uint8]
-	Cont       bool
+	GenericAnimation[uint8]
 }
 
 func NewFadeAnimation(valPtr *uint8, fade FadeType, dur time.Duration) *FadeAnimation {
-	a := &FadeAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(uint8(fade))}
+	a := &FadeAnimation{}
+	a.InitAnim(valPtr, uint8(fade), dur)
 	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
 	return a
-}
-
-func (a *FadeAnimation) Init() {
-	if a.Cont {
-		a.Val1 = Const(*a.ValPtr)
-	}
-	a.val1 = a.Val1()
-	a.val2 = a.Val2()
 }
 
 func (a *FadeAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
 }
 
+// ---------------------------------------------------------------------------
+
 type IntAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *int
-	val1, val2 int
-	Val1, Val2 AnimValueFunc[int]
-	Cont       bool
+	GenericAnimation[int]
 }
 
 func NewIntAnimation(valPtr *int, val2 int, dur time.Duration) *IntAnimation {
-	a := &IntAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2)}
+	a := &IntAnimation{}
+	a.InitAnim(valPtr, val2, dur)
 	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
 	return a
-}
-
-func (a *IntAnimation) Init() {
-	if a.Cont {
-		a.Val1 = Const(*a.ValPtr)
-	}
-	a.val1 = a.Val1()
-	a.val2 = a.Val2()
 }
 
 func (a *IntAnimation) Tick(t float64) {
 	*a.ValPtr = int(math.Round((1.0-t)*float64(a.val1) + t*float64(a.val2)))
 }
 
-// Da Positionen und Groessen mit dem gleichen Objekt aus geom realisiert
-// werden (geom.Point), ist die Animation einer Groesse und einer Position
-// im Wesentlichen das gleiche. Die Funktion NewSizeAnimation ist als
-// syntaktische Vereinfachung zu verstehen.
-
 // Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen.
 type FloatAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *float64
-	val1, val2 float64
-	Val1, Val2 AnimValueFunc[float64]
-	Cont       bool
+	GenericAnimation[float64]
 }
 
 func NewFloatAnimation(valPtr *float64, val2 float64, dur time.Duration) *FloatAnimation {
-	a := &FloatAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2)}
+	a := &FloatAnimation{}
+	a.InitAnim(valPtr, val2, dur)
 	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
 	return a
-}
-
-func (a *FloatAnimation) Init() {
-	if a.Cont {
-		a.Val1 = Const(*a.ValPtr)
-	}
-	a.val1 = a.Val1()
-	a.val2 = a.Val2()
 }
 
 func (a *FloatAnimation) Tick(t float64) {
@@ -1125,32 +742,110 @@ func (a *FloatAnimation) Tick(t float64) {
 
 // Animation fuer einen Verlauf zwischen zwei Farben.
 type ColorAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *color.LedColor
-	val1, val2 color.LedColor
-	Val1, Val2 AnimValueFunc[color.LedColor]
-	Cont       bool
+	GenericAnimation[color.LedColor]
 }
 
 func NewColorAnimation(valPtr *color.LedColor, val2 color.LedColor, dur time.Duration) *ColorAnimation {
-	a := &ColorAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2)}
+	a := &ColorAnimation{}
+	a.InitAnim(valPtr, val2, dur)
 	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
 	return a
-}
-
-func (a *ColorAnimation) Init() {
-	if a.Cont {
-		a.Val1 = Const(*a.ValPtr)
-	}
-	a.val1 = a.Val1()
-	a.val2 = a.Val2()
 }
 
 func (a *ColorAnimation) Tick(t float64) {
 	alpha := (*a.ValPtr).A
 	*a.ValPtr = a.val1.Interpolate(a.val2, t)
 	(*a.ValPtr).A = alpha
+}
+
+
+// Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
+// Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
+type PathAnimation struct {
+	GenericAnimation[geom.Point]
+	Path Path
+}
+
+func NewPathAnimation(valPtr *geom.Point, path *GeomPath, size geom.Point, dur time.Duration) *PathAnimation {
+	a := &PathAnimation{}
+	a.InitAnim(valPtr, geom.Point{}, dur)
+	a.NormAnimationEmbed.Extend(a)
+	a.Path = path
+	a.Val2 = func() geom.Point {
+		return a.Val1().Add(size)
+	}
+	return a
+}
+
+func NewPolyPathAnimation(valPtr *geom.Point, path *PolygonPath, dur time.Duration) *PathAnimation {
+	a := &PathAnimation{}
+	a.InitAnim(valPtr, (*valPtr).AddXY(1, 1), dur)
+	a.NormAnimationEmbed.Extend(a)
+	a.Path = path
+	return a
+}
+
+func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
+	a := &PathAnimation{}
+	a.InitAnim(valPtr, val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	a.Path = LinearPath
+	return a
+}
+
+func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
+	return NewPositionAnimation(valPtr, val2, dur)
+}
+
+func (a *PathAnimation) Tick(t float64) {
+	var dp geom.Point
+	var s geom.Point
+
+	dp = a.Path.Pos(t)
+	s = a.val2.Sub(a.val1)
+	dp.X *= s.X
+	dp.Y *= s.Y
+	*a.ValPtr = a.val1.Add(dp)
+}
+
+// Animation fuer eine Positionsveraenderung anhand des Fixed-Datentyps
+// [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
+// Schriften verwendet.
+type FixedPosAnimation struct {
+    GenericAnimation[fixed.Point26_6]
+}
+
+func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
+	a := &FixedPosAnimation{}
+    a.InitAnim(valPtr, val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	return a
+}
+
+func (a *FixedPosAnimation) Tick(t float64) {
+	*a.ValPtr = a.val1.Mul(float2fix(1.0 - t)).Add(a.val2.Mul(float2fix(t)))
+}
+
+func float2fix(x float64) fixed.Int26_6 {
+	return fixed.Int26_6(math.Round(x * 64))
+}
+
+type IntegerPosAnimation struct {
+    GenericAnimation[image.Point]
+}
+
+func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
+	a := &IntegerPosAnimation{}
+    a.InitAnim(valPtr, val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	return a
+}
+
+func (a *IntegerPosAnimation) Tick(t float64) {
+	v1 := geom.NewPointIMG(a.val1)
+	v2 := geom.NewPointIMG(a.val2)
+	np := v1.Mul(1.0 - t).Add(v2.Mul(t))
+	*a.ValPtr = np.Int()
 }
 
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
@@ -1210,242 +905,6 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 	} else {
 		a.Fader.T = t
 	}
-}
-
-// Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
-// Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
-type PathAnim struct {
-	NormAnimationEmbed
-	ValPtr     *geom.Point
-	val1, val2 geom.Point
-	Val1, Val2 AnimValueFunc[geom.Point]
-	Path       Path
-	Cont       bool
-}
-
-func NewPathAnimation(valPtr *geom.Point, path *GeomPath, size geom.Point, dur time.Duration) *PathAnim {
-	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Path: path}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	a.Val2 = func() geom.Point {
-		return a.Val1().Add(size)
-	}
-	return a
-}
-
-func NewPolyPathAnimation(valPtr *geom.Point, path *PolygonPath, dur time.Duration) *PathAnim {
-	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const((*valPtr).AddXY(1, 1)), Path: path}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	return a
-}
-
-func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnim {
-	a := &PathAnim{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2), Path: LinearPath}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	return a
-}
-
-func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnim {
-	return NewPositionAnimation(valPtr, val2, dur)
-}
-
-func (a *PathAnim) Init() {
-	if a.Cont {
-		a.Val1 = Const(*a.ValPtr)
-	}
-	a.val1 = a.Val1()
-	a.val2 = a.Val2()
-}
-
-func (a *PathAnim) Tick(t float64) {
-	var dp geom.Point
-	var s geom.Point
-
-	dp = a.Path.Pos(t)
-	s = a.val2.Sub(a.val1)
-	dp.X *= s.X
-	dp.Y *= s.Y
-	*a.ValPtr = a.val1.Add(dp)
-}
-
-// Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
-// Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
-// type PathAnimation struct {
-// 	NormAnimationEmbed
-// 	ValPtr     *geom.Point
-// 	val1, val2 geom.Point
-// 	Val1, Val2 AnimValueFunc[geom.Point]
-// 	PathFunc   PathFunctionType
-// 	Cont       bool
-// }
-
-// func NewPathAnimation(valPtr *geom.Point, pathFunc PathFunctionType, size geom.Point, dur time.Duration) *PathAnimation {
-// 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), PathFunc: pathFunc}
-// 	a.NormAnimationEmbed.Extend(a)
-// 	a.SetDuration(dur)
-// 	a.Val2 = func() geom.Point {
-// 		return a.Val1().Add(size)
-// 	}
-// 	return a
-// }
-
-// func NewPositionAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
-// 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr), Val2: Const(val2), PathFunc: LinearPath}
-// 	a.NormAnimationEmbed.Extend(a)
-// 	a.SetDuration(dur)
-// 	return a
-// }
-
-// func NewSizeAnimation(valPtr *geom.Point, val2 geom.Point, dur time.Duration) *PathAnimation {
-// 	return NewPositionAnimation(valPtr, val2, dur)
-// }
-
-// func (a *PathAnimation) Init() {
-// 	if a.Cont {
-// 		a.Val1 = Const(*a.ValPtr)
-// 	}
-// 	a.val1 = a.Val1()
-// 	a.val2 = a.Val2()
-// }
-
-// func (a *PathAnimation) Tick(t float64) {
-// 	var dp geom.Point
-// 	var s geom.Point
-
-// 	dp = a.PathFunc(t)
-// 	s = a.val2.Sub(a.val1)
-// 	dp.X *= s.X
-// 	dp.Y *= s.Y
-// 	*a.ValPtr = a.val1.Add(dp)
-// }
-
-//----------------------------------------------------------------------------
-
-// func NewPolyPathAnimation(valPtr *geom.Point, polyPath *PolygonPath, dur time.Duration) *PathAnimation {
-// 	a := &PathAnimation{ValPtr: valPtr, Val1: Const(*valPtr),
-// 		Val2: Const((*valPtr).AddXY(1, 1)), PathFunc: polyPath.Pos}
-// 	a.NormAnimationEmbed.Extend(a)
-// 	a.SetDuration(dur)
-// 	return a
-// }
-
-// Neben den vorhandenen Pfaden (Kreise, Halbkreise, Viertelkreise) koennen
-// Positions-Animationen auch entlang komplett frei definierten Pfaden
-// erfolgen. Der Schluessel dazu ist der Typ PolygonPath.
-type PolygonPath struct {
-	rect     geom.Rectangle
-	stopList []polygonStop
-}
-
-type polygonStop struct {
-	len float64
-	pos geom.Point
-}
-
-// Erstellt ein neues PolygonPath-Objekt und verwendet die Punkte in points
-// als Eckpunkte eines offenen Polygons. Punkte koennen nur beim Erstellen
-// angegeben werden.
-func NewPolygonPath(points ...geom.Point) *PolygonPath {
-	p := &PolygonPath{}
-	p.stopList = make([]polygonStop, len(points))
-
-	origin := geom.Point{}
-	for i, point := range points {
-		if i == 0 {
-			origin = point
-			p.stopList[i] = polygonStop{0.0, geom.Point{0, 0}}
-			continue
-		}
-		pt := point.Sub(origin)
-		len := p.stopList[i-1].len + pt.Distance(p.stopList[i-1].pos)
-		p.stopList[i] = polygonStop{len, pt}
-
-		p.rect.Min = p.rect.Min.Min(pt)
-		p.rect.Max = p.rect.Max.Max(pt)
-	}
-	return p
-}
-
-// Diese Methode ist bei der Erstellung einer Pfad-Animation als Parameter
-// fnc anzugeben.
-func (p *PolygonPath) Pos(t float64) geom.Point {
-	dist := t * p.stopList[len(p.stopList)-1].len
-	for i, stop := range p.stopList[1:] {
-		if dist < stop.len {
-			p1 := p.stopList[i].pos
-			p2 := stop.pos
-			relDist := dist - p.stopList[i].len
-			f := relDist / (stop.len - p.stopList[i].len)
-			return p1.Interpolate(p2, f)
-		}
-	}
-	return p.stopList[len(p.stopList)-1].pos
-}
-
-// Animation fuer eine Positionsveraenderung anhand des Fixed-Datentyps
-// [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
-// Schriften verwendet.
-type FixedPosAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *fixed.Point26_6
-	Val1, Val2 fixed.Point26_6
-	Cont       bool
-}
-
-func NewFixedPosAnimation(valPtr *fixed.Point26_6, val2 fixed.Point26_6, dur time.Duration) *FixedPosAnimation {
-	a := &FixedPosAnimation{}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
-
-func (a *FixedPosAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-}
-
-func (a *FixedPosAnimation) Tick(t float64) {
-	*a.ValPtr = a.Val1.Mul(float2fix(1.0 - t)).Add(a.Val2.Mul(float2fix(t)))
-}
-
-func float2fix(x float64) fixed.Int26_6 {
-	return fixed.Int26_6(math.Round(x * 64))
-}
-
-type IntegerPosAnimation struct {
-	NormAnimationEmbed
-	ValPtr     *image.Point
-	Val1, Val2 image.Point
-	Cont       bool
-}
-
-func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
-	a := &IntegerPosAnimation{}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	a.ValPtr = valPtr
-	a.Val1 = *valPtr
-	a.Val2 = val2
-	return a
-}
-
-func (a *IntegerPosAnimation) Init() {
-	if a.Cont {
-		a.Val1 = *a.ValPtr
-	}
-}
-
-func (a *IntegerPosAnimation) Tick(t float64) {
-	v1 := geom.NewPointIMG(a.Val1)
-	v2 := geom.NewPointIMG(a.Val2)
-	np := v1.Mul(1.0 - t).Add(v2.Mul(t))
-	*a.ValPtr = np.Int()
 }
 
 // Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.

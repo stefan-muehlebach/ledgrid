@@ -12,9 +12,6 @@ import (
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
 // das ColorSource Interface.
 type ColorSource interface {
-	// Da diese Objekte auch oft im GUI angezeigt werden, muessen sie das
-	// Nameable-Interface implementieren, d.h. einen Namen haben.
-	Nameable
 	// Liefert in Abhaengigkeit des Parameters v eine Farbe aus der Palette
 	// zurueck. v kann vielfaeltig verwendet, resp. interpretiert werden,
 	// bsp. als Parameter im Intervall [0,1], als Index (natuerliche Zahl)
@@ -43,7 +40,6 @@ var (
 // besteht aus einer Position (Zahl im Intervall [0,1]) und einer dazu
 // gehoerenden Farbe.
 type GradientPalette struct {
-	NameableEmbed
 	stops []ColorStop
 	// Mit dieser Funktion wird die Interpolation zwischen den gesetzten
 	// Farbwerten realisiert.
@@ -63,7 +59,6 @@ type ColorStop struct {
 // 1.0 angegeben sind.
 func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	p := &GradientPalette{}
-	p.NameableEmbed.Init(name)
 	p.stops = []ColorStop{
 		{0.0, ledcolor.NewLedColorHex(0x000000)},
 		{1.0, ledcolor.NewLedColorHex(0xFFFFFF)},
@@ -145,13 +140,11 @@ func (p *GradientPalette) Color(t float64) (c ledcolor.LedColor) {
 // Palette mit 256 einzelnen dedizierten Farbwerten - kein Fading oder
 // sonstige Uebergaenge.
 type SlicePalette struct {
-	NameableEmbed
 	Colors []ledcolor.LedColor
 }
 
 func NewSlicePalette(name string, cl ...ledcolor.LedColor) *SlicePalette {
 	p := &SlicePalette{}
-	p.NameableEmbed.Init(name)
 	p.Colors = make([]ledcolor.LedColor, 256)
 	for i, c := range cl {
 		p.Colors[i] = c
@@ -171,14 +164,12 @@ func (p *SlicePalette) SetColor(idx int, c ledcolor.LedColor) {
 // existiert der Typ UniformPalette. Die Ueberlegungen dazu sind analog zum
 // Typ [image.Uniform].
 type UniformPalette struct {
-	NameableEmbed
 	Col ledcolor.LedColor
 }
 
 // Erstellt eine neue einfarbige Farbquelle mit gegebenem namen.
 func NewUniformPalette(name string, color ledcolor.LedColor) *UniformPalette {
 	p := &UniformPalette{}
-	p.NameableEmbed.Init(name)
 	p.Col = color
 	return p
 }
@@ -219,12 +210,6 @@ func NewPaletteFader(pal ColorSource) *PaletteFader {
 	p.T = 0.0
 	return p
 }
-
-func (p *PaletteFader) Name() string {
-    return p.Pals[0].Name()
-}
-
-func (p *PaletteFader) SetName(string) { }
 
 // Mit dieser Methode wird der aktuelle Farbwert retourniert. Damit
 // implementiert der Fader das ColorSource-Interface und kann als Farbquelle

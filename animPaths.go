@@ -12,21 +12,33 @@ var (
     RectanglePath = NewGeomPath(rectangleFunc, 0, 1)
 )
 
+// Ein Pfad ist im Grunde nichts anderes, als eine Moeglichkeit, aufgrund eines
+// Parameters t (in [0, 1]) einen Punkt in der 2D-Ebene zu erhalten. Wie das
+// genau geht und ob das fuer jemanden Sinn macht, das steht auf einem anderen
+// Blatt.
 type Path interface {
     Pos(t float64) geom.Point
 }
 
+// Geometrische Pfade heissen deshalb so, weil ihre Grundlage zum Punkte
+// bauen irgendwo in der Geometrie zu suchen ist.
 type GeomPath struct {
     t0, l float64
     p0 geom.Point
     fnc PathFunctionType
 }
 
+// Alle geom. Pfade beruhen auf einer Pfad-Funktion (erster Parameter), der
+// beim Erstellen eines Pfades zwingend angegeben werden muss. Mit t0 und l
+// kann der Startpunkt, bzw. die Laenge der Animation im Vergleich zur
+// gesamten Laenge von fnc bestimmt werden.
 func NewGeomPath(fnc PathFunctionType, t0, l float64) *GeomPath {
     p := &GeomPath{t0: t0, l: l, p0: fnc(t0), fnc: fnc}
     return p
 }
 
+// Damit implementiert GeomPath das Interface Path... was die Absicht unseres
+// ganzen Planes ist.
 func (p *GeomPath) Pos(t float64) geom.Point {
     t *= p.l
     t += p.t0
@@ -36,11 +48,15 @@ func (p *GeomPath) Pos(t float64) geom.Point {
     return p.fnc(t).Sub(p.p0)
 }
 
+// Baut aus dem geom. Pfad p einen neuen, indem der Anfangspunkt auf t0
+// verlegt wird.
 func (p *GeomPath) NewStart(t0 float64) *GeomPath {
     q := NewGeomPath(p.fnc, t0, p.l)
     return q
 }
 
+// Baut aus dem geom. Pfad p einen neuen, indem der Anfangspunkt auf t0
+// und die totale Laenge des Pfades auf l gesetzt wird.
 func (p *GeomPath) NewStartLen(t0, l float64) *GeomPath {
     q := NewGeomPath(p.fnc, t0, l)
     return q
@@ -61,18 +77,21 @@ func (p *GeomPath) NewStartLen(t0, l float64) *GeomPath {
 //     einen maximalen Abstand von 1.0 haben.
 type PathFunctionType func(t float64) geom.Point
 
-// Beschreibt eine Gerade
+// Beschreibt eine Gerade vom Punkt (0,0) zum Punkt (1,1)
 func linearFunc(t float64) geom.Point {
 	return geom.Point{t, t}
 }
 
-// Beschreibt eine Gerade
+// Beschreibt einen Kreis, der eine Breite/Hoehe von 1.0 hat, am Ursprung
+// zentriert ist, oben in der Mitte beginnt und dann im Uhrzeigersinn
+// verlaeuft.
 func circleFunc(t float64) geom.Point {
 	phi := t * 2 * math.Pi
 	return geom.Point{0.5*math.Sin(phi), -0.5*math.Cos(phi)}
 }
 
-// Beschreibt ein Rechteck
+// Beschreibt ein Rechteck. Start ist links oben und der Verlauf ist im
+// Uhrzeigersinn.
 func rectangleFunc(t float64) geom.Point {
 	switch {
 	case t < 1.0/4.0:
@@ -84,4 +103,57 @@ func rectangleFunc(t float64) geom.Point {
 	default:
 		return geom.Point{0.0, 1.0 - 4.0 * (t - 3.0/4.0)}
 	}
+}
+
+// Neben den vorhandenen Pfaden (Kreise, Halbkreise, Viertelkreise) koennen
+// Positions-Animationen auch entlang komplett frei definierten Pfaden
+// erfolgen. Der Schluessel dazu ist der Typ PolygonPath.
+type PolygonPath struct {
+	rect     geom.Rectangle
+	stopList []polygonStop
+}
+
+type polygonStop struct {
+	len float64
+	pos geom.Point
+}
+
+// Erstellt ein neues PolygonPath-Objekt und verwendet die Punkte in points
+// als Eckpunkte eines offenen Polygons. Punkte koennen nur beim Erstellen
+// angegeben werden.
+func NewPolygonPath(points ...geom.Point) *PolygonPath {
+	p := &PolygonPath{}
+	p.stopList = make([]polygonStop, len(points))
+
+	origin := geom.Point{}
+	for i, point := range points {
+		if i == 0 {
+			origin = point
+			p.stopList[i] = polygonStop{0.0, geom.Point{0, 0}}
+			continue
+		}
+		pt := point.Sub(origin)
+		len := p.stopList[i-1].len + pt.Distance(p.stopList[i-1].pos)
+		p.stopList[i] = polygonStop{len, pt}
+
+		p.rect.Min = p.rect.Min.Min(pt)
+		p.rect.Max = p.rect.Max.Max(pt)
+	}
+	return p
+}
+
+// Diese Methode ist bei der Erstellung einer Pfad-Animation als Parameter
+// fnc anzugeben.
+func (p *PolygonPath) Pos(t float64) geom.Point {
+	dist := t * p.stopList[len(p.stopList)-1].len
+	for i, stop := range p.stopList[1:] {
+		if dist < stop.len {
+			p1 := p.stopList[i].pos
+			p2 := stop.pos
+			relDist := dist - p.stopList[i].len
+			f := relDist / (stop.len - p.stopList[i].len)
+			return p1.Interpolate(p2, f)
+		}
+	}
+	return p.stopList[len(p.stopList)-1].pos
 }

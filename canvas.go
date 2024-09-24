@@ -6,6 +6,7 @@ import (
 	gocolor "image/color"
 	"log"
 	"math"
+	"math/rand"
 	"os"
 	"sync"
 	"time"
@@ -91,10 +92,10 @@ func (c *Canvas) Refresh() {
 	c.objMutex.RLock()
 	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(CanvasObject)
-        if obj.IsDead() {
-            c.ObjList.Remove(ele)
-            continue
-        }
+		if obj.IsDeleted() {
+			c.ObjList.Remove(ele)
+			continue
+		}
 		if !obj.IsVisible() {
 			continue
 		}
@@ -136,8 +137,8 @@ type CanvasObject interface {
 	Show()
 	Hide()
 	IsVisible() bool
-    Kill()
-    IsDead() bool
+	Delete()
+	IsDeleted() bool
 	Draw(c *Canvas)
 }
 
@@ -145,15 +146,15 @@ type CanvasObject interface {
 // ein entsprechendes Embedable, welche die für die meisten Objekte
 // brauchbaren Methoden enthält.
 type CanvasObjectEmbed struct {
-	wrapper CanvasObject
+	wrapper   CanvasObject
 	isVisible bool
-    isDead bool
+	isDeleted bool
 }
 
 func (c *CanvasObjectEmbed) Extend(wrapper CanvasObject) {
 	c.wrapper = wrapper
 	c.isVisible = true
-    c.isDead = false
+	c.isDeleted = false
 }
 
 func (c *CanvasObjectEmbed) Show() {
@@ -172,12 +173,12 @@ func (c *CanvasObjectEmbed) IsVisible() bool {
 	return c.isVisible
 }
 
-func (c *CanvasObjectEmbed) Kill() {
-    c.isDead = true
+func (c *CanvasObjectEmbed) Delete() {
+	c.isDeleted = true
 }
 
-func (c *CanvasObjectEmbed) IsDead() bool {
-	return c.isDead
+func (c *CanvasObjectEmbed) IsDeleted() bool {
+	return c.isDeleted
 }
 
 // Und hier etwas mit Farben...
@@ -287,18 +288,22 @@ type RegularPolygon struct {
 	StrokeWidth            float64
 	StrokeColor, FillColor color.LedColor
 	FillColorFnc           string
-	numPoints              int
+	N                      int
 }
 
-func NewRegularPolygon(numPoints int, pos, size geom.Point, borderColor color.LedColor) *RegularPolygon {
+// Erzeugt ein neues regelmaessiges Polygon mit n Ecken. Mit pos wird der
+// Mittelpunkt des Polygons bezeichnet und size enthaelt die Groesse
+// (d.h. Breite, bzw. Hoehe) des Polygons.
+// Bem: nur die X-Koordinate von size wird beruecksichtigt!
+func NewRegularPolygon(n int, pos, size geom.Point, borderColor color.LedColor) *RegularPolygon {
 	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, StrokeWidth: 1.0,
-		StrokeColor: borderColor, FillColorFnc: "ApplyAlpha", numPoints: numPoints}
+		StrokeColor: borderColor, FillColorFnc: "ApplyAlpha", N: n}
 	p.CanvasObjectEmbed.Extend(p)
 	return p
 }
 
 func (p *RegularPolygon) Draw(c *Canvas) {
-	c.GC.DrawRegularPolygon(p.numPoints, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
+	c.GC.DrawRegularPolygon(p.N, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
 	c.GC.SetStrokeWidth(p.StrokeWidth)
 	c.GC.SetStrokeColor(p.StrokeColor)
 	if p.FillColor == color.Transparent && p.FillColorFnc != "" {
@@ -309,17 +314,19 @@ func (p *RegularPolygon) Draw(c *Canvas) {
 	c.GC.FillStroke()
 }
 
-// Fuer Geraden ist dieser Datentyp vorgesehen, der von Pos1 nach Pos2
-// verlaeuft.
+// Fuer Geraden resp. Segmente ist dieser Datentyp vorgesehen, der von Pos nach
+// Pos + Size verlaeuft. Damit das funktioniert, duerfen bei diesem Typ
+// die Koordinaten von Size auch negativ sein.
 type Line struct {
 	CanvasObjectEmbed
-	Pos1, Pos2  geom.Point
+	Pos, Size   geom.Point
 	StrokeWidth float64
 	StrokeColor color.LedColor
 }
 
 func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
-	l := &Line{Pos1: pos1, Pos2: pos2, StrokeWidth: 1.0, StrokeColor: col}
+	l := &Line{Pos: pos1, Size: pos2.Sub(pos1),
+		StrokeWidth: 1.0, StrokeColor: col}
 	l.CanvasObjectEmbed.Extend(l)
 	return l
 }
@@ -327,7 +334,7 @@ func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
 func (l *Line) Draw(c *Canvas) {
 	c.GC.SetStrokeWidth(l.StrokeWidth)
 	c.GC.SetStrokeColor(l.StrokeColor)
-	c.GC.DrawLine(l.Pos1.X, l.Pos1.Y, l.Pos2.X, l.Pos2.Y)
+	c.GC.DrawLine(l.Pos.X, l.Pos.Y, l.Pos.X+l.Size.X, l.Pos.Y+l.Size.Y)
 	c.GC.Stroke()
 }
 
@@ -384,7 +391,7 @@ var (
 	defFontSize = 10.0
 )
 
-// Die folgenden Typen, Records (embeddable), Konstanten, etc. sind fuer
+// Die folgenden Typen, Structs (embeddable), Konstanten, etc. sind fuer
 // das Ausrichten von Textbloecken in vertikaler und horizontaler Richtung
 // vorgesehen.
 type Align int
@@ -401,10 +408,29 @@ const (
 	alignVMask = 0b111000
 )
 
+// Jeder Typ, der eine horizontale und vertikale Ausrichtung kennt oder
+// anbieten will, kann den Typ alignEmbed einbetten. Damit erhaelt er zwei
+// Fliesskomma-Variablen (ax und ay), welche ueber die Methode SetAlign
+// gesetzt werden koennen und folgede Bedeutung haben:
+// ax: 0.0: x-Pos des Objektes bezieht sich auf seinen linken Rand
+//
+//	0.5: x-Pos des Objektes bezieht sich auf Mitte (horizontal)
+//	1.0: x-Pos des Objektes bezieht sich auf seinen rechten Rand
+//
+// ay: 0.0: y-Pos des Objektes bezieht sich auf seinen unteren Rand
+//
+//	0.5: y-Pos des Objektes bezieht sich auf Mitte (vertikal)
+//	1.0: y-Pos des Objektes bezieht sich auf seinen oberen Rand
+//
+// (ax und ay nehmen also in math. korrekter Richtung zu)
 type alignEmbed struct {
 	ax, ay float64
 }
 
+// Setzt die Ausrichtung auf den in align kodierten Wert. Sowohl x- als auch
+// y-Ausrichtung koennen damit gesetzt werden. Falls bei einer Ausrichtung
+// mehrere Werte angegeben wurden (bspw. AlignLeft | AlignCenter), so wird
+// fuer diese Ausrichtung keinen neuen Wert gesetzt.
 func (a *alignEmbed) SetAlign(align Align) {
 	hAlign := align & alignHMask
 	vAlign := align & alignVMask
@@ -430,9 +456,8 @@ func (a *alignEmbed) SetAlign(align Align) {
 type Text struct {
 	CanvasObjectEmbed
 	alignEmbed
-	Pos   geom.Point
-	Angle float64
-	// AX, AY   float64
+	Pos      geom.Point
+	Angle    float64
 	Color    color.LedColor
 	Text     string
 	font     *fonts.Font
@@ -526,8 +551,9 @@ func (t *FixedText) Draw(c *Canvas) {
 
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc). Wie Pos genau
 // interpretiert wird, ist vom Alignment (wie beim Text) abhaengig. Size
-// ist die Zielgroesse des Bildes auf dem LedGrid und muss nicht mit
-// Img.Bounds() uebereinstimmen.
+// ist die Zielgroesse des Bildes auf dem LedGrid, ist per Default (0,0), was
+// soviel wie "verwende Img.Bounds()" bedeutet. Andernfalls wird das Bild
+// bei der Ausgabe entsprechend skaliert.
 type Image struct {
 	CanvasObjectEmbed
 	alignEmbed
@@ -536,30 +562,41 @@ type Image struct {
 	Img       draw.Image
 }
 
+// Erzeugt ein neues Bild aus der Datei fileName und platziert es bei pos.
+// Pos wird per Default als Koordinaten des Mittelpunktes interpretiert.
 func NewImage(pos geom.Point, fileName string) *Image {
-	i := &Image{Pos: pos, Angle: 0.0}
+	i := &Image{Pos: pos}
 	i.CanvasObjectEmbed.Extend(i)
 	i.Img = LoadImage(fileName)
-	i.Size = geom.NewPointIMG(i.Img.Bounds().Size())
 	i.ax, i.ay = 0.5, 0.5
 	return i
 }
 
 func (i *Image) Read(fileName string) {
 	i.Img = LoadImage(fileName)
-	if i.Size.X > 0 || i.Size.Y > 0 {
-		return
-	}
-	i.Size = geom.NewPointIMG(i.Img.Bounds().Size())
 }
 
 func (i *Image) Draw(c *Canvas) {
-	sx := i.Size.X / float64(i.Img.Bounds().Dx())
-	sy := i.Size.Y / float64(i.Img.Bounds().Dy())
+	var dx, dy, sx, sy float64
+
+	if i.Size.X > 0 {
+		dx = i.Size.X
+		sx = dx / float64(i.Img.Bounds().Dx())
+	} else {
+		dx = float64(i.Img.Bounds().Dx())
+		sx = 1.0
+	}
+	if i.Size.Y > 0 {
+		dy = i.Size.Y
+		sy = dy / float64(i.Img.Bounds().Dy())
+	} else {
+		dy = float64(i.Img.Bounds().Dy())
+		sy = 1.0
+	}
 	cos := math.Cos(i.Angle)
 	sin := math.Sin(i.Angle)
-	m := f64.Aff3{cos * sx, -sin * sy, -cos*i.ax*i.Size.X + sin*(1-i.ay)*i.Size.Y + i.Pos.X,
-		sin * sx, cos * sy, -sin*i.ax*i.Size.X - cos*(1-i.ay)*i.Size.Y + i.Pos.Y}
+	m := f64.Aff3{cos * sx, -sin * sy, -cos*i.ax*dx + sin*(1-i.ay)*dy + i.Pos.X,
+		sin * sx, cos * sy, -sin*i.ax*dx - cos*(1-i.ay)*dy + i.Pos.Y}
 	draw.BiLinear.Transform(c.Img, m, i.Img, i.Img.Bounds(), draw.Over, nil)
 }
 
@@ -578,39 +615,45 @@ func LoadImage(fileName string) draw.Image {
 	return img.(draw.Image)
 }
 
-// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
-// Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
-// skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
-type ImageList struct {
+// Mit ImageList (TO DO: besserer Name waere wohl schon Sprite) lassen sich
+// animierte Bildfolgen darstellen. ImageList ist eine Erweiterung des Typs
+// Image. Die einzelnen Bilder koennen entweder ueber die Methode Add oder
+// aus einer BlinkenLight Animation mit der Methode AddBlinkenLight hinzuge-
+// fuegt werden.
+type Sprite struct {
 	Image
-    NormAnimationEmbed
+	NormAnimationEmbed
 	imgList []draw.Image
 	durList []time.Duration
 }
 
-func NewImageList(pos geom.Point) *ImageList {
-	i := &ImageList{}
+// Erzeugt eine (noch) leere ImageList mit pos als Mittelpunkt.
+func NewSprite(pos geom.Point) *Sprite {
+	i := &Sprite{}
 	i.CanvasObjectEmbed.Extend(i)
 	i.NormAnimationEmbed.Extend(i)
-    i.Pos = pos
+	i.Pos = pos
 	i.Curve = AnimationLinear
-    i.ax, i.ay = 0.5, 0.5
+	i.ax, i.ay = 0.5, 0.5
 	i.imgList = make([]draw.Image, 0)
-    i.durList = make([]time.Duration, 0)
+	i.durList = make([]time.Duration, 0)
 	return i
 }
 
-func (i *ImageList) Add(img draw.Image, dur time.Duration) {
+// Fuegt der Liste von Bilern img hinzu, welches fuer die Dauer von dur
+// angezeigt werden soll. Falls dies das erste Bild ist, welches hinzugefuegt
+// wird, dann wird Img und Size auf dieses Bild und auf die Groesse dieses
+// Bildes gesetzt.
+func (i *Sprite) Add(img draw.Image, dur time.Duration) {
 	i.imgList = append(i.imgList, img)
-    if len(i.imgList) == 1 {
-        i.Img = i.imgList[0]
-    }
-	i.Size = geom.NewPointIMG(img.Bounds().Size())
+	if len(i.imgList) == 1 {
+		i.Img = i.imgList[0]
+	}
 	i.duration += dur
 	i.durList = append(i.durList, i.duration)
 }
 
-func (i *ImageList) AddBlinkenLight(b *BlinkenFile) {
+func (i *Sprite) AddBlinkenLight(b *BlinkenFile) {
 	i.imgList = i.imgList[:0]
 	i.durList = i.durList[:0]
 	for idx := range b.NumFrames() {
@@ -618,11 +661,11 @@ func (i *ImageList) AddBlinkenLight(b *BlinkenFile) {
 	}
 }
 
-func (i *ImageList) Init() {
+func (i *Sprite) Init() {
 	i.Img = i.imgList[0]
 }
 
-func (i *ImageList) Tick(t float64) {
+func (i *Sprite) Tick(t float64) {
 	var idx int
 
 	ts := time.Duration(t * float64(i.duration))
@@ -634,69 +677,126 @@ func (i *ImageList) Tick(t float64) {
 	i.Img = i.imgList[idx]
 }
 
+// ---------------------------------------------------------------------------
 
-/*
-// Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc) auf dem LED-Panel
-// Da es nur wenige LEDs zur Darstellung hat, werden die Bilder gnadenlos
-// skaliert und herunter gerechnet - manchmal bis der Arzt kommt... ;-)
-type ImageList struct {
-	CanvasObjectEmbed
-	NormAnimationEmbed
-	Pos, Size geom.Point
-	Angle     float64
-	ImgIdx    int
-	Imgs      []draw.Image
-	Durs      []time.Duration
-	imgBounds image.Rectangle
-}
-
-func NewImageList(pos geom.Point) *ImageList {
-	i := &ImageList{Pos: pos, Angle: 0.0, ImgIdx: 0}
-	i.CanvasObjectEmbed.Extend(i)
-	i.NormAnimationEmbed.Extend(i)
-	i.Curve = AnimationLinear
-	i.Imgs = make([]draw.Image, 0)
-	return i
-}
-
-func (i *ImageList) Add(img draw.Image, dur time.Duration) {
-	i.Imgs = append(i.Imgs, img)
-	i.imgBounds = img.Bounds()
-	i.Size = geom.NewPointIMG(img.Bounds().Size())
-	i.duration += dur
-	i.Durs = append(i.Durs, i.duration)
-}
-
-func (i *ImageList) AddBlinkenLight(b *BlinkenFile) {
-	i.Imgs = i.Imgs[:0]
-	i.Durs = i.Durs[:0]
-	for idx := range b.NumFrames() {
-		i.Add(b.Decode(idx), b.Duration(idx))
+var (
+	fireGradient = []ColorStop{
+		{0.00, color.NewLedColorHexA(0x00000000)},
+		{0.10, color.NewLedColorHexA(0x5f080900)},
+		{0.14, color.NewLedColorHexA(0x5f0809e5)},
+		{0.29, color.NewLedColorHex(0xbe1013)},
+		{0.43, color.NewLedColorHex(0xd23008)},
+		{0.57, color.NewLedColorHex(0xe45323)},
+		{0.71, color.NewLedColorHex(0xee771c)},
+		{0.86, color.NewLedColorHex(0xf6960e)},
+		{1.00, color.NewLedColorHex(0xffcd06)},
 	}
-	// i.Size = geom.Point{float64(b.Width), float64(b.Height)}
+
+	fireYScaling    = 6
+	fireDefCooling  = 0.07
+	fireDefSparking = 0.47
+)
+
+type Fire struct {
+	CanvasObjectEmbed
+	Pos, Size         image.Point
+    ySize int
+	heat              [][]float64
+	cooling, sparking float64
+	pal               ColorSource
+	running           bool
 }
 
-func (i *ImageList) Draw(c *Canvas) {
-	sx := i.Size.X / float64(i.imgBounds.Dx())
-	sy := i.Size.Y / float64(i.imgBounds.Dy())
-	m := f64.Aff3{sx, 0.0, i.Pos.X - i.Size.X/2.0, 0.0, sy, i.Pos.Y - i.Size.Y/2.0}
-	draw.BiLinear.Transform(c.Img, m, i.Imgs[i.ImgIdx], i.imgBounds, draw.Over, nil)
+func NewFire(pos, size image.Point) *Fire {
+	f := &Fire{Pos: pos, Size: size}
+	f.ySize = fireYScaling * size.Y
+	f.CanvasObjectEmbed.Extend(f)
+	f.heat = make([][]float64, f.Size.X)
+	for i := range f.heat {
+		f.heat[i] = make([]float64, f.ySize)
+	}
+	f.cooling = fireDefCooling
+	f.sparking = fireDefSparking
+	f.pal = NewGradientPalette("Fire", fireGradient...)
+	AnimCtrl.Add(f)
+	return f
 }
 
-func (i *ImageList) Init() {
-	i.ImgIdx = 0
+func (f *Fire) Duration() time.Duration {
+	return time.Duration(0)
 }
 
-func (i *ImageList) Tick(t float64) {
-	var idx int
+func (f *Fire) SetDuration(dur time.Duration) {}
 
-	ts := time.Duration(t * float64(i.duration))
-	for idx = 0; idx < len(i.Durs); idx++ {
-		if i.Durs[idx] >= ts {
-			break
+func (f *Fire) Start() {
+	if f.running {
+		return
+	}
+	// Would do starting things here.
+	f.running = true
+}
+
+func (f *Fire) Stop() {
+	if !f.running {
+		return
+	}
+	// Would do the stopping things here.
+	f.running = false
+}
+
+func (f *Fire) Suspend() {}
+
+func (f *Fire) Continue() {}
+
+func (f *Fire) IsRunning() bool {
+	return f.running
+}
+
+func (f *Fire) Update(pit time.Time) bool {
+	// Cool down all heat points
+	maxCooling := ((10.0 * f.cooling) / float64(f.Size.Y)) + 0.0078
+	for col := range f.Size.X {
+		for row, heat := range f.heat[col] {
+			cooling := maxCooling * rand.Float64()
+			if cooling >= heat {
+				f.heat[col][row] = 0.0
+			} else {
+				f.heat[col][row] = heat - cooling
+			}
 		}
 	}
-	i.ImgIdx = idx
+
+	// Diffuse the heat
+	for col := range f.heat {
+		for row := f.ySize - 1; row >= 2; row-- {
+			f.heat[col][row] = (f.heat[col][row-1] + 2.0*f.heat[col][row-2]) / 3.0
+		}
+	}
+
+	// Random create new heat cells
+	for col := range f.Size.X {
+		if rand.Float64() < f.sparking {
+			row := rand.Intn(4)
+			heat := f.heat[col][row]
+			spark := 0.625 + 0.375*rand.Float64()
+			if spark >= 1.0-heat {
+				f.heat[col][row] = 1.0
+			} else {
+				f.heat[col][row] = heat + spark
+			}
+		}
+	}
+	return true
 }
 
-*/
+func (f *Fire) Draw(c *Canvas) {
+	for col := range f.Size.X {
+		for row := range f.Size.Y {
+			fireRow := fireYScaling * (f.Size.Y - row - 1)
+			heat := f.heat[col][fireRow]
+			bgColor := color.LedColorModel.Convert(c.Img.At(col, row)).(color.LedColor)
+			fgColor := f.pal.Color(heat)
+			c.Img.Set(col, row, fgColor.Mix(bgColor, color.Blend))
+		}
+	}
+}

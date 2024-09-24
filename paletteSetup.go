@@ -9,7 +9,7 @@ import (
 	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
-//go:embed data
+//go:embed data/*.json
 var colorFiles embed.FS
 
 type JsonPalette struct {
