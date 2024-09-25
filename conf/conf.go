@@ -5,10 +5,13 @@
 package conf
 
 import (
+	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -93,7 +96,6 @@ const (
 	// the top left corner (running the cable from right to left).
 	ModRL
 )
-
 
 func (m ModuleType) Index(pt image.Point) int {
 	idx := 0
@@ -253,12 +255,25 @@ func (m *Module) Scan(state fmt.ScanState, verb rune) error {
 	return nil
 }
 
+func (m Module) MarshalText() ([]byte, error) {
+	return []byte(m.String()), nil
+}
+
+func (m *Module) UnmarshalText(text []byte) error {
+	slc := strings.Split(string(text), ":")
+	m.Type.Set(slc[0])
+	m.Rot.Set(slc[1])
+	return nil
+}
+
 // Mit diesem Typ wird festgehalten, welches Modul (Typ und Ausrichtung) sich
 // an welcher Stelle (Col, Row) innerhalb des gesamten Panels befindet und
 // welches LED (Index innerhalb der gesamten Kette) am Anfang des Moduls steht.
 type ModulePosition struct {
-	Col, Row, Idx int
-	Mod           Module
+	Col int    `json:"Col"`
+	Row int    `json:"Row"`
+	Mod Module `json:"Mod"`
+	Idx int    `json:"-"`
 }
 
 func (m ModulePosition) Bounds() image.Rectangle {
@@ -306,61 +321,78 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 			if col == cols-1 {
 				mod = ModRL090
 			}
-			conf.AddMod(col, row, mod)
+			conf.AddModule(col, row, mod)
 		}
 	}
 	return conf
 }
 
+//go:embed *.json
+var customFiles embed.FS
+
+func (conf ModuleConfig) Save(fileName string) {
+	data, err := json.MarshalIndent(conf, "", "    ")
+	if err != nil {
+		log.Fatalf("Couldn't encode data: %v", err)
+	}
+	err = os.WriteFile(fileName, data, 0644)
+	if err != nil {
+		log.Fatalf("Couldn't write to file: %v", err)
+	}
+}
+
+func (conf *ModuleConfig) Load(fileName string) {
+	data, err := customFiles.ReadFile(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't read file: %v", err)
+	}
+	err = json.Unmarshal(data, conf)
+	if err != nil {
+		log.Fatalf("Couldn't decode json data: %v", err)
+	}
+    for i := range *conf {
+        (*conf)[i].Idx = i * ModuleDim.X * ModuleDim.Y
+    }
+}
+
 // Helps to build up a module configuration. Important: the Add's must
 // be done along the LED chain. The configuration will be verified after
 // each add.
-func (conf *ModuleConfig) AddMod(col, row int, mod Module) {
-    modPos := ModulePosition{col, row, len(*conf)*ModuleDim.X*ModuleDim.Y, mod}
-    *conf = append(*conf, modPos)
-    if err := conf.VerifyModule(len(*conf)-1); err != nil {
-        log.Fatalf("Can't add module: %v", err)
-    }
-}
-
-type ModuleSpec struct {
-    Col, Row int
-    Mod Module
-}
-
-func (conf *ModuleConfig) AddMods(mods []ModuleSpec) {
-    for _, mod := range mods {
-        conf.AddMod(mod.Col, mod.Row, mod.Mod)
-    }
+func (conf *ModuleConfig) AddModule(col, row int, mod Module) {
+	modPos := ModulePosition{Col: col, Row: row, Mod: mod, Idx: len(*conf) * ModuleDim.X * ModuleDim.Y}
+	*conf = append(*conf, modPos)
+	if err := conf.VerifyModule(len(*conf) - 1); err != nil {
+		log.Fatalf("Can't add module: %v", err)
+	}
 }
 
 func (conf ModuleConfig) VerifyModule(i int) error {
-    if i == 0 {
-        return nil
-    }
-    if i >= len(conf) {
-        return errors.New(fmt.Sprintf("no module with index %d", i))
-    }
-    idxA := i*ModuleDim.X*ModuleDim.Y-1
-    idxB := idxA + 1
-    ptA := conf.Coord(idxA)
-    ptB := conf.Coord(idxB)
-    dx := abs(ptA.X - ptB.X)
-    dy := abs(ptA.Y - ptB.Y)
-    if dx > 1 || dy > 1 {
-        return errors.New(fmt.Sprintf("from module %d to %d: %v and %v are not adjacent", i-1, i, ptA, ptB))
-    }
-    return nil
+	if i == 0 {
+		return nil
+	}
+	if i >= len(conf) {
+		return errors.New(fmt.Sprintf("no module with index %d", i))
+	}
+	idxA := i*ModuleDim.X*ModuleDim.Y - 1
+	idxB := idxA + 1
+	ptA := conf.Coord(idxA)
+	ptB := conf.Coord(idxB)
+	dx := abs(ptA.X - ptB.X)
+	dy := abs(ptA.Y - ptB.Y)
+	if dx > 1 || dy > 1 {
+		return errors.New(fmt.Sprintf("from module %d to %d: %v and %v are not adjacent", i-1, i, ptA, ptB))
+	}
+	return nil
 }
 
 func (conf ModuleConfig) Verify() error {
-    for i := range conf[1:] {
-        err := conf.VerifyModule(i+1)
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+	for i := range conf[1:] {
+		err := conf.VerifyModule(i + 1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Returns the size of the LEDGrid as number of pixels.
@@ -399,18 +431,6 @@ func (conf ModuleConfig) Contains(pt image.Point) bool {
 	}
 	return false
 }
-
-// // Returns the ModulePosition information of a module, containing position
-// // pt.
-// func (conf ModuleConfig) Module(pt image.Point) ModulePosition {
-// 	for _, modPos := range conf {
-// 		if pt.In(modPos.Bounds()) {
-// 			return modPos
-// 		}
-// 	}
-// 	log.Fatalf("Coordinates not within this grid: %v", pt)
-// 	return ModulePosition{}
-// }
 
 // Mit diesem Typ koennen die Koordinaten der Pixel auf dem LEDGrid auf
 // Indizes innerhalb der Lichterkette gemappt werden.

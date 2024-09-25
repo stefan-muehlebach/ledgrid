@@ -184,5 +184,25 @@ func TestVerify(t *testing.T) {
     if err != nil {
         t.Error(err)
     }
-
 }
+
+func TestSaveCustomConf(t *testing.T) {
+    t.Logf("Save custom configuration")
+//     TetrisTile.Save("tetris.json")
+//     LowerCurve.Save("lowerCurve.json")
+//     SquareWithHole.Save("squareWithHole.json")
+//     SmallChessBoard.Save("chessBoardSmall.json")
+//     ChessBoard.Save("chessBoard.json")
+    CustomConf.Save("customConf.json")
+}
+
+
+func TestLoadCustomConf(t *testing.T) {
+    var conf ModuleConfig
+
+    t.Logf("Load custom configuration")
+    conf.Load("customConf.json")
+    t.Logf("%v", conf)
+}
+
+

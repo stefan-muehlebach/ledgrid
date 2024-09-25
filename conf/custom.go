@@ -6,64 +6,58 @@ package conf
 // contains some special, yet weird but working configurations. Some of the
 // panels even have holes in them - but they work!
 var (
-	TetrisTile = ModuleConfig{}
-	tetrSpec   = []ModuleSpec{
-		{0, 0, ModLR000},
-		{1, 0, ModRL090},
-		{1, 1, ModLR000},
-		{2, 1, ModLR000},
+    CustomConf = ModuleConfig{
+        {Col: 0, Row: 0, Mod: ModLR000},
+        {Col: 1, Row: 0, Mod: ModRL090},
+        {Col: 1, Row: 1, Mod: ModRL090},
+        {Col: 0, Row: 1, Mod: ModLR180},
+    }
+
+	TetrisTile = ModuleConfig{
+		{Col: 0, Row: 0, Mod: ModLR000},
+		{Col: 1, Row: 0, Mod: ModRL090},
+		{Col: 1, Row: 1, Mod: ModLR000},
+		{Col: 2, Row: 1, Mod: ModLR000},
 	}
 
-	LowerCurve = ModuleConfig{}
-	lowCurSpec = []ModuleSpec{
-		{0, 0, ModLR000},
-		{1, 0, ModRL090},
-		{1, 1, ModLR000},
-		{2, 1, ModLR000},
-		{3, 1, ModLR000},
-		{3, 0, ModRL270},
-		{4, 0, ModLR000},
+	LowerCurve = ModuleConfig{
+		{Col: 0, Row: 0, Mod: ModLR000},
+		{Col: 1, Row: 0, Mod: ModRL090},
+		{Col: 1, Row: 1, Mod: ModLR000},
+		{Col: 2, Row: 1, Mod: ModLR000},
+		{Col: 3, Row: 1, Mod: ModLR000},
+		{Col: 3, Row: 0, Mod: ModRL270},
+		{Col: 4, Row: 0, Mod: ModLR000},
 	}
 
-	SquareWithHole = ModuleConfig{}
-	squWiHolSpec   = []ModuleSpec{
-		{0, 0, ModLR000},
-		{1, 0, ModLR000},
-		{2, 0, ModRL090},
-		{2, 1, ModRL090},
-		{2, 2, ModRL090},
-		{1, 2, ModLR180},
-		{0, 2, ModRL270},
-		{0, 1, ModRL270},
+	SquareWithHole = ModuleConfig{
+		{Col: 0, Row: 0, Mod: ModLR000},
+		{Col: 1, Row: 0, Mod: ModLR000},
+		{Col: 2, Row: 0, Mod: ModRL090},
+		{Col: 2, Row: 1, Mod: ModRL090},
+		{Col: 2, Row: 2, Mod: ModRL090},
+		{Col: 1, Row: 2, Mod: ModLR180},
+		{Col: 0, Row: 2, Mod: ModRL270},
+		{Col: 0, Row: 1, Mod: ModRL270},
 	}
 
-	SmallChessBoard = ModuleConfig{}
-	smChBrdSpec     = []ModuleSpec{
-		{0, 0, ModRL180},
-		{1, 1, ModLR000},
+	SmallChessBoard = ModuleConfig{
+		{Col: 0, Row: 0, Mod: ModRL180},
+		{Col: 1, Row: 1, Mod: ModLR000},
 	}
 
-	ChessBoard = ModuleConfig{}
-	chBrdSpec  = []ModuleSpec{
-		{1, 0, ModRL180},
-		{2, 1, ModLR000},
-		{3, 0, ModRL180},
-		{4, 1, ModRL090},
-		{3, 2, ModLR270},
-		{4, 3, ModRL090},
-		{3, 4, ModRL000},
-		{2, 3, ModLR180},
-		{1, 4, ModRL000},
-		{0, 3, ModRL270},
-		{1, 2, ModLR090},
-		{0, 1, ModRL270},
+	ChessBoard = ModuleConfig{
+		{Col: 1, Row: 0, Mod: ModRL180},
+		{Col: 2, Row: 1, Mod: ModLR000},
+		{Col: 3, Row: 0, Mod: ModRL180},
+		{Col: 4, Row: 1, Mod: ModRL090},
+		{Col: 3, Row: 2, Mod: ModLR270},
+		{Col: 4, Row: 3, Mod: ModRL090},
+		{Col: 3, Row: 4, Mod: ModRL000},
+		{Col: 2, Row: 3, Mod: ModLR180},
+		{Col: 1, Row: 4, Mod: ModRL000},
+		{Col: 0, Row: 3, Mod: ModRL270},
+		{Col: 1, Row: 2, Mod: ModLR090},
+		{Col: 0, Row: 1, Mod: ModRL270},
 	}
 )
-
-func init() {
-	TetrisTile.AddMods(tetrSpec)
-	LowerCurve.AddMods(lowCurSpec)
-	SquareWithHole.AddMods(squWiHolSpec)
-	SmallChessBoard.AddMods(smChBrdSpec)
-	ChessBoard.AddMods(chBrdSpec)
-}

@@ -683,17 +683,17 @@ var (
 	fireGradient = []ColorStop{
 		{0.00, color.NewLedColorHexA(0x00000000)},
 		{0.10, color.NewLedColorHexA(0x5f080900)},
-		{0.14, color.NewLedColorHexA(0x5f0809e5)},
-		{0.29, color.NewLedColorHex(0xbe1013)},
-		{0.43, color.NewLedColorHex(0xd23008)},
-		{0.57, color.NewLedColorHex(0xe45323)},
-		{0.71, color.NewLedColorHex(0xee771c)},
-		{0.86, color.NewLedColorHex(0xf6960e)},
-		{1.00, color.NewLedColorHex(0xffcd06)},
+		{0.14, color.NewLedColorHexA(0x5f080980)},
+		{0.29, color.NewLedColorHexA(0xbe101380)},
+		{0.43, color.NewLedColorHexA(0xd2300880)},
+		{0.57, color.NewLedColorHexA(0xe45323cf)},
+		{0.71, color.NewLedColorHexA(0xee771ccf)},
+		{0.86, color.NewLedColorHexA(0xf6960ecf)},
+		{1.00, color.NewLedColorHexA(0xffcd06cf)},
 	}
 
-	fireYScaling    = 6
-	fireDefCooling  = 0.07
+	fireYScaling    = 10
+	fireDefCooling  = 0.35
 	fireDefSparking = 0.47
 )
 
@@ -754,7 +754,7 @@ func (f *Fire) IsRunning() bool {
 
 func (f *Fire) Update(pit time.Time) bool {
 	// Cool down all heat points
-	maxCooling := ((10.0 * f.cooling) / float64(f.Size.Y)) + 0.0078
+	maxCooling := ((10.0 * f.cooling) / float64(f.ySize)) + 0.0078
 	for col := range f.Size.X {
 		for row, heat := range f.heat[col] {
 			cooling := maxCooling * rand.Float64()
@@ -778,7 +778,7 @@ func (f *Fire) Update(pit time.Time) bool {
 		if rand.Float64() < f.sparking {
 			row := rand.Intn(4)
 			heat := f.heat[col][row]
-			spark := 0.625 + 0.375*rand.Float64()
+			spark := 0.5 + 0.5*rand.Float64()
 			if spark >= 1.0-heat {
 				f.heat[col][row] = 1.0
 			} else {

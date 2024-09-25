@@ -24,8 +24,8 @@ type Camera struct {
 	Pos, Size geom.Point
 	dev       *gocv.VideoCapture
 	img       image.Image
-	srcRect      image.Rectangle
-	Mask   *image.Alpha
+	srcRect   image.Rectangle
+	Mask      *image.Alpha
 	mat       [2]gocv.Mat
 	matMutex  [2]*sync.RWMutex
 	matIdx    int
@@ -104,7 +104,8 @@ func (c *Camera) Suspend() {
 
 func (c *Camera) captureThread(done <-chan bool) {
 	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
-ML:	for {
+ML:
+	for {
 		select {
 		case <-ticker.C:
 			idx := (c.matIdx + 1) % 2
@@ -154,5 +155,5 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
 	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.srcRect,
-        draw.Over, &draw.Options{DstMask: c.Mask})
+		draw.Over, &draw.Options{DstMask: c.Mask})
 }

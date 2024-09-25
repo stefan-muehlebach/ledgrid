@@ -26,8 +26,8 @@ type Camera struct {
 	img       [2]image.Image
 	imgMutex  [2]*sync.RWMutex
 	scaler    draw.Scaler
-	srcRect      image.Rectangle
-    Mask      *image.Alpha
+	srcRect   image.Rectangle
+	Mask      *image.Alpha
 	doneChan  chan bool
 	cancel    context.CancelFunc
 	running   bool
@@ -52,10 +52,10 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c.imgMutex[1] = &sync.RWMutex{}
 	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
-    c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
-    for i := range c.Mask.Pix {
-        c.Mask.Pix[i] = 0xff
-    }
+	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+	for i := range c.Mask.Pix {
+		c.Mask.Pix[i] = 0xff
+	}
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -94,22 +94,6 @@ func (c *Camera) Start() {
 		log.Fatalf("failed to turn on camera: %v", err)
 	}
 
-	// device.WithIOType(v4l2.IOTypeMMAP),
-	// device.WithPixFormat(v4l2.PixFormat{
-	// 	PixelFormat: v4l2.PixelFmtMJPEG,
-	// 	Width:       camWidth,
-	// 	Height:      camHeight,
-	// }),
-	// device.WithFPS(camFrameRate),
-	// device.WithBufferSize(camBufferSize),
-	// )
-	// if err != nil {
-	// log.Fatalf("failed to open device: %v", err)
-	// }
-	// ctx, c.cancel = context.WithCancel(context.TODO())
-	// if err = c.dev.Start(ctx); err != nil {
-	// log.Fatalf("failed to start stream: %v", err)
-	// }
 	go c.captureThread(c.doneChan)
 	c.running = true
 }
@@ -170,6 +154,6 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
 	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img[idx], c.srcRect,
-        draw.Over, &draw.Options{DstMask: c.Mask})
+		draw.Over, &draw.Options{DstMask: c.Mask})
 	c.imgMutex[idx].RUnlock()
 }

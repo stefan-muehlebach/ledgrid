@@ -89,7 +89,7 @@ func main() {
 	var appSize fyne.Size
 	var gridServer *ledgrid.GridServer
 	var gridEmulator *GridWindow
-	var useCustomLayout bool
+	var customConfName string
 	var gridSize image.Point
 	var modConf conf.ModuleConfig
 
@@ -97,14 +97,14 @@ func main() {
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.UintVar(&port, "port", defPort, "UDP port")
 	flag.Float64Var(&pixelSize, "size", defPixelSize, "Size of one LED")
-	flag.BoolVar(&useCustomLayout, "custom", defUseCustomLayout, "Use a non standard module configuration")
+	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.Parse()
 
     StartProfiling()
     defer StopProfiling()
 
-	if useCustomLayout {
-		modConf = conf.ChessBoard
+	if customConfName != "" {
+		modConf.Load(customConfName + ".json")
 		gridSize = modConf.Size()
 		width, height = gridSize.X, gridSize.Y
 	} else {
@@ -148,5 +148,6 @@ func main() {
 
 	Win.SetContent(gridEmulator.Grid)
 	Win.Resize(appSize)
+    Win.SetFixedSize(true)
 	Win.ShowAndRun()
 }

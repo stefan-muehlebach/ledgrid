@@ -2,6 +2,7 @@ cmd/anim/anim
 cmd/anim/animation.log
 cmd/anim/canvas.log
 cmd/anim/imagesSave/
+cmd/anim/blinken/readGif
 cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
 cmd/colorEdit/ledgrid.png
@@ -14,3 +15,8 @@ old_20240815/
 *.swp
 *.*_save
 *.*_old
+*._go
+*.exe
+*.cpuprof
+*.memprof
+*.trace
