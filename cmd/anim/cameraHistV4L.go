@@ -35,9 +35,8 @@ type HistCamera struct {
 	imgMutex         []*sync.RWMutex
 	scaler           draw.Scaler
 	srcRect          image.Rectangle
-	// doneChan        chan bool
-	running bool
-	cancel  context.CancelFunc
+	running          bool
+	cancel           context.CancelFunc
 }
 
 func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
@@ -91,14 +90,6 @@ func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
 	if err = c.dev.SetFrameRate(camFrameRate); err != nil {
 		log.Fatalf("failed to set frame rate: %v", err)
 	}
-
-	// ctrls, err := c.dev.QueryAllControls()
-	// if err != nil {
-	//     log.Fatalf("Failed to query controls: %v", err)
-	// }
-	// for i, ctrl := range ctrls {
-	//     log.Printf("[%d] control: %v", i, ctrl)
-	// }
 	return c
 }
 
@@ -182,36 +173,36 @@ func (c *HistCamera) Update(pit time.Time) bool {
 		if val0 > val1 {
 			val0, val1 = val1, val0
 		}
-        v := val1 - val0
-        if v < 86 {
-            v = 3 * v
-        } else {
-            v = 0xff
-        }
-        c.srcMask.Pix[i] = v
+		v := val1 - val0
+		if v < 86 {
+			v = 3 * v
+		} else {
+			v = 0xff
+		}
+		c.srcMask.Pix[i] = v
 	}
 	return true
 }
 
 func (c *HistCamera) Draw(canv *ledgrid.Canvas) {
-    // Originales Kamerabild
+	// Originales Kamerabild
 	// c.scaler.Scale(canv.Img, c.Rect, c.rawImg, c.srcRect, draw.Over, nil)
 
-    // Graustufenbild 1 (1:1 Kamerabild, aber eben Graustufig)
-    // c.scaler.Scale(canv.Img, c.Rect, c.grayImg[0], c.srcRect, draw.Over, nil)
+	// Graustufenbild 1 (1:1 Kamerabild, aber eben Graustufig)
+	// c.scaler.Scale(canv.Img, c.Rect, c.grayImg[0], c.srcRect, draw.Over, nil)
 
-    // Graustufenbild 2 (Aufkumuliertes Bild)
-    // c.scaler.Scale(canv.Img, c.Rect, c.grayImg[1], c.srcRect, draw.Over, nil)
+	// Graustufenbild 2 (Aufkumuliertes Bild)
+	// c.scaler.Scale(canv.Img, c.Rect, c.grayImg[1], c.srcRect, draw.Over, nil)
 
-    // Das Resultat schliesslich: originales Kamerabild, jedoch maskiert durch
-    // die Bewegungserkennung.
+	// Das Resultat schliesslich: originales Kamerabild, jedoch maskiert durch
+	// die Bewegungserkennung.
 	// c.scaler.Scale(canv.Img, c.Rect, c.rawImg, c.srcRect, draw.Over, &draw.Options{
 	// 	SrcMask: c.srcMask,
 	// })
 
-    // Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
-    // aus).
-    uniform := image.NewUniform(color.SkyBlue)
+	// Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
+	// aus).
+	uniform := image.NewUniform(color.SkyBlue)
 	c.scaler.Scale(canv.Img, c.Rect, uniform, c.srcRect, draw.Over, &draw.Options{
 		SrcMask: c.srcMask,
 	})
