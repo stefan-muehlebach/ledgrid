@@ -79,6 +79,17 @@ func (c *Canvas) Add(objs ...CanvasObject) {
 	c.objMutex.Unlock()
 }
 
+func (c *Canvas) Del(obj CanvasObject) {
+    for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
+        o := ele.Value.(CanvasObject)
+        if o != obj {
+            continue
+        }
+        c.ObjList.Remove(ele)
+        break
+    }
+}
+
 // Loescht alle Objekte von der Zeichenflaeche.
 func (c *Canvas) Purge() {
 	c.objMutex.Lock()
@@ -92,10 +103,10 @@ func (c *Canvas) Refresh() {
 	c.objMutex.RLock()
 	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(CanvasObject)
-		if obj.IsDeleted() {
-			c.ObjList.Remove(ele)
-			continue
-		}
+		// if obj.IsDisabled() {
+		// 	c.ObjList.Remove(ele)
+		// 	continue
+		// }
 		if !obj.IsVisible() {
 			continue
 		}
@@ -137,8 +148,6 @@ type CanvasObject interface {
 	Show()
 	Hide()
 	IsVisible() bool
-	Delete()
-	IsDeleted() bool
 	Draw(c *Canvas)
 }
 
@@ -148,13 +157,11 @@ type CanvasObject interface {
 type CanvasObjectEmbed struct {
 	wrapper   CanvasObject
 	isVisible bool
-	isDeleted bool
 }
 
 func (c *CanvasObjectEmbed) Extend(wrapper CanvasObject) {
 	c.wrapper = wrapper
 	c.isVisible = true
-	c.isDeleted = false
 }
 
 func (c *CanvasObjectEmbed) Show() {
@@ -171,14 +178,6 @@ func (c *CanvasObjectEmbed) Hide() {
 
 func (c *CanvasObjectEmbed) IsVisible() bool {
 	return c.isVisible
-}
-
-func (c *CanvasObjectEmbed) Delete() {
-	c.isDeleted = true
-}
-
-func (c *CanvasObjectEmbed) IsDeleted() bool {
-	return c.isDeleted
 }
 
 // Und hier etwas mit Farben...
@@ -203,6 +202,69 @@ var (
 	}
 )
 
+// Embeddables fuer die einfachere Animation diverser Attribute. Diese Records
+// sind jeweils so aufgebaut, dass ihr Name auf den Namen des Attributes
+// verweist (Bsp: PosEmbed
+type PosEmbed struct {
+	Pos geom.Point
+}
+func (e *PosEmbed) PosPtr() *geom.Point {
+	return &e.Pos
+}
+
+type FixedPosEmbed struct {
+    Pos fixed.Point26_6
+}
+func (e *FixedPosEmbed) PosPtr() *fixed.Point26_6 {
+	return &e.Pos
+}
+
+type SizeEmbed struct {
+	Size geom.Point
+}
+func (e *SizeEmbed) SizePtr() *geom.Point {
+	return &e.Size
+}
+
+type AngleEmbed struct {
+	Angle float64
+}
+func (e *AngleEmbed) AnglePtr() *float64 {
+	return &e.Angle
+}
+
+type FadeEmbed struct {
+	colPtr *color.LedColor
+}
+func (e *FadeEmbed) Init(c *color.LedColor) {
+	e.colPtr = c
+}
+func (e *FadeEmbed) AlphaPtr() *uint8 {
+	return &e.colPtr.A
+}
+
+type ColorEmbed struct {
+	Color color.LedColor
+}
+func (e *ColorEmbed) ColorPtr() *color.LedColor {
+	return &e.Color
+}
+
+type FilledColorEmbed struct {
+	ColorEmbed
+    FillColor color.LedColor
+}
+func (e *FilledColorEmbed) FillColorPtr() *color.LedColor {
+	return &e.FillColor
+}
+
+type StrokeWidthEmbed struct {
+	StrokeWidth float64
+}
+func (e *StrokeWidthEmbed) StrokeWidthPtr() *float64 {
+	return &e.StrokeWidth
+}
+
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
 // Position des Mittelpunktes und mit Size ist die Breite und Hoehe des
 // gesamten Objektes gemeint. Falls ein Rand gezeichnet werden soll, muss
@@ -210,11 +272,12 @@ var (
 // enthalten die Farben fuer Rand und Flaeche.
 type Ellipse struct {
 	CanvasObjectEmbed
-	Pos, Size              geom.Point
-	Angle                  float64
-	StrokeWidth            float64
-	StrokeColor, FillColor color.LedColor
-	FillColorFnc           string
+	PosEmbed
+	SizeEmbed
+	AngleEmbed
+	FilledColorEmbed
+    StrokeWidthEmbed
+	FillColorFnc string
 }
 
 // Erzeugt eine 'klassische' Ellipse mit einer Randbreite von einem Pixel und
@@ -222,8 +285,11 @@ type Ellipse struct {
 // Will man die einzelnen Werte flexibler verwenden, empfiehlt sich die
 // Erzeugung mittels &Ellipse{...}.
 func NewEllipse(pos, size geom.Point, borderColor color.LedColor) *Ellipse {
-	e := &Ellipse{Pos: pos, Size: size, StrokeWidth: 1.0,
-		StrokeColor: borderColor, FillColorFnc: "ApplyAlpha"}
+	e := &Ellipse{FillColorFnc: "ApplyAlpha"}
+	e.Pos = pos
+	e.Size = size
+	e.Color = borderColor
+	e.StrokeWidth = 1.0
 	e.CanvasObjectEmbed.Extend(e)
 	return e
 }
@@ -236,9 +302,9 @@ func (e *Ellipse) Draw(c *Canvas) {
 	}
 	c.GC.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
 	c.GC.SetStrokeWidth(e.StrokeWidth)
-	c.GC.SetStrokeColor(e.StrokeColor)
+	c.GC.SetStrokeColor(e.Color)
 	if e.FillColor == color.Transparent && e.FillColorFnc != "" {
-		c.GC.SetFillColor(colorFncMap[e.FillColorFnc](e.StrokeColor))
+		c.GC.SetFillColor(colorFncMap[e.FillColorFnc](e.Color))
 	} else {
 		c.GC.SetFillColor(e.FillColor)
 	}
@@ -249,16 +315,21 @@ func (e *Ellipse) Draw(c *Canvas) {
 // den Mittelpunkt des Objektes und Size die Breite, rsep. Hoehe.
 type Rectangle struct {
 	CanvasObjectEmbed
-	Pos, Size              geom.Point
-	Angle                  float64
-	StrokeWidth            float64
-	StrokeColor, FillColor color.LedColor
-	FillColorFnc           string
+	PosEmbed
+	SizeEmbed
+	AngleEmbed
+	FilledColorEmbed
+	StrokeWidthEmbed
+	FillColorFnc string
 }
 
 func NewRectangle(pos, size geom.Point, borderColor color.LedColor) *Rectangle {
-	r := &Rectangle{Pos: pos, Size: size, StrokeWidth: 1.0,
-		StrokeColor: borderColor, FillColorFnc: "ApplyAlpha"}
+	r := &Rectangle{}
+	r.Pos = pos
+	r.Size = size
+	r.StrokeWidth = 1.0
+	r.Color = borderColor
+	r.FillColorFnc = "ApplyAlpha"
 	r.CanvasObjectEmbed.Extend(r)
 	return r
 }
@@ -271,9 +342,9 @@ func (r *Rectangle) Draw(c *Canvas) {
 	}
 	c.GC.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
 	c.GC.SetStrokeWidth(r.StrokeWidth)
-	c.GC.SetStrokeColor(r.StrokeColor)
+	c.GC.SetStrokeColor(r.Color)
 	if r.FillColor == color.Transparent && r.FillColorFnc != "" {
-		c.GC.SetFillColor(colorFncMap[r.FillColorFnc](r.StrokeColor))
+		c.GC.SetFillColor(colorFncMap[r.FillColorFnc](r.Color))
 	} else {
 		c.GC.SetFillColor(r.FillColor)
 	}
@@ -283,12 +354,13 @@ func (r *Rectangle) Draw(c *Canvas) {
 // Auch gleichmaessige Polygone duerfen nicht fehlen.
 type RegularPolygon struct {
 	CanvasObjectEmbed
-	Pos, Size              geom.Point
-	Angle                  float64
-	StrokeWidth            float64
-	StrokeColor, FillColor color.LedColor
-	FillColorFnc           string
-	N                      int
+	PosEmbed
+	SizeEmbed
+	AngleEmbed
+	FilledColorEmbed
+	StrokeWidthEmbed
+	FillColorFnc string
+	N            int
 }
 
 // Erzeugt ein neues regelmaessiges Polygon mit n Ecken. Mit pos wird der
@@ -296,8 +368,13 @@ type RegularPolygon struct {
 // (d.h. Breite, bzw. Hoehe) des Polygons.
 // Bem: nur die X-Koordinate von size wird beruecksichtigt!
 func NewRegularPolygon(n int, pos, size geom.Point, borderColor color.LedColor) *RegularPolygon {
-	p := &RegularPolygon{Pos: pos, Size: size, Angle: 0.0, StrokeWidth: 1.0,
-		StrokeColor: borderColor, FillColorFnc: "ApplyAlpha", N: n}
+	p := &RegularPolygon{}
+	p.Pos = pos
+	p.Size = size
+	p.StrokeWidth = 1.0
+	p.Color = borderColor
+	p.FillColorFnc = "ApplyAlpha"
+	p.N = n
 	p.CanvasObjectEmbed.Extend(p)
 	return p
 }
@@ -305,9 +382,9 @@ func NewRegularPolygon(n int, pos, size geom.Point, borderColor color.LedColor) 
 func (p *RegularPolygon) Draw(c *Canvas) {
 	c.GC.DrawRegularPolygon(p.N, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
 	c.GC.SetStrokeWidth(p.StrokeWidth)
-	c.GC.SetStrokeColor(p.StrokeColor)
+	c.GC.SetStrokeColor(p.Color)
 	if p.FillColor == color.Transparent && p.FillColorFnc != "" {
-		c.GC.SetFillColor(colorFncMap[p.FillColorFnc](p.StrokeColor))
+		c.GC.SetFillColor(colorFncMap[p.FillColorFnc](p.Color))
 	} else {
 		c.GC.SetFillColor(p.FillColor)
 	}
@@ -319,21 +396,27 @@ func (p *RegularPolygon) Draw(c *Canvas) {
 // die Koordinaten von Size auch negativ sein.
 type Line struct {
 	CanvasObjectEmbed
-	Pos, Size   geom.Point
-	StrokeWidth float64
-	StrokeColor color.LedColor
+	PosEmbed
+	SizeEmbed
+	ColorEmbed
+	StrokeWidthEmbed
+	FadeEmbed
 }
 
 func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
-	l := &Line{Pos: pos1, Size: pos2.Sub(pos1),
-		StrokeWidth: 1.0, StrokeColor: col}
+	l := &Line{}
+	l.Pos = pos1
+	l.Size = pos2.Sub(pos1)
+	l.Color = col
+	l.StrokeWidth = 1.0
 	l.CanvasObjectEmbed.Extend(l)
+	l.FadeEmbed.Init(&l.Color)
 	return l
 }
 
 func (l *Line) Draw(c *Canvas) {
 	c.GC.SetStrokeWidth(l.StrokeWidth)
-	c.GC.SetStrokeColor(l.StrokeColor)
+	c.GC.SetStrokeColor(l.Color)
 	c.GC.DrawLine(l.Pos.X, l.Pos.Y, l.Pos.X+l.Size.X, l.Pos.Y+l.Size.Y)
 	c.GC.Stroke()
 }
@@ -347,12 +430,15 @@ func (l *Line) Draw(c *Canvas) {
 type Pixel struct {
 	CanvasObjectEmbed
 	Pos   image.Point
-	Color color.LedColor
+    ColorEmbed
+    FadeEmbed
 }
 
 func NewPixel(pos image.Point, col color.LedColor) *Pixel {
-	p := &Pixel{Pos: pos, Color: col}
+	p := &Pixel{Pos: pos}
+    p.Color = col
 	p.CanvasObjectEmbed.Extend(p)
+    p.FadeEmbed.Init(&p.Color)
 	return p
 }
 
@@ -367,13 +453,17 @@ func (p *Pixel) Draw(c *Canvas) {
 // interpretiert.
 type Dot struct {
 	CanvasObjectEmbed
-	Pos   geom.Point
-	Color color.LedColor
+	PosEmbed
+	ColorEmbed
+	FadeEmbed
 }
 
 func NewDot(pos geom.Point, col color.LedColor) *Dot {
-	d := &Dot{Pos: pos, Color: col}
+	d := &Dot{}
+	d.Pos = pos
+	d.Color = col
 	d.CanvasObjectEmbed.Extend(d)
+	d.FadeEmbed.Init(&d.Color)
 	return d
 }
 
@@ -456,9 +546,10 @@ func (a *alignEmbed) SetAlign(align Align) {
 type Text struct {
 	CanvasObjectEmbed
 	alignEmbed
-	Pos      geom.Point
-	Angle    float64
-	Color    color.LedColor
+	PosEmbed
+	AngleEmbed
+	ColorEmbed
+	FadeEmbed
 	Text     string
 	font     *fonts.Font
 	fontSize float64
@@ -466,8 +557,12 @@ type Text struct {
 }
 
 func NewText(pos geom.Point, text string, col color.LedColor) *Text {
-	t := &Text{Pos: pos, Color: col, Text: text}
+	t := &Text{}
+	t.Pos = pos
+	t.Color = col
+	t.Text = text
 	t.CanvasObjectEmbed.Extend(t)
+	t.FadeEmbed.Init(&t.Color)
 	t.SetFont(defFont, defFontSize)
 	return t
 }
@@ -499,8 +594,10 @@ var (
 type FixedText struct {
 	CanvasObjectEmbed
 	alignEmbed
-	Pos    fixed.Point26_6
-	Color  color.LedColor
+    FixedPosEmbed
+	// Pos fixed.Point26_6
+	ColorEmbed
+	FadeEmbed
 	text   string
 	drawer *font.Drawer
 	rect   fixed.Rectangle26_6
@@ -508,8 +605,11 @@ type FixedText struct {
 }
 
 func NewFixedText(pos fixed.Point26_6, col color.LedColor, text string) *FixedText {
-	t := &FixedText{Pos: pos, Color: col}
+	t := &FixedText{}
+    t.Pos = pos
+	t.Color = col
 	t.CanvasObjectEmbed.Extend(t)
+	t.FadeEmbed.Init(&t.Color)
 	t.drawer = &font.Drawer{}
 	t.drawer.Face = defFixedFontFace
 	t.text = text
@@ -557,15 +657,17 @@ func (t *FixedText) Draw(c *Canvas) {
 type Image struct {
 	CanvasObjectEmbed
 	alignEmbed
-	Pos, Size geom.Point
-	Angle     float64
-	Img       draw.Image
+	PosEmbed
+	SizeEmbed
+	AngleEmbed
+	Img draw.Image
 }
 
 // Erzeugt ein neues Bild aus der Datei fileName und platziert es bei pos.
 // Pos wird per Default als Koordinaten des Mittelpunktes interpretiert.
 func NewImage(pos geom.Point, fileName string) *Image {
-	i := &Image{Pos: pos}
+	i := &Image{}
+	i.Pos = pos
 	i.CanvasObjectEmbed.Extend(i)
 	i.Img = LoadImage(fileName)
 	i.ax, i.ay = 0.5, 0.5
@@ -700,7 +802,7 @@ var (
 type Fire struct {
 	CanvasObjectEmbed
 	Pos, Size         image.Point
-    ySize int
+	ySize             int
 	heat              [][]float64
 	cooling, sparking float64
 	pal               ColorSource

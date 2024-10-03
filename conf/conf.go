@@ -327,7 +327,7 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 	return conf
 }
 
-//go:embed *.json
+//go:embed data/*.json
 var customFiles embed.FS
 
 func (conf ModuleConfig) Save(fileName string) {
@@ -350,9 +350,9 @@ func (conf *ModuleConfig) Load(fileName string) {
 	if err != nil {
 		log.Fatalf("Couldn't decode json data: %v", err)
 	}
-    for i := range *conf {
-        (*conf)[i].Idx = i * ModuleDim.X * ModuleDim.Y
-    }
+	for i := range *conf {
+		(*conf)[i].Idx = i * ModuleDim.X * ModuleDim.Y
+	}
 }
 
 // Helps to build up a module configuration. Important: the Add's must

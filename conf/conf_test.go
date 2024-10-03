@@ -193,7 +193,7 @@ func TestSaveCustomConf(t *testing.T) {
 //     SquareWithHole.Save("squareWithHole.json")
 //     SmallChessBoard.Save("chessBoardSmall.json")
 //     ChessBoard.Save("chessBoard.json")
-    CustomConf.Save("customConf.json")
+    CustomConf.Save("data/customConf.json")
 }
 
 
@@ -201,7 +201,8 @@ func TestLoadCustomConf(t *testing.T) {
     var conf ModuleConfig
 
     t.Logf("Load custom configuration")
-    conf.Load("customConf.json")
+    conf.Load("data/squareWithHole.json")
+
     t.Logf("%v", conf)
 }
 

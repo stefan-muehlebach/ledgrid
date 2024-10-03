@@ -22,15 +22,15 @@ var (
 
 			c.Add(t1, t2, t3)
 
-			aAngle1 := ledgrid.NewFloatAnimation(&t1.Angle, -2*math.Pi, 7*time.Second)
+			aAngle1 := ledgrid.NewAngleAnim(t1, -2*math.Pi, 7*time.Second)
 			aAngle1.Curve = ledgrid.AnimationLinear
 			aAngle1.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aAngle2 := ledgrid.NewFloatAnimation(&t2.Angle, -2*math.Pi, 8*time.Second)
+			aAngle2 := ledgrid.NewAngleAnim(t2, -2*math.Pi, 8*time.Second)
 			aAngle2.Curve = ledgrid.AnimationLinear
 			aAngle2.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aPos := ledgrid.NewPositionAnimation(&t3.Pos, geom.Point{-100, float64(height) / 2.0}, 6*time.Second)
+			aPos := ledgrid.NewPositionAnim(t3, geom.Point{-100, float64(height) / 2.0}, 6*time.Second)
 			aPos.Curve = ledgrid.AnimationEaseInOut
 
 			aTimeline := ledgrid.NewTimeline(15 * time.Second)
@@ -52,11 +52,11 @@ var (
 			txt1 := ledgrid.NewFixedText(pos1, color1, "STEFAN")
 			c.Add(txt1)
 
-			aPos := ledgrid.NewFixedPosAnimation(&txt1.Pos, pos2, 10*time.Second)
+			aPos := ledgrid.NewFixedPosAnim(txt1, pos2, 10*time.Second)
 			aPos.AutoReverse = true
 			aPos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aColor := ledgrid.NewColorAnimation(&txt1.Color, color2, 2*time.Second)
+			aColor := ledgrid.NewColorAnim(txt1, color2, 2*time.Second)
 			aColor.AutoReverse = true
 			aColor.RepeatCount = ledgrid.AnimationRepeatForever
 

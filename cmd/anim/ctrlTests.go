@@ -22,13 +22,13 @@ var (
 			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
 			c.Add(r)
 
-			aPos := ledgrid.NewPositionAnimation(&r.Pos, rPos2, time.Second)
+			aPos := ledgrid.NewPositionAnim(r, rPos2, time.Second)
 			aPos.AutoReverse = true
-			aSize := ledgrid.NewSizeAnimation(&r.Size, rSize2, 2*time.Second)
+			aSize := ledgrid.NewSizeAnim(r, rSize2, 2*time.Second)
 			aSize.AutoReverse = true
-			aColor := ledgrid.NewColorAnimation(&r.StrokeColor, rColor2, 2*time.Second)
+			aColor := ledgrid.NewColorAnim(r, rColor2, 2*time.Second)
 			aColor.AutoReverse = true
-			aAngle := ledgrid.NewFloatAnimation(&r.Angle, math.Pi, 2*time.Second)
+			aAngle := ledgrid.NewAngleAnim(r, math.Pi, 2*time.Second)
 			aAngle.AutoReverse = true
 
 			aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
@@ -41,25 +41,34 @@ var (
 		func(c *ledgrid.Canvas) {
 			rPos := geom.NewPointIMG(gridSize).Mul(0.5)
 			rSize1 := geom.NewPointIMG(gridSize).SubXY(1, 1)
-			rSize2 := geom.Point{5.0, 3.0}
+			rSize4 := geom.Point{5.0, 3.0}
+			// rSize2 := rSize1
+			// rSize2.X = rSize4.X
+			rSize3 := rSize1
+			rSize3.Y = rSize4.Y
 
 			r := ledgrid.NewRectangle(rPos, rSize1, color.SkyBlue)
 			c.Add(r)
 
-			aSize1 := ledgrid.NewSizeAnimation(&r.Size, rSize2, time.Second)
-			aColor1 := ledgrid.NewColorAnimation(&r.StrokeColor, color.OrangeRed, time.Second/2)
-			aColor1.AutoReverse = true
-			aColor2 := ledgrid.NewColorAnimation(&r.StrokeColor, color.Crimson, time.Second/2)
-			aColor2.AutoReverse = true
-			aColor3 := ledgrid.NewColorAnimation(&r.StrokeColor, color.Coral, time.Second/2)
-			aColor3.AutoReverse = true
-			aColor4 := ledgrid.NewColorAnimation(&r.StrokeColor, color.FireBrick, time.Second/2)
-			aSize2 := ledgrid.NewSizeAnimation(&r.Size, rSize1, time.Second)
-			aSize2.Cont = true
-			aColor5 := ledgrid.NewColorAnimation(&r.StrokeColor, color.SkyBlue, time.Second)
+			// aSize2 := ledgrid.NewSizeAnim(r, rSize2, time.Second)
+			aColor1 := ledgrid.NewColorAnim(r, color.OrangeRed, time.Second)
+			aColor1.Cont = true
+			aSize3 := ledgrid.NewSizeAnim(r, rSize3, time.Second)
+			aSize3.Cont = true
+			aColor2 := ledgrid.NewColorAnim(r, color.YellowGreen, time.Second)
+			aColor2.Cont = true
+			aSize4 := ledgrid.NewSizeAnim(r, rSize4, time.Second)
+			aSize4.Cont = true
+			aColor3 := ledgrid.NewColorAnim(r, color.Gold, time.Second)
+			aColor3.Cont = true
+			aColor4 := ledgrid.NewColorAnim(r, color.MediumOrchid, time.Second)
+			aColor4.Cont = true
+			aSize1 := ledgrid.NewSizeAnim(r, rSize1, time.Second)
+			aSize1.Cont = true
+			aColor5 := ledgrid.NewColorAnim(r, color.SkyBlue, time.Second)
 			aColor5.Cont = true
 
-			aSeq := ledgrid.NewSequence(aSize1, aColor1, aColor2, aColor3, aColor4, aSize2, aColor5)
+			aSeq := ledgrid.NewSequence(aColor1, aSize3, aColor2, aSize4, aColor3, aColor4, aSize1, aColor5)
 			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
 		})
@@ -81,42 +90,42 @@ var (
 			r4 := ledgrid.NewRectangle(r4Pos, r4Size, color.Gold)
 			c.Add(r1, r3, r2, r4)
 
-			aAngle1 := ledgrid.NewFloatAnimation(&r1.Angle, math.Pi, time.Second)
-			aAngle2 := ledgrid.NewFloatAnimation(&r1.Angle, 0.0, time.Second)
+			aAngle1 := ledgrid.NewAngleAnim(r1, math.Pi, time.Second)
+			aAngle2 := ledgrid.NewAngleAnim(r1, 0.0, time.Second)
 			aAngle2.Cont = true
 
-			aColor1 := ledgrid.NewColorAnimation(&r1.StrokeColor, color.OrangeRed, 200*time.Millisecond)
+			aColor1 := ledgrid.NewColorAnim(r1, color.OrangeRed, 200*time.Millisecond)
 			aColor1.AutoReverse = true
 			aColor1.RepeatCount = 3
-			aColor2 := ledgrid.NewColorAnimation(&r1.StrokeColor, color.Purple, 500*time.Millisecond)
-			aColor3 := ledgrid.NewColorAnimation(&r1.StrokeColor, color.GreenYellow, 500*time.Millisecond)
+			aColor2 := ledgrid.NewColorAnim(r1, color.Purple, 500*time.Millisecond)
+			aColor3 := ledgrid.NewColorAnim(r1, color.GreenYellow, 500*time.Millisecond)
 			aColor3.Cont = true
 
-			aPos1 := ledgrid.NewPositionAnimation(&r1.Pos, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
+			aPos1 := ledgrid.NewPositionAnim(r1, r2.Pos.SubXY(r2Size.X/2.0, 0.0), 500*time.Millisecond)
 			aPos1.AutoReverse = true
 
-			aAngle3 := ledgrid.NewFloatAnimation(&r3.Angle, -math.Pi, time.Second)
-			aAngle4 := ledgrid.NewFloatAnimation(&r3.Angle, 0.0, time.Second)
+			aAngle3 := ledgrid.NewAngleAnim(r3, -math.Pi, time.Second)
+			aAngle4 := ledgrid.NewAngleAnim(r3, 0.0, time.Second)
 			aAngle4.Cont = true
 
-			aColor4 := ledgrid.NewColorAnimation(&r3.StrokeColor, color.DarkOrange, 200*time.Millisecond)
+			aColor4 := ledgrid.NewColorAnim(r3, color.DarkOrange, 200*time.Millisecond)
 			aColor4.AutoReverse = true
 			aColor4.RepeatCount = 3
-			aColor5 := ledgrid.NewColorAnimation(&r3.StrokeColor, color.Purple, 500*time.Millisecond)
-			aColor6 := ledgrid.NewColorAnimation(&r3.StrokeColor, color.SkyBlue, 500*time.Millisecond)
+			aColor5 := ledgrid.NewColorAnim(r3, color.Purple, 500*time.Millisecond)
+			aColor6 := ledgrid.NewColorAnim(r3, color.SkyBlue, 500*time.Millisecond)
 			aColor6.Cont = true
 
-			aPos2 := ledgrid.NewPositionAnimation(&r3.Pos, r4.Pos.AddXY(r4Size.X/2.0, 0.0), 500*time.Millisecond)
+			aPos2 := ledgrid.NewPositionAnim(r3, r4.Pos.AddXY(r4Size.X/2.0, 0.0), 500*time.Millisecond)
 			aPos2.AutoReverse = true
 
-			aColor7 := ledgrid.NewColorAnimation(&r2.StrokeColor, color.Cornsilk, 500*time.Millisecond)
+			aColor7 := ledgrid.NewColorAnim(r2, color.Cornsilk, 500*time.Millisecond)
 			aColor7.AutoReverse = true
-			aBorder1 := ledgrid.NewFloatAnimation(&r2.StrokeWidth, 2.0, 500*time.Millisecond)
+			aBorder1 := ledgrid.NewStrokeWidthAnim(r2, 2.0, 500*time.Millisecond)
 			aBorder1.AutoReverse = true
 
-			aColor8 := ledgrid.NewColorAnimation(&r4.StrokeColor, color.Cornsilk, 500*time.Millisecond)
+			aColor8 := ledgrid.NewColorAnim(r4, color.Cornsilk, 500*time.Millisecond)
 			aColor8.AutoReverse = true
-			aBorder2 := ledgrid.NewFloatAnimation(&r4.StrokeWidth, 2.0, 500*time.Millisecond)
+			aBorder2 := ledgrid.NewStrokeWidthAnim(r4, 2.0, 500*time.Millisecond)
 			aBorder2.AutoReverse = true
 
 			tl := ledgrid.NewTimeline(5 * time.Second)

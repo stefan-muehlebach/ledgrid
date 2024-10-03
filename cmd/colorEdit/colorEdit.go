@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/stefan-muehlebach/ledgrid/conf"
 	"flag"
 	"fmt"
 	"image"
@@ -16,10 +17,6 @@ import (
 )
 
 const (
-	defWidth      = 40
-	defHeight     = 10
-	defHost       = "raspi-3"
-	defPort       = 5333
 	KEY_SUP       = 0x151 /* Shifted up arrow */
 	KEY_SDOWN     = 0x150 /* Shifted down arrow */
 	KEY_CLEFT     = 0x222 /* Ctrl-left arrow */
@@ -48,6 +45,11 @@ func between(x, a, b int) bool {
 }
 
 func main() {
+	var width int = 40
+	var height int = 10
+	var host string = "raspi-3"
+	var port uint = 5333
+
 	var stdscr *gc.Window
 	var winGrid, winHelp *gc.Window
 	var ch gc.Key
@@ -56,7 +58,6 @@ func main() {
 	var err error
 	var ledGrid *ledgrid.LedGrid
 	var ledColor color.LedColor
-	var gridClient ledgrid.GridClient
 	var curColorChanged bool
 	var redrawGrid bool
 	var cursorMoved bool
@@ -66,23 +67,32 @@ func main() {
 	var enterNewValue bool
 	var newValueDigit int
 	var gammaValues [3]float64
-	var host string
-	var port uint
-	var width, height int
 	var gridWidth, gridHeight int
 	var termWidth, termHeight int
-	var gridSize image.Point
+	// var gridSize image.Point
 	var selRect image.Rectangle
 	var clipRect image.Rectangle
 	var clipData []color.LedColor
+	var modConf conf.ModuleConfig
 
-	flag.IntVar(&width, "width", defWidth, "Width of panel")
-	flag.IntVar(&height, "height", defHeight, "Height of panel")
-	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.IntVar(&width, "width", width, "Width of panel")
+	flag.IntVar(&height, "height", height, "Height of panel")
+	flag.StringVar(&host, "host", host, "Controller hostname")
+	flag.UintVar(&port, "port", port, "Controller port")
 	flag.Parse()
 
-	gridSize = image.Point{width, height}
+	{
+		modConf = conf.ModuleConfig{
+			{Col: 0, Row: 0, Mod: conf.ModLR000, Idx: 0},
+			{Col: 1, Row: 0, Mod: conf.ModLR000, Idx: 100},
+			{Col: 2, Row: 0, Mod: conf.ModLR000, Idx: 200},
+		}
+        width = 30
+        height = 10
+	}
+    fmt.Printf("size of modConf: %v\n", modConf.Size())
+
+	// gridSize = image.Point{width, height}
 	gridWidth = 7*width + 10
 	gridHeight = height + 7
 	termWidth = gridWidth + 10
@@ -90,9 +100,12 @@ func main() {
 
 	selRect = image.Rect(0, 0, 1, 1)
 
-	ledGrid = ledgrid.NewLedGrid(gridSize, nil)
-	gridClient = ledgrid.NewNetGridClient(host, port)
-	gammaValues[0], gammaValues[1], gammaValues[2] = gridClient.Gamma()
+	// if modConf != nil {
+	ledGrid = ledgrid.NewLedGrid(host, port, modConf)
+	// } else {
+	// ledGrid = ledgrid.NewLedGridBySize(host, port, gridSize)
+	// }
+	gammaValues[0], gammaValues[1], gammaValues[2] = ledGrid.Client.Gamma()
 
 	stdscr, err = gc.Init()
 	if err != nil {
@@ -160,7 +173,7 @@ func main() {
 	winGrid.Refresh()
 	winHelp.Refresh()
 
-	gridClient.Send(ledGrid.Pix)
+	ledGrid.Client.Send(ledGrid.Pix)
 
 main:
 	for {
@@ -319,15 +332,15 @@ main:
 			gammaValues[0] -= 0.1
 			gammaValues[1] -= 0.1
 			gammaValues[2] -= 0.1
-			gridClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
-			gridClient.Send(ledGrid.Pix)
+			ledGrid.Client.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
+			ledGrid.Client.Send(ledGrid.Pix)
 
 		case 'G':
 			gammaValues[0] += 0.1
 			gammaValues[1] += 0.1
 			gammaValues[2] += 0.1
-			gridClient.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
-			gridClient.Send(ledGrid.Pix)
+			ledGrid.Client.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
+			ledGrid.Client.Send(ledGrid.Pix)
 
 		case 'i':
 			for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
@@ -566,10 +579,10 @@ main:
 		}
 
 		if redrawGrid {
-			gridClient.Send(ledGrid.Pix)
+			ledGrid.Client.Send(ledGrid.Pix)
 			redrawGrid = false
 		}
 	}
 	winGrid.Delete()
-	gridClient.Close()
+	ledGrid.Client.Close()
 }

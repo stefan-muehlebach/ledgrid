@@ -12,32 +12,6 @@ import (
 )
 
 var (
-	RandomWalk = NewLedGridProgram("Random walk",
-		func(c *ledgrid.Canvas) {
-			rect := geom.Rectangle{Min: geom.Point{1.5, 1.5}, Max: geom.Point{float64(width) - 0.5, float64(height) - 0.5}}
-			pos1 := geom.Point{1.5, 1.5}
-			pos2 := geom.Point{float64(width) - 1.5, float64(height) - 1.5}
-			size1 := geom.Point{2.0, 2.0}
-			size2 := geom.Point{4.0, 4.0}
-
-			c1 := ledgrid.NewEllipse(pos1, size1, color.SkyBlue)
-			c2 := ledgrid.NewEllipse(pos2, size2, color.GreenYellow)
-			c.Add(c1, c2)
-
-			aPos1 := ledgrid.NewPositionAnimation(&c1.Pos, geom.Point{}, 1300*time.Millisecond)
-			aPos1.Cont = true
-			aPos1.Val2 = ledgrid.RandPointTrunc(rect, 1.0)
-			aPos1.RepeatCount = ledgrid.AnimationRepeatForever
-
-			aPos2 := ledgrid.NewPositionAnimation(&c2.Pos, geom.Point{}, 901*time.Millisecond)
-			aPos2.Cont = true
-			aPos2.Val2 = func() geom.Point { return c1.Pos }
-			aPos2.RepeatCount = ledgrid.AnimationRepeatForever
-
-			aPos1.Start()
-			aPos2.Start()
-		})
-
 	CirclingCircles = NewLedGridProgram("Circling circles",
 		func(c *ledgrid.Canvas) {
 			pos1 := geom.Point{1.5, 1.5}
@@ -60,33 +34,33 @@ var (
 
 			quartCirc := ledgrid.CirclePath.NewStartLen(0, 0.25)
 
-			c1Path1 := ledgrid.NewPathAnimation(&c1.Pos, quartCirc, stepRD, time.Second)
+			c1Path1 := ledgrid.NewPathAnim(c1, quartCirc, stepRD, time.Second)
 			c1Path1.Cont = true
-			c1Path2 := ledgrid.NewPathAnimation(&c1.Pos, quartCirc, stepRU, time.Second)
+			c1Path2 := ledgrid.NewPathAnim(c1, quartCirc, stepRU, time.Second)
 			c1Path2.Cont = true
-			c1Path3 := ledgrid.NewPathAnimation(&c1.Pos, quartCirc, stepLD, time.Second)
+			c1Path3 := ledgrid.NewPathAnim(c1, quartCirc, stepLD, time.Second)
 			c1Path3.Cont = true
-			c1Path4 := ledgrid.NewPathAnimation(&c1.Pos, quartCirc, stepLU, time.Second)
+			c1Path4 := ledgrid.NewPathAnim(c1, quartCirc, stepLU, time.Second)
 			c1Path4.Cont = true
 
-			c2Path1 := ledgrid.NewPathAnimation(&c2.Pos, quartCirc, stepLU, time.Second)
+			c2Path1 := ledgrid.NewPathAnim(c2, quartCirc, stepLU, time.Second)
 			c2Path1.Cont = true
-			c2Path2 := ledgrid.NewPathAnimation(&c2.Pos, quartCirc, stepRD, time.Second)
+			c2Path2 := ledgrid.NewPathAnim(c2, quartCirc, stepRD, time.Second)
 			c2Path2.Cont = true
 
-			c3Path1 := ledgrid.NewPathAnimation(&c3.Pos, quartCirc, stepLD, time.Second)
+			c3Path1 := ledgrid.NewPathAnim(c3, quartCirc, stepLD, time.Second)
 			c3Path1.Cont = true
-			c3Path2 := ledgrid.NewPathAnimation(&c3.Pos, quartCirc, stepRU, time.Second)
+			c3Path2 := ledgrid.NewPathAnim(c3, quartCirc, stepRU, time.Second)
 			c3Path2.Cont = true
 
-			c4Path1 := ledgrid.NewPathAnimation(&c4.Pos, quartCirc, stepLU, time.Second)
+			c4Path1 := ledgrid.NewPathAnim(c4, quartCirc, stepLU, time.Second)
 			c4Path1.Cont = true
-			c4Path2 := ledgrid.NewPathAnimation(&c4.Pos, quartCirc, stepRD, time.Second)
+			c4Path2 := ledgrid.NewPathAnim(c4, quartCirc, stepRD, time.Second)
 			c4Path2.Cont = true
 
-			c5Path1 := ledgrid.NewPathAnimation(&c5.Pos, quartCirc, stepLD, time.Second)
+			c5Path1 := ledgrid.NewPathAnim(c5, quartCirc, stepLD, time.Second)
 			c5Path1.Cont = true
-			c5Path2 := ledgrid.NewPathAnimation(&c5.Pos, quartCirc, stepRU, time.Second)
+			c5Path2 := ledgrid.NewPathAnim(c5, quartCirc, stepRU, time.Second)
 			c5Path2.Cont = true
 
 			aGrp1 := ledgrid.NewGroup(c1Path1, c2Path1)
@@ -128,24 +102,24 @@ var (
 
 			path := ledgrid.CirclePath.NewStart(0.25)
 
-			c1pos := ledgrid.NewPathAnimation(&c1.Pos, path, c1PosSize, 4*time.Second)
+			c1pos := ledgrid.NewPathAnim(c1, path, c1PosSize, 4*time.Second)
 			c1pos.Curve = ledgrid.AnimationLinear
 
-			c1size := ledgrid.NewSizeAnimation(&c1.Size, c1Size2, time.Second)
+			c1size := ledgrid.NewSizeAnim(c1, c1Size2, time.Second)
 			c1size.AutoReverse = true
 
-			c1bcolor := ledgrid.NewColorAnimation(&c1.StrokeColor, color.OrangeRed, time.Second)
+			c1bcolor := ledgrid.NewColorAnim(c1, color.OrangeRed, time.Second)
 			c1bcolor.AutoReverse = true
 
 			c2 := ledgrid.NewEllipse(c2Pos, c2Size1, color.Lime)
 
-			c2pos := ledgrid.NewPathAnimation(&c2.Pos, path, c2PosSize, 4*time.Second)
+			c2pos := ledgrid.NewPathAnim(c2, path, c2PosSize, 4*time.Second)
 			c2pos.Curve = ledgrid.AnimationLinear
 
-			c2size := ledgrid.NewSizeAnimation(&c2.Size, c2Size2, time.Second)
+			c2size := ledgrid.NewSizeAnim(c2, c2Size2, time.Second)
 			c2size.AutoReverse = true
 
-			c2color := ledgrid.NewPaletteAnimation(&c2.StrokeColor, pal, 2*time.Second)
+			c2color := ledgrid.NewPaletteAnimation(&c2.Color, pal, 2*time.Second)
 			c2color.Curve = ledgrid.AnimationLinear
 
 			aGrp.Add(c1pos, c1size, c1bcolor, c2pos, c2size, c2color)
@@ -165,15 +139,15 @@ var (
 
 			c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, color.OrangeRed)
 
-			c1pos := ledgrid.NewPositionAnimation(&c1.Pos, c1Pos3, 2*time.Second)
+			c1pos := ledgrid.NewPositionAnim(c1, c1Pos3, 2*time.Second)
 			c1pos.AutoReverse = true
 			c1pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c1radius := ledgrid.NewSizeAnimation(&c1.Size, c1Size2, time.Second)
+			c1radius := ledgrid.NewSizeAnim(c1, c1Size2, time.Second)
 			c1radius.AutoReverse = true
 			c1radius.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c1color := ledgrid.NewColorAnimation(&c1.StrokeColor, color.Gold, 4*time.Second)
+			c1color := ledgrid.NewColorAnim(c1, color.Gold, 4*time.Second)
 			c1color.AutoReverse = true
 			c1color.RepeatCount = ledgrid.AnimationRepeatForever
 
@@ -199,29 +173,29 @@ var (
 
 			r1 := ledgrid.NewRectangle(r1Pos1, rSize2, color.Crimson)
 
-			a1Pos := ledgrid.NewPositionAnimation(&r1.Pos, r1Pos2, duration)
+			a1Pos := ledgrid.NewPositionAnim(r1, r1Pos2, duration)
 			a1Pos.AutoReverse = true
 			a1Pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a1Size := ledgrid.NewSizeAnimation(&r1.Size, rSize1, duration)
+			a1Size := ledgrid.NewSizeAnim(r1, rSize1, duration)
 			a1Size.AutoReverse = true
 			a1Size.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a1Color := ledgrid.NewColorAnimation(&r1.StrokeColor, color.GreenYellow, duration)
+			a1Color := ledgrid.NewColorAnim(r1, color.GreenYellow, duration)
 			a1Color.AutoReverse = true
 			a1Color.RepeatCount = ledgrid.AnimationRepeatForever
 
 			r2 := ledgrid.NewRectangle(r2Pos2, rSize1, color.SkyBlue)
 
-			a2Pos := ledgrid.NewPositionAnimation(&r2.Pos, r2Pos1, duration)
+			a2Pos := ledgrid.NewPositionAnim(r2, r2Pos1, duration)
 			a2Pos.AutoReverse = true
 			a2Pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a2Size := ledgrid.NewSizeAnimation(&r2.Size, rSize2, duration)
+			a2Size := ledgrid.NewSizeAnim(r2, rSize2, duration)
 			a2Size.AutoReverse = true
 			a2Size.RepeatCount = ledgrid.AnimationRepeatForever
 
-			a2Color := ledgrid.NewColorAnimation(&r2.StrokeColor, color.Crimson, duration)
+			a2Color := ledgrid.NewColorAnim(r2, color.Crimson, duration)
 			a2Color.AutoReverse = true
 			a2Color.RepeatCount = ledgrid.AnimationRepeatForever
 
@@ -254,11 +228,11 @@ var (
 				dur := 2*time.Second + rand.N(time.Second)
 				sign := []float64{+1.0, -1.0}[n%2]
 				angle := sign * 2 * math.Pi
-				animPos := ledgrid.NewPositionAnimation(&polyList[n].Pos, posCenter, dur)
-				animAngle := ledgrid.NewFloatAnimation(&polyList[n].Angle, angle, dur)
-				animSize := ledgrid.NewSizeAnimation(&polyList[n].Size, largeSize, 4*time.Second)
+				animPos := ledgrid.NewPositionAnim(polyList[n], posCenter, dur)
+				animAngle := ledgrid.NewAngleAnim(polyList[n], angle, dur)
+				animSize := ledgrid.NewSizeAnim(polyList[n], largeSize, 4*time.Second)
 				animSize.Cont = true
-				animFade := ledgrid.NewColorAnimation(&polyList[n].StrokeColor, color.Black, 4*time.Second)
+				animFade := ledgrid.NewColorAnim(polyList[n], color.Black, 4*time.Second)
 				animFade.Cont = true
 
 				aGrpIn := ledgrid.NewGroup(animPos, animAngle)

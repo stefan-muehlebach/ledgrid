@@ -39,7 +39,7 @@ var (
 			mario.RepeatCount = ledgrid.AnimationRepeatForever
 			mario.Size = geom.Point{20.0, 20.0}
 
-			aPos := ledgrid.NewPositionAnimation(&mario.Pos, pos2Mario, 4*time.Second)
+			aPos := ledgrid.NewPositionAnim(mario, pos2Mario, 4*time.Second)
 			aPos.Curve = ledgrid.AnimationLinear
 			aPos.RepeatCount = ledgrid.AnimationRepeatForever
 
@@ -77,7 +77,7 @@ var (
 				t1 := t0 + 300*time.Millisecond
 				t2 := t1 + 3300*time.Millisecond
 				aTimeline.Add(t0, ledgrid.NewHideShowAnimation(img))
-				aTimeline.Add(t1, ledgrid.NewFloatAnimation(&img.Angle, 6*math.Pi, 3*time.Second))
+				aTimeline.Add(t1, ledgrid.NewAngleAnim(img, 6*math.Pi, 3*time.Second))
 				aTimeline.Add(t2, ledgrid.NewHideShowAnimation(img))
 				c.Add(img)
 			}
@@ -112,7 +112,7 @@ var (
 				img.SetAlign(ledgrid.AlignTop)
 			})
 
-			aAngle := ledgrid.NewFloatAnimation(&img.Angle, 2*math.Pi, 4*time.Second)
+			aAngle := ledgrid.NewAngleAnim(img, 2*math.Pi, 4*time.Second)
             aAngle.Curve = ledgrid.AnimationLazeInOut
 			aHoriSeq := ledgrid.NewSequence(
 				aAlignRight, aAngle,

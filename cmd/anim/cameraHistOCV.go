@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
+	"github.com/stefan-muehlebach/gg/color"
 	"github.com/stefan-muehlebach/ledgrid"
 
 	"gocv.io/x/gocv"
@@ -53,9 +54,9 @@ func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
 		m := (camWidth - w) / 2.0
 		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
 	}
-    rect := geom.Rectangle{Max: c.Size}
-    refPt := c.Pos.Sub(c.Size.Div(2.0))
-    c.Rect = rect.Add(refPt).Int()
+	rect := geom.Rectangle{Max: c.Size}
+	refPt := c.Pos.Sub(c.Size.Div(2.0))
+	c.Rect = rect.Add(refPt).Int()
 
 	c.imgIdx = -1
 	c.histLen = histLen
@@ -78,7 +79,7 @@ func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
 	}
 	c.matIdx = -1
 
-    c.doneChan = make(chan bool)
+	c.doneChan = make(chan bool)
 
 	ledgrid.AnimCtrl.Add(c)
 	return c
@@ -137,28 +138,28 @@ ML:
 	for {
 		select {
 		case <-ticker.C:
-        		idx := (c.matIdx + 1) % 2
+			idx := (c.matIdx + 1) % 2
 			if !c.dev.Read(&c.mat[idx]) {
 				log.Fatalf("Failed to grab and decode frames")
 			}
 			gocv.Flip(c.mat[idx], &c.mat[idx], 1)
-            	img, err = c.mat[idx].ToImage()
-            	if err != nil {
-		        log.Fatalf("Couldn't convert image: %v", err)
-	        }
-            c.matIdx = idx
+			img, err = c.mat[idx].ToImage()
+			if err != nil {
+				log.Fatalf("Couldn't convert image: %v", err)
+			}
+			c.matIdx = idx
 
-        		c.imgMutex[0].Lock()
-        		draw.Draw(c.rawImg, img.Bounds(), img, image.Point{}, draw.Over)
-        		c.imgMutex[0].Unlock()
+			c.imgMutex[0].Lock()
+			draw.Draw(c.rawImg, img.Bounds(), img, image.Point{}, draw.Over)
+			c.imgMutex[0].Unlock()
 
-        		c.imgMutex[1].Lock()
-        		draw.Draw(c.grayImg[0], img.Bounds(), img, image.Point{}, draw.Over)
-        		draw.Copy(c.grayImg[1], image.Point{}, img, img.Bounds(), draw.Over, &draw.Options{
-        			DstMask: dstMask,
-        			SrcMask: srcMask,
-        		})
-        		c.imgMutex[1].Unlock()
+			c.imgMutex[1].Lock()
+			draw.Draw(c.grayImg[0], img.Bounds(), img, image.Point{}, draw.Over)
+			draw.Copy(c.grayImg[1], image.Point{}, img, img.Bounds(), draw.Over, &draw.Options{
+				DstMask: dstMask,
+				SrcMask: srcMask,
+			})
+			c.imgMutex[1].Unlock()
 		case <-done:
 			break ML
 		}
@@ -211,14 +212,14 @@ func (c *HistCamera) Draw(canv *ledgrid.Canvas) {
 
 	// Das Resultat schliesslich: originales Kamerabild, jedoch maskiert durch
 	// die Bewegungserkennung.
-	c.scaler.Scale(canv.Img, c.Rect, c.rawImg, c.srcRect, draw.Over, &draw.Options{
-		SrcMask: c.srcMask,
-	})
+	// c.scaler.Scale(canv.Img, c.Rect, c.rawImg, c.srcRect, draw.Over, &draw.Options{
+	// 	SrcMask: c.srcMask,
+	// })
 
 	// Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
 	// aus).
-	// uniform := image.NewUniform(color.SkyBlue)
-	// c.scaler.Scale(canv.Img, c.Rect, uniform, c.srcRect, draw.Over, &draw.Options{
-	// 	SrcMask: c.srcMask,
-	// })
+	uniform := image.NewUniform(color.SkyBlue)
+	c.scaler.Scale(canv.Img, c.Rect, uniform, c.srcRect, draw.Over, &draw.Options{
+		SrcMask: c.srcMask,
+	})
 }

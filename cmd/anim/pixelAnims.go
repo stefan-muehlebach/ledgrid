@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image"
-	"log"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -40,7 +39,7 @@ var (
 						// 	pix.Kill()
 						// }))
 						c.Add(pix)
-						aPos := ledgrid.NewPositionAnimation(&pix.Pos, dest, time.Second+rand.N(time.Second))
+						aPos := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
 						grp.Add(aPos)
 					}
@@ -94,24 +93,24 @@ var (
 					c.Add(pix)
 
 					dur := time.Second + time.Duration(x)*time.Millisecond
-					aAlpha := ledgrid.NewFadeAnimation(&pix.Color.A, 196, dur)
+					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
 					aAlpha.AutoReverse = true
 					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 					aAlpha.Start()
 
-					aColor := ledgrid.NewColorAnimation(&pix.Color, col, 1*time.Second)
+					aColor := ledgrid.NewColorAnim(pix, col, 1*time.Second)
 					aColor.Cont = true
 					aGrpGrey.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.MediumPurple.Interpolate(color.Fuchsia, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.MediumPurple.Interpolate(color.Fuchsia, t), 5*time.Second)
 					aColor.Cont = true
 					aGrpPurple.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Gold.Interpolate(color.Khaki, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.Gold.Interpolate(color.Khaki, t), 5*time.Second)
 					aColor.Cont = true
 					aGrpYellow.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.GreenYellow.Interpolate(color.LightSeaGreen, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.GreenYellow.Interpolate(color.LightSeaGreen, t), 5*time.Second)
 					aColor.Cont = true
 					aGrpGreen.Add(aColor)
 				}
@@ -119,15 +118,15 @@ var (
 
 			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
 			txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt1 := ledgrid.NewFadeAnimation(&txt1.Color.A, ledgrid.FadeIn, 2*time.Second)
+			aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
 			aTxt1.AutoReverse = true
 			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
 			txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt2 := ledgrid.NewFadeAnimation(&txt2.Color.A, ledgrid.FadeIn, 2*time.Second)
+			aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
 			aTxt2.AutoReverse = true
 			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
 			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt3 := ledgrid.NewFadeAnimation(&txt3.Color.A, ledgrid.FadeIn, 2*time.Second)
+			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
 			aTxt3.AutoReverse = true
 			c.Add(txt1, txt2, txt3)
 
@@ -169,9 +168,9 @@ var (
 	}
 
 	PlasmaShaderFunc = func(x, y, t float64) float64 {
-		v1 := f1(x, y, t, 1.2)
-		v2 := f2(x, y, t, 1.6, 3.0, 1.5)
-		v3 := f3(x, y, t, 5.0, 5.0)
+		v1 := f1(x, y, t, 10)       // old param: 1.2
+		v2 := f2(x, y, t, 10, 2, 3) // old param: 1.6, 3.0, 1.5
+		v3 := f3(x, y, t, 5, 3)     // old param: 5.0, 5.0
 		v := (v1+v2+v3)/6.0 + 0.5
 		return v
 	}
@@ -181,16 +180,39 @@ var (
 			var xMin, yMax float64
 			var txt *ledgrid.FixedText
 			var palId int
+			var palName string = "Hipster"
+			var ptStart, pt, ptEnd fixed.Point26_6
 
-			pal := ledgrid.PaletteMap["Hipster"]
+			pt = fixed.P(1, height-1)
+			ptStart = pt.Add(fixed.P(width, 0))
+			ptEnd = pt.Sub(fixed.P(width, 0))
+
+			txt = ledgrid.NewFixedText(pt, color.Yellow, palName)
+			//txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+
+			txtLeave := ledgrid.NewFixedPosAnim(txt, ptEnd, time.Second)
+			txtLeave.Curve = ledgrid.AnimationEaseIn
+			txtLeave.Cont = true
+			txtEnter := ledgrid.NewFixedPosAnim(txt, pt, time.Second)
+			txtEnter.Curve = ledgrid.AnimationEaseOut
+			txtEnter.Cont = true
+			txtNewText := ledgrid.NewTask(func() {
+				txt.SetText(palName)
+				txt.Pos = ptStart
+			})
+
+			txtChange := ledgrid.NewSequence(txtLeave, txtNewText, txtEnter)
+
+			pal := ledgrid.PaletteMap[palName]
 			fader := ledgrid.NewPaletteFader(pal)
 			aPal := ledgrid.NewPaletteFadeAnimation(fader, pal, 2*time.Second)
 			aPal.ValFunc = func() ledgrid.ColorSource {
-				name := ledgrid.PaletteNames[palId]
+				palName = ledgrid.PaletteNames[palId]
 				palId = (palId + 1) % len(ledgrid.PaletteNames)
-				log.Printf(">>> Switch palette, new name: '%s'", name)
-				txt.SetText(name)
-				return ledgrid.PaletteMap[name]
+				// log.Printf(">>> Switch palette, new name: '%s'", palName)
+				// txt.SetText(palName)
+				txtChange.Start()
+				return ledgrid.PaletteMap[palName]
 			}
 
 			aPalTl := ledgrid.NewTimeline(10 * time.Second)
@@ -217,17 +239,16 @@ var (
 				for col := range c.Rect.Dx() {
 					pix := ledgrid.NewPixel(image.Point{col, row}, color.Black)
 					c.Add(pix)
-					anim := ledgrid.NewShaderAnimation(&pix.Color, fader, x, y, PlasmaShaderFunc)
+					anim := ledgrid.NewShaderAnim(pix, fader, x, y, PlasmaShaderFunc)
 					aGrp.Add(anim)
 					x += dPix
 				}
 				y -= dPix
 			}
-			txt = ledgrid.NewFixedText(fixed.P(width/2, height/2), color.YellowGreen, "Hipster")
-			txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 			c.Add(txt)
-			aPalTl.Start()
+
 			aGrp.Start()
+			aPalTl.Start()
 		})
 
 	ColorFields = NewLedGridProgram("Fields of named colors",

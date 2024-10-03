@@ -16,22 +16,15 @@ var (
 // auf dem Panel-Empfaenger gemacht (pixelcontroller-slave). LedColor
 // implementiert das color.Color Interface.
 type LedColor struct {
-    // color.NRGBA
 	R, G, B, A uint8
 }
 
 func NewLedColorRGB(r, g, b uint8) LedColor {
-    return LedColor{r, g, b, 0xff}
-    // c := LedColor{}
-    // c.R, c.G, c.B, c.A = r, g, b, 0x0ff
-    // return c
+	return LedColor{r, g, b, 0xff}
 }
 
 func NewLedColorRGBA(r, g, b, a uint8) LedColor {
-    return LedColor{r, g, b, a}
-    // c := LedColor{}
-    // c.R, c.G, c.B, c.A = r, g, b, a
-    // return c
+	return LedColor{r, g, b, a}
 }
 
 func NewLedColorHex(hex uint32) LedColor {
@@ -89,7 +82,7 @@ func (c1 LedColor) Interpolate(c2 LedColor, t float64) LedColor {
 }
 
 func (c LedColor) Alpha(a float64) LedColor {
-	return NewLedColorRGBA(c.R, c.G, c.B, uint8(255.0 * a))
+	return NewLedColorRGBA(c.R, c.G, c.B, uint8(255.0*a))
 }
 
 func (c LedColor) Bright(t float64) LedColor {
@@ -155,7 +148,7 @@ func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 		r := float64(c.R)*t1 + float64(bg.R)*t2
 		g := float64(c.G)*t1 + float64(bg.G)*t2
 		b := float64(c.B)*t1 + float64(bg.B)*t2
-		return NewLedColorRGBA(uint8(r), uint8(g), uint8(b), uint8(255.0 * a))
+		return NewLedColorRGBA(uint8(r), uint8(g), uint8(b), uint8(255.0*a))
 	case Max:
 		r := max(c.R, bg.R)
 		g := max(c.G, bg.G)
@@ -191,11 +184,11 @@ func ledColorModel(c color.Color) color.Color {
 		return c
 	}
 
-    // return LedColor{color.NRGBAModel.Convert(c).(color.NRGBA)}
+	// return LedColor{color.NRGBAModel.Convert(c).(color.NRGBA)}
 
 	r, g, b, a := c.RGBA()
 	if a == 0xFFFF {
-		return NewLedColorRGB(uint8(r >> 8), uint8(g >> 8), uint8(b >> 8))
+		return NewLedColorRGB(uint8(r>>8), uint8(g>>8), uint8(b>>8))
 	}
 	if a == 0 {
 		return LedColor{}
@@ -203,5 +196,5 @@ func ledColorModel(c color.Color) color.Color {
 	r = (r * 0xFFFF) / a
 	g = (g * 0xFFFF) / a
 	b = (b * 0xFFFF) / a
-	return NewLedColorRGBA(uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8))
+	return NewLedColorRGBA(uint8(r>>8), uint8(g>>8), uint8(b>>8), uint8(a>>8))
 }

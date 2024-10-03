@@ -27,16 +27,16 @@ var (
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
 			c.Add(c1, c2, c3, c4)
 
-			c1Path := ledgrid.NewPathAnimation(&c1.Pos, pathA, geom.Point{float64(width) / 3.0, float64(height - 4)}, duration)
+			c1Path := ledgrid.NewPathAnim(c1, pathA, geom.Point{float64(width) / 3.0, float64(height - 4)}, duration)
 			c1Path.AutoReverse = true
 
-			c2Path := ledgrid.NewPathAnimation(&c2.Pos, pathB, geom.Point{float64(width - 4), float64(height - 4)}, duration)
+			c2Path := ledgrid.NewPathAnim(c2, pathB, geom.Point{float64(width - 4), float64(height - 4)}, duration)
 			c2Path.AutoReverse = true
 
-			c3Path := ledgrid.NewPathAnimation(&c3.Pos, pathA, geom.Point{-float64(width) / 3.0, -float64(height - 4)}, duration)
+			c3Path := ledgrid.NewPathAnim(c3, pathA, geom.Point{-float64(width) / 3.0, -float64(height - 4)}, duration)
 			c3Path.AutoReverse = true
 
-			c4Path := ledgrid.NewPathAnimation(&c4.Pos, pathB, geom.Point{-float64(width - 4), -float64(height - 4)}, duration)
+			c4Path := ledgrid.NewPathAnim(c4, pathB, geom.Point{-float64(width - 4), -float64(height - 4)}, duration)
 			c4Path.AutoReverse = true
 
 			aGrp := ledgrid.NewGroup(c1Path, c3Path, c2Path, c4Path)
@@ -95,5 +95,32 @@ var (
 			seq.RepeatCount = ledgrid.AnimationRepeatForever
 
 			seq.Start()
+		})
+
+	RandomWalk = NewLedGridProgram("Random walk",
+		func(c *ledgrid.Canvas) {
+			rect := geom.Rectangle{Min: geom.Point{1.5, 1.5}, Max: geom.Point{float64(width) - 0.5, float64(height) - 0.5}}
+			pos1 := geom.Point{1.5, 1.5}
+			pos2 := geom.Point{float64(width) - 1.5, float64(height) - 1.5}
+			size1 := geom.Point{2.0, 2.0}
+			size2 := geom.Point{4.0, 4.0}
+
+			c1 := ledgrid.NewEllipse(pos1, size1, color.SkyBlue)
+			c2 := ledgrid.NewEllipse(pos2, size2, color.GreenYellow)
+			c.Add(c1, c2)
+
+			aPos1 := ledgrid.NewPositionAnim(c1, geom.Point{}, 1300*time.Millisecond)
+			aPos1.Cont = true
+			aPos1.Val2 = ledgrid.RandPointTrunc(rect, 1.0)
+			aPos1.RepeatCount = ledgrid.AnimationRepeatForever
+
+			aPos2 := ledgrid.NewPositionAnim(c2, geom.Point{}, 901*time.Millisecond)
+			aPos2.Cont = true
+			aPos2.Val2 = func() geom.Point { return c1.Pos }
+			aPos2.Curve = ledgrid.AnimationLinear
+			aPos2.RepeatCount = ledgrid.AnimationRepeatForever
+
+			aPos1.Start()
+			aPos2.Start()
 		})
 )

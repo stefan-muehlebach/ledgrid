@@ -33,36 +33,36 @@ var (
 					c.Add(pix)
 
 					dur := time.Second + time.Duration(10*x+20*y)*time.Millisecond
-					aAlpha := ledgrid.NewFadeAnimation(&pix.Color.A, 196, dur)
+					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
 					aAlpha.AutoReverse = true
 					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 					aAlpha.Start()
 
-					aColor := ledgrid.NewColorAnimation(&pix.Color, (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t), 9*time.Second)
+					aColor := ledgrid.NewColorAnim(pix, (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t), 9*time.Second)
 					aColor.Cont = true
 					aGrpFadeIn.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t), 1*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t), 1*time.Second)
 					aColor.Cont = true
 					aGrpGrey.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
 					aColor.Cont = true
 					aGrpPurple.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Gold.Interpolate(color.LemonChiffon, t), 4*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.Gold.Interpolate(color.LemonChiffon, t), 4*time.Second)
 					aColor.Cont = true
 					aGrpYellow.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Crimson.Interpolate(color.Orange, t), 4*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.Crimson.Interpolate(color.Orange, t), 4*time.Second)
 					aColor.Cont = true
 					aGrpRed.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.LightSeaGreen.Interpolate(color.GreenYellow, t), 500*time.Millisecond)
+					aColor = ledgrid.NewColorAnim(pix, color.LightSeaGreen.Interpolate(color.GreenYellow, t), 500*time.Millisecond)
 					aColor.Cont = true
 					aGrpGreen.Add(aColor)
 
-					aColor = ledgrid.NewColorAnimation(&pix.Color, color.Black, 2*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.Black, 2*time.Second)
 					aColor.Cont = true
 					aGrpBlack.Add(aColor)
 				}
@@ -70,15 +70,15 @@ var (
 
 			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LIEBER")
 			txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt1 := ledgrid.NewFadeAnimation(&txt1.Color.A, ledgrid.FadeIn, 1*time.Second)
+			aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 1*time.Second)
 			aTxt1.AutoReverse = true
 			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "GERY")
 			txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt2 := ledgrid.NewFadeAnimation(&txt2.Color.A, ledgrid.FadeIn, 2*time.Second)
+			aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
 			aTxt2.AutoReverse = true
 			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.RoyalBlue.Alpha(0.0), "FAREWELL")
 			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt3 := ledgrid.NewFadeAnimation(&txt3.Color.A, ledgrid.FadeIn, 5*time.Second)
+			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 5*time.Second)
 			aTxt3.AutoReverse = true
 			c.Add(txt1, txt2, txt3)
 

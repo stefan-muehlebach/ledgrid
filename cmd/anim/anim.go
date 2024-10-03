@@ -69,16 +69,16 @@ var (
 			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
 			c.Add(r)
 
-			aPos := ledgrid.NewPositionAnimation(&r.Pos, rPos2, 4*time.Second)
+			aPos := ledgrid.NewPositionAnim(r, rPos2, 4*time.Second)
 			aPos.AutoReverse = true
 			aPos.RepeatCount = ledgrid.AnimationRepeatForever
-			aSize := ledgrid.NewSizeAnimation(&r.Size, rSize2, 4*time.Second)
+			aSize := ledgrid.NewSizeAnim(r, rSize2, 4*time.Second)
 			aSize.AutoReverse = true
 			aSize.RepeatCount = ledgrid.AnimationRepeatForever
-			aColor := ledgrid.NewColorAnimation(&r.StrokeColor, rColor2, 4*time.Second)
+			aColor := ledgrid.NewColorAnim(r, rColor2, 4*time.Second)
 			aColor.AutoReverse = true
 			aColor.RepeatCount = ledgrid.AnimationRepeatForever
-			aAngle := ledgrid.NewFloatAnimation(&r.Angle, math.Pi, 4*time.Second)
+			aAngle := ledgrid.NewAngleAnim(r, math.Pi, 4*time.Second)
 			aAngle.AutoReverse = true
 			aAngle.RepeatCount = ledgrid.AnimationRepeatForever
 

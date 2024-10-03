@@ -125,7 +125,6 @@ func (p *GradientPalette) Color(t float64) (c ledcolor.LedColor) {
 
 	if t < 0.0 || t > 1.0 {
         t = max(0.0, min(1.0, t))
-		// log.Fatalf("Color: parameter t must be in [0,1] instead of %f", t)
 	}
 	for i, stop = range p.stops[1:] {
 		if stop.Pos > t {
@@ -222,4 +221,3 @@ func (p *PaletteFader) Color(v float64) (c ledcolor.LedColor) {
 	}
 	return c
 }
-

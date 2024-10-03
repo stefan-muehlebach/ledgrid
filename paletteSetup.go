@@ -40,24 +40,12 @@ func ReadJsonData(fileName string) []JsonPalette {
 }
 
 func ReadJsonPalette(fileName string) {
-	var colorListJson []JsonPalette
+	var jsonPaletteList []JsonPalette
 
-	data, err := colorFiles.ReadFile(path.Join("data", fileName))
-	if err != nil {
-		log.Fatalf("ReadFile failed: %v", err)
-	}
-	err = json.Unmarshal(data, &colorListJson)
-	if err != nil {
-		switch e := err.(type) {
-		case *json.SyntaxError:
-			log.Fatalf("Unmarshal failed in %s: %+v at offset %d", fileName, e, e.Offset)
-		default:
-			log.Fatalf("Unmarshal failed in %s: %+v (%T)", fileName, e, e)
-		}
-	}
+    jsonPaletteList = ReadJsonData(fileName)
 
 	// log.Printf("ReadPixelPalettes(): %d entries unmarshalled", len(colorListJson))
-	for _, rec := range colorListJson {
+	for _, rec := range jsonPaletteList {
 		// log.Printf("%+v", rec)
 		if len(rec.Colors) > 0 {
 			if rec.IsSlice {
@@ -94,7 +82,6 @@ func ReadNamedColors() {
 }
 
 func init() {
-	ReadJsonPalette("colormaps.json")
 	ReadJsonPalette("palettes.json")
 	ReadNamedColors()
 }
