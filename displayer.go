@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -87,6 +88,7 @@ func (d *DisplayEmbed) SetGamma(r, g, b float64) {
 			d.gammaTbl[colorIdx][i] = byte(math.Pow(float64(i)/255.0, val))
 		}
 	}
+    fmt.Printf("gammaTbl[red]: %+v\n", d.gammaTbl[0])
 }
 
 func (d *DisplayEmbed) Display(buffer []byte) {
