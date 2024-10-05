@@ -110,7 +110,7 @@ const (
 )
 
 type EffectType struct {
-	dir     ScanDir
+	scanDir ScanDir
 	lineDir LineDir
 	exitDir ExitDir
 }
@@ -130,7 +130,7 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 	minSize = min(width, height)
 	numRounds = minSize / 2
 
-	switch typ.dir {
+	switch typ.scanDir {
 	case Top2Bottom:
 		l1Count, l1Step = height, 1
 		l2Count, l2Step = width, 1
@@ -168,7 +168,7 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 		dDst = dDst.Mul(-1)
 	}
 
-	switch typ.dir {
+	switch typ.scanDir {
 	case Top2Bottom, Bottom2Top, Left2Right, Right2Left:
 		return func(yield func(id int, pts []PointPair) bool) {
 			pts := make([]PointPair, 0)
@@ -255,7 +255,7 @@ var (
 					{Right2Left, Forward, ExitOver},
 				}
 				colorList := []color.LedColor{
-					color.MediumOrchid,
+					color.BlueViolet,
 					color.SkyBlue,
 					color.Lime,
 					color.YellowGreen,
@@ -287,9 +287,6 @@ var (
 								aFadeOut := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeOut, 3*aDur/2)
 								aFadeOut.Curve = ledgrid.AnimationEaseIn
 								aFadeOut.Cont = true
-								// aColor2 := ledgrid.NewFillColorAnim(pixAway, color.WhiteSmoke, aDur)
-								// aColor2.Curve = ledgrid.AnimationEaseIn
-								// aColor2.Cont = true
 								aPos := ledgrid.NewPositionAnim(pixAway, dst, aDur)
 								aPos.Curve = ledgrid.AnimationEaseIn
 								aSeq := ledgrid.NewSequence(aFadeIn,

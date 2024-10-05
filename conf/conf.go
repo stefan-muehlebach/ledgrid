@@ -330,6 +330,7 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 //go:embed data/*.json
 var customFiles embed.FS
 
+// Speichert die Konfiguration in conf in der Datei fileName ab.
 func (conf ModuleConfig) Save(fileName string) {
 	data, err := json.MarshalIndent(conf, "", "    ")
 	if err != nil {
@@ -341,18 +342,20 @@ func (conf ModuleConfig) Save(fileName string) {
 	}
 }
 
-func (conf *ModuleConfig) Load(fileName string) {
+func Load(fileName string) ModuleConfig {
+    var conf ModuleConfig
 	data, err := customFiles.ReadFile(fileName)
 	if err != nil {
 		log.Fatalf("Couldn't read file: %v", err)
 	}
-	err = json.Unmarshal(data, conf)
+	err = json.Unmarshal(data, &conf)
 	if err != nil {
 		log.Fatalf("Couldn't decode json data: %v", err)
 	}
-	for i := range *conf {
-		(*conf)[i].Idx = i * ModuleDim.X * ModuleDim.Y
+	for i := range conf {
+		conf[i].Idx = i * ModuleDim.X * ModuleDim.Y
 	}
+    return conf
 }
 
 // Helps to build up a module configuration. Important: the Add's must

@@ -18,147 +18,19 @@ import (
 )
 
 var (
+	// Weil es nur einen (1) Animations-Kontroller geben kann, ist in diesem
+	// Package eine globale Variable dafuer vorgesehen.
 	AnimCtrl *AnimationController
 )
 
-// Fuer Animationen, die endlos wiederholt weren sollen, kann diese Konstante
-// fuer die Anzahl Wiederholungen verwendet werden.
 const (
+	// Fuer Animationen, die endlos wiederholt weren sollen, kann diese Konstante
+	// fuer die Anzahl Wiederholungen verwendet werden.
 	AnimationRepeatForever = -1
-	refreshRate            = 30 * time.Millisecond
+	// Mit refreshRate wird die Zeit in Millisekunden angegeben, die zwischen
+	// den einzelnen Aktualisierungen gewartet wird.
+	refreshRate = 30 * time.Millisecond
 )
-
-// Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
-// beeinflusst werden. Der Parameter [t] ist ein Wert im Intervall [0,1]
-// und zeigt an, wo sich die Animation gerade befindet (t=0: Animation
-// wurde eben gestartet; t=1: Animation ist zu Ende). Der Rueckgabewert
-// ist ebenfalls ein Wert im Intervall [0,1] und hat die gleiche Bedeutung
-// wie [t].
-type AnimationCurve func(t float64) float64
-
-// Linearer Verlauf zwischen 0.0 und 1.0.
-func AnimationLinear(t float64) float64 {
-	return t
-}
-
-// Beginnt langsam und nimmt immer mehr an Fahrt auf
-// (quadratische Grundlage).
-func AnimationEaseIn(t float64) float64 {
-	return t * t
-}
-
-// Beginnt schnell und bremst zum Ende immer mehr ab
-// (quadratische Grundlage).
-func AnimationEaseOut(t float64) float64 {
-	return t * (2 - t)
-}
-
-// Anfang und Ende der Animation werden abgebremst
-// (quadratische Grundlage, stueckweise Funktion).
-func AnimationEaseInOut(t float64) float64 {
-	if t <= 0.5 {
-		return 2 * t * t
-	}
-	return (4-2*t)*t - 1
-}
-
-// Beginnt langsam und nimmt immer mehr an Fahrt auf.
-// (kubische Grundlage).
-func AnimationLazeIn(t float64) float64 {
-	return t * t * t
-}
-
-// Beginnt langsam und nimmt immer mehr an Fahrt auf.
-// (kubische Grundlage).
-func AnimationLazeOut(t float64) float64 {
-	return t * (t*(t-3) + 3)
-}
-
-// Anfang und Ende der Animation werden abgebremst.
-// (kubische Grundlage, stueckweise Funktion).
-func AnimationLazeInOut(t float64) float64 {
-	if t <= 0.5 {
-		return 4 * t * t * t
-	}
-	return 4*(t-1)*(t-1)*(t-1) + 1
-}
-
-// Dies ist ein etwas unbeholfener Versuch, die Zielwerte bestimmter
-// Animationen dynamisch berechnen zu lassen. Alle XXXFuncType sind
-// Funktionstypen fuer einen bestimmten Datentyp, der in den Animationen
-// verwendet wird und dessen dynamische Berechnung Sinn macht.
-type PaletteFuncType func() ColorSource
-
-// type AlphaFuncType func() uint8
-
-var (
-	palId int = 0
-)
-
-// SeqPalette liefert eine Funktion, die bei jedem Aufruf die naechste Palette
-// als Resultat zurueckgibt.
-func SeqPalette() PaletteFuncType {
-	return func() ColorSource {
-		name := PaletteNames[palId]
-		palId = (palId + 1) % len(PaletteNames)
-		return PaletteMap[name]
-	}
-}
-
-// RandPalette liefert eine Funktion, die bei jedem Aufruf eine zufaellig
-// gewaehlte Palette retourniert.
-func RandPalette() PaletteFuncType {
-	return func() ColorSource {
-		name := PaletteNames[rand.IntN(len(PaletteNames))]
-		return PaletteMap[name]
-	}
-}
-
-// Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
-// Rechtecks r.
-func RandPoint(r geom.Rectangle) AnimValueFunc[geom.Point] {
-	return func() geom.Point {
-		fx := rand.Float64()
-		fy := rand.Float64()
-		return r.RelPos(fx, fy)
-	}
-}
-
-// Wie RandPoint, sorgt jedoch dafuer dass die Koordinaten auf ein Vielfaches
-// von t abgeschnitten werden.
-func RandPointTrunc(r geom.Rectangle, t float64) AnimValueFunc[geom.Point] {
-	return func() geom.Point {
-		fx := rand.Float64()
-		fy := rand.Float64()
-		p := r.RelPos(fx, fy)
-		p.X = t * math.Round(p.X/t)
-		p.Y = t * math.Round(p.Y/t)
-		return p
-	}
-}
-
-// Macht eine Interpolation zwischen den Groessen s1 und s2. Der Interpolations-
-// punkt wird zufaellig gewaehlt.
-func RandSize(s1, s2 geom.Point) AnimValueFunc[geom.Point] {
-	return func() geom.Point {
-		t := rand.Float64()
-		return s1.Interpolate(s2, t)
-	}
-}
-
-// Liefert eine zufaellig gewaehlte Fliesskommazahl im Interval [a,b).
-func RandFloat(a, b float64) AnimValueFunc[float64] {
-	return func() float64 {
-		return a + (b-a)*rand.Float64()
-	}
-}
-
-// Liefert eine zufaellig gewaehlte natuerliche Zahl im Interval [a,b).
-func RandAlpha(a, b uint8) AnimValueFunc[uint8] {
-	return func() uint8 {
-		return a + uint8(rand.UintN(uint(b-a)))
-	}
-}
 
 // Das Herzstueck der ganzen Animationen ist der AnimationController. Er
 // sorgt dafuer, dass alle 30 ms (siehe Variable refreshRate) die
@@ -318,7 +190,7 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.Wa
 				continue
 			}
 			if !anim.Update(a.animPit) {
-                // a.AnimList[i] = nil
+				// a.AnimList[i] = nil
 			}
 		}
 		a.animMutex.RUnlock()
@@ -362,6 +234,133 @@ func (a *AnimationController) Now() time.Time {
 		delay += time.Since(a.stop)
 	}
 	return time.Now().Add(delay)
+}
+
+// Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
+// beeinflusst werden. Der Parameter [t] ist ein Wert im Intervall [0,1]
+// und zeigt an, wo sich die Animation gerade befindet (t=0: Animation
+// wurde eben gestartet; t=1: Animation ist zu Ende). Der Rueckgabewert
+// ist ebenfalls ein Wert im Intervall [0,1] und hat die gleiche Bedeutung
+// wie [t].
+type AnimationCurve func(t float64) float64
+
+// Linearer Verlauf zwischen 0.0 und 1.0.
+func AnimationLinear(t float64) float64 {
+	return t
+}
+
+// Beginnt langsam und nimmt immer mehr an Fahrt auf
+// (quadratische Grundlage).
+func AnimationEaseIn(t float64) float64 {
+	return t * t
+}
+
+// Beginnt schnell und bremst zum Ende immer mehr ab
+// (quadratische Grundlage).
+func AnimationEaseOut(t float64) float64 {
+	return t * (2 - t)
+}
+
+// Anfang und Ende der Animation werden abgebremst
+// (quadratische Grundlage, stueckweise Funktion).
+func AnimationEaseInOut(t float64) float64 {
+	if t <= 0.5 {
+		return 2 * t * t
+	}
+	return (4-2*t)*t - 1
+}
+
+// Beginnt langsam und nimmt immer mehr an Fahrt auf.
+// (kubische Grundlage).
+func AnimationLazeIn(t float64) float64 {
+	return t * t * t
+}
+
+// Beginnt langsam und nimmt immer mehr an Fahrt auf.
+// (kubische Grundlage).
+func AnimationLazeOut(t float64) float64 {
+	return t * (t*(t-3) + 3)
+}
+
+// Anfang und Ende der Animation werden abgebremst.
+// (kubische Grundlage, stueckweise Funktion).
+func AnimationLazeInOut(t float64) float64 {
+	if t <= 0.5 {
+		return 4 * t * t * t
+	}
+	return 4*(t-1)*(t-1)*(t-1) + 1
+}
+
+// Dies ist ein etwas unbeholfener Versuch, die Zielwerte bestimmter
+// Animationen dynamisch berechnen zu lassen. Alle XXXFuncType sind
+// Funktionstypen fuer einen bestimmten Datentyp, der in den Animationen
+// verwendet wird und dessen dynamische Berechnung Sinn macht.
+type PaletteFuncType func() ColorSource
+
+// SeqPalette liefert eine Funktion, die bei jedem Aufruf die naechste Palette
+// als Resultat zurueckgibt.
+func SeqPalette() PaletteFuncType {
+	var palId int = 0
+	return func() ColorSource {
+		name := PaletteNames[palId]
+		palId = (palId + 1) % len(PaletteNames)
+		return PaletteMap[name]
+	}
+}
+
+// RandPalette liefert eine Funktion, die bei jedem Aufruf eine zufaellig
+// gewaehlte Palette retourniert.
+func RandPalette() PaletteFuncType {
+	return func() ColorSource {
+		name := PaletteNames[rand.IntN(len(PaletteNames))]
+		return PaletteMap[name]
+	}
+}
+
+// Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
+// Rechtecks r.
+func RandPoint(r geom.Rectangle) AnimValueFunc[geom.Point] {
+	return func() geom.Point {
+		fx := rand.Float64()
+		fy := rand.Float64()
+		return r.RelPos(fx, fy)
+	}
+}
+
+// Wie RandPoint, sorgt jedoch dafuer dass die Koordinaten auf ein Vielfaches
+// von t abgeschnitten werden.
+func RandPointTrunc(r geom.Rectangle, t float64) AnimValueFunc[geom.Point] {
+	return func() geom.Point {
+		fx := rand.Float64()
+		fy := rand.Float64()
+		p := r.RelPos(fx, fy)
+		p.X = t * math.Round(p.X/t)
+		p.Y = t * math.Round(p.Y/t)
+		return p
+	}
+}
+
+// Macht eine Interpolation zwischen den Groessen s1 und s2. Der Interpolations-
+// punkt wird zufaellig gewaehlt.
+func RandSize(s1, s2 geom.Point) AnimValueFunc[geom.Point] {
+	return func() geom.Point {
+		t := rand.Float64()
+		return s1.Interpolate(s2, t)
+	}
+}
+
+// Liefert eine zufaellig gewaehlte Fliesskommazahl im Interval [a,b).
+func RandFloat(a, b float64) AnimValueFunc[float64] {
+	return func() float64 {
+		return a + (b-a)*rand.Float64()
+	}
+}
+
+// Liefert eine zufaellig gewaehlte natuerliche Zahl im Interval [a,b).
+func RandAlpha(a, b uint8) AnimValueFunc[uint8] {
+	return func() uint8 {
+		return a + uint8(rand.UintN(uint(b-a)))
+	}
 }
 
 // Die folgenden Interfaces geben einen guten Ueberblick ueber die Arten
@@ -457,8 +456,8 @@ func init() {
 
 // Mit einem Task koennen beliebige Funktionsaufrufe in die
 // Animationsketten aufgenommen werden. Sie koennen beliebig oft gestartet
-// werden, haben als Dauer stets 0 ms und werden immer als 'gestoppt'
-// ausgewiesen. Es empfiehlt sich, nur kurze Aktionen damit zu realisieren.
+// werden. Es empfiehlt sich, nur kurze Aktionen damit zu realisieren
+// (bspw. Setzen von Variablen)
 type SimpleTask struct {
 	fn func()
 }
@@ -521,6 +520,7 @@ func (a *SuspContAnimation) IsRunning() bool {
 // Erleichert das Erstellen von neuen Animationen gewaltig.
 type NormAnimationEmbed struct {
 	wrapper NormAnimation
+	DurationEmbed
 	// Falls true, wird die Animation einmal vorwaerts und einmal rueckwerts
 	// abgespielt.
 	AutoReverse bool
@@ -529,8 +529,7 @@ type NormAnimationEmbed struct {
 	// gegen Schluss, etc).
 	Curve AnimationCurve
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
-	RepeatCount int
-	DurationEmbed
+	RepeatCount      int
 	reverse          bool
 	start, stop, end time.Time
 	total            float64
@@ -655,8 +654,17 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 
 // Folgende Datentypen lassen sich 'animieren', d.h. ueber einen bestimmten
 // Zeitraum von einem Wert A zu einem zweiten Wert B interpolieren.
+type AnimNumbers interface {
+	~float64 | ~uint8 | ~int
+}
+type AnimPoints interface {
+	geom.Point | image.Point | fixed.Point26_6
+}
+type AnimColors interface {
+    color.LedColor
+}
 type AnimValue interface {
-	~float64 | ~uint8 | ~int | geom.Point | image.Point | fixed.Point26_6 | color.LedColor
+	AnimNumbers | AnimPoints | AnimColors
 }
 
 type AnimValueFunc[T AnimValue] func() T
@@ -700,7 +708,7 @@ const (
 )
 
 type Fadable interface {
-    AlphaPtr() *uint8
+	AlphaPtr() *uint8
 }
 
 type FadeAnimation struct {
@@ -713,7 +721,6 @@ func NewFadeAnim(obj Fadable, fade FadeType, dur time.Duration) *FadeAnimation {
 	a.NormAnimationEmbed.Extend(a)
 	return a
 }
-
 
 func (a *FadeAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
@@ -737,30 +744,31 @@ func (a *IntAnimation) Tick(t float64) {
 }
 
 type Rotateable interface {
-    AnglePtr() *float64
+	AnglePtr() *float64
 }
 
 type StrokeWidtheable interface {
-    StrokeWidthPtr() *float64
+	StrokeWidthPtr() *float64
 }
 
-// Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen.
+// Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen. Kann fuer
+// verschiedene konkrete Animationen verwendet werden.
 type FloatAnimation struct {
 	GenericAnimation[float64]
 }
 
 func NewAngleAnim(obj Rotateable, val2 float64, dur time.Duration) *FloatAnimation {
-    a := &FloatAnimation{}
-    a.InitAnim(obj.AnglePtr(), val2, dur)
-    a.NormAnimationEmbed.Extend(a)
-    return a
+	a := &FloatAnimation{}
+	a.InitAnim(obj.AnglePtr(), val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	return a
 }
 
 func NewStrokeWidthAnim(obj StrokeWidtheable, val2 float64, dur time.Duration) *FloatAnimation {
-    a := &FloatAnimation{}
-    a.InitAnim(obj.StrokeWidthPtr(), val2, dur)
-    a.NormAnimationEmbed.Extend(a)
-    return a
+	a := &FloatAnimation{}
+	a.InitAnim(obj.StrokeWidthPtr(), val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	return a
 }
 
 func (a *FloatAnimation) Tick(t float64) {
@@ -768,12 +776,12 @@ func (a *FloatAnimation) Tick(t float64) {
 }
 
 type Colorable interface {
-    ColorPtr() *color.LedColor
+	ColorPtr() *color.LedColor
 }
 
 type ColorFillable interface {
-    Colorable
-    FillColorPtr() *color.LedColor
+	Colorable
+	FillColorPtr() *color.LedColor
 }
 
 // type ColorStrokable interface {
@@ -786,25 +794,18 @@ type ColorAnimation struct {
 }
 
 func NewColorAnim(obj Colorable, val2 color.LedColor, dur time.Duration) *ColorAnimation {
-    a := &ColorAnimation{}
-    a.InitAnim(obj.ColorPtr(), val2, dur)
-    a.NormAnimationEmbed.Extend(a)
-    return a
+	a := &ColorAnimation{}
+	a.InitAnim(obj.ColorPtr(), val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	return a
 }
 
 func NewFillColorAnim(obj ColorFillable, val2 color.LedColor, dur time.Duration) *ColorAnimation {
-    a := &ColorAnimation{}
-    a.InitAnim(obj.FillColorPtr(), val2, dur)
-    a.NormAnimationEmbed.Extend(a)
-    return a
+	a := &ColorAnimation{}
+	a.InitAnim(obj.FillColorPtr(), val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	return a
 }
-
-// func NewStrokeColorAnim(obj ColorStrokable, val2 color.LedColor, dur time.Duration) *ColorAnimation {
-//     a := &ColorAnimation{}
-//     a.InitAnim(obj.StrokeColorPtr(), val2, dur)
-//     a.NormAnimationEmbed.Extend(a)
-//     return a
-// }
 
 func (a *ColorAnimation) Tick(t float64) {
 	alpha := (*a.ValPtr).A
@@ -815,10 +816,10 @@ func (a *ColorAnimation) Tick(t float64) {
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
 // Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
 type Positionable interface {
-    PosPtr() *geom.Point
+	PosPtr() *geom.Point
 }
 type Sizeable interface {
-    SizePtr() *geom.Point
+	SizePtr() *geom.Point
 }
 
 type PathAnimation struct {
@@ -876,7 +877,7 @@ func (a *PathAnimation) Tick(t float64) {
 // [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
 // Schriften verwendet.
 type FixedPositionable interface {
-    PosPtr() *fixed.Point26_6
+	PosPtr() *fixed.Point26_6
 }
 
 type FixedPosAnimation struct {
@@ -925,22 +926,18 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
 type PaletteAnimation struct {
-	NormAnimationEmbed
-	ValPtr *color.LedColor
-	pal    ColorSource
+    	GenericAnimation[color.LedColor]
+    pal ColorSource
 }
 
-func NewPaletteAnimation(valPtr *color.LedColor, pal ColorSource, dur time.Duration) *PaletteAnimation {
+func NewPaletteAnim(obj Colorable, pal ColorSource, dur time.Duration) *PaletteAnimation {
 	a := &PaletteAnimation{}
+	a.InitAnim(obj.ColorPtr(), color.Black, dur)
 	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
 	a.Curve = AnimationLinear
-	a.ValPtr = valPtr
 	a.pal = pal
 	return a
 }
-
-func (a *PaletteAnimation) Init() {}
 
 func (a *PaletteAnimation) Tick(t float64) {
 	*a.ValPtr = a.pal.Color(t)
@@ -995,7 +992,7 @@ type ShaderAnimation struct {
 }
 
 func NewShaderAnim(obj Colorable, pal ColorSource, x, y float64,
-        fnc ShaderFuncType) *ShaderAnimation {
+	fnc ShaderFuncType) *ShaderAnimation {
 	a := &ShaderAnimation{}
 	a.ValPtr = obj.ColorPtr()
 	a.Pal = pal

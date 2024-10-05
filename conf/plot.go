@@ -16,6 +16,8 @@ import (
 // For the graphical output of the wiring diagram, many constants are used to
 // configure the visual appearance.
 var (
+    // scaleFactor can be used to scale the whole plot. Use it, when tiny
+    // detail are not visible anymore.
 	scaleFactor = 1.0
 
 	MarginLeft   = 30.0 * scaleFactor
@@ -36,14 +38,14 @@ var (
 	ModuleBorderColor = color.Black
 	ModuleFillColor   = color.AntiqueWhite
 	ModuleTextFont    = fonts.GoBold
-	ModuleTextSize    = 280.0 * scaleFactor
+	ModuleTextSize    = 220.0 * scaleFactor
 	ModuleTextColor   = color.DarkSlateGray
 
 	LedFieldSize      = ModuleSize / float64(ModuleDim.X)
 	LedSize           = LedFieldSize - 2.0
 	LedBorderWidth    = 1.0 * scaleFactor
 	LedBorderColor    = color.Black
-	LedFillColor      = color.White.Alpha(0.8)
+	LedFillColor      = color.White.Alpha(0.7)
 	LedStartFillColor = color.DarkGreen.Alpha(0.8)
 	LedEndFillColor   = color.FireBrick.Alpha(0.8)
 	LedTextFont       = fonts.GoRegular
@@ -52,7 +54,7 @@ var (
 	LedTextColorInv   = color.White
 
 	// Trace is...
-	TraceWidth     = 20.0 * scaleFactor
+	TraceWidth     = 15.0 * scaleFactor
 	TraceColor     = color.DarkSlateGray
 	TraceBezierPos = 0.8
 
@@ -105,6 +107,22 @@ func (conf ModuleConfig) Plot(fileName string) {
 // image into the graphical context, provided by the parameter gc.
 func (conf ModuleConfig) Draw(gc *gg.Context) {
 
+    conf.DrawAxes(gc)
+
+	// And then draw the individual modules
+	p0 := geom.Point{MarginLeft, MarginTop}.AddXY(ModuleSize/2.0, ModuleSize/2.0)
+	for i, modPos := range conf {
+		pt := p0.Add(geom.Point{float64(modPos.Col), float64(modPos.Row)}.Mul(ModuleSize))
+
+		gc.Push()
+		gc.Translate(pt.X, pt.Y)
+		gc.Rotate(-gg.Radians(float64(modPos.Mod.Rot)))
+		modPos.Mod.Draw(gc, i)
+		gc.Pop()
+	}
+}
+
+func (conf ModuleConfig) DrawAxes(gc *gg.Context) {
 	// Label the columns and rows of the LEDs over the whole panel.
 	p0 := geom.Point{MarginLeft, MarginTop}
 	gc.SetStrokeWidth(AxesTickWidth)
@@ -139,18 +157,6 @@ func (conf ModuleConfig) Draw(gc *gg.Context) {
 		p3 := p1.Interpolate(p2, 0.5).AddXY(0.0, -LedFieldSize/2.0)
 		gc.DrawStringAnchored(fmt.Sprintf("%d", row), p3.X, p3.Y, 0.5, 0.5)
 	}
-
-	// And then draw the individual modules
-	p0 = geom.Point{MarginLeft, MarginTop}.AddXY(ModuleSize/2.0, ModuleSize/2.0)
-	for i, modPos := range conf {
-		pt := p0.Add(geom.Point{float64(modPos.Col), float64(modPos.Row)}.Mul(ModuleSize))
-
-		gc.Push()
-		gc.Translate(pt.X, pt.Y)
-		gc.Rotate(-gg.Radians(float64(modPos.Mod.Rot)))
-		modPos.Mod.Draw(gc, i)
-		gc.Pop()
-	}
 }
 
 // This method draws a single module. The calling method/function must ensure,
@@ -168,14 +174,12 @@ func (mod Module) Draw(gc *gg.Context, idxMod int) {
 	gc.Fill()
 
 	// Draw the module type name in huge letters in the middle of the module.
-	// In order to have the text always readable in point of the viewer, we
-	// temporarly undo the rotation for this module.
-	gc.Push()
-	gc.Rotate(gg.Radians(float64(mod.Rot)))
+	//gc.Push()
+	//gc.Rotate(gg.Radians(float64(mod.Rot)))
 	gc.SetFontFace(moduleFontFace)
 	gc.SetTextColor(ModuleTextColor)
 	gc.DrawStringAnchored(fmt.Sprintf("%v", mod.Type), 0.0, 0.0, 0.5, 0.5)
-	gc.Pop()
+	//gc.Pop()
 
 	mod.DrawTrace(gc)
 
@@ -196,11 +200,6 @@ func (mod Module) Draw(gc *gg.Context, idxMod int) {
 		dy = geom.Point{0.0, LedFieldSize}
 		turn = gg.Radians(90.0)
 	}
-	// mp0 := pTL.AddXY(LedFieldSize/2.0, LedFieldSize/2.0)
-	// dx := geom.Point{LedFieldSize, 0.0}
-	// dy := geom.Point{0.0, LedFieldSize}
-	// dir := gg.Radians(180.0)
-	// turn := gg.Radians(-90.0)
 
 	// mp is the midpoint of the next LED to be drawn.
 	mp := mp0
@@ -270,6 +269,8 @@ func (mod Module) Draw(gc *gg.Context, idxMod int) {
 
 		mp = mp.Add(dp)
 	}
+
+    mod.DrawBorder(gc)
 }
 
 func (mod Module) DrawTrace(gc *gg.Context) {
@@ -318,8 +319,10 @@ func (mod Module) DrawTrace(gc *gg.Context) {
 	}
 	gc.LineTo(mp0.Add(dx.Mul(9)).AsCoord())
 	gc.Stroke()
+}
 
-	// Draw the border of the module.
+func (mod Module) DrawBorder(gc *gg.Context) {
+    	// Draw the border of the module.
 	gc.DrawRectangle(pTL.X, pTL.Y, ModuleSize, ModuleSize)
 	gc.SetStrokeWidth(ModuleBorderWidth)
 	gc.SetStrokeColor(ModuleBorderColor)

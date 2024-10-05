@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/stefan-muehlebach/ledgrid/conf"
 	"flag"
 	"fmt"
 	"image"
@@ -10,6 +9,8 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/stefan-muehlebach/ledgrid/conf"
 
 	gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -58,6 +59,7 @@ func main() {
 	var err error
 	var ledGrid *ledgrid.LedGrid
 	var ledColor color.LedColor
+    var palIdx int
 	var curColorChanged bool
 	var redrawGrid bool
 	var cursorMoved bool
@@ -87,10 +89,10 @@ func main() {
 			{Col: 1, Row: 0, Mod: conf.ModLR000, Idx: 100},
 			{Col: 2, Row: 0, Mod: conf.ModLR000, Idx: 200},
 		}
-        width = 30
-        height = 10
+		width = 30
+		height = 10
 	}
-    fmt.Printf("size of modConf: %v\n", modConf.Size())
+	fmt.Printf("size of modConf: %v\n", modConf.Size())
 
 	// gridSize = image.Point{width, height}
 	gridWidth = 7*width + 10
@@ -441,6 +443,19 @@ main:
 			draw.Draw(ledGrid, ledGrid.Bounds(), img, image.Point{}, draw.Over)
 			redrawGrid = true
 
+		case Ctrl('p'):
+            palName := ledgrid.PaletteNames[palIdx]
+            palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
+			pal := ledgrid.PaletteMap[palName]
+			for row := 0; row < ledGrid.Rect.Dy(); row++ {
+				for col := 0; col < ledGrid.Rect.Dx(); col++ {
+					t := float64(col) / float64(ledGrid.Rect.Dx()-1)
+					c := pal.Color(t)
+					ledGrid.SetLedColor(col, row, c)
+				}
+			}
+			redrawGrid = true
+
 		case gc.KEY_BACKSPACE:
 			for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
 				for col := selRect.Min.X; col < selRect.Max.X; col++ {
@@ -563,7 +578,7 @@ main:
 			curColorChanged = true
 
 		default:
-			fmt.Fprintf(os.Stderr, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
+			// fmt.Fprintf(os.Stderr, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
 		}
 
 		if cursorMoved {

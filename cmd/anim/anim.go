@@ -182,7 +182,7 @@ func main() {
 	}
 
 	if customConfName != "" {
-		modConf.Load(customConfName + ".json")
+		modConf = conf.Load("data/" + customConfName + ".json")
 		ledGrid = ledgrid.NewLedGrid(host, port, modConf)
 	} else {
 		ledGrid = ledgrid.NewLedGridBySize(host, port, image.Pt(width, height))

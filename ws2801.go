@@ -16,18 +16,18 @@ import (
 // vergleichen, wird die Verbindung zu den LEDs via SPI mit periph.io und
 // gobot.io realisiert.
 
-type SPIBus struct {
-	// size      image.Point
-	size      int
+type WS2801 struct {
+    DisplayEmbed
 	spiPort   spi.PortCloser
 	spiConn   spi.Conn
 	maxTxSize int
 }
 
-func NewSPIBus(spiDev string, baud int, size int) *SPIBus {
+func NewWS2801(spiDev string, baud int, size int) *WS2801 {
 	var err error
-	p := &SPIBus{size: size}
+	p := &WS2801{}
 
+    p.DisplayEmbed.Init(p, size)
 	_, err = host.Init()
 	if err != nil {
 		log.Fatal(err)
@@ -50,19 +50,15 @@ func NewSPIBus(spiDev string, baud int, size int) *SPIBus {
 	return p
 }
 
-func (p *SPIBus) DefaultGamma() (r, g, b float64) {
+func (p *WS2801) DefaultGamma() (r, g, b float64) {
 	return 2.5, 2.5, 2.5
 }
 
-func (p *SPIBus) Size() int {
-	return p.size
-}
-
-func (p *SPIBus) Close() {
+func (p *WS2801) Close() {
 	p.spiPort.Close()
 }
 
-func (p *SPIBus) Send(buffer []byte) {
+func (p *WS2801) Send(buffer []byte) {
 	var err error
 	var bufferSize int
 

@@ -4,6 +4,8 @@ go 1.23.0
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 
+replace github.com/stefan-muehlebach/gg => ../../../gg
+
 require (
 	fyne.io/fyne/v2 v2.5.1
 	github.com/stefan-muehlebach/ledgrid v0.0.0-00010101000000-000000000000
@@ -32,11 +34,9 @@ require (
 	github.com/rymdport/portal v0.2.6 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/stefan-muehlebach/gg v1.3.4 // indirect
+	github.com/stefan-muehlebach/gg v0.0.0-00010101000000-000000000000 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	github.com/vladimirvivien/go4vl v0.0.5 // indirect
 	github.com/yuin/goldmark v1.7.1 // indirect
-	gocv.io/x/gocv v0.37.0 // indirect
 	golang.org/x/image v0.19.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.25.0 // indirect

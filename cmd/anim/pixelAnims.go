@@ -179,7 +179,6 @@ var (
 		func(c *ledgrid.Canvas) {
 			var xMin, yMax float64
 			var txt *ledgrid.FixedText
-			var palId int
 			var palName string = "Hipster"
 			var ptStart, pt, ptEnd fixed.Point26_6
 
@@ -188,7 +187,11 @@ var (
 			ptEnd = pt.Sub(fixed.P(width, 0))
 
 			txt = ledgrid.NewFixedText(pt, color.Yellow, palName)
-			//txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+
+			pal := ledgrid.PaletteMap[palName]
+			fader := ledgrid.NewPaletteFader(pal)
+			aPal := ledgrid.NewPaletteFadeAnimation(fader, pal, 2*time.Second)
+			aPal.ValFunc = ledgrid.SeqPalette()
 
 			txtLeave := ledgrid.NewFixedPosAnim(txt, ptEnd, time.Second)
 			txtLeave.Curve = ledgrid.AnimationEaseIn
@@ -197,26 +200,13 @@ var (
 			txtEnter.Curve = ledgrid.AnimationEaseOut
 			txtEnter.Cont = true
 			txtNewText := ledgrid.NewTask(func() {
-				txt.SetText(palName)
+				txt.SetText(fader.Name())
 				txt.Pos = ptStart
 			})
-
 			txtChange := ledgrid.NewSequence(txtLeave, txtNewText, txtEnter)
 
-			pal := ledgrid.PaletteMap[palName]
-			fader := ledgrid.NewPaletteFader(pal)
-			aPal := ledgrid.NewPaletteFadeAnimation(fader, pal, 2*time.Second)
-			aPal.ValFunc = func() ledgrid.ColorSource {
-				palName = ledgrid.PaletteNames[palId]
-				palId = (palId + 1) % len(ledgrid.PaletteNames)
-				// log.Printf(">>> Switch palette, new name: '%s'", palName)
-				// txt.SetText(palName)
-				txtChange.Start()
-				return ledgrid.PaletteMap[palName]
-			}
-
 			aPalTl := ledgrid.NewTimeline(10 * time.Second)
-			aPalTl.Add(7*time.Second, aPal)
+			aPalTl.Add(7*time.Second, aPal, txtChange)
 			aPalTl.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aGrp := ledgrid.NewGroup()

@@ -3,30 +3,11 @@ package ledgrid
 import (
 	"errors"
 	"log"
-	"math"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/rpc"
 	"time"
-)
-
-// This type has been introduced in order to mark some LEDs on the chain as
-// 'ok', defect or missing (see constants PixelOK, PixelDefect, PixelMissing)
-type LedStatusType byte
-
-const (
-	// This is the default state of a LED
-	LedOK LedStatusType = iota
-	// LEDs with this status will be blacked out, this mean we send color data
-	// for this LED, but we send (0,0,0). This status can be used if a NeoPixel
-	// receives data but does not display them correctly.
-	LedDefect
-	// This status can be used, if a NeoPixel does not even transmit the data
-	// to the NeoPixels further down the chain. Such a pixel needs to be cut
-	// out of the chain and for the time till a replacement Pixel is organized
-	// and soldered in, the pixel has status missing.
-	LedMissing
 )
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
@@ -38,10 +19,10 @@ type GridServer struct {
 	tcpAddr              *net.TCPAddr
 	tcpListener          *net.TCPListener
 	buffer               []byte
-	statusList           []LedStatusType
-	gammaValue           [3]float64
+	// statusList           []LedStatusType
+	// gammaValue           [3]float64
 	maxValue             [3]uint8
-	gamma                [3][256]byte
+	// gamma                [3][256]byte
 	drawTestPattern      bool
 	sendWatch            *Stopwatch
 	RecvBytes, SentBytes int
@@ -63,13 +44,13 @@ func NewGridServer(port uint, disp Displayer) *GridServer {
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
 	// als Farbe immer Schwarz erhalten sollen).
 	p.buffer = make([]byte, bufferSize)
-	p.statusList = make([]LedStatusType, bufferSize/3)
+	// p.statusList = make([]LedStatusType, bufferSize/3)
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
 	// maximale Helligkeit erstellt.
-	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = p.Disp.DefaultGamma()
+	// p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = p.Disp.DefaultGamma()
 	p.maxValue = [3]uint8{255, 255, 255}
-	p.updateGammaTable()
+	// p.updateGammaTable()
 
 	p.sendWatch = NewStopwatch()
 
@@ -110,8 +91,9 @@ func (p *GridServer) Close() {
 // (SPI-Bus, Emulation, etc.) Die genaue Konfiguration des LED-Grids
 // (Anordnung der Lichterketten) ist dem GridServer nicht bekannt.
 func (p *GridServer) Handle() {
-	var bufferSize, numLEDs int
-	var src, dst []byte
+	var bufferSize int
+    // var numLEDs int
+	// var src, dst []byte
 	var err error
 
 	for {
@@ -124,25 +106,26 @@ func (p *GridServer) Handle() {
 		}
 		p.RecvBytes += bufferSize
 		p.sendWatch.Start()
-		numLEDs = bufferSize / 3
-		for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
-			if p.statusList[srcIdx] == LedMissing {
-				continue
-			}
-			dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
-			if p.statusList[srcIdx] == LedDefect {
-				dst[0] = 0x00
-				dst[1] = 0x00
-				dst[2] = 0x00
-			} else {
-				src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
-				dst[0] = p.gamma[0][src[0]]
-				dst[1] = p.gamma[1][src[1]]
-				dst[2] = p.gamma[2][src[2]]
-			}
-			dstIdx++
-		}
-		p.Disp.Send(p.buffer[:bufferSize])
+		p.Disp.Display(p.buffer[:bufferSize])
+		// numLEDs = bufferSize / 3
+		// for srcIdx, dstIdx := 0, 0; srcIdx < numLEDs; srcIdx++ {
+		// 	if p.statusList[srcIdx] == LedMissing {
+		// 		continue
+		// 	}
+		// 	dst = p.buffer[3*dstIdx : 3*dstIdx+3 : 3*dstIdx+3]
+		// 	if p.statusList[srcIdx] == LedDefect {
+		// 		dst[0] = 0x00
+		// 		dst[1] = 0x00
+		// 		dst[2] = 0x00
+		// 	} else {
+		// 		src = p.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
+		// 		dst[0] = p.gamma[0][src[0]]
+		// 		dst[1] = p.gamma[1][src[1]]
+		// 		dst[2] = p.gamma[2][src[2]]
+		// 	}
+		// 	dstIdx++
+		// }
+		// p.Disp.Send(p.buffer[:bufferSize])
 		p.SentBytes += bufferSize
 		p.sendWatch.Stop()
 	}
@@ -163,13 +146,15 @@ func (p *GridServer) Watch() *Stopwatch {
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
 func (p *GridServer) Gamma() (r, g, b float64) {
-	return p.gammaValue[0], p.gammaValue[1], p.gammaValue[2]
+	return p.Disp.Gamma()
+	// return p.gammaValue[0], p.gammaValue[1], p.gammaValue[2]
 }
 
 // Setzt die Gamma-Werte fuer die Farben und aktualisiert die Mapping-Tabelle.
 func (p *GridServer) SetGamma(r, g, b float64) {
-	p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = r, g, b
-	p.updateGammaTable()
+	p.Disp.SetGamma(r, g, b)
+	// p.gammaValue[0], p.gammaValue[1], p.gammaValue[2] = r, g, b
+	// p.updateGammaTable()
 }
 
 // Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
@@ -179,21 +164,22 @@ func (p *GridServer) MaxBright() (r, g, b uint8) {
 
 func (p *GridServer) SetMaxBright(r, g, b uint8) {
 	p.maxValue[0], p.maxValue[1], p.maxValue[2] = r, g, b
-	p.updateGammaTable()
+	// p.updateGammaTable()
 }
 
 func (p *GridServer) SetPixelStatus(idx int, stat LedStatusType) {
-	p.statusList[idx] = stat
+	p.Disp.SetPixelStatus(idx, stat)
+	// p.statusList[idx] = stat
 }
 
-func (p *GridServer) updateGammaTable() {
-	for color, val := range p.gammaValue {
-		max := float64(p.maxValue[color])
-		for i := range 256 {
-			p.gamma[color][i] = byte(max * math.Pow(float64(i)/255.0, val))
-		}
-	}
-}
+// func (p *GridServer) updateGammaTable() {
+// 	for color, val := range p.gammaValue {
+// 		max := float64(p.maxValue[color])
+// 		for i := range 256 {
+// 			p.gamma[color][i] = byte(max * math.Pow(float64(i)/255.0, val))
+// 		}
+// 	}
+// }
 
 const (
 	TestRed = iota
@@ -298,10 +284,10 @@ func (p *GridServer) ToggleTestPattern() bool {
 func (p *GridServer) RPCDraw(grid *LedGrid, reply *int) error {
 	var err error
 
-	for i := 0; i < len(grid.Pix); i++ {
-		grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
-	}
-	p.Disp.Send(grid.Pix)
+	// for i := 0; i < len(grid.Pix); i++ {
+	// 	grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
+	// }
+	p.Disp.Display(grid.Pix)
 	return err
 }
 

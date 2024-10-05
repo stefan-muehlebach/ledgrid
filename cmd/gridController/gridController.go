@@ -77,7 +77,7 @@ func main() {
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
 	flag.Parse()
 
-	spiBus = ledgrid.NewSPIBus(spiDevFile, baud, numPix)
+	spiBus = ledgrid.NewWS2801(spiDevFile, baud, numPix)
 	gridServer = ledgrid.NewGridServer(port, spiBus)
 
 	if len(missingIDs) > 0 {

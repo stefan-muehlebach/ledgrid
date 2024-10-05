@@ -104,7 +104,7 @@ func main() {
     defer StopProfiling()
 
 	if customConfName != "" {
-		modConf.Load(customConfName + ".json")
+		modConf = conf.Load("data/" + customConfName + ".json")
 		gridSize = modConf.Size()
 		width, height = gridSize.X, gridSize.Y
 	} else {

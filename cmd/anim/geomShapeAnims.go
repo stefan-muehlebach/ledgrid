@@ -119,8 +119,7 @@ var (
 			c2size := ledgrid.NewSizeAnim(c2, c2Size2, time.Second)
 			c2size.AutoReverse = true
 
-			c2color := ledgrid.NewPaletteAnimation(&c2.Color, pal, 2*time.Second)
-			c2color.Curve = ledgrid.AnimationLinear
+			c2color := ledgrid.NewPaletteAnim(c2, pal, 2*time.Second)
 
 			aGrp.Add(c1pos, c1size, c1bcolor, c2pos, c2size, c2color)
 			aGrp.RepeatCount = ledgrid.AnimationRepeatForever
