@@ -1,7 +1,6 @@
 package ledgrid
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -14,8 +13,8 @@ type Displayer interface {
 	// Returns the width and height of the display. Is mainly used by the
 	// GridServer to determine the size of the receiving buffer.
 	Size() int
-    // Blah...
-    SetPixelStatus(idx int, stat LedStatusType)
+	// Blah...
+	SetPixelStatus(idx int, stat LedStatusType)
 	// Returns the gamma values that should by default be used on this
 	// type of hardware.
 	DefaultGamma() (r, g, b float64)
@@ -23,8 +22,8 @@ type Displayer interface {
 	Gamma() (r, g, b float64)
 	// Set new values for the gamma correction.
 	SetGamma(r, g, b float64)
-    //
-    Display(buffer []byte)
+	//
+	Display(buffer []byte)
 	// Sends all the bytes in buffer to the displaying hardware.
 	// The correct order of the pixel values as well as the order of the
 	// colors is up to the sending part.
