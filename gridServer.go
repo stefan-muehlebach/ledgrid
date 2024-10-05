@@ -262,7 +262,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 				colorMode = (colorMode + 1) % NumColorModes
 			}
 			p.sendWatch.Start()
-			p.Disp.Display(p.buffer)
+			p.Disp.Send(p.buffer)
 			p.sendWatch.Stop()
 			time.Sleep(300 * time.Millisecond)
 		}
@@ -270,7 +270,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.buffer[i] = 0x00
 		}
 		p.sendWatch.Start()
-		p.Disp.Display(p.buffer)
+		p.Disp.Send(p.buffer)
 		p.sendWatch.Stop()
 	}()
 
