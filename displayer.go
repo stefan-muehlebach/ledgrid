@@ -103,7 +103,7 @@ func (d *DisplayEmbed) Display(buffer []byte) {
 			dst[1] = 0x00
 			dst[2] = 0x00
 		} else {
-			src = d.buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
+			src = buffer[3*srcIdx : 3*srcIdx+3 : 3*srcIdx+3]
 			dst[0] = d.gammaTbl[0][src[0]]
 			dst[1] = d.gammaTbl[1][src[1]]
 			dst[2] = d.gammaTbl[2][src[2]]
