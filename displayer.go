@@ -85,7 +85,7 @@ func (d *DisplayEmbed) SetGamma(r, g, b float64) {
 	d.gammaVal[0], d.gammaVal[1], d.gammaVal[2] = r, g, b
 	for colorIdx, val := range d.gammaVal {
 		for i := range 256 {
-			d.gammaTbl[colorIdx][i] = byte(math.Pow(float64(i)/255.0, val))
+			d.gammaTbl[colorIdx][i] = byte(255.0 * math.Pow(float64(i)/255.0, val))
 		}
 	}
     fmt.Printf("gammaTbl[red]: %+v\n", d.gammaTbl[0])
