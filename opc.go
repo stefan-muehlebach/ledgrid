@@ -30,7 +30,7 @@ func NewMessage(b []byte) *Message {
 	m := &Message{}
 	m.Channel = b[0]
 	m.Command = b[1]
-	m.Length = (uint16(b[3]) << 8) | uint16(b[2])
+	m.Length = (uint16(b[2]) << 8) | uint16(b[3])
 	m.Data = make([]byte, m.Length)
 	copy(m.Data, b[4:])
 	return m
