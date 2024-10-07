@@ -1,7 +1,6 @@
 package ledgrid
 
 import (
-	"log"
 	"math"
 )
 
