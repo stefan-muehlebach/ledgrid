@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"log"
 	"math"
 )
 
@@ -92,7 +93,10 @@ func (d *DisplayEmbed) SetGamma(r, g, b float64) {
 func (d *DisplayEmbed) Display(buffer []byte) {
 	var srcIdx, dstIdx int
 	var src, dst []byte
+	var bufLen int
 
+	bufLen = len(buffer)
+	log.Printf("Display %d bytes", bufLen)
 	for srcIdx, dstIdx = 0, 0; srcIdx < len(buffer)/3; srcIdx++ {
 		if d.statusList[srcIdx] == LedMissing {
 			continue

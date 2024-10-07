@@ -67,7 +67,7 @@ func main() {
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
-	var spiBus ledgrid.Displayer
+	var ws2801 ledgrid.Displayer
 	var gridServer *ledgrid.GridServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
@@ -79,8 +79,8 @@ func main() {
 	flag.Parse()
 	rpcPort = defRPCPort
 
-	spiBus = ledgrid.NewWS2801(spiDevFile, baud, numPix)
-	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, spiBus)
+	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, numPix)
+	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {
