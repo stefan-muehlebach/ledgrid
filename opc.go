@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"fmt"
 	"errors"
 	"io"
 	"log"
@@ -35,8 +36,9 @@ func NewMessage(b []byte) *Message {
 	return m
 }
 
-func HandleOPC() {
-	l, err := net.Listen("tcp", ":7890")
+func HandleOPC(port uint) {
+    hostPort := fmt.Sprintf(":%d", port)
+	l, err := net.Listen("tcp", hostPort)
 	if err != nil {
 		log.Fatalf("Failed Listen(): %v", err)
 	}

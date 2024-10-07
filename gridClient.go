@@ -32,13 +32,14 @@ type NetGridClient struct {
 	sendWatch *Stopwatch
 }
 
-func NewNetGridClient(host string, port uint) GridClient {
-	var hostPort string
+func NewNetGridClient(host string, dataPort, rpcPort uint) GridClient {
+	var hostPortData, hostPortRPC string
 	var err error
 
 	p := &NetGridClient{}
-	hostPort = fmt.Sprintf("%s:%d", host, port)
-	p.addr, err = net.ResolveUDPAddr("udp", hostPort)
+	hostPortData = fmt.Sprintf("%s:%d", host, dataPort)
+	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
+	p.addr, err = net.ResolveUDPAddr("udp", hostPortData)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +48,7 @@ func NewNetGridClient(host string, port uint) GridClient {
 		log.Fatal(err)
 	}
 
-	p.rpcClient, err = rpc.DialHTTP("tcp", hostPort)
+	p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
@@ -130,33 +131,32 @@ func (p *NetGridClient) Close() {
 	p.conn.Close()
 }
 
-
-
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type OPCGridClient struct {
 	conn      net.Conn
 	rpcClient *rpc.Client
 	sendWatch *Stopwatch
-    buffer []byte
+	buffer    []byte
 }
 
-func NewOPCGridClient(host string, port uint) GridClient {
-	var hostPort string
+func NewOPCGridClient(host string, dataPort, rpcPort uint) GridClient {
+	var hostPortData, hostPortRPC string
 	var err error
 
 	p := &OPCGridClient{}
-	hostPort = fmt.Sprintf("%s:%d", host, port)
-    p.conn, err = net.Dial("tcp", hostPort)
-    	if err != nil {
+	hostPortData = fmt.Sprintf("%s:%d", host, dataPort)
+	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
+	p.conn, err = net.Dial("tcp", hostPortData)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	p.rpcClient, err = rpc.DialHTTP("tcp", hostPort)
+	p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
 	p.sendWatch = NewStopwatch()
-    p.buffer = make([]byte, 65539)
+	p.buffer = make([]byte, 65539)
 
 	return p
 }
@@ -166,12 +166,12 @@ func (p *OPCGridClient) Send(buffer []byte) {
 	var err error
 
 	p.sendWatch.Start()
-    length := len(buffer)
-    p.buffer[0] = 0
-    p.buffer[1] = 0
-    p.buffer[2] = byte(length & 0xff)
-    p.buffer[3] = byte((length >> 8) & 0xff)
-    copy(p.buffer[4:], buffer)
+	length := len(buffer)
+	p.buffer[0] = 0
+	p.buffer[1] = 0
+	p.buffer[2] = byte(length & 0xff)
+	p.buffer[3] = byte((length >> 8) & 0xff)
+	copy(p.buffer[4:], buffer)
 	_, err = p.conn.Write(p.buffer)
 	if err != nil {
 		log.Fatal(err)
@@ -241,10 +241,6 @@ func (p *OPCGridClient) Close() {
 	p.conn.Close()
 }
 
-
-
-
-
 // Mit dieser Implementation des GridClient-Interfaces kann man ohne Zugriff
 // auf ein reales LED-Grid Software testen.
 type DummyGridClient struct {
@@ -256,7 +252,7 @@ func NewDummyGridClient(size image.Point) GridClient {
 	return p
 }
 
-func (p *DummyGridClient) Send(buffer []byte) { }
+func (p *DummyGridClient) Send(buffer []byte) {}
 
 func (p *DummyGridClient) Size() int {
 	return p.size.X * p.size.Y
@@ -275,12 +271,10 @@ func (p *DummyGridClient) MaxBright() (r, g, b uint8) {
 func (p *DummyGridClient) SetMaxBright(r, g, b uint8) {}
 
 func (p *DummyGridClient) Watch() *Stopwatch {
-    // TO DO: even a dummy implementation of the client should return a
-    // usable Stopwatch. Otherwise, the calling function may crash if we just
-    // return nil...
+	// TO DO: even a dummy implementation of the client should return a
+	// usable Stopwatch. Otherwise, the calling function may crash if we just
+	// return nil...
 	return nil
 }
 
 func (p *DummyGridClient) Close() {}
-
-

@@ -17,7 +17,8 @@ import (
 
 const (
 	defHost = "raspi-3"
-	defPort = 5333
+	defDataPort = 7890
+    defRPCPort = 5333
 )
 
 var (
@@ -151,7 +152,7 @@ var (
 
 func main() {
 	var host string
-	var port uint
+	var dataPort, rpcPort uint
 	var input string
 	var ch byte
 	var progId int
@@ -169,10 +170,11 @@ func main() {
 	flag.IntVar(&width, "width", 40, "Width of LedGrid")
 	flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.UintVar(&dataPort, "port", defDataPort, "Controller port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.Parse()
+    rpcPort = defRPCPort
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -183,9 +185,9 @@ func main() {
 
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
-		ledGrid = ledgrid.NewLedGrid(host, port, modConf)
+		ledGrid = ledgrid.NewLedGrid(host, dataPort, rpcPort, modConf)
 	} else {
-		ledGrid = ledgrid.NewLedGridBySize(host, port, image.Pt(width, height))
+		ledGrid = ledgrid.NewLedGridBySize(host, dataPort, rpcPort, image.Pt(width, height))
 	}
 	gR, gG, gB = ledGrid.Client.Gamma()
 

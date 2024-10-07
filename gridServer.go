@@ -29,7 +29,7 @@ type GridServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewGridServer(port uint, disp Displayer) *GridServer {
+func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
 	var addrPort netip.AddrPort
 	var bufferSize int
@@ -51,7 +51,7 @@ func NewGridServer(port uint, disp Displayer) *GridServer {
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(port))
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
 	if !addrPort.IsValid() {
 		log.Fatalf("Invalid address or port")
 	}
@@ -64,6 +64,7 @@ func NewGridServer(port uint, disp Displayer) *GridServer {
 	// Anschliessend wird die RPC-Verbindung initiiert.
 	rpc.Register(p)
 	rpc.HandleHTTP()
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(rpcPort))
 	p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
 	p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
 	if err != nil {

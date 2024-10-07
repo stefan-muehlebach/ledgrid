@@ -50,14 +50,14 @@ type LedGrid struct {
 // (d.h. der Client-seitige Teil fuer die Ansteuerung) ist dabei Teil von
 // LedGrid. Mit Angaben von host und port kann die Groesse des Panels (oder
 // Emulations-Fensters) selbst. ermittelt werden.
-func NewLedGridBySize(host string, port uint, size image.Point) *LedGrid {
+func NewLedGridBySize(host string, dataPort, rpcPort uint, size image.Point) *LedGrid {
     modConf := conf.DefaultModuleConfig(size)
-    return NewLedGrid(host, port, modConf)
+    return NewLedGrid(host, dataPort, rpcPort, modConf)
 }
 
-func NewLedGrid(host string, port uint, modConf conf.ModuleConfig) *LedGrid {
+func NewLedGrid(host string, dataPort, rpcPort uint, modConf conf.ModuleConfig) *LedGrid {
     g := &LedGrid{}
-    g.Client = NewOPCGridClient(host, port)
+    g.Client = NewOPCGridClient(host, dataPort, rpcPort)
     g.Rect = image.Rectangle{Max: modConf.Size()}
     g.Pix = make([]uint8, 3*len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 	g.idxMap = modConf.IndexMap()
