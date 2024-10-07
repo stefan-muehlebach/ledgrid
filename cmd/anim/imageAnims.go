@@ -43,7 +43,7 @@ var (
 			aPos.Curve = ledgrid.AnimationLinear
 			aPos.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c.Add(flame1, flame2, mario)
+			c.Add(0, flame1, flame2, mario)
 
 			aGrp := ledgrid.NewGroup(flame1, flame2, mario, aPos)
 			aGrp.Start()
@@ -79,7 +79,7 @@ var (
 				aTimeline.Add(t0, ledgrid.NewHideShowAnimation(img))
 				aTimeline.Add(t1, ledgrid.NewAngleAnim(img, 6*math.Pi, 3*time.Second))
 				aTimeline.Add(t2, ledgrid.NewHideShowAnimation(img))
-				c.Add(img)
+				c.Add(0, img)
 			}
 			aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
 			aTimeline.Start()
@@ -91,7 +91,7 @@ var (
 			img := ledgrid.NewImage(imgPos, "images/raster.png")
 			img.Size = geom.Point{20, 20}
 			img.SetAlign(ledgrid.AlignBottom)
-			c.Add(img)
+			c.Add(0, img)
 
 			aAlignRight := ledgrid.NewTask(func() {
 				img.SetAlign(ledgrid.AlignRight)

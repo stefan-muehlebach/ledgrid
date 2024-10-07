@@ -114,13 +114,12 @@ type PolygonPath struct {
 }
 
 type polygonStop struct {
-	len float64
+	dist float64
 	pos geom.Point
 }
 
 // Erstellt ein neues PolygonPath-Objekt und verwendet die Punkte in points
-// als Eckpunkte eines offenen Polygons. Punkte koennen nur beim Erstellen
-// angegeben werden.
+// als Eckpunkte eines offenen Polygons.
 func NewPolygonPath(points ...geom.Point) *PolygonPath {
 	p := &PolygonPath{}
 	p.stopList = make([]polygonStop, len(points))
@@ -133,8 +132,8 @@ func NewPolygonPath(points ...geom.Point) *PolygonPath {
 			continue
 		}
 		pt := point.Sub(origin)
-		len := p.stopList[i-1].len + pt.Distance(p.stopList[i-1].pos)
-		p.stopList[i] = polygonStop{len, pt}
+		dist := p.stopList[i-1].dist + pt.Distance(p.stopList[i-1].pos)
+		p.stopList[i] = polygonStop{dist, pt}
 
 		p.rect.Min = p.rect.Min.Min(pt)
 		p.rect.Max = p.rect.Max.Max(pt)
@@ -145,13 +144,13 @@ func NewPolygonPath(points ...geom.Point) *PolygonPath {
 // Diese Methode ist bei der Erstellung einer Pfad-Animation als Parameter
 // fnc anzugeben.
 func (p *PolygonPath) Pos(t float64) geom.Point {
-	dist := t * p.stopList[len(p.stopList)-1].len
+	dist := t * p.stopList[len(p.stopList)-1].dist
 	for i, stop := range p.stopList[1:] {
-		if dist < stop.len {
+		if dist < stop.dist {
 			p1 := p.stopList[i].pos
 			p2 := stop.pos
-			relDist := dist - p.stopList[i].len
-			f := relDist / (stop.len - p.stopList[i].len)
+			relDist := dist - p.stopList[i].dist
+			f := relDist / (stop.dist - p.stopList[i].dist)
 			return p1.Interpolate(p2, f)
 		}
 	}

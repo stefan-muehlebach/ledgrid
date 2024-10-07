@@ -28,7 +28,7 @@ type Group struct {
 func NewGroup(tasks ...Task) *Group {
 	a := &Group{}
 	a.Add(tasks...)
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -125,7 +125,7 @@ type Sequence struct {
 func NewSequence(tasks ...Task) *Sequence {
 	a := &Sequence{}
 	a.Add(tasks...)
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -246,7 +246,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a := &Timeline{}
 	a.duration = d
 	a.Slots = make([]*TimelineSlot, 0)
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
 }
 

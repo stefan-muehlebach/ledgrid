@@ -74,7 +74,7 @@ var (
 			aSeq := ledgrid.NewSequence(aGrp1, aGrp2, aGrp3, aGrp4, aGrp5, aGrp6, aGrp7, aGrp8)
 			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c.Add(c1, c2, c3, c4, c5)
+			c.Add(0, c1, c2, c3, c4, c5)
 			aSeq.Start()
 		})
 
@@ -124,7 +124,7 @@ var (
 			aGrp.Add(c1pos, c1size, c1bcolor, c2pos, c2size, c2color)
 			aGrp.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c.Add(c1, c2)
+			c.Add(0, c1, c2)
 			aGrp.Start()
 		})
 
@@ -150,7 +150,7 @@ var (
 			c1color.AutoReverse = true
 			c1color.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c.Add(c1)
+			c.Add(0, c1)
 
 			c1pos.Start()
 			c1radius.Start()
@@ -198,7 +198,7 @@ var (
 			a2Color.AutoReverse = true
 			a2Color.RepeatCount = ledgrid.AnimationRepeatForever
 
-			c.Add(r1, r2)
+			c.Add(0, r1, r2)
 			a1Pos.Start()
 			a1Size.Start()
 			a1Color.Start()
@@ -223,7 +223,7 @@ var (
 			for n := 3; n <= 6; n++ {
 				col := color.RandColor()
 				polyList[n] = ledgrid.NewRegularPolygon(n, posList[n%2], smallSize, col)
-				c.Add(polyList[n])
+				c.Add(0, polyList[n])
 				dur := 2*time.Second + rand.N(time.Second)
 				sign := []float64{+1.0, -1.0}[n%2]
 				angle := sign * 2 * math.Pi
@@ -298,6 +298,6 @@ func BounceAround(c *ledgrid.Canvas) {
 	obj2.Vel = vel2
 	obj2.Field = geom.NewRectangleIMG(c.Rect)
 
-	c.Add(obj1, obj2)
-	ledgrid.AnimCtrl.Add(obj1, obj2)
+	c.Add(0, obj1, obj2)
+	ledgrid.AnimCtrl.Add(0, obj1, obj2)
 }

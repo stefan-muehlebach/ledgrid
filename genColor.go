@@ -18,8 +18,9 @@ func main() {
     }
     defer fh.Close()
 
-    fmt.Fprintf(fh, "// Dieses File wird automatisch erstellt!\n")
-    fmt.Fprintf(fh, "// Manuelle Aenderungen werden automatisch ueberschrieben.\n\n")
+    fmt.Fprintf(fh, "// Dieses File wird automatisch durch genColor.go erstellt!\n")
+    fmt.Fprintf(fh, "// Manuelle Aenderungen werden bei der naechsten Ausfuehrung\n")
+    fmt.Fprintf(fh, "// automatisch ueberschrieben.\n\n")
     fmt.Fprintf(fh, "package color\n\n")
     // fmt.Fprintf(fh, "import (\n")
     // fmt.Fprintf(fh, "    \"github.com/stefan-muehlebach/ledgrid\"\n")

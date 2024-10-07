@@ -20,7 +20,7 @@ var (
 			rColor2 := color.GreenYellow
 
 			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
-			c.Add(r)
+			c.Add(0, r)
 
 			aPos := ledgrid.NewPositionAnim(r, rPos2, time.Second)
 			aPos.AutoReverse = true
@@ -40,35 +40,45 @@ var (
 	SequenceTest = NewLedGridProgram("Sequence test",
 		func(c *ledgrid.Canvas) {
 			rPos := geom.NewPointIMG(gridSize).Mul(0.5)
+			sizeList := [4]geom.Point{
+				geom.NewPointIMG(gridSize).SubXY(1, 1),
+				geom.NewPoint(5.0, float64(gridSize.Y-1)),
+				geom.NewPoint(5.0, 3.0),
+				geom.NewPoint(float64(gridSize.X-1), 3.0),
+			}
+			sizeAnims := [4]*ledgrid.PathAnimation{}
+			colorList := [4]color.LedColor{
+				color.SkyBlue,
+				color.OrangeRed,
+				color.Gold,
+				color.MediumOrchid,
+			}
+			colorAnims := [4]*ledgrid.ColorAnimation{}
+
 			rSize1 := geom.NewPointIMG(gridSize).SubXY(1, 1)
 			rSize4 := geom.Point{5.0, 3.0}
-			// rSize2 := rSize1
-			// rSize2.X = rSize4.X
+			rSize2 := rSize1
+			rSize2.X = rSize4.X
 			rSize3 := rSize1
 			rSize3.Y = rSize4.Y
 
-			r := ledgrid.NewRectangle(rPos, rSize1, color.SkyBlue)
-			c.Add(r)
+			r := ledgrid.NewRectangle(rPos, sizeList[0], colorList[0])
+			c.Add(0, r)
 
-			// aSize2 := ledgrid.NewSizeAnim(r, rSize2, time.Second)
-			aColor1 := ledgrid.NewColorAnim(r, color.OrangeRed, time.Second)
-			aColor1.Cont = true
-			aSize3 := ledgrid.NewSizeAnim(r, rSize3, time.Second)
-			aSize3.Cont = true
-			aColor2 := ledgrid.NewColorAnim(r, color.YellowGreen, time.Second)
-			aColor2.Cont = true
-			aSize4 := ledgrid.NewSizeAnim(r, rSize4, time.Second)
-			aSize4.Cont = true
-			aColor3 := ledgrid.NewColorAnim(r, color.Gold, time.Second)
-			aColor3.Cont = true
-			aColor4 := ledgrid.NewColorAnim(r, color.MediumOrchid, time.Second)
-			aColor4.Cont = true
-			aSize1 := ledgrid.NewSizeAnim(r, rSize1, time.Second)
-			aSize1.Cont = true
-			aColor5 := ledgrid.NewColorAnim(r, color.SkyBlue, time.Second)
-			aColor5.Cont = true
+			for i, size := range sizeList {
+				sizeAnims[i] = ledgrid.NewSizeAnim(r, size, time.Second)
+				sizeAnims[i].Cont = true
+			}
+			for i, color := range colorList {
+				colorAnims[i] = ledgrid.NewColorAnim(r, color, time.Second)
+				colorAnims[i].Cont = true
+			}
 
-			aSeq := ledgrid.NewSequence(aColor1, aSize3, aColor2, aSize4, aColor3, aColor4, aSize1, aColor5)
+			aSeq := ledgrid.NewSequence()
+			for i := range colorAnims {
+				j := (i + 1) % len(colorAnims)
+				aSeq.Add(colorAnims[j], sizeAnims[j])
+			}
 			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
 		})
@@ -88,7 +98,7 @@ var (
 			r2 := ledgrid.NewRectangle(r2Pos, r2Size, color.Gold)
 			r3 := ledgrid.NewRectangle(r3Pos, r3Size, color.SkyBlue)
 			r4 := ledgrid.NewRectangle(r4Pos, r4Size, color.Gold)
-			c.Add(r1, r3, r2, r4)
+			c.Add(0, r1, r3, r2, r4)
 
 			aAngle1 := ledgrid.NewAngleAnim(r1, math.Pi, time.Second)
 			aAngle2 := ledgrid.NewAngleAnim(r1, 0.0, time.Second)

@@ -20,11 +20,11 @@ type LedColor struct {
 }
 
 func NewLedColorRGB(r, g, b uint8) LedColor {
-	return LedColor{r, g, b, 0xff}
+	return LedColor{R: r, G: g, B: b, A: 0xff}
 }
 
 func NewLedColorRGBA(r, g, b, a uint8) LedColor {
-	return LedColor{r, g, b, a}
+	return LedColor{R: r, G: g, B: b, A: a}
 }
 
 func NewLedColorHex(hex uint32) LedColor {

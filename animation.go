@@ -38,8 +38,8 @@ const (
 // Anschluss, dass alle darstellbaren Objekte neu gezeichnet werden und sendet
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
-	AnimList   []Animation
-	animMutex  *sync.RWMutex
+	AnimList   [NumLayers][]Animation
+	animMutex  [NumLayers]*sync.RWMutex
 	Canvas     *Canvas
 	ledGrid    *LedGrid
 	ticker     *time.Ticker
@@ -58,8 +58,10 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationControll
 		return AnimCtrl
 	}
 	a := &AnimationController{}
-	a.AnimList = make([]Animation, 0)
-	a.animMutex = &sync.RWMutex{}
+    for i := range NumLayers {
+	    a.AnimList[i] = make([]Animation, 0)
+        	a.animMutex[i] = &sync.RWMutex{}
+    }
 	a.Canvas = canvas
 	a.ledGrid = ledGrid
 	a.ticker = time.NewTicker(refreshRate)
@@ -80,43 +82,49 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationControll
 // Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
 // wird synchronisiert, da die Bearbeitung der Animationen durch den
 // Background-Thread ebenfalls relativ haeufig auf den Slice zugreift.
-func (a *AnimationController) Add(anims ...Animation) {
-	a.animMutex.Lock()
-	a.AnimList = append(a.AnimList, anims...)
-	a.animMutex.Unlock()
+func (a *AnimationController) Add(layer int, anims ...Animation) {
+	a.animMutex[layer].Lock()
+	a.AnimList[layer] = append(a.AnimList[layer], anims...)
+	a.animMutex[layer].Unlock()
 }
 
 // Loescht eine einzelne Animation.
-func (a *AnimationController) Del(anim Animation) {
-	a.animMutex.Lock()
-	defer a.animMutex.Unlock()
-	for idx, obj := range a.AnimList {
+func (a *AnimationController) Del(layer int, anim Animation) {
+	a.animMutex[layer].Lock()
+	defer a.animMutex[layer].Unlock()
+	for idx, obj := range a.AnimList[layer] {
 		if obj == anim {
 			obj.Suspend()
-			a.AnimList[idx] = nil
+			a.AnimList[layer][idx] = nil
 			return
 		}
 	}
 }
 
-func (a *AnimationController) DelAt(idx int) {
-	a.animMutex.Lock()
-	a.AnimList[idx].Suspend()
-	a.AnimList[idx] = nil
-	a.animMutex.Unlock()
+func (a *AnimationController) DelAt(layer int, idx int) {
+	a.animMutex[layer].Lock()
+	a.AnimList[layer][idx].Suspend()
+	a.AnimList[layer][idx] = nil
+	a.animMutex[layer].Unlock()
 }
 
 // Loescht alle Animationen.
-func (a *AnimationController) Purge() {
-	a.animMutex.Lock()
-	for _, anim := range a.AnimList {
+func (a *AnimationController) Purge(layer int) {
+	a.animMutex[layer].Lock()
+	for _, anim := range a.AnimList[layer] {
 		if anim == nil {
 			continue
 		}
 		anim.Suspend()
 	}
-	a.AnimList = a.AnimList[:0]
-	a.animMutex.Unlock()
+	a.AnimList[layer] = a.AnimList[layer][:0]
+	a.animMutex[layer].Unlock()
+}
+
+func (a *AnimationController) PurgeAll() {
+    for layer := range NumLayers {
+        a.Purge(layer)
+    }
 }
 
 // Mit Stop koennen die Animationen und die Darstellung auf der Hardware
@@ -183,17 +191,17 @@ func (a *AnimationController) backgroundThread() {
 // Aktualisierung ihrer Animationen.
 func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.WaitGroup) {
 	for id := range startChan {
-		a.animMutex.RLock()
-		for i := id; i < len(a.AnimList); i += a.numThreads {
-			anim := a.AnimList[i]
+		a.animMutex[0].RLock()
+		for i := id; i < len(a.AnimList[0]); i += a.numThreads {
+			anim := a.AnimList[0][i]
 			if anim == nil || !anim.IsRunning() {
 				continue
 			}
 			if !anim.Update(a.animPit) {
-				// a.AnimList[i] = nil
+				// a.AnimList[0][i] = nil
 			}
 		}
-		a.animMutex.RUnlock()
+		a.animMutex[0].RUnlock()
 		wg.Done()
 	}
 }
@@ -398,21 +406,6 @@ type TimedAnimation interface {
 	SetDuration(dur time.Duration)
 }
 
-// Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
-// Interface AnimationImpl implementieren.
-type NormAnimation interface {
-	TimedAnimation
-	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
-	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
-	// zaehlen nicht als Start!
-	Init()
-	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
-	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
-	// t=0: Animation wurde eben gestartet
-	// t=1: Die Animation ist fertig
-	Tick(t float64)
-}
-
 // Haben Animationen eine Dauer, so koennen sie dieses Embeddable einbinden
 // und erhalten somit die klassischen Methoden fuer das Setzen und Abfragen
 // der Dauer.
@@ -516,11 +509,26 @@ func (a *SuspContAnimation) IsRunning() bool {
 	return false
 }
 
-// Embeddable mit in allen Animationen benoetigen Variablen und Methoden.
-// Erleichert das Erstellen von neuen Animationen gewaltig.
+// Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
+// Interface NormAnimation implementieren.
+type NormAnimation interface {
+	TimedAnimation
+	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
+	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
+	// zaehlen nicht als Start!
+	Init()
+	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
+	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
+	// t=0: Animation wurde eben gestartet
+	// t=1: Die Animation ist fertig
+	Tick(t float64)
+}
+
+// Dieses Embeddable wird von allen Animationen verwendet, welche eine
+// Animation implementieren, die folgende Kriterien aufweist:
+//   - sie hat eine begrenzte Laufzeit (ohne Beruecksichtiung von Umkehrungen
+//     und Wiederholungen!)
 type NormAnimationEmbed struct {
-	wrapper NormAnimation
-	DurationEmbed
 	// Falls true, wird die Animation einmal vorwaerts und einmal rueckwerts
 	// abgespielt.
 	AutoReverse bool
@@ -529,7 +537,12 @@ type NormAnimationEmbed struct {
 	// gegen Schluss, etc).
 	Curve AnimationCurve
 	// Bezeichnet die Anzahl Wiederholungen dieser Animation.
-	RepeatCount      int
+	RepeatCount int
+	// Ueber dieses Embeddable werden Variablen und Methdoden zum Setzen und
+	// Abfragen der Laufzeit importiert.
+	DurationEmbed
+
+	wrapper          NormAnimation
 	reverse          bool
 	start, stop, end time.Time
 	total            float64
@@ -541,13 +554,14 @@ type NormAnimationEmbed struct {
 // Embeddable einbindet.
 func (a *NormAnimationEmbed) Extend(wrapper NormAnimation) {
 	a.wrapper = wrapper
-	a.AutoReverse = false
 	a.Curve = AnimationEaseInOut
-	a.RepeatCount = 0
-	a.running = false
-	AnimCtrl.Add(a.wrapper)
+	AnimCtrl.Add(0, a.wrapper)
 }
 
+// Mit Duration wird die gesamte Laufzeit der Animation (als inkl. Umkehrungen
+// und Wiederholungen) ermittelt. Falls die Anzahl Wiederholgungen auf -1
+// (d.h. Endloswiederholgung) gesetzt ist, liefert Duration die Laufzeit eines
+// Animationszyklus.
 func (a *NormAnimationEmbed) Duration() time.Duration {
 	factor := 1
 	if a.RepeatCount > 0 {
@@ -579,7 +593,6 @@ func (a *NormAnimationEmbed) Start() {
 // Applikation. Mit [Continue] kann eine gestoppte Animation wieder
 // fortgesetzt werden.
 func (a *NormAnimationEmbed) Suspend() {
-	// fmt.Printf("Von aussen gestoppt...\n")
 	if !a.running {
 		return
 	}
@@ -606,15 +619,16 @@ func (a *NormAnimationEmbed) IsRunning() bool {
 
 // Diese Methode ist fuer die korrekte Abwicklung (Beachtung von Reverse und
 // RepeatCount, etc) einer Animation zustaendig. Wenn die Animation zu Ende
-// ist, retourniert Update false. Der Parameter [t] ist ein "Point in Time".
+// ist, retourniert Update false. Der Parameter t ist ein fortlaufender
+// "Point in Time", der fuer das gesamte Animationsframework konsistent
+// ermittelt wird. Nur wenn der AnimationController angehalten wird, stoppt
+// auch diese Zeitbasis.
 func (a *NormAnimationEmbed) Update(t time.Time) bool {
 	if t.After(a.end) {
 		if a.reverse {
 			a.wrapper.Tick(a.Curve(0.0))
 			if a.repeatsLeft == 0 {
 				a.running = false
-				// fmt.Printf("erster ausstieg...\n  %+v\n", a)
-
 				return false
 			}
 			a.reverse = false
@@ -637,15 +651,14 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
 		a.wrapper.Init()
-		return true
-	}
-
-	delta := t.Sub(a.start).Seconds()
-	val := delta / a.total
-	if a.reverse {
-		a.wrapper.Tick(a.Curve(1.0 - val))
 	} else {
-		a.wrapper.Tick(a.Curve(val))
+		delta := t.Sub(a.start).Seconds()
+		val := delta / a.total
+		if a.reverse {
+			a.wrapper.Tick(a.Curve(1.0 - val))
+		} else {
+			a.wrapper.Tick(a.Curve(val))
+		}
 	}
 	return true
 }
@@ -661,7 +674,7 @@ type AnimPoints interface {
 	geom.Point | image.Point | fixed.Point26_6
 }
 type AnimColors interface {
-    color.LedColor
+	color.LedColor
 }
 type AnimValue interface {
 	AnimNumbers | AnimPoints | AnimColors
@@ -838,11 +851,14 @@ func NewPathAnim(obj Positionable, path *GeomPath, size geom.Point, dur time.Dur
 	return a
 }
 
-func NewPolyPathAnimation(valPtr *geom.Point, path *PolygonPath, dur time.Duration) *PathAnimation {
+func NewPolyPathAnim(obj Positionable, path *PolygonPath, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
-	a.InitAnim(valPtr, (*valPtr).AddXY(1, 1), dur)
+	a.InitAnim(obj.PosPtr(), geom.Point{}, dur)
 	a.NormAnimationEmbed.Extend(a)
-	a.Path = path
+    a.Path = path
+	a.Val2 = func() geom.Point {
+        return a.Val1().AddXY(1, 1)
+    }
 	return a
 }
 
@@ -926,8 +942,8 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
 type PaletteAnimation struct {
-    	GenericAnimation[color.LedColor]
-    pal ColorSource
+	GenericAnimation[color.LedColor]
+	pal ColorSource
 }
 
 func NewPaletteAnim(obj Colorable, pal ColorSource, dur time.Duration) *PaletteAnimation {
@@ -998,7 +1014,7 @@ func NewShaderAnim(obj Colorable, pal ColorSource, x, y float64,
 	a.Pal = pal
 	a.X, a.Y = x, y
 	a.Fnc = fnc
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
 }
 

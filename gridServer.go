@@ -281,15 +281,15 @@ func (p *GridServer) ToggleTestPattern() bool {
 // Die Methode RPCDraw ist nur der Vollstaendigkeit halber vorhanden. In
 // der Praxis hat sich das Senden der Bilddaten via RPC als zu langsam
 // erwiesen und wurde auf UDP umgestellt.
-func (p *GridServer) RPCDraw(grid *LedGrid, reply *int) error {
-	var err error
+// func (p *GridServer) RPCDraw(grid *LedGrid, reply *int) error {
+// 	var err error
 
-	// for i := 0; i < len(grid.Pix); i++ {
-	// 	grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
-	// }
-	p.Disp.Display(grid.Pix)
-	return err
-}
+// 	// for i := 0; i < len(grid.Pix); i++ {
+// 	// 	grid.Pix[i] = p.gamma[i%3][grid.Pix[i]]
+// 	// }
+// 	p.Disp.Display(grid.Pix)
+// 	return err
+// }
 
 type SizeArg int
 

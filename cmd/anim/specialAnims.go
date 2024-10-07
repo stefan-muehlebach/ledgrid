@@ -1,5 +1,8 @@
 package main
 
+// In dieser Datei sind besondere Animationen abgelegt wie zum Beispiel das
+// Abschiedsgeschenk an Gery (RIP).
+
 import (
 	"image"
 	"math/rand/v2"
@@ -30,7 +33,7 @@ var (
 					t := rand.Float64()
 					col := color.Black
 					pix := ledgrid.NewDot(pos, col)
-					c.Add(pix)
+					c.Add(0, pix)
 
 					dur := time.Second + time.Duration(10*x+20*y)*time.Millisecond
 					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
@@ -80,7 +83,7 @@ var (
 			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 5*time.Second)
 			aTxt3.AutoReverse = true
-			c.Add(txt1, txt2, txt3)
+			c.Add(0, txt1, txt2, txt3)
 
 			aTimel := ledgrid.NewTimeline(40 * time.Second)
 			aTimel.Add(0, aGrpFadeIn)
@@ -98,12 +101,5 @@ var (
 			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
 
 			aTimel.Start()
-		})
-
-	FirePlace = NewLedGridProgram("Fireplace",
-		func(c *ledgrid.Canvas) {
-			fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
-			c.Add(fire)
-			fire.Start()
 		})
 )

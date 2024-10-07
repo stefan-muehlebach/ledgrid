@@ -20,7 +20,7 @@ var (
 			t3 := ledgrid.NewText(geom.Point{float64(width) + 60.0, float64(height) / 2.0}, "wohnen im Lochbach", color.OrangeRed)
 			t3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 
-			c.Add(t1, t2, t3)
+			c.Add(0, t1, t2, t3)
 
 			aAngle1 := ledgrid.NewAngleAnim(t1, -2*math.Pi, 7*time.Second)
 			aAngle1.Curve = ledgrid.AnimationLinear
@@ -50,7 +50,7 @@ var (
 			color2 := color.BlueViolet
 
 			txt1 := ledgrid.NewFixedText(pos1, color1, "STEFAN")
-			c.Add(txt1)
+			c.Add(0, txt1)
 
 			aPos := ledgrid.NewFixedPosAnim(txt1, pos2, 10*time.Second)
 			aPos.AutoReverse = true

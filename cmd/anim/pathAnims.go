@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -25,7 +26,7 @@ var (
 			c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
 			c3 := ledgrid.NewEllipse(pos3, cSize, color.SkyBlue)
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
-			c.Add(c1, c2, c3, c4)
+			c.Add(0, c1, c2, c3, c4)
 
 			c1Path := ledgrid.NewPathAnim(c1, pathA, geom.Point{float64(width) / 3.0, float64(height - 4)}, duration)
 			c1Path.AutoReverse = true
@@ -50,48 +51,56 @@ var (
 			cPos := geom.Point{1, 1}
 
 			polyPath1 := ledgrid.NewPolygonPath(
-				geom.Point{1.5, 1.5},
-				geom.Point{float64(width) - 1.5, 1.5},
-				geom.Point{float64(width) - 1.5, float64(height) - 1.5},
-				geom.Point{1.5, float64(height) - 1.5},
-
-				geom.Point{1.5, 2.5},
-				geom.Point{float64(width) - 2.5, 2.5},
-				geom.Point{float64(width) - 2.5, float64(height) - 2.5},
-				geom.Point{2.5, float64(height) - 2.5},
-
-				geom.Point{2.5, 3.5},
-				geom.Point{float64(width) - 3.5, 3.5},
-				geom.Point{float64(width) - 3.5, float64(height) - 3.5},
-				geom.Point{3.5, float64(height) - 3.5},
-
-				geom.Point{3.5, 4.5},
-				geom.Point{float64(width) - 4.5, 4.5},
-				geom.Point{float64(width) - 4.5, float64(height) - 4.5},
-				geom.Point{4.5, float64(height) - 4.5},
+				geom.Point{1, 1},
+				geom.Point{float64(width) - 2, 1},
+				geom.Point{float64(width) - 2, float64(height) - 2},
+				geom.Point{1, float64(height) - 2},
+				geom.Point{1, 2},
+				geom.Point{float64(width) - 3, 2},
+				geom.Point{float64(width) - 3, float64(height) - 3},
+				geom.Point{2, float64(height) - 3},
+				geom.Point{2, 3},
+				geom.Point{float64(width) - 4, 3},
+				geom.Point{float64(width) - 4, float64(height) - 4},
+				geom.Point{3, float64(height) - 4},
+				geom.Point{3, 4},
+				geom.Point{float64(width) - 5, 4},
+				geom.Point{float64(width) - 5, float64(height) - 5},
+				geom.Point{4, float64(height) - 5},
 			)
 
 			polyPath2 := ledgrid.NewPolygonPath(
-				geom.Point{1.5, 1.5},
-				geom.Point{4.5, 9.5},
-				geom.Point{7.5, 2.5},
-				geom.Point{10.5, 8.5},
-				geom.Point{13.5, 3.5},
-				geom.Point{16.5, 7.5},
-				geom.Point{19.5, 4.5},
-				geom.Point{22.5, 6.5},
+				geom.Point{1, 1},
+				geom.Point{4, 9},
+				geom.Point{7, 2},
+				geom.Point{10, 8},
+				geom.Point{13, 3},
+				geom.Point{16, 7},
+				geom.Point{19, 4},
+				geom.Point{22, 6},
 			)
 
-			c1 := ledgrid.NewDot(cPos, color.GreenYellow)
-			c.Add(c1)
+            ptList := []geom.Point{
+                geom.Point{1, 1},
+            }
+			for range 20 {
+				ptList = append(ptList, geom.Point{float64(rand.Intn(width-1)), float64(rand.Intn(height-1))})
+			}
+			polyPath3 := ledgrid.NewPolygonPath(ptList...)
 
-			aPath1 := ledgrid.NewPolyPathAnimation(&c1.Pos, polyPath1, 7*time.Second)
+			c1 := ledgrid.NewDot(cPos, color.GreenYellow)
+			c.Add(0, c1)
+
+			aPath1 := ledgrid.NewPolyPathAnim(c1, polyPath1, 14*time.Second)
 			aPath1.AutoReverse = true
 
-			aPath2 := ledgrid.NewPolyPathAnimation(&c1.Pos, polyPath2, 7*time.Second)
+			aPath2 := ledgrid.NewPolyPathAnim(c1, polyPath2, 5*time.Second)
 			aPath2.AutoReverse = true
 
-			seq := ledgrid.NewSequence(aPath1, aPath2)
+			aPath3 := ledgrid.NewPolyPathAnim(c1, polyPath3, 5*time.Second)
+			aPath3.AutoReverse = true
+
+			seq := ledgrid.NewSequence(aPath1, aPath3, aPath2)
 			seq.RepeatCount = ledgrid.AnimationRepeatForever
 
 			seq.Start()
@@ -107,7 +116,7 @@ var (
 
 			c1 := ledgrid.NewEllipse(pos1, size1, color.SkyBlue)
 			c2 := ledgrid.NewEllipse(pos2, size2, color.GreenYellow)
-			c.Add(c1, c2)
+			c.Add(0, c1, c2)
 
 			aPos1 := ledgrid.NewPositionAnim(c1, geom.Point{}, 1300*time.Millisecond)
 			aPos1.Cont = true

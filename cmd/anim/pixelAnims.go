@@ -38,7 +38,7 @@ var (
 						// aKillGrp.Add(ledgrid.NewTask(func() {
 						// 	pix.Kill()
 						// }))
-						c.Add(pix)
+						c.Add(0, pix)
 						aPos := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
 						grp.Add(aPos)
@@ -57,13 +57,13 @@ var (
 						// aKillGrp.Add(ledgrid.NewTask(func() {
 						// 	pix.Kill()
 						// }))
-						c.Add(pix)
+						c.Add(0, pix)
 						aPos := ledgrid.NewIntegerPosAnimation(&pix.Pos, dest.Int(), time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
 						grp.Add(aPos)
 					}
 				}
-				aSeq.Put(grp)
+				aSeq.Add(grp)
 			}
 			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
@@ -84,13 +84,14 @@ var (
 					t := rand.Float64()
 					col := (color.DimGray.Dark(0.3)).Interpolate((color.DarkGrey.Dark(0.3)), t)
 
-					pt := image.Point{x, y}
+					// pt := image.Point{x, y}
 					// pix := ledgrid.NewPixel(pt, col)
 
-					pos := geom.NewPointIMG(pt)
+					pos := geom.NewPoint(float64(x), float64(y))
+                    // pos := geom.NewPointIMG(pt)
 					pix := ledgrid.NewDot(pos, col)
 
-					c.Add(pix)
+					c.Add(0, pix)
 
 					dur := time.Second + time.Duration(x)*time.Millisecond
 					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
@@ -128,7 +129,7 @@ var (
 			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
 			aTxt3.AutoReverse = true
-			c.Add(txt1, txt2, txt3)
+			c.Add(0, txt1, txt2, txt3)
 
 			aTimel := ledgrid.NewTimeline(42 * time.Second)
 			aTimel.Add(7*time.Second, aGrpPurple)
@@ -228,14 +229,14 @@ var (
 				x := xMin
 				for col := range c.Rect.Dx() {
 					pix := ledgrid.NewPixel(image.Point{col, row}, color.Black)
-					c.Add(pix)
+					c.Add(0, pix)
 					anim := ledgrid.NewShaderAnim(pix, fader, x, y, PlasmaShaderFunc)
 					aGrp.Add(anim)
 					x += dPix
 				}
 				y -= dPix
 			}
-			c.Add(txt)
+			c.Add(0, txt)
 
 			aGrp.Start()
 			aPalTl.Start()
@@ -247,7 +248,7 @@ var (
 			var colGrp color.ColorGroup
 
 			cs := NewColorSampler(color.Purples)
-			c.Add(cs)
+			c.Add(0, cs)
 
 			for {
 				fmt.Printf("Enter a number in 0..%d (or 99 to quit): ", color.NumColorGroups-1)
@@ -262,6 +263,13 @@ var (
 				fmt.Printf("Selected color group: %v\n", colGrp)
 				cs.colGrp = colGrp
 			}
+		})
+
+	FirePlace = NewLedGridProgram("Fireplace",
+		func(c *ledgrid.Canvas) {
+			fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
+			c.Add(0, fire)
+			fire.Start()
 		})
 )
 

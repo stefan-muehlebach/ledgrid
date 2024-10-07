@@ -67,7 +67,7 @@ var (
 			rColor2 := color.GreenYellow
 
 			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
-			c.Add(r)
+			c.Add(0, r)
 
 			aPos := ledgrid.NewPositionAnim(r, rPos2, 4*time.Second)
 			aPos.AutoReverse = true
@@ -103,7 +103,7 @@ var (
 			size := geom.Point{float64(width), float64(height)}
 
 			cam := NewHistCamera(pos, size, 100)
-			c.Add(cam)
+			c.Add(0, cam)
 			cam.Start()
 		})
 )
@@ -233,9 +233,8 @@ func main() {
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
-				ledgrid.AnimCtrl.Purge()
-				// ledgrid.AnimCtrl.Continue()
-				canvas.Purge()
+				ledgrid.AnimCtrl.PurgeAll()
+				canvas.PurgeAll()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				ledGrid.Client.Watch().Reset()
@@ -246,9 +245,9 @@ func main() {
 			}
 			if ch == 'L' {
 				ledgrid.AnimCtrl.Suspend()
-				ledgrid.AnimCtrl.Purge()
+				ledgrid.AnimCtrl.PurgeAll()
 				ledgrid.AnimCtrl.Watch().Reset()
-				canvas.Purge()
+				canvas.PurgeAll()
 				canvas.Watch().Reset()
 				time.Sleep(60 * time.Millisecond)
 				ledgrid.AnimCtrl.Load("gobs/program01.gob")
@@ -256,7 +255,7 @@ func main() {
 				// fmt.Printf("canvas  >>> %+v\n", canvas)
 				// for i, obj := range canvas.ObjList {
 				i := 0
-				for ele := canvas.ObjList.Front(); ele != nil; ele = ele.Next() {
+				for ele := canvas.ObjList[0].Front(); ele != nil; ele = ele.Next() {
 					obj := ele.Value.(ledgrid.CanvasObject)
 					if obj == nil {
 						continue
