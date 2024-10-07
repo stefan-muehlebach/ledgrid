@@ -172,7 +172,7 @@ func (p *OPCGridClient) Send(buffer []byte) {
 	p.buffer[2] = byte(length & 0xff)
 	p.buffer[3] = byte((length >> 8) & 0xff)
 	copy(p.buffer[4:], buffer)
-	_, err = p.conn.Write(p.buffer)
+	_, err = p.conn.Write(p.buffer[:length+4])
 	if err != nil {
 		log.Fatal(err)
 	}
