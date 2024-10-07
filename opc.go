@@ -66,7 +66,6 @@ func HandleMessage(conn net.Conn) {
 			log.Fatalf("Failed Read(): %v", err)
 		}
 		m := NewMessage(buffer)
-		// fmt.Printf("m: %+v\n", m)
 		disp := DispList[m.Channel]
 		if disp == nil {
 			log.Printf("No displayer on channel %d\n", m.Channel)

@@ -96,7 +96,6 @@ func (d *DisplayEmbed) Display(buffer []byte) {
 	var bufLen int
 
 	bufLen = len(buffer)
-	log.Printf("Display %d bytes", bufLen)
 	for srcIdx, dstIdx = 0, 0; srcIdx < len(buffer)/3; srcIdx++ {
 		if d.statusList[srcIdx] == LedMissing {
 			continue
