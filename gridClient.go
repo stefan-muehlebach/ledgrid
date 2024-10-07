@@ -169,8 +169,8 @@ func (p *OPCGridClient) Send(buffer []byte) {
 	length := len(buffer)
 	p.buffer[0] = 0
 	p.buffer[1] = 0
-	p.buffer[2] = byte(length & 0xff)
-	p.buffer[3] = byte((length >> 8) & 0xff)
+	p.buffer[2] = byte((length >> 8) & 0xff)
+	p.buffer[3] = byte(length & 0xff)
 	copy(p.buffer[4:], buffer)
 	_, err = p.conn.Write(p.buffer[:length+4])
 	if err != nil {
