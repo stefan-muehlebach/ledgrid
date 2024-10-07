@@ -57,7 +57,7 @@ func NewLedGridBySize(host string, port uint, size image.Point) *LedGrid {
 
 func NewLedGrid(host string, port uint, modConf conf.ModuleConfig) *LedGrid {
     g := &LedGrid{}
-    g.Client = NewNetGridClient(host, port)
+    g.Client = NewOPCGridClient(host, port)
     g.Rect = image.Rectangle{Max: modConf.Size()}
     g.Pix = make([]uint8, 3*len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 	g.idxMap = modConf.IndexMap()

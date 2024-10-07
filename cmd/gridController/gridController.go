@@ -105,5 +105,7 @@ func main() {
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
 	go SignalHandler(gridServer)
 
+    go ledgrid.HandleOPC()
 	gridServer.Handle()
+
 }

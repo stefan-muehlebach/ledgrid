@@ -130,6 +130,121 @@ func (p *NetGridClient) Close() {
 	p.conn.Close()
 }
 
+
+
+// Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
+type OPCGridClient struct {
+	conn      net.Conn
+	rpcClient *rpc.Client
+	sendWatch *Stopwatch
+    buffer []byte
+}
+
+func NewOPCGridClient(host string, port uint) GridClient {
+	var hostPort string
+	var err error
+
+	p := &OPCGridClient{}
+	hostPort = fmt.Sprintf("%s:%d", host, port)
+    p.conn, err = net.Dial("tcp", hostPort)
+    	if err != nil {
+		log.Fatal(err)
+	}
+
+	p.rpcClient, err = rpc.DialHTTP("tcp", hostPort)
+	if err != nil {
+		log.Fatal("Dialing:", err)
+	}
+	p.sendWatch = NewStopwatch()
+    p.buffer = make([]byte, 65539)
+
+	return p
+}
+
+// Sendet die Bilddaten in der LedGrid-Struktur zum Controller.
+func (p *OPCGridClient) Send(buffer []byte) {
+	var err error
+
+	p.sendWatch.Start()
+    length := len(buffer)
+    p.buffer[0] = 0
+    p.buffer[1] = 0
+    p.buffer[2] = byte(length & 0xff)
+    p.buffer[3] = byte((length >> 8) & 0xff)
+    copy(p.buffer[4:], buffer)
+	_, err = p.conn.Write(p.buffer)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p.sendWatch.Stop()
+}
+
+func (p *OPCGridClient) Size() int {
+	var reply SizeArg
+	var err error
+
+	err = p.rpcClient.Call("GridServer.RPCSize", 0, &reply)
+	if err != nil {
+		log.Fatal("Size error:", err)
+	}
+	return int(reply)
+}
+
+func (p *OPCGridClient) Gamma() (r, g, b float64) {
+	var reply GammaArg
+	var err error
+
+	err = p.rpcClient.Call("GridServer.RPCGamma", 0, &reply)
+	if err != nil {
+		log.Fatal("Gamma error:", err)
+	}
+	return reply.RedVal, reply.GreenVal, reply.BlueVal
+}
+
+func (p *OPCGridClient) SetGamma(r, g, b float64) {
+	var reply int
+	var err error
+
+	err = p.rpcClient.Call("GridServer.RPCSetGamma", GammaArg{r, g, b}, &reply)
+	if err != nil {
+		log.Fatal("SetGamma error:", err)
+	}
+}
+
+func (p *OPCGridClient) MaxBright() (r, g, b uint8) {
+	var reply BrightArg
+	var err error
+
+	err = p.rpcClient.Call("GridServer.RPCMaxBright", 0, &reply)
+	if err != nil {
+		log.Fatal("MaxBright error:", err)
+	}
+	return reply.RedVal, reply.GreenVal, reply.BlueVal
+}
+
+func (p *OPCGridClient) SetMaxBright(r, g, b uint8) {
+	var reply int
+	var err error
+
+	err = p.rpcClient.Call("GridServer.RPCSetMaxBright", BrightArg{r, g, b}, &reply)
+	if err != nil {
+		log.Fatal("SetMaxBright error:", err)
+	}
+}
+
+func (p *OPCGridClient) Watch() *Stopwatch {
+	return p.sendWatch
+}
+
+// Schliesst die Verbindung zum Controller.
+func (p *OPCGridClient) Close() {
+	p.conn.Close()
+}
+
+
+
+
+
 // Mit dieser Implementation des GridClient-Interfaces kann man ohne Zugriff
 // auf ein reales LED-Grid Software testen.
 type DummyGridClient struct {
