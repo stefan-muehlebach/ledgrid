@@ -21,8 +21,6 @@ const (
 )
 
 const (
-	defDataPort   = 7890
-	defRPCPort    = 5333
 	defMissingIDs = ""
 	defDefectIDs  = ""
 	defBaud       = 2_000_000
@@ -63,7 +61,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 
 func main() {
 	var numPix int
-	var rpcPort, udpPort, tcpPort, opcPort uint
+	var udpPort, tcpPort, rpcPort, opcPort uint
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
@@ -80,7 +78,6 @@ func main() {
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
 	flag.Parse()
-	rpcPort = defRPCPort
 
 	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, numPix)
 	gridServer = ledgrid.NewGridServer(udpPort, rpcPort, ws2801)
