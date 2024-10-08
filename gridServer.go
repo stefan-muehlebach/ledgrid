@@ -115,7 +115,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	var err error
 	var buffer []byte
 
-    log.Printf("Handle a new message")
+    log.Printf("Start handling messages")
 	buffer = make([]byte, p.bufferSize)
 	for {
 		bufferSize, err = conn.Read(buffer)
@@ -131,6 +131,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 		p.SentBytes += bufferSize
 		p.sendWatch.Stop()
 	}
+    log.Printf("Stop handling messages and close the display")
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
 	// damit das Panel dunkel wird.
