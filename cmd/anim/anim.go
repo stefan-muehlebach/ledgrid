@@ -112,10 +112,17 @@ var (
 
 //----------------------------------------------------------------------------
 
-func SignalHandler() {
+func SignalHandler(timeout time.Duration) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
-	<-sigChan
+    if timeout == 0 {
+        timeout = time.Duration(math.MaxInt64)
+    }
+    timer := time.NewTimer(timeout)
+    select {
+	    case <-sigChan:
+        case <-timer.C:
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -161,6 +168,7 @@ func main() {
 	var gR, gG, gB float64
 	var customConfName string
 	var modConf conf.ModuleConfig
+    var timeout time.Duration
 
 	for i, prog := range programList {
 		id := 'a' + i
@@ -175,6 +183,7 @@ func main() {
     flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
+    flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
     rpcPort = defRPCPort
 
@@ -298,7 +307,7 @@ func main() {
 			}
 		}
 		fmt.Printf("Quit by Ctrl-C\n")
-		SignalHandler()
+		SignalHandler(timeout)
 	}
 
 	ledgrid.AnimCtrl.Suspend()

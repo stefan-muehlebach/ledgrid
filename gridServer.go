@@ -40,7 +40,7 @@ type GridServer struct {
 // des SPI-Interfaces in Baud bezeichnet.
 func NewGridServer(udpPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
-    // var tcpPort uint = udpPort
+    var tcpPort uint = udpPort
 	var addrPort netip.AddrPort
 
 	p := &GridServer{Disp: disp}
@@ -73,16 +73,16 @@ func NewGridServer(udpPort, rpcPort uint, disp Displayer) *GridServer {
 
 	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
-	// addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(tcpPort))
-	// if !addrPort.IsValid() {
-	// 	log.Fatalf("Invalid address or port: %v", addrPort)
-	// }
-	// p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
-	// p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
-	// if err != nil {
-	// 	log.Fatal("TCP listen error:", err)
-	// }
-	// go p.HandleTCP(p.tcpListener)
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(tcpPort))
+	if !addrPort.IsValid() {
+		log.Fatalf("Invalid address or port: %v", addrPort)
+	}
+	p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
+	p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
+	if err != nil {
+		log.Fatal("TCP listen error:", err)
+	}
+	go p.HandleTCP(p.tcpListener)
 
 	// Anschliessend wird die RPC-Verbindung initiiert.
 	rpc.Register(p)
