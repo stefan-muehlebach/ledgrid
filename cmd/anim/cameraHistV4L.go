@@ -74,7 +74,7 @@ func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
 	c.dstMask = image.NewAlpha(c.Rect)
 	c.scaler = draw.CatmullRom.NewScaler(c.Rect.Dx(), c.Rect.Dy(), c.srcRect.Dx(), c.srcRect.Dy())
 
-	ledgrid.AnimCtrl.Add(0, c)
+	ledgrid.AnimCtrl.Add(1, c)
 
 	c.dev, err = device.Open(
 		camDevName,

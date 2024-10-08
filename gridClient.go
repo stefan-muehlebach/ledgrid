@@ -32,12 +32,12 @@ type NetGridClient struct {
 	sendWatch *Stopwatch
 }
 
-func NewNetGridClient(host string, dataPort, rpcPort uint) GridClient {
+func NewNetGridClient(host string, udpPort, rpcPort uint) GridClient {
 	var hostPortData, hostPortRPC string
 	var err error
 
 	p := &NetGridClient{}
-	hostPortData = fmt.Sprintf("%s:%d", host, dataPort)
+	hostPortData = fmt.Sprintf("%s:%d", host, udpPort)
 	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
 	p.addr, err = net.ResolveUDPAddr("udp", hostPortData)
 	if err != nil {

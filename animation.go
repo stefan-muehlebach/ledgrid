@@ -191,17 +191,19 @@ func (a *AnimationController) backgroundThread() {
 // Aktualisierung ihrer Animationen.
 func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.WaitGroup) {
 	for id := range startChan {
-		a.animMutex[0].RLock()
-		for i := id; i < len(a.AnimList[0]); i += a.numThreads {
-			anim := a.AnimList[0][i]
-			if anim == nil || !anim.IsRunning() {
-				continue
-			}
-			if !anim.Update(a.animPit) {
-				// a.AnimList[0][i] = nil
-			}
-		}
-		a.animMutex[0].RUnlock()
+        for listIdx := range a.AnimList {
+		    a.animMutex[listIdx].RLock()
+		    for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
+			    anim := a.AnimList[listIdx][i]
+        			if anim == nil || !anim.IsRunning() {
+        				continue
+        			}
+        			if !anim.Update(a.animPit) {
+        				// a.AnimList[0][i] = nil
+        			}
+        		}
+		    a.animMutex[listIdx].RUnlock()
+        }
 		wg.Done()
 	}
 }

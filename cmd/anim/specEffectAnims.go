@@ -240,7 +240,7 @@ var (
 			size := geom.Point{float64(width), float64(height)}
 
 			cam := NewCamera(pos, size)
-			c.Add(0, cam)
+			c.Add(1, cam)
 			cam.Start()
 			mask := cam.Mask
 
@@ -267,7 +267,7 @@ var (
 					time.Sleep(1 * time.Second)
 					for i, effect := range effectList {
 						ledgrid.AnimCtrl.Purge(0)
-						c.Purge(1)
+						c.Purge(0)
 						for _, pts := range EffectFader(effect) {
 							for _, pp := range pts {
 								p0, p1 := pp.src, pp.dst

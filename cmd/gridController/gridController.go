@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math"
+	"time"
 	"flag"
 	"log"
 	"os"
@@ -63,7 +65,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 
 func main() {
 	var numPix int
-	var dataPort, rpcPort uint
+	var rpcPort, udpPort, tcpPort, opcPort uint
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
@@ -72,7 +74,10 @@ func main() {
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
 	flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for fancy module configurations)")
-	flag.UintVar(&dataPort, "port", defDataPort, "UDP port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
+	flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP port")
+	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP port")
+	flag.UintVar(&opcPort, "opc", ledgrid.DefOPCPort, "OPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
@@ -80,7 +85,7 @@ func main() {
 	rpcPort = defRPCPort
 
 	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, numPix)
-	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, ws2801)
+	gridServer = ledgrid.NewGridServer(udpPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {
@@ -107,7 +112,9 @@ func main() {
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
 	go SignalHandler(gridServer)
 
-	go ledgrid.HandleOPC(dataPort)
-	gridServer.Handle()
+    time.Sleep(time.Duration(math.MaxInt64))
+
+	// go ledgrid.HandleOPC(opcPort)
+	// gridServer.Handle()
 
 }

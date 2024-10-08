@@ -152,7 +152,7 @@ var (
 
 func main() {
 	var host string
-	var dataPort, rpcPort uint
+	var udpPort, tcpPort, rpcPort uint
 	var input string
 	var ch byte
 	var progId int
@@ -170,7 +170,9 @@ func main() {
 	flag.IntVar(&width, "width", 40, "Width of LedGrid")
 	flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&dataPort, "port", defDataPort, "Controller port")
+    flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP Port")
+    flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
+    flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.Parse()
@@ -185,9 +187,9 @@ func main() {
 
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
-		ledGrid = ledgrid.NewLedGrid(host, dataPort, rpcPort, modConf)
+		ledGrid = ledgrid.NewLedGrid(host, udpPort, rpcPort, modConf)
 	} else {
-		ledGrid = ledgrid.NewLedGridBySize(host, dataPort, rpcPort, image.Pt(width, height))
+		ledGrid = ledgrid.NewLedGridBySize(host, udpPort, rpcPort, image.Pt(width, height))
 	}
 	gR, gG, gB = ledGrid.Client.Gamma()
 

@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+const (
+	DefRPCPort = 5332
+	DefUDPPort = 5333
+	DefTCPPort = 5333
+	DefOPCPort = 7890
+)
+
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type GridServer struct {
@@ -18,7 +25,9 @@ type GridServer struct {
 	udpConn              *net.UDPConn
 	tcpAddr              *net.TCPAddr
 	tcpListener          *net.TCPListener
-	buffer               []byte
+	rpcAddr              *net.TCPAddr
+	rpcListener          *net.TCPListener
+	bufferSize           int
 	maxValue             [3]uint8
 	drawTestPattern      bool
 	sendWatch            *Stopwatch
@@ -29,19 +38,19 @@ type GridServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
+func NewGridServer(udpPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
+    // var tcpPort uint = udpPort
 	var addrPort netip.AddrPort
-	var bufferSize int
 
 	p := &GridServer{Disp: disp}
-    RegisterDisplayer(0, disp)
-	bufferSize = 3 * disp.Size()
+	RegisterDisplayer(0, disp)
+	p.bufferSize = 3 * disp.Size()
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
 	// als Farbe immer Schwarz erhalten sollen).
-	p.buffer = make([]byte, bufferSize)
+	// p.buffer = make([]byte, bufferSize)
 
 	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
 	// maximale Helligkeit erstellt.
@@ -50,27 +59,41 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	p.sendWatch = NewStopwatch()
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
-	// dafuer erstellt.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
+	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(udpPort))
 	if !addrPort.IsValid() {
-		log.Fatalf("Invalid address or port")
+		log.Fatalf("Invalid address or port: %v", addrPort)
 	}
 	p.udpAddr = net.UDPAddrFromAddrPort(addrPort)
 	p.udpConn, err = net.ListenUDP("udp", p.udpAddr)
 	if err != nil {
 		log.Fatal("UDP listen error:", err)
 	}
+	go p.HandleMessage(p.udpConn)
+
+	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
+	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
+	// addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(tcpPort))
+	// if !addrPort.IsValid() {
+	// 	log.Fatalf("Invalid address or port: %v", addrPort)
+	// }
+	// p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
+	// p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
+	// if err != nil {
+	// 	log.Fatal("TCP listen error:", err)
+	// }
+	// go p.HandleTCP(p.tcpListener)
 
 	// Anschliessend wird die RPC-Verbindung initiiert.
 	rpc.Register(p)
 	rpc.HandleHTTP()
 	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(rpcPort))
-	p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
-	p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
+	p.rpcAddr = net.TCPAddrFromAddrPort(addrPort)
+	p.rpcListener, err = net.ListenTCP("tcp", p.rpcAddr)
 	if err != nil {
 		log.Fatal("TCP listen error:", err)
 	}
-	go http.Serve(p.tcpListener, nil)
+	go http.Serve(p.rpcListener, nil)
 
 	return p
 }
@@ -79,6 +102,7 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 func (p *GridServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
+	p.rpcListener.Close()
 }
 
 // Dies ist die zentrale Verarbeitungs-Funktion des GridServers. In ihr
@@ -86,12 +110,14 @@ func (p *GridServer) Close() {
 // Gamma-Korrektur umgeschrieben und auf ein Ausgabegeraet uebertragen
 // (SPI-Bus, Emulation, etc.) Die genaue Konfiguration des LED-Grids
 // (Anordnung der Lichterketten) ist dem GridServer nicht bekannt.
-func (p *GridServer) Handle() {
+func (p *GridServer) HandleMessage(conn net.Conn) {
 	var bufferSize int
 	var err error
+	var buffer []byte
 
+	buffer = make([]byte, p.bufferSize)
 	for {
-		bufferSize, err = p.udpConn.Read(p.buffer)
+		bufferSize, err = conn.Read(buffer)
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				break
@@ -100,19 +126,32 @@ func (p *GridServer) Handle() {
 		}
 		p.RecvBytes += bufferSize
 		p.sendWatch.Start()
-		p.Disp.Display(p.buffer)
+		p.Disp.Display(buffer)
 		p.SentBytes += bufferSize
 		p.sendWatch.Stop()
 	}
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
 	// damit das Panel dunkel wird.
-	for i := range p.buffer {
-		p.buffer[i] = 0x00
+	for i := range buffer {
+		buffer[i] = 0x00
 	}
-	p.Disp.Send(p.buffer)
-	p.SentBytes += len(p.buffer)
+	p.Disp.Send(buffer)
+	p.SentBytes += len(buffer)
 	p.Disp.Close()
+}
+
+func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
+	var conn net.Conn
+	var err error
+
+	for {
+		conn, err = lsnr.Accept()
+		if err != nil {
+			log.Fatalf("Failed TCP Accept(): %v", err)
+		}
+		go HandleMessage(conn)
+	}
 }
 
 func (p *GridServer) Watch() *Stopwatch {
@@ -156,10 +195,11 @@ const (
 func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
 	var colorValue byte
-
 	var numTestLeds = p.Disp.Size()
 	var testBufferSize = 3 * numTestLeds
+    var buffer []byte
 
+    buffer = make([]byte, p.bufferSize)
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return false
@@ -174,45 +214,45 @@ func (p *GridServer) ToggleTestPattern() bool {
 			switch colorMode {
 			case TestRed:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = colorValue
-					p.buffer[3*i+1] = 0x00
-					p.buffer[3*i+2] = 0x00
+					buffer[3*i+0] = colorValue
+					buffer[3*i+1] = 0x00
+					buffer[3*i+2] = 0x00
 				}
 			case TestGreen:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = 0x00
-					p.buffer[3*i+1] = colorValue
-					p.buffer[3*i+2] = 0x00
+					buffer[3*i+0] = 0x00
+					buffer[3*i+1] = colorValue
+					buffer[3*i+2] = 0x00
 				}
 			case TestBlue:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = 0x00
-					p.buffer[3*i+1] = 0x00
-					p.buffer[3*i+2] = colorValue
+					buffer[3*i+0] = 0x00
+					buffer[3*i+1] = 0x00
+					buffer[3*i+2] = colorValue
 				}
 			case TestYellow:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = colorValue
-					p.buffer[3*i+1] = colorValue
-					p.buffer[3*i+2] = 0x00
+					buffer[3*i+0] = colorValue
+					buffer[3*i+1] = colorValue
+					buffer[3*i+2] = 0x00
 				}
 			case TestMagenta:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = colorValue
-					p.buffer[3*i+1] = 0x00
-					p.buffer[3*i+2] = colorValue
+					buffer[3*i+0] = colorValue
+					buffer[3*i+1] = 0x00
+					buffer[3*i+2] = colorValue
 				}
 			case TestCyan:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = 0x00
-					p.buffer[3*i+1] = colorValue
-					p.buffer[3*i+2] = colorValue
+					buffer[3*i+0] = 0x00
+					buffer[3*i+1] = colorValue
+					buffer[3*i+2] = colorValue
 				}
 			case TestWhite:
 				for i := range numTestLeds {
-					p.buffer[3*i+0] = colorValue
-					p.buffer[3*i+1] = colorValue
-					p.buffer[3*i+2] = colorValue
+					buffer[3*i+0] = colorValue
+					buffer[3*i+1] = colorValue
+					buffer[3*i+2] = colorValue
 				}
 			}
 
@@ -223,15 +263,15 @@ func (p *GridServer) ToggleTestPattern() bool {
 				colorMode = (colorMode + 1) % NumColorModes
 			}
 			p.sendWatch.Start()
-			p.Disp.Send(p.buffer)
+			p.Disp.Send(buffer)
 			p.sendWatch.Stop()
 			time.Sleep(300 * time.Millisecond)
 		}
 		for i := range testBufferSize {
-			p.buffer[i] = 0x00
+			buffer[i] = 0x00
 		}
 		p.sendWatch.Start()
-		p.Disp.Send(p.buffer)
+		p.Disp.Send(buffer)
 		p.sendWatch.Stop()
 	}()
 
