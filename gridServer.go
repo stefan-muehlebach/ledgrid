@@ -2,6 +2,7 @@ package ledgrid
 
 import (
 	"errors"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -40,7 +41,7 @@ type GridServer struct {
 // des SPI-Interfaces in Baud bezeichnet.
 func NewGridServer(udpPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
-    var tcpPort uint = udpPort
+	var tcpPort uint = udpPort
 	var addrPort netip.AddrPort
 
 	p := &GridServer{Disp: disp}
@@ -119,10 +120,10 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	for {
 		bufferSize, err = conn.Read(buffer)
 		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
+			if errors.Is(err, net.ErrClosed) || errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(err)
+			log.Fatalf("Failed Read(): %v", err)
 		}
 		p.RecvBytes += bufferSize
 		p.sendWatch.Start()
@@ -150,6 +151,7 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 		if err != nil {
 			log.Fatalf("Failed TCP Accept(): %v", err)
 		}
+		log.Printf("HandleTCP: connection accepted")
 		go p.HandleMessage(conn)
 	}
 }
@@ -197,9 +199,9 @@ func (p *GridServer) ToggleTestPattern() bool {
 	var colorValue byte
 	var numTestLeds = p.Disp.Size()
 	var testBufferSize = 3 * numTestLeds
-    var buffer []byte
+	var buffer []byte
 
-    buffer = make([]byte, p.bufferSize)
+	buffer = make([]byte, p.bufferSize)
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return false
