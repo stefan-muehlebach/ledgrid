@@ -26,31 +26,27 @@ type GridClient interface {
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type NetGridClient struct {
-	addr      *net.UDPAddr
-	conn      *net.UDPConn
+	conn      net.Conn
 	rpcClient *rpc.Client
 	sendWatch *Stopwatch
 }
 
-func NewNetGridClient(host string, udpPort, rpcPort uint) GridClient {
+func NewNetGridClient(host string, network string, port, rpcPort uint) GridClient {
 	var hostPortData, hostPortRPC string
 	var err error
 
 	p := &NetGridClient{}
-	hostPortData = fmt.Sprintf("%s:%d", host, udpPort)
+	hostPortData = fmt.Sprintf("%s:%d", host, port)
 	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
-	p.addr, err = net.ResolveUDPAddr("udp", hostPortData)
+
+	p.conn, err = net.Dial(network, hostPortData)
 	if err != nil {
-		log.Fatal(err)
-	}
-	p.conn, err = net.DialUDP("udp", nil, p.addr)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error in Dial(dataPort): %v", err)
 	}
 
 	p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Fatal("Error in Dial(rpcPort): %v", err)
 	}
 	p.sendWatch = NewStopwatch()
 

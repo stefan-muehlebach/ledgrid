@@ -80,7 +80,7 @@ func main() {
 	flag.Parse()
 
 	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, numPix)
-	gridServer = ledgrid.NewGridServer(udpPort, rpcPort, ws2801)
+	gridServer = ledgrid.NewGridServer(udpPort, tcpPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {

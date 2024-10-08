@@ -39,9 +39,8 @@ type GridServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewGridServer(udpPort, rpcPort uint, disp Displayer) *GridServer {
+func NewGridServer(udpPort, tcpPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
-	var tcpPort uint = udpPort
 	var addrPort netip.AddrPort
 
 	p := &GridServer{Disp: disp}
@@ -116,6 +115,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	var err error
 	var buffer []byte
 
+    log.Printf("Handle a new message")
 	buffer = make([]byte, p.bufferSize)
 	for {
 		bufferSize, err = conn.Read(buffer)

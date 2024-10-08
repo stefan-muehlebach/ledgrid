@@ -16,15 +16,14 @@ import (
 )
 
 const (
-	defHost = "raspi-3"
-	defDataPort = 7890
-    defRPCPort = 5333
+	defHost     = "raspi-3"
 )
 
 var (
 	width, height int
 	gridSize      image.Point
 	backAlpha     = 1.0
+	gridClient    ledgrid.GridClient
 	ledGrid       *ledgrid.LedGrid
 	canvas        *ledgrid.Canvas
 )
@@ -109,20 +108,19 @@ var (
 		})
 )
 
-
 //----------------------------------------------------------------------------
 
 func SignalHandler(timeout time.Duration) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
-    if timeout == 0 {
-        timeout = time.Duration(math.MaxInt64)
-    }
-    timer := time.NewTimer(timeout)
-    select {
-	    case <-sigChan:
-        case <-timer.C:
-    }
+	if timeout == 0 {
+		timeout = time.Duration(math.MaxInt64)
+	}
+	timer := time.NewTimer(timeout)
+	select {
+	case <-sigChan:
+	case <-timer.C:
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -168,7 +166,7 @@ func main() {
 	var gR, gG, gB float64
 	var customConfName string
 	var modConf conf.ModuleConfig
-    var timeout time.Duration
+	var timeout time.Duration
 
 	for i, prog := range programList {
 		id := 'a' + i
@@ -178,14 +176,13 @@ func main() {
 	flag.IntVar(&width, "width", 40, "Width of LedGrid")
 	flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-    flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP Port")
-    flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
-    flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
+	flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP Port")
+	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
-    flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
+	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
-    rpcPort = defRPCPort
 
 	if len(input) > 0 {
 		runInteractive = false
@@ -194,11 +191,12 @@ func main() {
 		runInteractive = true
 	}
 
+    gridClient = ledgrid.NewNetGridClient(host, "tcp", udpPort, rpcPort)
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
-		ledGrid = ledgrid.NewLedGrid(host, udpPort, rpcPort, modConf)
+		ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 	} else {
-		ledGrid = ledgrid.NewLedGridBySize(host, udpPort, rpcPort, image.Pt(width, height))
+		ledGrid = ledgrid.NewLedGridBySize(gridClient, image.Pt(width, height))
 	}
 	gR, gG, gB = ledGrid.Client.Gamma()
 
