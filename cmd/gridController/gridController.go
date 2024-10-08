@@ -1,8 +1,6 @@
 package main
 
 import (
-	"math"
-	"time"
 	"flag"
 	"log"
 	"os"
@@ -74,9 +72,9 @@ func main() {
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
 	flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for fancy module configurations)")
-	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP port")
 	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.UintVar(&opcPort, "opc", ledgrid.DefOPCPort, "OPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")
@@ -110,9 +108,7 @@ func main() {
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
-	go SignalHandler(gridServer)
-
-    time.Sleep(time.Duration(math.MaxInt64))
+	SignalHandler(gridServer)
 
 	// go ledgrid.HandleOPC(opcPort)
 	// gridServer.Handle()

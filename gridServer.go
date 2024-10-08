@@ -91,7 +91,7 @@ func NewGridServer(udpPort, rpcPort uint, disp Displayer) *GridServer {
 	p.rpcAddr = net.TCPAddrFromAddrPort(addrPort)
 	p.rpcListener, err = net.ListenTCP("tcp", p.rpcAddr)
 	if err != nil {
-		log.Fatal("TCP listen error:", err)
+		log.Fatal("RPC listen error:", err)
 	}
 	go http.Serve(p.rpcListener, nil)
 
