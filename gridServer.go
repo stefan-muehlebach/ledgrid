@@ -150,7 +150,7 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 		if err != nil {
 			log.Fatalf("Failed TCP Accept(): %v", err)
 		}
-		go HandleMessage(conn)
+		go p.HandleMessage(conn)
 	}
 }
 
