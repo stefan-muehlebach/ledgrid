@@ -12,32 +12,23 @@ import (
 	"github.com/stefan-muehlebach/ledgrid"
 )
 
-type colorType int
-
-const (
-	red colorType = iota
-	green
-	blue
-)
-
 const (
 	defMissingIDs = ""
 	defDefectIDs  = ""
 	defBaud       = 2_000_000
-	defUseTCP     = false
 	defNumPix     = 400
 )
 
 func SignalHandler(gridServer *ledgrid.GridServer) {
 	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGHUP, syscall.SIGUSR1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGUSR1, syscall.SIGUSR2)
 	for sig := range sigChan {
 		switch sig {
 		case os.Interrupt:
 			gridServer.Close()
 			return
 
-		case syscall.SIGHUP:
+		case syscall.SIGUSR1:
 			log.Printf("Some server statistics:")
 			log.Printf("   %v", gridServer.Watch())
 			log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
@@ -48,8 +39,11 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 			log.Printf("Current settings for max values (brightness):")
 			br, bg, bb := gridServer.MaxBright()
 			log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
+			gridServer.RecvBytes = 0
+			gridServer.SentBytes = 0
+			gridServer.Watch().Reset()
 
-		case syscall.SIGUSR1:
+		case syscall.SIGUSR2:
 			if gridServer.ToggleTestPattern() {
 				log.Printf("Drawing test pattern is ON now.")
 			} else {
@@ -61,7 +55,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 
 func main() {
 	var numPix int
-	var udpPort, tcpPort, rpcPort, opcPort uint
+	var udpPort, tcpPort, rpcPort uint
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
@@ -69,11 +63,10 @@ func main() {
 	var gridServer *ledgrid.GridServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
-	flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for fancy module configurations)")
+	flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for buffers and such)")
 	flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP port")
 	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
-	flag.UintVar(&opcPort, "opc", ledgrid.DefOPCPort, "OPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
