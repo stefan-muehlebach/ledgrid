@@ -103,6 +103,7 @@ func (p *GridServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
 	p.rpcListener.Close()
+	p.Disp.Close()
 }
 
 // Dies ist die zentrale Verarbeitungs-Funktion des GridServers. In ihr
@@ -115,7 +116,6 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	var err error
 	var buffer []byte
 
-    log.Printf("Start handling messages")
 	buffer = make([]byte, p.bufferSize)
 	for {
 		bufferSize, err = conn.Read(buffer)
@@ -131,7 +131,6 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 		p.SentBytes += bufferSize
 		p.sendWatch.Stop()
 	}
-    log.Printf("Stop handling messages and close the display")
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
 	// damit das Panel dunkel wird.
@@ -140,7 +139,6 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	}
 	p.Disp.Send(buffer)
 	p.SentBytes += len(buffer)
-	p.Disp.Close()
 }
 
 func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
@@ -150,9 +148,11 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 	for {
 		conn, err = lsnr.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				break
+			}
 			log.Fatalf("Failed TCP Accept(): %v", err)
 		}
-		log.Printf("HandleTCP: connection accepted")
 		go p.HandleMessage(conn)
 	}
 }
