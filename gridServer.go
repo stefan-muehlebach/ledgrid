@@ -12,10 +12,9 @@ import (
 )
 
 const (
-	DefRPCPort = 5332
-	DefUDPPort = 5333
-	DefTCPPort = 5333
-	DefOPCPort = 7890
+	DefDataPort = 5333
+	DefRPCPort  = 5332
+	DefOPCPort  = 7890
 )
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
@@ -39,7 +38,7 @@ type GridServer struct {
 // sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
 // das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
 // des SPI-Interfaces in Baud bezeichnet.
-func NewGridServer(udpPort, tcpPort, rpcPort uint, disp Displayer) *GridServer {
+func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
 	var addrPort netip.AddrPort
 
@@ -60,7 +59,7 @@ func NewGridServer(udpPort, tcpPort, rpcPort uint, disp Displayer) *GridServer {
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(udpPort))
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
 	if !addrPort.IsValid() {
 		log.Fatalf("Invalid address or port: %v", addrPort)
 	}
@@ -73,7 +72,7 @@ func NewGridServer(udpPort, tcpPort, rpcPort uint, disp Displayer) *GridServer {
 
 	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(tcpPort))
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
 	if !addrPort.IsValid() {
 		log.Fatalf("Invalid address or port: %v", addrPort)
 	}

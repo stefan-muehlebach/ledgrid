@@ -55,7 +55,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 
 func main() {
 	var numPix int
-	var udpPort, tcpPort, rpcPort uint
+	var dataPort, rpcPort uint
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
@@ -64,8 +64,7 @@ func main() {
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
 	flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for buffers and such)")
-	flag.UintVar(&udpPort, "udp", ledgrid.DefUDPPort, "UDP port")
-	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP port")
+	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port (UPD as well as TCP)")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")
@@ -73,7 +72,7 @@ func main() {
 	flag.Parse()
 
 	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, numPix)
-	gridServer = ledgrid.NewGridServer(udpPort, tcpPort, rpcPort, ws2801)
+	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {

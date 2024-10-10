@@ -35,7 +35,7 @@ var (
 
 	ColorNames = []string{}
 	// ColorList = []ColorSource{}
-	ColorMap = map[string]ColorSource{}
+	ColorMap = map[string]*UniformPalette{}
 )
 
 // Gradienten-Paletten basieren auf einer Anzahl Farben (Stuetzstellen)
@@ -205,7 +205,7 @@ func (p *UniformPalette) Bounds() image.Rectangle {
 	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
 }
 
-func (p *UniformPalette) At(x, y int) ledcolor.LedColor {
+func (p *UniformPalette) At(x, y int) gocolor.Color {
 	return p.Col
 }
 

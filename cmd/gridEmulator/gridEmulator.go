@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	defPort            = 5333
 	defWidth           = 40
 	defHeight          = 10
 	defPixelSize       = 50.0
@@ -83,7 +82,7 @@ func ToggleTests(gridServer *ledgrid.GridServer) {
 
 func main() {
 	var width, height int
-	var port uint
+	var dataPort, rpcPort uint
 	var appWidth, appHeight float32
 	var pixelSize float64
 	var appSize fyne.Size
@@ -95,7 +94,8 @@ func main() {
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
-	flag.UintVar(&port, "port", defPort, "UDP port")
+	flag.UintVar(&dataPort, "port", ledgrid.DefDataPort, "Data port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.Float64Var(&pixelSize, "size", defPixelSize, "Size of one LED")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.Parse()
@@ -119,11 +119,11 @@ func main() {
 	App = app.New()
 	App.SetIcon(resourceIconIco)
 	App.Settings().SetTheme(&myTheme{})
-	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, port)
+	winTitle := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", width, height, dataPort)
 	Win = App.NewWindow(winTitle)
 
 	gridEmulator = NewGridWindow(pixelSize, modConf)
-	gridServer = ledgrid.NewGridServer(port, gridEmulator)
+	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, gridEmulator)
 
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
@@ -143,8 +143,6 @@ func main() {
 			App.Quit()
 		}
 	})
-
-	go gridServer.Handle()
 
 	Win.SetContent(gridEmulator.Grid)
 	Win.Resize(appSize)

@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid/cmd/gui
 
-go 1.23.0
+go 1.23.2
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 
@@ -34,14 +34,14 @@ require (
 	github.com/rymdport/portal v0.2.6 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/stefan-muehlebach/gg v0.0.0-00010101000000-000000000000 // indirect
+	github.com/stefan-muehlebach/gg v1.3.4 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/yuin/goldmark v1.7.1 // indirect
-	golang.org/x/image v0.19.0 // indirect
+	golang.org/x/image v0.21.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	periph.io/x/conn/v3 v3.7.1 // indirect
 	periph.io/x/host/v3 v3.8.2 // indirect

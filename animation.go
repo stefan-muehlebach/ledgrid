@@ -998,19 +998,87 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 }
 
 // Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
-type ShaderFuncType func(x, y, t float64) float64
+type Shader TimedAnimation
+
+type ColorShaderFunc func(t, x, y, z float64, idx, nPix int) color.LedColor
+
+type ColorShaderAnim struct {
+    ValPtr *color.LedColor
+    X, Y, Z float64
+    Idx, NPix int
+    Fnc ColorShaderFunc
+    start, stop time.Time
+    running bool
+}
+
+func NewColorShaderAnim(obj Colorable, x, y, z float64, idx, nPix int, fnc ColorShaderFunc) *ColorShaderAnim {
+	a := &ColorShaderAnim{}
+	a.ValPtr = obj.ColorPtr()
+	a.X, a.Y, a.Z = x, y, z
+    a.Idx = idx
+    a.NPix = nPix
+	a.Fnc = fnc
+	AnimCtrl.Add(0, a)
+	return a
+}
+
+func (a *ColorShaderAnim) Duration() time.Duration {
+	return time.Duration(0)
+}
+
+func (a *ColorShaderAnim) SetDuration(d time.Duration) {}
+
+// Startet die Animation.
+func (a *ColorShaderAnim) Start() {
+	if a.running {
+		return
+	}
+	a.start = AnimCtrl.Now()
+	a.running = true
+}
+
+// Unterbricht die Ausfuehrung der Animation.
+func (a *ColorShaderAnim) Suspend() {
+	if !a.running {
+		return
+	}
+	a.stop = AnimCtrl.Now()
+	a.running = false
+}
+
+// Setzt die Ausfuehrung der Animation fort.
+func (a *ColorShaderAnim) Continue() {
+	if a.running {
+		return
+	}
+	dt := AnimCtrl.Now().Sub(a.stop)
+	a.start = a.start.Add(dt)
+	a.running = true
+}
+
+// Liefert den Status der Animation zurueck.
+func (a *ColorShaderAnim) IsRunning() bool {
+	return a.running
+}
+
+func (a *ColorShaderAnim) Update(t time.Time) bool {
+	*a.ValPtr = a.Fnc(0.6 * t.Sub(a.start).Seconds(), a.X, a.Y, a.Z, a.Idx, a.NPix)
+	return true
+}
+
+type NormShaderFunc func(t, x, y float64) float64
 
 type ShaderAnimation struct {
 	ValPtr      *color.LedColor
 	Pal         ColorSource
 	X, Y        float64
-	Fnc         ShaderFuncType
+	Fnc         NormShaderFunc
 	start, stop time.Time
 	running     bool
 }
 
 func NewShaderAnim(obj Colorable, pal ColorSource, x, y float64,
-	fnc ShaderFuncType) *ShaderAnimation {
+	fnc NormShaderFunc) *ShaderAnimation {
 	a := &ShaderAnimation{}
 	a.ValPtr = obj.ColorPtr()
 	a.Pal = pal
@@ -1060,6 +1128,6 @@ func (a *ShaderAnimation) IsRunning() bool {
 }
 
 func (a *ShaderAnimation) Update(t time.Time) bool {
-	*a.ValPtr = a.Pal.Color(a.Fnc(a.X, a.Y, t.Sub(a.start).Seconds()))
+	*a.ValPtr = a.Pal.Color(a.Fnc(t.Sub(a.start).Seconds(), a.X, a.Y))
 	return true
 }

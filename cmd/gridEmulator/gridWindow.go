@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -18,6 +19,7 @@ import (
 // configuration of the original LedGrid using 10x10 modules as well as the
 // snake cabeling.
 type GridWindow struct {
+    ledgrid.DisplayEmbed
 	// This is the fyne object, which must be added to a fyne application in
 	// order to experience the whole glory of the emulation.
 	Grid      *fyne.Container
@@ -38,6 +40,7 @@ func NewGridWindowBySize(pixelSize float64, size image.Point) *GridWindow {
 
 func NewGridWindow(pixelSize float64, modConf conf.ModuleConfig) *GridWindow {
 	e := &GridWindow{}
+    e.DisplayEmbed.Init(e, modConf.Size().X * modConf.Size().Y)
 	e.Grid = container.NewWithoutLayout()
 	e.modConf = modConf
 	e.size = e.modConf.Size()
@@ -77,6 +80,10 @@ func (e *GridWindow) Size() int {
 	return e.size.X * e.size.Y
 }
 
+func (e *GridWindow) Display(buffer []byte) {
+    e.Send(buffer)
+}
+
 // Takes the bytes in buffer, and uses them exactly as the real hardware
 // would to recolor the individual LEDs (circle objects) of the emulation.
 // Only if the colors really change, a fyne refresh is issued.
@@ -110,37 +117,3 @@ func (e *GridWindow) Send(buffer []byte) {
 	}
 }
 
-// func (e *GridWindow) Send(buffer []byte) {
-// 	var r, g, b uint8
-// 	var idx int
-// 	var needsRefresh bool
-
-// 	needsRefresh = false
-// 	for i, val := range buffer {
-// 		if i >= 3*e.numPixels {
-// 			break
-// 		}
-// 		if i%3 == 0 {
-// 			r = val
-// 			idx = i / 3
-// 		}
-// 		if i%3 == 1 {
-// 			g = val
-// 		}
-// 		if i%3 == 2 {
-// 			b = val
-// 			coord := e.coordMap[idx]
-// 			newColor := color.RGBA{R: r, G: g, B: b, A: 0xff}
-// 			if !needsRefresh {
-// 				oldColor := e.field[coord.X][coord.Y].FillColor
-// 				if newColor != oldColor {
-// 					needsRefresh = true
-// 				}
-// 			}
-// 			e.field[coord.X][coord.Y].FillColor = newColor
-// 		}
-// 	}
-// 	if needsRefresh {
-// 		e.Grid.Refresh()
-// 	}
-// }

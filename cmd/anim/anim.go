@@ -16,16 +16,16 @@ import (
 )
 
 const (
-	defHost     = "raspi-3"
+	defHost = "raspi-3"
 )
 
 var (
 	width, height int
 	gridSize      image.Point
-	backAlpha     = 1.0
-	gridClient    ledgrid.GridClient
-	ledGrid       *ledgrid.LedGrid
-	canvas        *ledgrid.Canvas
+	//backAlpha     = 1.0
+	gridClient ledgrid.GridClient
+	ledGrid    *ledgrid.LedGrid
+	canvas     *ledgrid.Canvas
 )
 
 //----------------------------------------------------------------------------
@@ -96,16 +96,6 @@ var (
 			aGroup.Start()
 			aTimeline.Start()
 		})
-
-	SpecialCamera = NewLedGridProgram("Special camera",
-		func(c *ledgrid.Canvas) {
-			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-			size := geom.Point{float64(width), float64(height)}
-
-			cam := NewHistCamera(pos, size, 100)
-			c.Add(0, cam)
-			cam.Start()
-		})
 )
 
 //----------------------------------------------------------------------------
@@ -148,7 +138,8 @@ var (
 		MovingText,
 		FixedFontTest,
 		SlideTheShow,
-		ShowTheShader,
+		ShowThePaletteShader,
+        ShowTheColorShader,
 		ColorFields,
 		SingleImageAlign,
 		FirePlace,
@@ -158,8 +149,8 @@ var (
 func main() {
 	var host string
 	var dataPort, rpcPort uint
-    var useTCP bool
-    var network string
+	var useTCP bool
+	var network string
 	var input string
 	var ch byte
 	var progId int
@@ -178,8 +169,8 @@ func main() {
 	flag.IntVar(&width, "width", 40, "Width of LedGrid")
 	flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-    flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
-	flag.UintVar(&dataPort, "data", ledgrid.DefUDPPort, "Data Port")
+	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
+	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
@@ -192,13 +183,13 @@ func main() {
 	} else {
 		runInteractive = true
 	}
-    if useTCP {
-        network = "tcp"
-    } else {
-        network = "udp"
-    }
+	if useTCP {
+		network = "tcp"
+	} else {
+		network = "udp"
+	}
 
-    gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
 		ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
