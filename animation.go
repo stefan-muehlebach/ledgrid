@@ -726,6 +726,17 @@ type Fadable interface {
 	AlphaPtr() *uint8
 }
 
+type FadeEmbed struct {
+	colPtr *color.LedColor
+}
+
+func (e *FadeEmbed) Init(c *color.LedColor) {
+	e.colPtr = c
+}
+func (e *FadeEmbed) AlphaPtr() *uint8 {
+	return &e.colPtr.A
+}
+
 type FadeAnimation struct {
 	GenericAnimation[uint8]
 }

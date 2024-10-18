@@ -13,8 +13,10 @@ var (
 		func(c *ledgrid.Canvas) {
 			posFlame1 := geom.Point{4.5, float64(height)}
 			posFlame2 := geom.Point{float64(width) - 4.5, float64(height)}
-			pos1Mario := geom.Point{0.0, float64(height)}
-			pos2Mario := geom.Point{float64(width), float64(height)}
+			pos1Mario := geom.Point{5.0, float64(height)}
+			pos2Mario := geom.Point{float64(width) - 5.0, float64(height)}
+			// pos3Mario := geom.Point{-5.0, float64(height) / 2.0}
+			// pos4Mario := geom.Point{float64(width) + 5.0, float64(height) / 2.0}
 
 			bmlFlame := ledgrid.ReadBlinkenFile("blinken/flameNew.bml")
 			bmlFlame.SetAllDuration(32)
@@ -34,18 +36,34 @@ var (
 			bmlMario := ledgrid.ReadBlinkenFile("blinken/marioWalkRight.bml")
 
 			mario := ledgrid.NewSprite(pos1Mario)
+			mario.Mask.C.A = 0x00
 			mario.SetAlign(ledgrid.AlignCenter | ledgrid.AlignBottom)
 			mario.AddBlinkenLight(bmlMario)
 			mario.RepeatCount = ledgrid.AnimationRepeatForever
 			mario.Size = geom.Point{20.0, 20.0}
 
-			aPos := ledgrid.NewPositionAnim(mario, pos2Mario, 4*time.Second)
-			aPos.Curve = ledgrid.AnimationLinear
-			aPos.RepeatCount = ledgrid.AnimationRepeatForever
+			aPos1 := ledgrid.NewPositionAnim(mario, pos2Mario, 4*time.Second)
+			aPos1.Curve = ledgrid.AnimationLinear
+			// aPos1.RepeatCount = ledgrid.AnimationRepeatForever
+
+			// aPos2 := ledgrid.NewPositionAnim(mario, pos4Mario, 3*time.Second)
+			// aPos2.Val1 = ledgrid.Const(pos3Mario)
+			// aPos2.Curve = ledgrid.AnimationLinear
+
+			aFadeIn := ledgrid.NewFadeAnim(mario, ledgrid.FadeIn, 3*time.Second)
+			aFadeOut := ledgrid.NewFadeAnim(mario, ledgrid.FadeOut, 3*time.Second)
+			aFadeOut.Cont = true
 
 			c.Add(0, flame1, flame2, mario)
 
-			aGrp := ledgrid.NewGroup(flame1, flame2, mario, aPos)
+			aSeq := ledgrid.NewSequence(
+                aFadeIn,
+                ledgrid.NewTask(func () { mario.Start() }),
+                aPos1,
+                ledgrid.NewTask(func () { mario.Suspend() }),
+                aFadeOut,
+            )
+			aGrp := ledgrid.NewGroup(flame1, flame2, aSeq)
 			aGrp.Start()
 		})
 
@@ -88,8 +106,8 @@ var (
 	SingleImageAlign = NewLedGridProgram("Align this lonely image!",
 		func(c *ledgrid.Canvas) {
 			imgPos := geom.Point{float64(width / 2), float64(height / 2)}
-			img := ledgrid.NewImage(imgPos, "images/raster.png")
-			img.Size = geom.Point{20, 20}
+			img := ledgrid.NewImage(imgPos, "images/skull.png")
+			img.Size = geom.Point{float64(width / 2), float64(height / 2)}
 			img.SetAlign(ledgrid.AlignBottom)
 			c.Add(0, img)
 
@@ -112,8 +130,19 @@ var (
 				img.SetAlign(ledgrid.AlignTop)
 			})
 
+			aPos1 := ledgrid.NewPositionAnim(img, geom.Point{float64(width / 4), float64(height / 4)}, 3*time.Second)
+			aPos2 := ledgrid.NewPositionAnim(img, geom.Point{-float64(3 * width), -float64(3 * height)}, 3*time.Second)
+			aPos2.Cont = true
+			aSize := ledgrid.NewSizeAnim(img, geom.NewPointIMG(c.Bounds().Size()).Mul(7.0), 3*time.Second)
+			aFadeOut := ledgrid.NewFadeAnim(img, ledgrid.FadeOut, 2*time.Second)
+			aFinal := ledgrid.NewSequence(
+				aPos1,
+				ledgrid.NewGroup(aPos2, aSize),
+				aFadeOut,
+			)
+
 			aAngle := ledgrid.NewAngleAnim(img, 2*math.Pi, 4*time.Second)
-            aAngle.Curve = ledgrid.AnimationLazeInOut
+			aAngle.Curve = ledgrid.AnimationLazeInOut
 			aHoriSeq := ledgrid.NewSequence(
 				aAlignRight, aAngle,
 				aAlignCenter, aAngle,
@@ -123,6 +152,7 @@ var (
 				aAlignBottom, aHoriSeq,
 				aAlignMiddle, aHoriSeq,
 				aAlignTop, aHoriSeq,
+				aFinal,
 			)
 			aVertSeq.Start()
 		})

@@ -1,7 +1,10 @@
 package ledgrid
 
 import (
+	"image"
 	"math"
+
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // The output device can be realized in several ways. For example a SPI bus
@@ -10,9 +13,17 @@ import (
 // (quite expensive) hardware. Every "thing" which can be used as a display
 // must implement this interface.
 type Displayer interface {
-	// Returns the width and height of the display. Is mainly used by the
-	// GridServer to determine the size of the receiving buffer.
-	Size() int
+	// Returns the number of addressable NeoPixels in this Implementation.
+	// Can be used by Client or Server to allocate memory for buffers.
+	NumLeds() int
+	// Returns a Rectangle enclosing the whole display. Because the
+	// configuration of the modules allow for empty space within this
+	// rectangle, you cannot derive the number of LED's from this measure!
+	Bounds() image.Rectangle
+	// Returns the configuration of this displayer
+	ModuleConfig() conf.ModuleConfig
+	// Sets a new module configuration
+	SetModuleConfig(cnf conf.ModuleConfig)
 	// Blah...
 	SetPixelStatus(idx int, stat LedStatusType)
 	// Returns the gamma values that should by default be used on this
@@ -22,11 +33,12 @@ type Displayer interface {
 	Gamma() (r, g, b float64)
 	// Set new values for the gamma correction.
 	SetGamma(r, g, b float64)
-	//
+	// Display is used by a Server to show the image data in buffer. The bytes
+	// in buffer must already be in a suitable order for this specific device.
+	// The order of RGB has to be in device order as well.
 	Display(buffer []byte)
-	// Sends all the bytes in buffer to the displaying hardware.
-	// The correct order of the pixel values as well as the order of the
-	// colors is up to the sending part.
+	// Send is called by Display and must not be called from other parts of
+	// the software
 	Send(buffer []byte)
 	// Closes the connection to the displaying hardware and releases any
 	// allocated ressources.
@@ -52,28 +64,43 @@ const (
 )
 
 type DisplayEmbed struct {
+	ModConf    conf.ModuleConfig
 	impl       Displayer
-	size       int
+	numLeds    int
+	size       image.Point
 	buffer     []byte
 	gammaVal   [3]float64
 	gammaTbl   [3][256]byte
 	statusList []LedStatusType
 }
 
-func (d *DisplayEmbed) Init(impl Displayer, size int) {
+func (d *DisplayEmbed) Init(impl Displayer, numLeds int) {
 	d.impl = impl
-	d.size = size
-	d.buffer = make([]byte, 3*size)
-	d.statusList = make([]LedStatusType, size)
+	d.numLeds = numLeds
+	d.buffer = make([]byte, 3*numLeds)
+	d.statusList = make([]LedStatusType, numLeds)
 	d.SetGamma(impl.DefaultGamma())
 }
 
-func (d *DisplayEmbed) Size() int {
-	return d.size
+func (d *DisplayEmbed) NumLeds() int {
+	return d.numLeds
+}
+
+func (d *DisplayEmbed) Bounds() (image.Rectangle) {
+    return image.Rectangle{image.Point{}, d.size}
 }
 
 func (d *DisplayEmbed) SetPixelStatus(idx int, stat LedStatusType) {
 	d.statusList[idx] = stat
+}
+
+func (d *DisplayEmbed) ModuleConfig() conf.ModuleConfig {
+	return d.ModConf
+}
+
+func (d *DisplayEmbed) SetModuleConfig(cnf conf.ModuleConfig) {
+	d.ModConf = cnf
+    d.size = cnf.Size()
 }
 
 func (d *DisplayEmbed) Gamma() (r, g, b float64) {

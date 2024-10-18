@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"github.com/stefan-muehlebach/ledgrid/conf"
 	"errors"
 	"io"
 	"log"
@@ -44,7 +45,7 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 
 	p := &GridServer{Disp: disp}
 	// RegisterDisplayer(0, disp)
-	p.bufferSize = 3 * disp.Size()
+	p.bufferSize = 3 * disp.NumLeds()
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
 	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
@@ -68,7 +69,6 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	if err != nil {
 		log.Fatal("UDP listen error:", err)
 	}
-	go p.HandleMessage(p.udpConn)
 
 	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
@@ -81,7 +81,6 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	if err != nil {
 		log.Fatal("TCP listen error:", err)
 	}
-	go p.HandleTCP(p.tcpListener)
 
 	// Anschliessend wird die RPC-Verbindung initiiert.
 	rpc.Register(p)
@@ -92,9 +91,14 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	if err != nil {
 		log.Fatal("RPC listen error:", err)
 	}
-	go http.Serve(p.rpcListener, nil)
 
 	return p
+}
+
+func (p *GridServer) HandleEvents() {
+	go p.HandleMessage(p.udpConn)
+	go p.HandleTCP(p.tcpListener)
+	go http.Serve(p.rpcListener, nil)
 }
 
 // Schliesst die diversen Verbindungen.
@@ -170,6 +174,10 @@ func (p *GridServer) SetGamma(r, g, b float64) {
 	p.Disp.SetGamma(r, g, b)
 }
 
+func (p *GridServer) ModuleConfig() conf.ModuleConfig {
+    return p.Disp.ModuleConfig()
+}
+
 // Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
 func (p *GridServer) MaxBright() (r, g, b uint8) {
 	return p.maxValue[0], p.maxValue[1], p.maxValue[2]
@@ -197,7 +205,7 @@ const (
 func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
 	var colorValue byte
-	var numTestLeds = p.Disp.Size()
+	var numTestLeds = p.Disp.NumLeds()
 	var testBufferSize = 3 * numTestLeds
 	var buffer []byte
 
@@ -288,7 +296,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 type SizeArg int
 
 func (p *GridServer) RPCSize(arg int, reply *SizeArg) error {
-	*reply = SizeArg(p.Disp.Size())
+	*reply = SizeArg(p.Disp.NumLeds())
 	return nil
 }
 
@@ -318,4 +326,8 @@ func (p *GridServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
 func (p *GridServer) RPCMaxBright(arg int, reply *BrightArg) error {
 	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
 	return nil
+}
+
+type ModuleConfigArg struct {
+	ModuleConfig conf.ModuleConfig
 }

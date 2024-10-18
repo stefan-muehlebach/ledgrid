@@ -213,6 +213,10 @@ var (
 			aPalTl.Start()
 		})
 
+// --------------------------------------------------------------------------
+//
+// The new kid on the block... ;-)
+//
 	ShowTheColorShader = NewLedGridProgram("Show a color shader!",
 		func(c *ledgrid.Canvas) {
 			var xMin, xMax, yMin, yMax, dx, dy float64
@@ -221,11 +225,11 @@ var (
 			for i := range width * height {
 				randomList[i] = rand.Float64()
 			}
-
-            xMin =  0.0
-            xMax =  float64(width)/10.0
-            yMin =  0.0
-            yMax =  float64(height)/10.0
+            w, h := float64(width)/10.0, float64(height)/10.0
+            xMin =  -w/2
+            xMax =   w/2
+            yMin =  -h/2
+            yMax =   h/2
             dx = (xMax - xMin) / float64(width)
             dy = (yMax - yMin) / float64(height)
 
@@ -247,6 +251,11 @@ var (
 			}
 			aGrp.Start()
 		})
+
+	randomList []float64
+
+// Einer der Shader (oder dort: color functions) aus den Testprogrammen
+// von OpenPixelController.
 
 	NyanCatShader = func(t, x, y, z float64, idx, nPix int) color.LedColor {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
@@ -291,6 +300,9 @@ var (
 		return color.LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
+// Einer der Shader (oder dort: color functions) aus den Testprogrammen
+// von OpenPixelController.
+
 	LavaLampShader = func(t, x, y, z float64, idx, nPix int) color.LedColor {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
 		z += myCos(x, 0, 1, 0, 0.3)
@@ -322,6 +334,29 @@ var (
 		return color.LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
+    BlinkPeriod = 11.5
+
+	RandomShader = func(t, x, y, z float64, idx, nPix int) color.LedColor {
+        var col color.LedColor
+
+        blinkTime := BlinkPeriod * randomList[idx]
+        relTime := math.Mod(t, BlinkPeriod)
+        if abs(blinkTime-relTime) <= 0.1 {
+            col = color.YellowGreen
+        } else {
+            if relTime < blinkTime {
+                relTime += BlinkPeriod
+            }
+            t := (relTime-blinkTime)/BlinkPeriod
+            col = color.YellowGreen.Interpolate(color.Black, t)
+        }
+        return col
+    }
+
+
+// Eine Sammlung von Farben-Hilfsfunktionen (ebenfalls aus dem Umfeld von
+// OpenPixelController).
+
 	remap = func(x, minIn, maxIn, minOut, maxOut float64) float64 {
 		t := (x - minIn) / (maxIn - minIn)
 		return minOut + t*(maxOut-minOut)
@@ -343,9 +378,7 @@ var (
 		return
 	}
 
-	randomList []float64
-
-	// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 	f1 = func(t, x, y, p1 float64) float64 {
 		return math.Sin(x*p1 + t)
@@ -379,9 +412,9 @@ var (
 
 			nameList = make([]string, len(color.Names))
 			copy(nameList, color.Names)
-			rand.Shuffle(len(nameList), func(i, j int) {
-				nameList[i], nameList[j] = nameList[j], nameList[i]
-			})
+			// rand.Shuffle(len(nameList), func(i, j int) {
+			// 	nameList[i], nameList[j] = nameList[j], nameList[i]
+			// })
 			colName = nameList[0]
 
 			rectPos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
@@ -449,10 +482,10 @@ var (
 				fadeIn.Val2 = ledgrid.Const(newColor)
 			})
 
-			timeLine := ledgrid.NewTimeline(4 * time.Second)
+			timeLine := ledgrid.NewTimeline(3 * time.Second)
 			timeLine.Add(0*time.Second, txtTask, posAnim1, fadeIn)
-			timeLine.Add(2*time.Second, colTask)
-			timeLine.Add(3*time.Second, fadeOut, posAnim2)
+			timeLine.Add(1500*time.Millisecond, colTask)
+			timeLine.Add(2*time.Second, fadeOut, posAnim2)
 			timeLine.RepeatCount = ledgrid.AnimationRepeatForever
 
 			timeLine.Start()

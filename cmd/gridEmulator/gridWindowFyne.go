@@ -1,15 +1,47 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
+
+// Since the default padding between adjacent elements in a GridContainer is
+// waaaay to large, we had to define a custom theme with only one divergent
+// property: theme.SizeNamePadding
+type myTheme struct{}
+
+var _ fyne.Theme = (*myTheme)(nil)
+
+func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	return theme.DefaultTheme().Color(name, variant)
+}
+func (t myTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return theme.DefaultTheme().Font(style)
+}
+func (t myTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+func (t myTheme) Size(name fyne.ThemeSizeName) float32 {
+	if name == theme.SizeNamePadding {
+		return 1.0
+	}
+	return theme.DefaultTheme().Size(name)
+}
+
+// var (
+// 	App fyne.App
+// 	Win fyne.Window
+// )
 
 // This is the essential part of the gridEmulator: GridWindow, which
 // implements the ledgrid.Displayer interface and can be used by GridServer
@@ -18,12 +50,13 @@ import (
 // It does not only show a grid of colorful LEDs, but exactly emulates the
 // configuration of the original LedGrid using 10x10 modules as well as the
 // snake cabeling.
-type GridWindow struct {
-    ledgrid.DisplayEmbed
+type FyneWindow struct {
+	ledgrid.DisplayEmbed
 	// This is the fyne object, which must be added to a fyne application in
 	// order to experience the whole glory of the emulation.
+	App       fyne.App
+	Win       fyne.Window
 	Grid      *fyne.Container
-	modConf   conf.ModuleConfig
 	size      image.Point
 	indexMap  conf.IndexMap
 	coordMap  conf.CoordMap
@@ -33,19 +66,25 @@ type GridWindow struct {
 
 // A new grid object must only know it's size in order to get the
 // configuration of the emulated modules.
-func NewGridWindowBySize(pixelSize float64, size image.Point) *GridWindow {
+func NewFyneWindowBySize(title string, pixelSize float64, size image.Point) *FyneWindow {
 	modConf := conf.DefaultModuleConfig(size)
-	return NewGridWindow(pixelSize, modConf)
+	return NewFyneWindow(title, pixelSize, modConf)
 }
 
-func NewGridWindow(pixelSize float64, modConf conf.ModuleConfig) *GridWindow {
-	e := &GridWindow{}
-    e.DisplayEmbed.Init(e, modConf.Size().X * modConf.Size().Y)
+func NewFyneWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *FyneWindow {
+	e := &FyneWindow{}
+	e.DisplayEmbed.Init(e, len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
+
+	e.App = app.New()
+	e.App.SetIcon(resourceIconIco)
+	e.App.Settings().SetTheme(&myTheme{})
+	e.Win = e.App.NewWindow(title)
+
 	e.Grid = container.NewWithoutLayout()
-	e.modConf = modConf
-	e.size = e.modConf.Size()
-	e.coordMap = e.modConf.CoordMap()
-	e.indexMap = e.modConf.IndexMap()
+	e.ModConf = modConf
+	e.size = e.ModConf.Size()
+	e.coordMap = e.ModConf.CoordMap()
+	e.indexMap = e.ModConf.IndexMap()
 	e.field = make([][]*canvas.Circle, e.size.X)
 	for i := range e.field {
 		e.field[i] = make([]*canvas.Circle, e.size.Y)
@@ -64,32 +103,52 @@ func NewGridWindow(pixelSize float64, modConf conf.ModuleConfig) *GridWindow {
 		e.Grid.Add(led)
 	}
 	e.numPixels = e.size.X * e.size.Y
+
+	winSize := fyne.NewSize(float32(e.size.X)*float32(pixelSize), float32(e.size.Y)*float32(pixelSize))
+	e.Win.SetContent(e.Grid)
+	e.Win.Resize(winSize)
+	e.Win.SetFixedSize(true)
+
 	return e
+}
+
+func (e *FyneWindow) HandleEvents() {
+	e.Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
+		switch evt.Name {
+		case fyne.KeyH:
+			fmt.Printf("Use the following keys to control the software:\n")
+			fmt.Printf("  h   Show this help (again)\n")
+			fmt.Printf("  s   Show some statistics\n")
+			fmt.Printf("  t   Start test pattern, press 't' again to stop\n")
+			fmt.Printf("  q   Quit the program\n")
+			fmt.Printf(" ESC  Same as 'q'\n")
+		// case fyne.KeyS:
+		// 	PrintStatistics(gridServer)
+		// 	ResetStatistics(gridServer)
+		// case fyne.KeyT:
+		// 	ToggleTests(gridServer)
+		case fyne.KeyEscape, fyne.KeyQ:
+			e.App.Quit()
+		}
+	})
+	e.Win.ShowAndRun()
 }
 
 // Since we implement ledgrid.Displayer, we must provide a default gamma
 // setting. In contrast to the real hardware, the emulation must not correct
 // any colors, so the gamma values are 1.0 for all colors.
-func (e *GridWindow) DefaultGamma() (r, g, b float64) {
+func (e *FyneWindow) DefaultGamma() (r, g, b float64) {
 	return 1.0, 1.0, 1.0
 }
 
-func (e *GridWindow) Close() {}
-
-func (e *GridWindow) Size() int {
-	return e.size.X * e.size.Y
-}
-
-func (e *GridWindow) Display(buffer []byte) {
-    e.Send(buffer)
-}
+func (e *FyneWindow) Close() {}
 
 // Takes the bytes in buffer, and uses them exactly as the real hardware
 // would to recolor the individual LEDs (circle objects) of the emulation.
 // Only if the colors really change, a fyne refresh is issued.
 // Do not try to refresh the individual circles - this takes waaay to much
 // time!
-func (e *GridWindow) Send(buffer []byte) {
+func (e *FyneWindow) Send(buffer []byte) {
 	var r, g, b uint8
 	var i int
 	var needsRefresh bool
@@ -116,4 +175,3 @@ func (e *GridWindow) Send(buffer []byte) {
 		e.Grid.Refresh()
 	}
 }
-

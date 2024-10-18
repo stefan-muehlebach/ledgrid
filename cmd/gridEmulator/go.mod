@@ -9,6 +9,7 @@ replace github.com/stefan-muehlebach/gg => ../../../gg
 require (
 	fyne.io/fyne/v2 v2.5.1
 	github.com/stefan-muehlebach/ledgrid v0.0.0-00010101000000-000000000000
+	github.com/veandco/go-sdl2 v0.4.40
 )
 
 require (

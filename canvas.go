@@ -99,9 +99,9 @@ func (c *Canvas) Del(layer int, obj CanvasObject) {
 }
 
 func (c *Canvas) PurgeAll() {
-    for layer := range NumLayers {
-        c.Purge(layer)
-    }
+	for layer := range NumLayers {
+		c.Purge(layer)
+	}
 }
 
 // Loescht alle Objekte von der Zeichenflaeche.
@@ -247,17 +247,6 @@ type AngleEmbed struct {
 
 func (e *AngleEmbed) AnglePtr() *float64 {
 	return &e.Angle
-}
-
-type FadeEmbed struct {
-	colPtr *color.LedColor
-}
-
-func (e *FadeEmbed) Init(c *color.LedColor) {
-	e.colPtr = c
-}
-func (e *FadeEmbed) AlphaPtr() *uint8 {
-	return &e.colPtr.A
 }
 
 type ColorEmbed struct {
@@ -669,6 +658,46 @@ func (t *FixedText) Draw(c *Canvas) {
 	t.drawer.DrawString(t.text)
 }
 
+type MyUniform struct {
+	C gocolor.Alpha
+}
+
+func NewMyUniform(val uint8) *MyUniform {
+	c := &MyUniform{}
+	c.C = gocolor.Alpha{val}
+	return c
+}
+
+func (c *MyUniform) At(x, y int) gocolor.Color {
+	return c.C
+}
+
+func (c *MyUniform) Bounds() image.Rectangle {
+	return image.Rectangle{image.Point{-1e9, -1e9}, image.Point{1e9, 1e9}}
+}
+
+func (c *MyUniform) RGBA() (r, g, b, a uint32) {
+	return c.C.RGBA()
+}
+
+func (c *MyUniform) ColorModel() gocolor.Model {
+	return c
+}
+
+func (c *MyUniform) Convert(gocolor.Color) gocolor.Color {
+	return c.C
+}
+
+func (c *MyUniform) RGBA64At(x, y int) gocolor.RGBA64 {
+	r, g, b, a := c.C.RGBA()
+	return gocolor.RGBA64{uint16(r), uint16(g), uint16(b), uint16(a)}
+}
+
+func (c *MyUniform) Opaque() bool {
+	_, _, _, a := c.C.RGBA()
+	return a == 0xffff
+}
+
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc). Wie Pos genau
 // interpretiert wird, ist vom Alignment (wie beim Text) abhaengig. Size
 // ist die Zielgroesse des Bildes auf dem LedGrid, ist per Default (0,0), was
@@ -680,7 +709,8 @@ type Image struct {
 	PosEmbed
 	SizeEmbed
 	AngleEmbed
-	Img draw.Image
+	Img  draw.Image
+	Mask *MyUniform
 }
 
 // Erzeugt ein neues Bild aus der Datei fileName und platziert es bei pos.
@@ -691,7 +721,12 @@ func NewImage(pos geom.Point, fileName string) *Image {
 	i.CanvasObjectEmbed.Extend(i)
 	i.Img = LoadImage(fileName)
 	i.ax, i.ay = 0.5, 0.5
+	i.Mask = NewMyUniform(0xff)
 	return i
+}
+
+func (i *Image) AlphaPtr() *uint8 {
+	return &i.Mask.C.A
 }
 
 func (i *Image) Read(fileName string) {
@@ -719,7 +754,8 @@ func (i *Image) Draw(c *Canvas) {
 	sin := math.Sin(i.Angle)
 	m := f64.Aff3{cos * sx, -sin * sy, -cos*i.ax*dx + sin*(1-i.ay)*dy + i.Pos.X,
 		sin * sx, cos * sy, -sin*i.ax*dx - cos*(1-i.ay)*dy + i.Pos.Y}
-	draw.BiLinear.Transform(c.Img, m, i.Img, i.Img.Bounds(), draw.Over, nil)
+	draw.BiLinear.Transform(c.Img, m, i.Img, i.Img.Bounds(), draw.Over,
+		&draw.Options{DstMask: i.Mask})
 }
 
 func LoadImage(fileName string) draw.Image {
@@ -757,6 +793,7 @@ func NewSprite(pos geom.Point) *Sprite {
 	i.Pos = pos
 	i.Curve = AnimationLinear
 	i.ax, i.ay = 0.5, 0.5
+	i.Mask = NewMyUniform(0xff)
 	i.imgList = make([]draw.Image, 0)
 	i.durList = make([]time.Duration, 0)
 	return i

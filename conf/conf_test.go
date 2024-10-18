@@ -200,7 +200,7 @@ func TestLoadCustomConf(t *testing.T) {
     var conf ModuleConfig
 
     t.Logf("Load custom configuration")
-    conf = Load("data/squareWithHole.json")
+    conf = Load("data/tetris.json")
     t.Logf("%v", conf)
 }
 
