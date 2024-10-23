@@ -80,11 +80,11 @@ var (
 				geom.Point{22, 6},
 			)
 
-            ptList := []geom.Point{
-                geom.Point{1, 1},
-            }
+			ptList := []geom.Point{
+				geom.Point{1, 1},
+			}
 			for range 20 {
-				ptList = append(ptList, geom.Point{float64(rand.Intn(width-1)), float64(rand.Intn(height-1))})
+				ptList = append(ptList, geom.Point{float64(rand.Intn(width - 1)), float64(rand.Intn(height - 1))})
 			}
 			polyPath3 := ledgrid.NewPolygonPath(ptList...)
 

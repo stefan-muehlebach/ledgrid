@@ -17,17 +17,17 @@ type Displayer interface {
 	// Can be used by Client or Server to allocate memory for buffers.
 	NumLeds() int
 	// Returns a Rectangle enclosing the whole display. Because the
-	// configuration of the modules allow for empty space within this
-	// rectangle, you cannot derive the number of LED's from this measure!
+	// configuration of the modules allow empty space within this
+	// rectangle, you cannot derive the number of NeoPixels from this value.
 	Bounds() image.Rectangle
-	// Returns the configuration of this displayer
+	// Returns the module configuration of this displayer.
 	ModuleConfig() conf.ModuleConfig
 	// Sets a new module configuration
 	SetModuleConfig(cnf conf.ModuleConfig)
-	// Blah...
+	// Sets the status of NeoPixel with index idx to stat.
 	SetPixelStatus(idx int, stat LedStatusType)
-	// Returns the gamma values that should by default be used on this
-	// type of hardware.
+	// Returns the gamma values that should be used by default on this
+	// displayer.
 	DefaultGamma() (r, g, b float64)
 	// Returns the currently set values for the gamma correction
 	Gamma() (r, g, b float64)
@@ -45,24 +45,30 @@ type Displayer interface {
 	Close()
 }
 
-// This type has been introduced in order to mark some LEDs on the chain as
-// 'ok', defect or missing (see constants PixelOK, PixelDefect, PixelMissing)
+// This type has been introduced in order to mark some NeoPixels on the chain
+// as 'ok' (the default), 'defect' or 'missing' (see constants PixelOK,
+// PixelDefect or PixelMissing for more information).
 type LedStatusType byte
 
 const (
 	// This is the default state of a LED
 	LedOK LedStatusType = iota
-	// LEDs with this status will be blacked out, this mean we send color data
-	// for this LED, but we send (0,0,0). This status can be used if a NeoPixel
-	// receives data but does not display them correctly.
+	// NeoPixels with this status will be blacked out. This means that the
+	// sent color data for this NeoPixel will always be (0,0,0), i.e. black.
+	// This status can be used if a NeoPixel receives and transmits data as
+	// expected but is not able to display its own color.
 	LedDefect
 	// This status can be used, if a NeoPixel does not even transmit the data
-	// to the NeoPixels further down the chain. Such a pixel needs to be cut
-	// out of the chain and for the time till a replacement Pixel is organized
-	// and soldered in, the pixel has status missing.
+	// to the NeoPixels further down the chain. Such a pixel has to be cut out
+	// of the chain and the wires need to be shortened. For the time till a
+	// replacement Pixel is organized and soldered in, this pixel must have
+	// status 'missing'.
 	LedMissing
 )
 
+// Each implementation of a Displayer can and should embed this embeddable.
+// It contains methods for getting the number of NeoPixels, the size of the
+// Displayer, for setting the status of individual NeoPixels and so on.
 type DisplayEmbed struct {
 	ModConf    conf.ModuleConfig
 	impl       Displayer
@@ -74,6 +80,8 @@ type DisplayEmbed struct {
 	statusList []LedStatusType
 }
 
+// An embedding type needs to call this method once in order to set initial
+// values correctly.
 func (d *DisplayEmbed) Init(impl Displayer, numLeds int) {
 	d.impl = impl
 	d.numLeds = numLeds
@@ -82,31 +90,38 @@ func (d *DisplayEmbed) Init(impl Displayer, numLeds int) {
 	d.SetGamma(impl.DefaultGamma())
 }
 
+// See NumLeds in interface Displayer.
 func (d *DisplayEmbed) NumLeds() int {
 	return d.numLeds
 }
 
-func (d *DisplayEmbed) Bounds() (image.Rectangle) {
-    return image.Rectangle{image.Point{}, d.size}
+// See Bounds in interface Displayer.
+func (d *DisplayEmbed) Bounds() image.Rectangle {
+	return image.Rectangle{image.Point{}, d.size}
 }
 
+// See SetPixelStatus in interface Displayer.
 func (d *DisplayEmbed) SetPixelStatus(idx int, stat LedStatusType) {
 	d.statusList[idx] = stat
 }
 
+// See ModuleConfig in interface Displayer.
 func (d *DisplayEmbed) ModuleConfig() conf.ModuleConfig {
 	return d.ModConf
 }
 
+// See SetModuleConfig in interface Displayer.
 func (d *DisplayEmbed) SetModuleConfig(cnf conf.ModuleConfig) {
 	d.ModConf = cnf
-    d.size = cnf.Size()
+	d.size = cnf.Size()
 }
 
+// See Gamma in interface Displayer.
 func (d *DisplayEmbed) Gamma() (r, g, b float64) {
 	return d.gammaVal[0], d.gammaVal[1], d.gammaVal[2]
 }
 
+// See SetGamma in interface Displayer.
 func (d *DisplayEmbed) SetGamma(r, g, b float64) {
 	d.gammaVal[0], d.gammaVal[1], d.gammaVal[2] = r, g, b
 	for colorIdx, val := range d.gammaVal {
@@ -116,6 +131,7 @@ func (d *DisplayEmbed) SetGamma(r, g, b float64) {
 	}
 }
 
+// See Display in interface Displayer.
 func (d *DisplayEmbed) Display(buffer []byte) {
 	var srcIdx, dstIdx int
 	var src, dst []byte

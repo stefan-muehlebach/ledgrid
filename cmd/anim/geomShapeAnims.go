@@ -18,7 +18,7 @@ var (
 			pos2 := geom.Point{10.5, float64(height) - 1.5}
 			pos3 := geom.Point{19.5, 1.5}
 			pos4 := geom.Point{28.5, float64(height) - 1.5}
-			pos5 := geom.Point{37.5, 1.5}
+			pos5 := geom.Point{float64(width) - 1.5, 1.5}
 			cSize := geom.Point{2.0, 2.0}
 
 			c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)

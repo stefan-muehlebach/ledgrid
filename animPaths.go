@@ -7,15 +7,13 @@ import (
 )
 
 var (
-    CirclePath = NewGeomPath(circleFunc, 0, 1)
-    LinearPath = NewGeomPath(linearFunc, 0, 1)
-    RectanglePath = NewGeomPath(rectangleFunc, 0, 1)
+    CirclePath = NewGeomPath(circlePathFunc, 0, 1)
+    LinearPath = NewGeomPath(linearPathFunc, 0, 1)
+    RectanglePath = NewGeomPath(rectPathFunc, 0, 1)
 )
 
-// Ein Pfad ist im Grunde nichts anderes, als eine Moeglichkeit, aufgrund eines
-// Parameters t (in [0, 1]) einen Punkt in der 2D-Ebene zu erhalten. Wie das
-// genau geht und ob das fuer jemanden Sinn macht, das steht auf einem anderen
-// Blatt.
+// Ein Pfad ist im Grunde nichts anderes, als eine Funktion der Form
+//   [0,1] -> (x,y)
 type Path interface {
     Pos(t float64) geom.Point
 }
@@ -78,21 +76,21 @@ func (p *GeomPath) NewStartLen(t0, l float64) *GeomPath {
 type PathFunctionType func(t float64) geom.Point
 
 // Beschreibt eine Gerade vom Punkt (0,0) zum Punkt (1,1)
-func linearFunc(t float64) geom.Point {
+func linearPathFunc(t float64) geom.Point {
 	return geom.Point{t, t}
 }
 
 // Beschreibt einen Kreis, der eine Breite/Hoehe von 1.0 hat, am Ursprung
 // zentriert ist, oben in der Mitte beginnt und dann im Uhrzeigersinn
 // verlaeuft.
-func circleFunc(t float64) geom.Point {
+func circlePathFunc(t float64) geom.Point {
 	phi := t * 2 * math.Pi
 	return geom.Point{0.5*math.Sin(phi), -0.5*math.Cos(phi)}
 }
 
 // Beschreibt ein Rechteck. Start ist links oben und der Verlauf ist im
 // Uhrzeigersinn.
-func rectangleFunc(t float64) geom.Point {
+func rectPathFunc(t float64) geom.Point {
 	switch {
 	case t < 1.0/4.0:
 		return geom.Point{4.0 * t, 0.0}

@@ -11,23 +11,23 @@ import (
 	"periph.io/x/host/v3/sysfs"
 )
 
-// Um einerseits nicht nur von einer Library zum Ansteuern des SPI-Bus
-// abhaengig zu sein, aber auch um verschiedene SPI-Libraries miteinander zu
-// vergleichen, wird die Verbindung zu den LEDs via SPI mit periph.io und
-// gobot.io realisiert.
-
+// Dies ist die Implementation eines Displayers, welcher eine Lichterkette von
+// NeoPixeln mit WS2801 via SPI-Bus auf einem RaspberryPi ansteuert.
 type WS2801 struct {
-    DisplayEmbed
+	DisplayEmbed
 	spiPort   spi.PortCloser
 	spiConn   spi.Conn
 	maxTxSize int
 }
 
-func NewWS2801(spiDev string, baud int, size int) *WS2801 {
+// Erstellt eine neue Instanz. spiDev ist das Device-File des SPI-Buses, baud
+// die Taktrate (in Bit pro Sekunde) und numLeds die Anzahl NeoPixel auf der
+// Lichterkette - ohne die entfernten NeoPixel zu beruecksichtigen.
+func NewWS2801(spiDev string, baud int, numLeds int) *WS2801 {
 	var err error
 	p := &WS2801{}
 
-    p.DisplayEmbed.Init(p, size)
+	p.DisplayEmbed.Init(p, numLeds)
 	_, err = host.Init()
 	if err != nil {
 		log.Fatal(err)
@@ -50,14 +50,21 @@ func NewWS2801(spiDev string, baud int, size int) *WS2801 {
 	return p
 }
 
+// Diese Methode gehoert zum Displayer-Interface und retourniert die
+// empfohlenen Gamma-Werte fuer die drei Farbkanaele Rot, Gruen und Blau.
 func (p *WS2801) DefaultGamma() (r, g, b float64) {
 	return 2.5, 2.5, 2.5
 }
 
+// Schliesst den Displayer, in diesem Fall den SPI-Port.
 func (p *WS2801) Close() {
 	p.spiPort.Close()
 }
 
+// Sendet die Farbwerte in buffer via SPI-Bus zur NeoPixel Lichterkette. Die
+// Reihenfolge der Pixel muss bereits vorgaengig der effektiven Verkabelung
+// angepasst worden sein, ebenso die Farbwertkorrektur. Diese Methode wird
+// ueblicherweise vom DisplayEmbed und nicht von Benutzercode aufgerufen.
 func (p *WS2801) Send(buffer []byte) {
 	var err error
 	var bufferSize int

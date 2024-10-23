@@ -1,5 +1,3 @@
-//go:generate fyne bundle -o icon.go Icon.ico
-
 package main
 
 import (

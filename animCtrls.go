@@ -7,16 +7,17 @@ import (
 
 // Eine Gruppe dient dazu, eine Anzahl von Animationen gleichzeitig zu starten.
 // Die Laufzeit der Gruppe ist gleich der laengsten Laufzeit ihrer Animationen
-// oder einer festen Dauer (je nach dem was groesser ist).
+// oder einer festen Dauer (je nachdem, welche Dauer groesser ist).
 // Die Animationen, welche ueber eine Gruppe gestartet werden, sollten keine
 // Endlos-Animationen sein, da sonst die Laufzeit der Gruppe ebenfalls
-// unendlich wird.
+// endlos wird.
 type Group struct {
 	DurationEmbed
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
-
+    // Liste, der durch diese Gruppe gestarteten Tasks.
 	Tasks            []Task
+
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
