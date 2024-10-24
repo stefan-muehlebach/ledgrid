@@ -1,6 +1,7 @@
 package ledgrid
 
 import (
+	"github.com/stefan-muehlebach/ledgrid/conf"
 	"log"
 	"time"
 
@@ -23,11 +24,12 @@ type WS2801 struct {
 // Erstellt eine neue Instanz. spiDev ist das Device-File des SPI-Buses, baud
 // die Taktrate (in Bit pro Sekunde) und numLeds die Anzahl NeoPixel auf der
 // Lichterkette - ohne die entfernten NeoPixel zu beruecksichtigen.
-func NewWS2801(spiDev string, baud int, numLeds int) *WS2801 {
+func NewWS2801(spiDev string, baud int, modConf conf.ModuleConfig) *WS2801 {
 	var err error
 	p := &WS2801{}
 
-	p.DisplayEmbed.Init(p, numLeds)
+	p.DisplayEmbed.Init(p, len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
+    p.SetModuleConfig(modConf)
 	_, err = host.Init()
 	if err != nil {
 		log.Fatal(err)

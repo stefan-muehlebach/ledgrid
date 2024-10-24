@@ -1,6 +1,8 @@
 package main
 
 import (
+	"image"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 	"flag"
 	"log"
 	"os"
@@ -13,10 +15,12 @@ import (
 )
 
 const (
+	defWidth           = 40
+	defHeight          = 10
+
 	defMissingIDs = ""
 	defDefectIDs  = ""
 	defBaud       = 2_000_000
-	defNumPix     = 400
 )
 
 func SignalHandler(gridServer *ledgrid.GridServer) {
@@ -54,7 +58,11 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 }
 
 func main() {
-	var numPix int
+	var width, height int
+	var customConfName string
+	var gridSize image.Point
+	var modConf conf.ModuleConfig
+
 	var dataPort, rpcPort uint
 	var baud int
 	var missingIDs, defectIDs string
@@ -63,7 +71,11 @@ func main() {
 	var gridServer *ledgrid.GridServer
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
-	flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for buffers and such)")
+    	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
+
+	// flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for buffers and such)")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port (UPD as well as TCP)")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
@@ -71,7 +83,16 @@ func main() {
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
 	flag.Parse()
 
-	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, numPix)
+	if customConfName != "" {
+		modConf = conf.Load("data/" + customConfName + ".json")
+		gridSize = modConf.Size()
+		width, height = gridSize.X, gridSize.Y
+	} else {
+		gridSize = image.Point{width, height}
+		modConf = conf.DefaultModuleConfig(gridSize)
+	}
+
+	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, modConf)
 	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
@@ -98,8 +119,5 @@ func main() {
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
 	SignalHandler(gridServer)
-
-	// go ledgrid.HandleOPC(opcPort)
-	// gridServer.Handle()
-
+	gridServer.HandleEvents()
 }
