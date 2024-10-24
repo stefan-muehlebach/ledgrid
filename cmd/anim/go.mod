@@ -11,7 +11,7 @@ require (
 	github.com/stefan-muehlebach/gg v1.3.4
 	github.com/stefan-muehlebach/ledgrid v1.4.0
 	github.com/vladimirvivien/go4vl v0.0.5
-	gocv.io/x/gocv v0.38.0
+	gocv.io/x/gocv v0.39.0
 	golang.org/x/image v0.21.0
 )
 

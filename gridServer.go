@@ -110,10 +110,10 @@ func (p *GridServer) Close() {
 }
 
 // Dies ist die zentrale Verarbeitungs-Funktion des GridServers. In ihr
-// wird laufend ein Datenpaket via UDP empfangen, die empfangenen Werte gem.
-// Gamma-Korrektur umgeschrieben und auf ein Ausgabegeraet uebertragen
-// (SPI-Bus, Emulation, etc.) Die genaue Konfiguration des LED-Grids
-// (Anordnung der Lichterketten) ist dem GridServer nicht bekannt.
+// wird laufend ein Datenpaket via UDP empfangen und die empfangenen Werte auf
+// ein Ausgabegeraet uebertragen (SPI-Bus, Emulation, etc.) Die genaue
+// Konfiguration des LED-Grids (Anordnung der Lichterketten) ist dem
+// GridServer nicht bekannt.
 func (p *GridServer) HandleMessage(conn net.Conn) {
 	var bufferSize int
 	var err error
@@ -144,6 +144,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	p.SentBytes += len(buffer)
 }
 
+// Damit werden Meldungen via TCP empfangen und verarbeitet.
 func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 	var conn net.Conn
 	var err error
@@ -293,10 +294,10 @@ func (p *GridServer) ToggleTestPattern() bool {
 // der Praxis hat sich das Senden der Bilddaten via RPC als zu langsam
 // erwiesen und wurde auf UDP umgestellt.
 
-type SizeArg int
+type NumLedsArg int
 
-func (p *GridServer) RPCSize(arg int, reply *SizeArg) error {
-	*reply = SizeArg(p.Disp.NumLeds())
+func (p *GridServer) RPCNumLeds(arg int, reply *NumLedsArg) error {
+	*reply = NumLedsArg(p.Disp.NumLeds())
 	return nil
 }
 
@@ -304,13 +305,13 @@ type GammaArg struct {
 	RedVal, GreenVal, BlueVal float64
 }
 
-func (p *GridServer) RPCSetGamma(arg GammaArg, reply *int) error {
-	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
+func (p *GridServer) RPCGamma(arg int, reply *GammaArg) error {
+	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
 	return nil
 }
 
-func (p *GridServer) RPCGamma(arg int, reply *GammaArg) error {
-	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
+func (p *GridServer) RPCSetGamma(arg GammaArg, reply *int) error {
+	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
 
@@ -318,16 +319,27 @@ type BrightArg struct {
 	RedVal, GreenVal, BlueVal uint8
 }
 
-func (p *GridServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
-	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
+func (p *GridServer) RPCMaxBright(arg int, reply *BrightArg) error {
+	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
 	return nil
 }
 
-func (p *GridServer) RPCMaxBright(arg int, reply *BrightArg) error {
-	reply.RedVal, reply.GreenVal, reply.BlueVal = p.MaxBright()
+func (p *GridServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
+	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
 
 type ModuleConfigArg struct {
 	ModuleConfig conf.ModuleConfig
 }
+
+func (p *GridServer) RPCModuleConfig(arg int, reply *ModuleConfigArg) error {
+    reply.ModuleConfig = p.Disp.ModuleConfig()
+    return nil
+}
+
+// func (p *GridServer) RPCSetModuleConfig(arg ModuleConfigArg, reply *int) error {
+//     p.Disp.SetModuleConfig(arg.ModuleConfig)
+//     return nil
+// }
+

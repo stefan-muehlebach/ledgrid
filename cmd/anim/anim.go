@@ -157,7 +157,7 @@ func main() {
 	var runInteractive bool
 	var progList string
 	var gR, gG, gB float64
-	var customConfName string
+	// var customConfName string
 	var modConf conf.ModuleConfig
 	var timeout time.Duration
 
@@ -166,14 +166,14 @@ func main() {
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
-	flag.IntVar(&width, "width", 40, "Width of LedGrid")
-	flag.IntVar(&height, "height", 10, "Height of LedGrid")
+	// flag.IntVar(&width, "width", 40, "Width of LedGrid")
+	// flag.IntVar(&height, "height", 10, "Height of LedGrid")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
-	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
+	// flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
 
@@ -190,12 +190,13 @@ func main() {
 	}
 
 	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
-	if customConfName != "" {
-		modConf = conf.Load("data/" + customConfName + ".json")
+    modConf = gridClient.ModuleConfig()
+	// if customConfName != "" {
+		// modConf = conf.Load("data/" + customConfName + ".json")
 		ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
-	} else {
-		ledGrid = ledgrid.NewLedGridBySize(gridClient, image.Pt(width, height))
-	}
+	// } else {
+		// ledGrid = ledgrid.NewLedGridBySize(gridClient, image.Pt(width, height))
+	// }
 	gR, gG, gB = ledGrid.Client.Gamma()
 
 	gridSize = ledGrid.Rect.Size()

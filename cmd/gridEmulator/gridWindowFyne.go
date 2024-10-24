@@ -1,4 +1,4 @@
-//go:build ignore
+//go:build guiFyne
 
 package main
 
@@ -52,7 +52,7 @@ func (t myTheme) Size(name fyne.ThemeSizeName) float32 {
 // It does not only show a grid of colorful LEDs, but exactly emulates the
 // configuration of the original LedGrid using 10x10 modules as well as the
 // snake cabeling.
-type FyneWindow struct {
+type Window struct {
 	ledgrid.DisplayEmbed
 	// This is the fyne object, which must be added to a fyne application in
 	// order to experience the whole glory of the emulation.
@@ -68,13 +68,13 @@ type FyneWindow struct {
 
 // A new grid object must only know it's size in order to get the
 // configuration of the emulated modules.
-func NewFyneWindowBySize(title string, pixelSize float64, size image.Point) *FyneWindow {
+func NewWindowBySize(title string, pixelSize float64, size image.Point) *Window {
 	modConf := conf.DefaultModuleConfig(size)
-	return NewFyneWindow(title, pixelSize, modConf)
+	return NewWindow(title, pixelSize, modConf)
 }
 
-func NewFyneWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *FyneWindow {
-	e := &FyneWindow{}
+func NewWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *Window {
+	e := &Window{}
 	e.DisplayEmbed.Init(e, len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 
 	e.App = app.New()
@@ -114,7 +114,7 @@ func NewFyneWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *
 	return e
 }
 
-func (e *FyneWindow) HandleEvents() {
+func (e *Window) HandleEvents() {
 	e.Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
 		case fyne.KeyH:
@@ -139,18 +139,18 @@ func (e *FyneWindow) HandleEvents() {
 // Since we implement ledgrid.Displayer, we must provide a default gamma
 // setting. In contrast to the real hardware, the emulation must not correct
 // any colors, so the gamma values are 1.0 for all colors.
-func (e *FyneWindow) DefaultGamma() (r, g, b float64) {
+func (e *Window) DefaultGamma() (r, g, b float64) {
 	return 1.0, 1.0, 1.0
 }
 
-func (e *FyneWindow) Close() {}
+func (e *Window) Close() {}
 
 // Takes the bytes in buffer, and uses them exactly as the real hardware
 // would to recolor the individual LEDs (circle objects) of the emulation.
 // Only if the colors really change, a fyne refresh is issued.
 // Do not try to refresh the individual circles - this takes waaay to much
 // time!
-func (e *FyneWindow) Send(buffer []byte) {
+func (e *Window) Send(buffer []byte) {
 	var r, g, b uint8
 	var i int
 	var needsRefresh bool

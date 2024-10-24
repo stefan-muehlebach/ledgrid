@@ -25,6 +25,14 @@ func TestPlotCustomConfig(t *testing.T) {
     var modConf ModuleConfig
     var fileName string
 
+	modConf = Load("data/cap.json")
+	fileName = "plots/cap.png"
+	modConf.Plot(fileName)
+
+	modConf = Load("data/cup.json")
+	fileName = "plots/cup.png"
+	modConf.Plot(fileName)
+
 	modConf = Load("data/customConf.json")
 	fileName = "plots/customConf.png"
 	modConf.Plot(fileName)

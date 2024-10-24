@@ -54,7 +54,7 @@ func main() {
 	var pixelSize float64
 	// var appSize fyne.Size
 	var gridServer *ledgrid.GridServer
-	var gridWindow *SDL2Window
+	var gridWindow *Window
 	var customConfName string
 	var gridSize image.Point
 	var modConf conf.ModuleConfig
@@ -81,7 +81,7 @@ func main() {
 
     title := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", gridSize.X, gridSize.Y, dataPort)
 
-	gridWindow = NewSDL2Window(title, pixelSize, modConf)
+	gridWindow = NewWindow(title, pixelSize, modConf)
 	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, gridWindow)
 
     gridServer.HandleEvents()

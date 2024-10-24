@@ -1,7 +1,8 @@
+//go:build guiSDL2
+
 package main
 
 import (
-	"fmt"
 	"image"
 	"log"
 
@@ -16,7 +17,7 @@ const (
 	EventQueueLength = 20
 )
 
-type SDL2Window struct {
+type Window struct {
 	ledgrid.DisplayEmbed
 	Win      *sdl.Window
 	Renderer *sdl.Renderer
@@ -28,15 +29,15 @@ type SDL2Window struct {
 
 // A new grid object must only know it's size in order to get the
 // configuration of the emulated modules.
-func NewSDL2WindowBySize(title string, pixelSize float64, size image.Point) *SDL2Window {
+func NewWindowBySize(title string, pixelSize float64, size image.Point) *Window {
 	modConf := conf.DefaultModuleConfig(size)
-	return NewSDL2Window(title, pixelSize, modConf)
+	return NewWindow(title, pixelSize, modConf)
 }
 
-func NewSDL2Window(title string, pixelSize float64, modConf conf.ModuleConfig) *SDL2Window {
+func NewWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *Window {
 	var err error
 
-	e := &SDL2Window{}
+	e := &Window{}
 	e.DisplayEmbed.Init(e, len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 	e.ModConf = modConf
 	e.size = e.ModConf.Size()
@@ -55,21 +56,20 @@ func NewSDL2Window(title string, pixelSize float64, modConf conf.ModuleConfig) *
 	e.coordMap = e.ModConf.CoordMap()
 	e.indexMap = e.ModConf.IndexMap()
 
-	fmt.Printf("Setup the slice with the NeoPixels...\n")
+	// fmt.Printf("Setup the slice with the NeoPixels...\n")
 	e.ledChain = make([]*Circle, len(e.coordMap))
-	ledSize := image.Point{int(pixelSize) - 1, int(pixelSize) - 1}
+	ledSize := image.Point{int(pixelSize) - 2, int(pixelSize) - 2}
 	for i, coord := range e.coordMap {
 		col, row := coord.X, coord.Y
 		ledPos := image.Point{int(pixelSize/2) + col*int(pixelSize), int(pixelSize/2) + row*int(pixelSize)}
-		fx, fy := float64(col)/float64(e.size.X-1), float64(row)/float64(e.size.Y-1)
-		led := NewCircle(int32(ledPos.X), int32(ledPos.Y), int32(ledSize.X/2), sdl.RGB888{uint8(255 * fx), uint8(255 * fy), uint8(255 * (1 - fx))})
+		led := NewCircle(int32(ledPos.X), int32(ledPos.Y), int32(ledSize.X/2), sdl.RGB888{200, 200, 200})
 		e.ledChain[i] = led
 	}
 
 	return e
 }
 
-func (e *SDL2Window) HandleEvents() {
+func (e *Window) HandleEvents() {
 	// fmt.Printf("Enter main event loop...\n")
 	events := make([]sdl.Event, EventQueueLength)
 	e.redraw()
@@ -100,8 +100,8 @@ func (e *SDL2Window) HandleEvents() {
 			case *sdl.UserEvent:
 				// fmt.Printf("    in UserEvent\n")
 				sdl.PeepEvents(events, sdl.GETEVENT, sdl.USEREVENT, sdl.USEREVENT+1)
-				// renderer.SetDrawColor(0, 0, 0, 255)
-				// renderer.Clear()
+				e.Renderer.SetDrawColor(0x20, 0x20, 0x20, 0xff)
+				e.Renderer.Clear()
 				for _, led := range e.ledChain {
 					led.Draw(e.Renderer)
 				}
@@ -115,11 +115,11 @@ func (e *SDL2Window) HandleEvents() {
 	}
 }
 
-func (e *SDL2Window) DefaultGamma() (r, g, b float64) {
+func (e *Window) DefaultGamma() (r, g, b float64) {
 	return 1.0, 1.0, 1.0
 }
 
-func (e *SDL2Window) Close() {
+func (e *Window) Close() {
 	e.Win.Destroy()
 	e.Renderer.Destroy()
 }
@@ -127,7 +127,7 @@ func (e *SDL2Window) Close() {
 // Takes the bytes in buffer, and uses them exactly as the real hardware
 // would to recolor the individual LEDs (circle objects) of the emulation.
 // Only if the colors really change, a refresh is issued.
-func (e *SDL2Window) Send(buffer []byte) {
+func (e *Window) Send(buffer []byte) {
 	var r, g, b uint8
 	var i int
 	var needsRefresh bool
@@ -135,7 +135,7 @@ func (e *SDL2Window) Send(buffer []byte) {
 
 	needsRefresh = false
 	for i = 0; i < len(buffer); i += 3 {
-        ledIndex := i/3
+		ledIndex := i / 3
 		// coord := e.coordMap[i/3]
 		src := buffer[i : i+3 : i+3]
 		r = src[0]
@@ -155,7 +155,7 @@ func (e *SDL2Window) Send(buffer []byte) {
 	}
 }
 
-func (e *SDL2Window) redraw() {
+func (e *Window) redraw() {
 	win := sdl.GetKeyboardFocus()
 	id, _ := win.GetID()
 	evt := &sdl.UserEvent{sdl.USEREVENT, sdl.GetTicks(), id, 1331, nil, nil}
