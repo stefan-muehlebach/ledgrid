@@ -83,6 +83,9 @@ func main() {
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
 	flag.Parse()
 
+    StartProfiling()
+    defer StopProfiling()
+
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
 		gridSize = modConf.Size()
