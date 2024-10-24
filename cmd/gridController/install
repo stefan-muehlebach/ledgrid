@@ -5,10 +5,15 @@ if [[ $(whoami) != "root" ]]; then
     exit 1
 fi
 
-DST_DIR=/usr/local/sbin
+BIN_DIR=/usr/local/sbin
+ETC_DIR=/etc/systemd/system
 
 systemctl stop grid-controller
-cp gridController $DST_DIR
+
+cp gridController $BIN_DIR
+cp systemd/grid-controller.service $ETC_DIR
+
+systemctl daemon-reload
 systemctl start grid-controller
 
 

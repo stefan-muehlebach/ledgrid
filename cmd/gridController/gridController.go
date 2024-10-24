@@ -118,6 +118,6 @@ func main() {
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
-	SignalHandler(gridServer)
 	gridServer.HandleEvents()
+	SignalHandler(gridServer)
 }
