@@ -189,13 +189,14 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
-			log.Printf("FileWatcher, ERROR: %s", err)
+			log.Printf("FileWatcher: ERROR: %s", err)
 		case evt, ok := <-w.Events:
 			if !ok {
 				return
 			}
-			log.Printf("FileWatcher, event recvd.: %s", evt)
+			log.Printf("FileWatcher: event recvd.: %s", evt)
 			if evt.Has(fsnotify.Create) {
+				log.Printf("FileWatcher: new movie file is here")
 				fileName := evt.Name
 				fh, err := os.Open(fileName)
 				if err != nil {
@@ -208,8 +209,12 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 					}
 					p.Disp.Display(buffer)
 				}
+				log.Printf("FileWatcher: all data has been sent")
 				fh.Close()
-				os.Rename(fileName, DefDoneDir)
+				err = os.Rename(fileName, DefDoneDir)
+				if err != nil {
+					log.Fatalf("Couldn't move movie file to done directory: %v", err)
+				}
 			}
 		}
 	}
