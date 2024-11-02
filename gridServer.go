@@ -194,6 +194,7 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
+			log.Printf("FileWatcher, event recvd.: %s", evt)
 			if evt.Has(fsnotify.Create) {
 				fileName := evt.Name
 				fh, err := os.Open(fileName)
