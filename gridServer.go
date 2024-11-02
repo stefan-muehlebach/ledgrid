@@ -195,9 +195,9 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
-			log.Printf("FileWatcher: event recvd.: %s", evt)
+			// log.Printf("FileWatcher: event recvd.: %s", evt)
 			if evt.Has(fsnotify.Create) {
-				log.Printf("FileWatcher: new movie file is here")
+				// log.Printf("FileWatcher: new movie file is here")
 				filePath := evt.Name
 				fileName := path.Base(filePath)
 				fh, err := os.Open(filePath)
@@ -210,19 +210,19 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 					if n == 0 && errors.Is(err, io.EOF) {
 						break
 					}
-					if n != p.bufferSize {
-						log.Printf("FileWatcher: read only %d bytes", n)
-					}
+					// if n != p.bufferSize {
+					// 	log.Printf("FileWatcher: read only %d bytes", n)
+					// }
 					p.Disp.Display(buffer)
 				}
-				log.Printf("FileWatcher: all data has been sent")
+				// log.Printf("FileWatcher: all data has been sent")
 				fh.Close()
 				dstPath := path.Join(DefDoneDir, fileName)
 				err = os.Rename(filePath, dstPath)
 				if err != nil {
 					log.Fatalf("Couldn't move movie file to done directory: %v", err)
 				}
-				log.Printf("FileWatcher: movie sent to old files")
+				// log.Printf("FileWatcher: movie sent to old files")
 			}
 		}
 	}
