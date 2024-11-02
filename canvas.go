@@ -90,11 +90,10 @@ func (c *Canvas) Add(layer int, objs ...CanvasObject) {
 func (c *Canvas) Del(layer int, obj CanvasObject) {
 	for ele := c.ObjList[layer].Front(); ele != nil; ele = ele.Next() {
 		o := ele.Value.(CanvasObject)
-		if o != obj {
-			continue
+		if o == obj {
+			c.ObjList[layer].Remove(ele)
+			return
 		}
-		c.ObjList[layer].Remove(ele)
-		break
 	}
 }
 
@@ -230,6 +229,14 @@ type FixedPosEmbed struct {
 }
 
 func (e *FixedPosEmbed) PosPtr() *fixed.Point26_6 {
+	return &e.Pos
+}
+
+type IntPosEmbed struct {
+	Pos image.Point
+}
+
+func (e *IntPosEmbed) PosPtr() *image.Point {
 	return &e.Pos
 }
 
@@ -438,13 +445,14 @@ func (l *Line) Draw(c *Canvas) {
 // des Led-Grids interpretiert werden!
 type Pixel struct {
 	CanvasObjectEmbed
-	Pos image.Point
+	IntPosEmbed
 	ColorEmbed
 	FadeEmbed
 }
 
 func NewPixel(pos image.Point, col color.LedColor) *Pixel {
-	p := &Pixel{Pos: pos}
+	p := &Pixel{}
+	p.Pos = pos
 	p.Color = col
 	p.CanvasObjectEmbed.Extend(p)
 	p.FadeEmbed.Init(&p.Color)
@@ -522,7 +530,7 @@ const (
 //	1.0: y-Pos des Objektes bezieht sich auf seinen oberen Rand
 //
 // (ax und ay nehmen also in math. korrekter Richtung zu)
-type alignEmbed struct {
+type AlignEmbed struct {
 	ax, ay float64
 }
 
@@ -530,7 +538,7 @@ type alignEmbed struct {
 // y-Ausrichtung koennen damit gesetzt werden. Falls bei einer Ausrichtung
 // mehrere Werte angegeben wurden (bspw. AlignLeft | AlignCenter), so wird
 // fuer diese Ausrichtung keinen neuen Wert gesetzt.
-func (a *alignEmbed) SetAlign(align Align) {
+func (a *AlignEmbed) SetAlign(align Align) {
 	hAlign := align & alignHMask
 	vAlign := align & alignVMask
 	switch hAlign {
@@ -554,7 +562,7 @@ func (a *alignEmbed) SetAlign(align Align) {
 // Zur Darstellung von Text mit TrueType-Schriften
 type Text struct {
 	CanvasObjectEmbed
-	alignEmbed
+	AlignEmbed
 	PosEmbed
 	AngleEmbed
 	ColorEmbed
@@ -573,6 +581,7 @@ func NewText(pos geom.Point, text string, col color.LedColor) *Text {
 	t.CanvasObjectEmbed.Extend(t)
 	t.FadeEmbed.Init(&t.Color)
 	t.SetFont(defFont, defFontSize)
+    t.SetAlign(AlignCenter | AlignMiddle)
 	return t
 }
 
@@ -602,7 +611,7 @@ var (
 
 type FixedText struct {
 	CanvasObjectEmbed
-	alignEmbed
+	AlignEmbed
 	FixedPosEmbed
 	// Pos fixed.Point26_6
 	ColorEmbed
@@ -632,7 +641,7 @@ func (t *FixedText) SetFont(font font.Face) {
 }
 
 func (t *FixedText) SetAlign(align Align) {
-	t.alignEmbed.SetAlign(align)
+	t.AlignEmbed.SetAlign(align)
 	t.updateSize()
 }
 
@@ -705,7 +714,7 @@ func (c *MyUniform) Opaque() bool {
 // bei der Ausgabe entsprechend skaliert.
 type Image struct {
 	CanvasObjectEmbed
-	alignEmbed
+	AlignEmbed
 	PosEmbed
 	SizeEmbed
 	AngleEmbed

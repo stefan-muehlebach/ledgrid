@@ -40,7 +40,7 @@ var (
 			mario.SetAlign(ledgrid.AlignCenter | ledgrid.AlignBottom)
 			mario.AddBlinkenLight(bmlMario)
 			mario.RepeatCount = ledgrid.AnimationRepeatForever
-			mario.Size = geom.Point{20.0, 20.0}
+			mario.Size = geom.Point{10.0, 10.0}
 
 			aPos1 := ledgrid.NewPositionAnim(mario, pos2Mario, 4*time.Second)
 			aPos1.Curve = ledgrid.AnimationLinear

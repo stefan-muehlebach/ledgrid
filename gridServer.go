@@ -1,7 +1,6 @@
 package ledgrid
 
 import (
-	"github.com/stefan-muehlebach/ledgrid/conf"
 	"errors"
 	"io"
 	"log"
@@ -10,12 +9,16 @@ import (
 	"net/netip"
 	"net/rpc"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
 	DefDataPort = 5333
 	DefRPCPort  = 5332
 	DefOPCPort  = 7890
+	DefMovieDir = "/usr/local/share/ledgrid"
 )
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
@@ -33,6 +36,7 @@ type GridServer struct {
 	drawTestPattern      bool
 	sendWatch            *Stopwatch
 	RecvBytes, SentBytes int
+	watcher              *fsnotify.Watcher
 }
 
 // Damit wird eine neue Instanz eines GridServers erzeugt. Mit port wird
@@ -92,6 +96,16 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 		log.Fatal("RPC listen error:", err)
 	}
 
+	// Zu allerletzt kommt der letzte Schrei: das Abspielen von Movies.
+	p.watcher, err = fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatalf("Couldn't create directory watcher: %v", err)
+	}
+	err = p.watcher.Add(DefMovieDir)
+	if err != nil {
+		log.Fatalf("Couldn't add directory to watcher: %v", err)
+	}
+
 	return p
 }
 
@@ -99,6 +113,7 @@ func (p *GridServer) HandleEvents() {
 	go p.HandleMessage(p.udpConn)
 	go p.HandleTCP(p.tcpListener)
 	go http.Serve(p.rpcListener, nil)
+	go p.WatchDirectory(p.watcher)
 }
 
 // Schliesst die diversen Verbindungen.
@@ -106,6 +121,7 @@ func (p *GridServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
 	p.rpcListener.Close()
+	p.watcher.Close()
 	p.Disp.Close()
 }
 
@@ -161,6 +177,23 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 	}
 }
 
+func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
+	for {
+		select {
+		case err, ok := <-w.Errors:
+			if !ok {
+				return
+			}
+			log.Printf("FileWatcher, ERROR: %s", err)
+		case evt, ok := <-w.Events:
+			if !ok {
+				return
+			}
+			log.Printf("FileWatcher, got event '%s'", evt)
+		}
+	}
+}
+
 func (p *GridServer) Watch() *Stopwatch {
 	return p.sendWatch
 }
@@ -176,7 +209,7 @@ func (p *GridServer) SetGamma(r, g, b float64) {
 }
 
 func (p *GridServer) ModuleConfig() conf.ModuleConfig {
-    return p.Disp.ModuleConfig()
+	return p.Disp.ModuleConfig()
 }
 
 // Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
@@ -334,12 +367,11 @@ type ModuleConfigArg struct {
 }
 
 func (p *GridServer) RPCModuleConfig(arg int, reply *ModuleConfigArg) error {
-    reply.ModuleConfig = p.Disp.ModuleConfig()
-    return nil
+	reply.ModuleConfig = p.Disp.ModuleConfig()
+	return nil
 }
 
 // func (p *GridServer) RPCSetModuleConfig(arg ModuleConfigArg, reply *int) error {
 //     p.Disp.SetModuleConfig(arg.ModuleConfig)
 //     return nil
 // }
-

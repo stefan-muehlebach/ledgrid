@@ -5,6 +5,7 @@ go 1.23.2
 replace github.com/stefan-muehlebach/gg => ../gg
 
 require (
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/stefan-muehlebach/gg v1.3.4
 	golang.org/x/image v0.21.0
 	periph.io/x/conn/v3 v3.7.1
@@ -13,5 +14,6 @@ require (
 
 require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 )

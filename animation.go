@@ -58,10 +58,10 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationControll
 		return AnimCtrl
 	}
 	a := &AnimationController{}
-    for i := range NumLayers {
-	    a.AnimList[i] = make([]Animation, 0)
-        	a.animMutex[i] = &sync.RWMutex{}
-    }
+	for i := range NumLayers {
+		a.AnimList[i] = make([]Animation, 0)
+		a.animMutex[i] = &sync.RWMutex{}
+	}
 	a.Canvas = canvas
 	a.ledGrid = ledGrid
 	a.ticker = time.NewTicker(refreshRate)
@@ -122,9 +122,9 @@ func (a *AnimationController) Purge(layer int) {
 }
 
 func (a *AnimationController) PurgeAll() {
-    for layer := range NumLayers {
-        a.Purge(layer)
-    }
+	for layer := range NumLayers {
+		a.Purge(layer)
+	}
 }
 
 // Mit Stop koennen die Animationen und die Darstellung auf der Hardware
@@ -191,19 +191,19 @@ func (a *AnimationController) backgroundThread() {
 // Aktualisierung ihrer Animationen.
 func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.WaitGroup) {
 	for id := range startChan {
-        for listIdx := range a.AnimList {
-		    a.animMutex[listIdx].RLock()
-		    for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
-			    anim := a.AnimList[listIdx][i]
-        			if anim == nil || !anim.IsRunning() {
-        				continue
-        			}
-        			if !anim.Update(a.animPit) {
-        				// a.AnimList[0][i] = nil
-        			}
-        		}
-		    a.animMutex[listIdx].RUnlock()
-        }
+		for listIdx := range a.AnimList {
+			a.animMutex[listIdx].RLock()
+			for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
+				anim := a.AnimList[listIdx][i]
+				if anim == nil || !anim.IsRunning() {
+					continue
+				}
+				if !anim.Update(a.animPit) {
+					// a.AnimList[0][i] = nil
+				}
+			}
+			a.animMutex[listIdx].RUnlock()
+		}
 		wg.Done()
 	}
 }
@@ -408,6 +408,22 @@ type TimedAnimation interface {
 	SetDuration(dur time.Duration)
 }
 
+// Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
+// Interface NormAnimation implementieren.
+type NormAnimation interface {
+	TimedAnimation
+	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
+	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
+	// zaehlen nicht als Start!
+	Init()
+	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
+	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
+	// t=0: Animation wurde eben gestartet
+	// t=1: Die Animation ist fertig
+	Tick(t float64)
+}
+
+
 // Haben Animationen eine Dauer, so koennen sie dieses Embeddable einbinden
 // und erhalten somit die klassischen Methoden fuer das Setzen und Abfragen
 // der Dauer.
@@ -511,20 +527,6 @@ func (a *SuspContAnimation) IsRunning() bool {
 	return false
 }
 
-// Jede konkrete Animation (Farben, Positionen, Groessen, etc.) muss das
-// Interface NormAnimation implementieren.
-type NormAnimation interface {
-	TimedAnimation
-	// Init wird vom Animationsframework aufgerufen, wenn diese Animation
-	// gestartet wird. Wichtig: Wiederholungen und Umkehrungen (AutoReverse)
-	// zaehlen nicht als Start!
-	Init()
-	// In Tick schliesslich ist die eigentliche Animationslogik enthalten.
-	// Der Parameter t gibt an, wie weit die Animation bereits gelaufen ist.
-	// t=0: Animation wurde eben gestartet
-	// t=1: Die Animation ist fertig
-	Tick(t float64)
-}
 
 // Dieses Embeddable wird von allen Animationen verwendet, welche eine
 // Animation implementieren, die folgende Kriterien aufweist:
@@ -547,7 +549,7 @@ type NormAnimationEmbed struct {
 	wrapper          NormAnimation
 	reverse          bool
 	start, stop, end time.Time
-	total            float64
+	total, startPos  float64
 	repeatsLeft      int
 	running          bool
 }
@@ -566,13 +568,22 @@ func (a *NormAnimationEmbed) Extend(wrapper NormAnimation) {
 // Animationszyklus.
 func (a *NormAnimationEmbed) Duration() time.Duration {
 	factor := 1
+	startDiff := time.Duration(0)
 	if a.RepeatCount > 0 {
 		factor += a.RepeatCount
 	}
 	if a.AutoReverse {
 		factor *= 2
 	}
-	return time.Duration(factor) * a.duration
+	if a.startPos > 0.0 {
+		if a.AutoReverse {
+			startDiff = time.Duration(a.startPos * 2.0 * float64(a.duration))
+		} else {
+			startDiff = time.Duration(a.startPos * float64(a.duration))
+		}
+	}
+
+	return time.Duration(factor)*a.duration - startDiff
 }
 
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
@@ -583,10 +594,21 @@ func (a *NormAnimationEmbed) Start() {
 		return
 	}
 	a.start = AnimCtrl.Now()
+    a.reverse = false
+	if a.startPos > 0.0 {
+		if a.AutoReverse {
+			a.startPos *= 2.0
+			if a.startPos >= 1.0 {
+				a.reverse = true
+				a.startPos -= 1.0
+			}
+		}
+		a.start = a.start.Add(-time.Duration(a.startPos * float64(a.duration)))
+		a.startPos = 0.0
+	}
 	a.end = a.start.Add(a.duration)
 	a.total = a.end.Sub(a.start).Seconds()
 	a.repeatsLeft = a.RepeatCount
-	a.reverse = false
 	a.wrapper.Init()
 	a.running = true
 }
@@ -617,6 +639,10 @@ func (a *NormAnimationEmbed) Continue() {
 // falls die Animation zu Ende ist.
 func (a *NormAnimationEmbed) IsRunning() bool {
 	return a.running
+}
+
+func (a *NormAnimationEmbed) SetAnimPos(r float64) {
+	a.startPos = r
 }
 
 // Diese Methode ist fuer die korrekte Abwicklung (Beachtung von Reverse und
@@ -652,7 +678,7 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 		}
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
-		a.wrapper.Init()
+		// a.wrapper.Init()
 	} else {
 		delta := t.Sub(a.start).Seconds()
 		val := delta / a.total
@@ -666,6 +692,23 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 }
 
 // ---------------------------------------------------------------------------
+
+// Ein Delay kann als ganz normale Animation ueberall dort eingefuegt werden,
+// wo ein unmittelbares Fortfahren der Animationen nicht gewuenscht ist und
+// wo der Einsatz der Timeline zu aufwaendig ist.
+type Delay struct {
+    NormAnimationEmbed
+}
+
+func NewDelay(d time.Duration) *Delay {
+    a := &Delay{}
+    a.SetDuration(d)
+    a.NormAnimationEmbed.Extend(a)
+    return a
+}
+
+func (a *Delay) Init() {}
+func (a *Delay) Tick(t float64) {}
 
 // Folgende Datentypen lassen sich 'animieren', d.h. ueber einen bestimmten
 // Zeitraum von einem Wert A zu einem zweiten Wert B interpolieren.
@@ -844,9 +887,6 @@ func (a *ColorAnimation) Tick(t float64) {
 type Positionable interface {
 	PosPtr() *geom.Point
 }
-type Sizeable interface {
-	SizePtr() *geom.Point
-}
 
 type PathAnimation struct {
 	GenericAnimation[geom.Point]
@@ -868,24 +908,16 @@ func NewPolyPathAnim(obj Positionable, path *PolygonPath, dur time.Duration) *Pa
 	a := &PathAnimation{}
 	a.InitAnim(obj.PosPtr(), geom.Point{}, dur)
 	a.NormAnimationEmbed.Extend(a)
-    a.Path = path
+	a.Path = path
 	a.Val2 = func() geom.Point {
-        return a.Val1().AddXY(1, 1)
-    }
+		return a.Val1().AddXY(1, 1)
+	}
 	return a
 }
 
 func NewPositionAnim(obj Positionable, val2 geom.Point, dur time.Duration) *PathAnimation {
 	a := &PathAnimation{}
 	a.InitAnim(obj.PosPtr(), val2, dur)
-	a.NormAnimationEmbed.Extend(a)
-	a.Path = LinearPath
-	return a
-}
-
-func NewSizeAnim(obj Sizeable, val2 geom.Point, dur time.Duration) *PathAnimation {
-	a := &PathAnimation{}
-	a.InitAnim(obj.SizePtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
 	a.Path = LinearPath
 	return a
@@ -901,6 +933,36 @@ func (a *PathAnimation) Tick(t float64) {
 	dp.Y *= s.Y
 	*a.ValPtr = a.val1.Add(dp)
 }
+
+type Sizeable interface {
+	SizePtr() *geom.Point
+}
+
+type SizeAnimation struct {
+    GenericAnimation[geom.Point]
+    Path Path
+}
+
+func NewSizeAnim(obj Sizeable, val2 geom.Point, dur time.Duration) *SizeAnimation {
+	a := &SizeAnimation{}
+	a.InitAnim(obj.SizePtr(), val2, dur)
+	a.NormAnimationEmbed.Extend(a)
+	a.Path = LinearPath
+	return a
+}
+
+func (a *SizeAnimation) Tick(t float64) {
+	var dp geom.Point
+	var s geom.Point
+
+	dp = a.Path.Pos(t)
+	s = a.val2.Sub(a.val1)
+	dp.X *= s.X
+	dp.Y *= s.Y
+	*a.ValPtr = a.val1.Add(dp)
+}
+
+
 
 // Animation fuer eine Positionsveraenderung anhand des Fixed-Datentyps
 // [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von
@@ -935,16 +997,26 @@ func float2fix(x float64) fixed.Int26_6 {
 	return fixed.Int26_6(math.Round(x * 64))
 }
 
+type IntegerPositionable interface {
+	PosPtr() *image.Point
+}
 type IntegerPosAnimation struct {
 	GenericAnimation[image.Point]
 }
 
-func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
+func NewIntegerPosAnim(obj IntegerPositionable, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
 	a := &IntegerPosAnimation{}
-	a.InitAnim(valPtr, val2, dur)
+	a.InitAnim(obj.PosPtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
 	return a
 }
+
+// func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
+// 	a := &IntegerPosAnimation{}
+// 	a.InitAnim(valPtr, val2, dur)
+// 	a.NormAnimationEmbed.Extend(a)
+// 	return a
+// }
 
 func (a *IntegerPosAnimation) Tick(t float64) {
 	v1 := geom.NewPointIMG(a.val1)
@@ -1014,20 +1086,20 @@ type Shader TimedAnimation
 type ColorShaderFunc func(t, x, y, z float64, idx, nPix int) color.LedColor
 
 type ColorShaderAnim struct {
-    ValPtr *color.LedColor
-    X, Y, Z float64
-    Idx, NPix int
-    Fnc ColorShaderFunc
-    start, stop time.Time
-    running bool
+	ValPtr      *color.LedColor
+	X, Y, Z     float64
+	Idx, NPix   int
+	Fnc         ColorShaderFunc
+	start, stop time.Time
+	running     bool
 }
 
 func NewColorShaderAnim(obj Colorable, x, y, z float64, idx, nPix int, fnc ColorShaderFunc) *ColorShaderAnim {
 	a := &ColorShaderAnim{}
 	a.ValPtr = obj.ColorPtr()
 	a.X, a.Y, a.Z = x, y, z
-    a.Idx = idx
-    a.NPix = nPix
+	a.Idx = idx
+	a.NPix = nPix
 	a.Fnc = fnc
 	AnimCtrl.Add(0, a)
 	return a
@@ -1073,7 +1145,7 @@ func (a *ColorShaderAnim) IsRunning() bool {
 }
 
 func (a *ColorShaderAnim) Update(t time.Time) bool {
-	*a.ValPtr = a.Fnc(0.6 * t.Sub(a.start).Seconds(), a.X, a.Y, a.Z, a.Idx, a.NPix)
+	*a.ValPtr = a.Fnc(0.6*t.Sub(a.start).Seconds(), a.X, a.Y, a.Z, a.Idx, a.NPix)
 	return true
 }
 

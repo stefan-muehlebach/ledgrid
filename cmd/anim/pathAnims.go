@@ -48,7 +48,7 @@ var (
 	PolygonPathTest = NewLedGridProgram("Polygon path test",
 		func(c *ledgrid.Canvas) {
 
-			cPos := geom.Point{1, 1}
+			cPos := geom.Point{0, 0}
 
 			polyPath1 := ledgrid.NewPolygonPath(
 				geom.Point{1, 1},
@@ -81,10 +81,27 @@ var (
 			)
 
 			ptList := []geom.Point{
-				geom.Point{1, 1},
+				geom.Point{0, 0},
 			}
+			lastSide := 0
 			for range 20 {
-				ptList = append(ptList, geom.Point{float64(rand.Intn(width - 1)), float64(rand.Intn(height - 1))})
+				pt := geom.Point{}
+				side := rand.Intn(3)
+				if side >= lastSide {
+					side += 1
+				}
+				switch side {
+				case 0:
+					pt = geom.Point{0.0, float64(rand.Intn(height - 1))}
+				case 1:
+					pt = geom.Point{float64(rand.Intn(width - 1)), 0.0}
+				case 2:
+					pt = geom.Point{float64(width - 1), float64(rand.Intn(height - 1))}
+				case 3:
+					pt = geom.Point{float64(rand.Intn(width - 1)), float64(height - 1)}
+				}
+				ptList = append(ptList, pt)
+				lastSide = side
 			}
 			polyPath3 := ledgrid.NewPolygonPath(ptList...)
 
@@ -97,10 +114,10 @@ var (
 			aPath2 := ledgrid.NewPolyPathAnim(c1, polyPath2, 5*time.Second)
 			aPath2.AutoReverse = true
 
-			aPath3 := ledgrid.NewPolyPathAnim(c1, polyPath3, 5*time.Second)
+			aPath3 := ledgrid.NewPolyPathAnim(c1, polyPath3, 10*time.Second)
 			aPath3.AutoReverse = true
 
-			seq := ledgrid.NewSequence(aPath1, aPath3, aPath2)
+			seq := ledgrid.NewSequence(aPath1, aPath2, aPath3)
 			seq.RepeatCount = ledgrid.AnimationRepeatForever
 
 			seq.Start()

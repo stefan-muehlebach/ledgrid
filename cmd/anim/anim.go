@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
 	"github.com/stefan-muehlebach/ledgrid/conf"
@@ -17,6 +16,8 @@ import (
 
 const (
 	defHost = "raspi-3"
+    defWidth = 40
+    defHeight = 10
 )
 
 var (
@@ -54,52 +55,6 @@ func (p *simpleProgram) Run(c *ledgrid.Canvas) {
 
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-
-var (
-	StopContShowHideTest = NewLedGridProgram("Hide/Show vs. Suspend/Continue by Tasks",
-		func(c *ledgrid.Canvas) {
-			rPos1 := geom.Point{5.0, float64(height) / 2.0}
-			rPos2 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
-			rSize1 := geom.Point{7.0, 7.0}
-			rSize2 := geom.Point{6.0, 6.0}
-			rColor1 := color.SkyBlue
-			rColor2 := color.GreenYellow
-
-			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
-			c.Add(0, r)
-
-			aPos := ledgrid.NewPositionAnim(r, rPos2, 4*time.Second)
-			aPos.AutoReverse = true
-			aPos.RepeatCount = ledgrid.AnimationRepeatForever
-			aSize := ledgrid.NewSizeAnim(r, rSize2, 4*time.Second)
-			aSize.AutoReverse = true
-			aSize.RepeatCount = ledgrid.AnimationRepeatForever
-			aColor := ledgrid.NewColorAnim(r, rColor2, 4*time.Second)
-			aColor.AutoReverse = true
-			aColor.RepeatCount = ledgrid.AnimationRepeatForever
-			aAngle := ledgrid.NewAngleAnim(r, math.Pi, 4*time.Second)
-			aAngle.AutoReverse = true
-			aAngle.RepeatCount = ledgrid.AnimationRepeatForever
-
-			aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
-
-			aTimeline := ledgrid.NewTimeline(4 * time.Second)
-			aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
-			aTimeline.Add(1000*time.Millisecond, ledgrid.NewSuspContAnimation(aColor))
-			aTimeline.Add(1500*time.Millisecond, ledgrid.NewSuspContAnimation(aColor))
-			aTimeline.Add(2500*time.Millisecond, ledgrid.NewSuspContAnimation(aAngle))
-			aTimeline.Add(3000*time.Millisecond, ledgrid.NewSuspContAnimation(aAngle))
-			aTimeline.Add(1900*time.Millisecond, ledgrid.NewHideShowAnimation(r))
-			aTimeline.Add(2100*time.Millisecond, ledgrid.NewHideShowAnimation(r))
-
-			aGroup.Start()
-			aTimeline.Start()
-		})
-)
-
-//----------------------------------------------------------------------------
-
 func SignalHandler(timeout time.Duration) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
@@ -117,11 +72,10 @@ func SignalHandler(timeout time.Duration) {
 
 var (
 	programList = []LedGridProgram{
-		FarewellGery,
+		// FarewellGery,
 		GroupTest,
 		SequenceTest,
 		TimelineTest,
-		StopContShowHideTest,
 		PathTest,
 		PolygonPathTest,
 		RandomWalk,
@@ -130,16 +84,15 @@ var (
 		PushingRectangles,
 		RegularPolygonTest,
 		GlowingPixels,
+        GlowAgainPixels,
 		MovingPixels,
-		// ImageFilterTest,
 		EffectFaderTest,
 		SpecialCamera,
 		BlinkenAnimation,
 		MovingText,
-		FixedFontTest,
 		SlideTheShow,
 		ShowThePaletteShader,
-        ShowTheColorShader,
+		ShowTheColorShader,
 		ColorFields,
 		SingleImageAlign,
 		FirePlace,
@@ -157,23 +110,24 @@ func main() {
 	var runInteractive bool
 	var progList string
 	var gR, gG, gB float64
-	// var customConfName string
 	var modConf conf.ModuleConfig
 	var timeout time.Duration
+    var outFile string
 
 	for i, prog := range programList {
 		id := 'a' + i
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
-	// flag.IntVar(&width, "width", 40, "Width of LedGrid")
-	// flag.IntVar(&height, "height", 10, "Height of LedGrid")
+    	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&height, "height", defHeight, "Height of panel")
+    flag.StringVar(&outFile, "out", "", "Send all data to this file")
+
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
-	// flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
 
@@ -189,14 +143,13 @@ func main() {
 		network = "udp"
 	}
 
-	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
-    modConf = gridClient.ModuleConfig()
-	// if customConfName != "" {
-		// modConf = conf.Load("data/" + customConfName + ".json")
-		ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
-	// } else {
-		// ledGrid = ledgrid.NewLedGridBySize(gridClient, image.Pt(width, height))
-	// }
+    if outFile != "" {
+        gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
+    } else {
+        	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+    }
+	modConf = gridClient.ModuleConfig()
+	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 	gR, gG, gB = ledGrid.Client.Gamma()
 
 	gridSize = ledGrid.Rect.Size()

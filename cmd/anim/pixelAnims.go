@@ -16,14 +16,14 @@ var (
 	MovingPixels = NewLedGridProgram("Moving pixels",
 		func(c *ledgrid.Canvas) {
 			mp := geom.Point{float64(width)/2 - 0.5, float64(height)/2 - 0.5}
-			// aKillGrp := ledgrid.NewGroup()
 			aSeq := ledgrid.NewSequence()
 			for i := range 8 {
 				grp := ledgrid.NewGroup()
 
-				xMin, xMax := float64(i), float64(width-i)
-				yMin, yMax := float64(i), float64(height-i)
-				col := color.RandGroupColor(color.Purples).Dark(float64(5-i) * 0.1)
+				xMin, xMax := float64(3+i), float64(width-3-i)
+				yMin, yMax := float64(3+i), float64(height-3-i)
+				col1 := color.RandGroupColor(color.Blues).Dark(float64(5-i) * 0.1)
+                col2 := color.RandGroupColor(color.Reds).Dark(float64(5-i) * 0.1)
 				posList := []geom.Point{
 					geom.Point{0.0, yMin},
 					geom.Point{0.0, yMax - 1},
@@ -33,10 +33,7 @@ var (
 						pos := posList[j]
 						pos.X = float64(x)
 						dest := pos.Sub(mp).Normalize().Mul(20.0).Add(pos)
-						pix := ledgrid.NewDot(pos, col)
-						// aKillGrp.Add(ledgrid.NewTask(func() {
-						// 	pix.Kill()
-						// }))
+						pix := ledgrid.NewDot(pos, col1)
 						c.Add(0, pix)
 						aPos := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
@@ -52,12 +49,9 @@ var (
 						pos := posList[j]
 						pos.Y = float64(y)
 						dest := pos.Sub(mp).Normalize().Mul(20.0).Add(pos)
-						pix := ledgrid.NewPixel(pos.Int(), col)
-						// aKillGrp.Add(ledgrid.NewTask(func() {
-						// 	pix.Kill()
-						// }))
+						pix := ledgrid.NewPixel(pos.Int(), col2)
 						c.Add(0, pix)
-						aPos := ledgrid.NewIntegerPosAnimation(&pix.Pos, dest.Int(), time.Second+rand.N(time.Second))
+						aPos := ledgrid.NewIntegerPosAnim(pix, dest.Int(), time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
 						grp.Add(aPos)
 					}
@@ -66,9 +60,6 @@ var (
 			}
 			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aSeq.Start()
-
-			// time.Sleep(5 * time.Second)
-			// aKillGrp.Start()
 		})
 
 	GlowingPixels = NewLedGridProgram("Glowing pixels",
@@ -102,49 +93,94 @@ var (
 					aColor.Cont = true
 					aGrpGrey.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, color.MediumPurple.Interpolate(color.Fuchsia, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
 					aColor.Cont = true
 					aGrpPurple.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, color.Gold.Interpolate(color.Khaki, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.Gold.Interpolate(color.Khaki, t), 4*time.Second)
 					aColor.Cont = true
 					aGrpYellow.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, color.GreenYellow.Interpolate(color.LightSeaGreen, t), 5*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, color.GreenYellow.Interpolate(color.LightSeaGreen, t), 4*time.Second)
 					aColor.Cont = true
 					aGrpGreen.Add(aColor)
 				}
 			}
 
-			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
-			txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
-			aTxt1.AutoReverse = true
-			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
-			txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
-			aTxt2.AutoReverse = true
-			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
-			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
-			aTxt3.AutoReverse = true
-			c.Add(0, txt1, txt2, txt3)
+			aSeq := ledgrid.NewSequence(aGrpPurple, aGrpYellow, aGrpGreen, aGrpGrey)
+			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			aSeq.Start()
 
-			aTimel := ledgrid.NewTimeline(42 * time.Second)
-			aTimel.Add(7*time.Second, aGrpPurple)
-			aTimel.Add(12*time.Second, aTxt1)
-			aTimel.Add(13*time.Second, aGrpGrey)
+			// txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
+			// txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			// aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
+			// aTxt1.AutoReverse = true
+			// txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
+			// txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			// aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
+			// aTxt2.AutoReverse = true
+			// txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
+			// txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			// aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
+			// aTxt3.AutoReverse = true
+			// c.Add(0, txt1, txt2, txt3)
 
-			aTimel.Add(22*time.Second, aGrpYellow)
-			aTimel.Add(27*time.Second, aTxt2)
-			aTimel.Add(28*time.Second, aGrpGrey)
+			// aTimel := ledgrid.NewTimeline(42 * time.Second)
+			// aTimel.Add(7*time.Second, aGrpPurple)
+			// aTimel.Add(12*time.Second, aTxt1)
+			// aTimel.Add(13*time.Second, aGrpGrey)
 
-			aTimel.Add(35*time.Second, aGrpGreen)
-			aTimel.Add(40*time.Second, aTxt3)
-			aTimel.Add(41*time.Second, aGrpGrey)
-			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
+			// aTimel.Add(22*time.Second, aGrpYellow)
+			// aTimel.Add(27*time.Second, aTxt2)
+			// aTimel.Add(28*time.Second, aGrpGrey)
 
-			aTimel.Start()
+			// aTimel.Add(35*time.Second, aGrpGreen)
+			// aTimel.Add(40*time.Second, aTxt3)
+			// aTimel.Add(41*time.Second, aGrpGrey)
+			// aTimel.RepeatCount = ledgrid.AnimationRepeatForever
+
+			// aTimel.Start()
+		})
+
+	GlowAgainPixels = NewLedGridProgram("Glow-again, you pixels you!",
+		func(c *ledgrid.Canvas) {
+			aGrpLedColor := ledgrid.NewGroup()
+
+			for y := range c.Rect.Dy() {
+				for x := range c.Rect.Dx() {
+					pt := image.Point{x, y}
+					pix := ledgrid.NewPixel(pt, color.GreenYellow)
+
+					c.Add(0, pix)
+
+					aColorCyc1 := ledgrid.NewColorAnim(pix, color.LightSeaGreen, 2*time.Second)
+					aColorCyc1.AutoReverse = true
+					aColorCyc1.RepeatCount = 3
+					aColorCyc1.Curve = ledgrid.AnimationLinear
+					aColorCyc1.Cont = true
+					aColorCyc1.SetAnimPos(rand.Float64())
+
+					aColorTrans1 := ledgrid.NewColorAnim(pix, color.Fuchsia, 2*time.Second)
+					aColorTrans1.Curve = ledgrid.AnimationLinear
+					aColorTrans1.Cont = true
+
+					aColorCyc2 := ledgrid.NewColorAnim(pix, color.MediumPurple, 2*time.Second)
+					aColorCyc2.AutoReverse = true
+					aColorCyc2.RepeatCount = 3
+					aColorCyc2.Curve = ledgrid.AnimationLinear
+					aColorCyc2.Cont = true
+
+					aColorTrans2 := ledgrid.NewColorAnim(pix, color.GreenYellow, 2*time.Second)
+					aColorTrans2.Curve = ledgrid.AnimationLinear
+					aColorTrans2.Cont = true
+
+					aColorSeq := ledgrid.NewSequence(aColorCyc1, aColorTrans1, aColorCyc2, aColorTrans2)
+					aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+
+					aGrpLedColor.Add(aColorSeq)
+				}
+			}
+			aGrpLedColor.Start()
 		})
 
 	ShowThePaletteShader = NewLedGridProgram("Show a palette shader!",
@@ -213,10 +249,10 @@ var (
 			aPalTl.Start()
 		})
 
-// --------------------------------------------------------------------------
-//
-// The new kid on the block... ;-)
-//
+	// --------------------------------------------------------------------------
+	//
+	// The new kid on the block... ;-)
+	//
 	ShowTheColorShader = NewLedGridProgram("Show a color shader!",
 		func(c *ledgrid.Canvas) {
 			var xMin, xMax, yMin, yMax, dx, dy float64
@@ -225,13 +261,13 @@ var (
 			for i := range width * height {
 				randomList[i] = rand.Float64()
 			}
-            w, h := float64(width)/10.0, float64(height)/10.0
-            xMin =  -w/2
-            xMax =   w/2
-            yMin =  -h/2
-            yMax =   h/2
-            dx = (xMax - xMin) / float64(width)
-            dy = (yMax - yMin) / float64(height)
+			w, h := float64(width)/10.0, float64(height)/10.0
+			xMin = -w / 2
+			xMax = w / 2
+			yMin = -h / 2
+			yMax = h / 2
+			dx = (xMax - xMin) / float64(width)
+			dy = (yMax - yMin) / float64(height)
 
 			aGrp := ledgrid.NewGroup()
 			nPix := c.Rect.Dx() * c.Rect.Dy()
@@ -254,8 +290,8 @@ var (
 
 	randomList []float64
 
-// Einer der Shader (oder dort: color functions) aus den Testprogrammen
-// von OpenPixelController.
+	// Einer der Shader (oder dort: color functions) aus den Testprogrammen
+	// von OpenPixelController.
 
 	NyanCatShader = func(t, x, y, z float64, idx, nPix int) color.LedColor {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
@@ -264,7 +300,7 @@ var (
 
 		x, y, z = y, z, x
 
-		if idx % 7 == 0 {
+		if idx%7 == 0 {
 			x += float64((idx*123)%5) / float64(nPix) * 32.12
 			y += float64((idx*137)%5) / float64(nPix) * 22.23
 			z += float64((idx*147)%7) / float64(nPix) * 44.34
@@ -293,15 +329,15 @@ var (
 		g += twinkle
 		b += twinkle
 
-        r = clamp(r * 256.0, 0.0, 255.0)
-        g = clamp(g * 256.0, 0.0, 255.0)
-        b = clamp(b * 256.0, 0.0, 255.0)
+		r = clamp(r*256.0, 0.0, 255.0)
+		g = clamp(g*256.0, 0.0, 255.0)
+		b = clamp(b*256.0, 0.0, 255.0)
 
 		return color.LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
-// Einer der Shader (oder dort: color functions) aus den Testprogrammen
-// von OpenPixelController.
+	// Einer der Shader (oder dort: color functions) aus den Testprogrammen
+	// von OpenPixelController.
 
 	LavaLampShader = func(t, x, y, z float64, idx, nPix int) color.LedColor {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
@@ -310,52 +346,51 @@ var (
 
 		x, y, z = y, z, x
 
-        r := myCos(x, t/4.0, 2, 0, 1)
-        g := myCos(y, t/4.0, 2, 0, 1)
-        b := myCos(z, t/4.0, 2, 0, 1)
+		r := myCos(x, t/4.0, 2, 0, 1)
+		g := myCos(y, t/4.0, 2, 0, 1)
+		b := myCos(z, t/4.0, 2, 0, 1)
 		r, g, b = contrast(r, g, b, 0.5, 1.5)
 
-        r2 := myCos(x, t/10.0 + 12.345, 3, 0, 1)
-        g2 := myCos(y, t/10.0 + 24.536, 3, 0, 1)
-        b2 := myCos(z, t/10.0 + 34.675, 3, 0, 1)
-        clampDown := (r2 + g2 + b2)/2.0
-        clampDown = remap(clampDown, 0.8, 0.9, 0, 1)
-        clampDown = clamp(clampDown, 0, 1)
-        r *= clampDown
-        g *= clampDown
-        b *= clampDown
+		r2 := myCos(x, t/10.0+12.345, 3, 0, 1)
+		g2 := myCos(y, t/10.0+24.536, 3, 0, 1)
+		b2 := myCos(z, t/10.0+34.675, 3, 0, 1)
+		clampDown := (r2 + g2 + b2) / 2.0
+		clampDown = remap(clampDown, 0.8, 0.9, 0, 1)
+		clampDown = clamp(clampDown, 0, 1)
+		r *= clampDown
+		g *= clampDown
+		b *= clampDown
 
-        g = g * 0.6 + ((r + b) / 2.0) * 0.4
+		g = g*0.6 + ((r+b)/2.0)*0.4
 
-        r = clamp(r * 256.0, 0.0, 255.0)
-        g = clamp(g * 256.0, 0.0, 255.0)
-        b = clamp(b * 256.0, 0.0, 255.0)
+		r = clamp(r*256.0, 0.0, 255.0)
+		g = clamp(g*256.0, 0.0, 255.0)
+		b = clamp(b*256.0, 0.0, 255.0)
 
 		return color.LedColor{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
-    BlinkPeriod = 11.5
+	BlinkPeriod = 11.5
 
 	RandomShader = func(t, x, y, z float64, idx, nPix int) color.LedColor {
-        var col color.LedColor
+		var col color.LedColor
 
-        blinkTime := BlinkPeriod * randomList[idx]
-        relTime := math.Mod(t, BlinkPeriod)
-        if abs(blinkTime-relTime) <= 0.1 {
-            col = color.YellowGreen
-        } else {
-            if relTime < blinkTime {
-                relTime += BlinkPeriod
-            }
-            t := (relTime-blinkTime)/BlinkPeriod
-            col = color.YellowGreen.Interpolate(color.Black, t)
-        }
-        return col
-    }
+		blinkTime := BlinkPeriod * randomList[idx]
+		relTime := math.Mod(t, BlinkPeriod)
+		if abs(blinkTime-relTime) <= 0.1 {
+			col = color.YellowGreen
+		} else {
+			if relTime < blinkTime {
+				relTime += BlinkPeriod
+			}
+			t := (relTime - blinkTime) / BlinkPeriod
+			col = color.YellowGreen.Interpolate(color.Black, t)
+		}
+		return col
+	}
 
-
-// Eine Sammlung von Farben-Hilfsfunktionen (ebenfalls aus dem Umfeld von
-// OpenPixelController).
+	// Eine Sammlung von Farben-Hilfsfunktionen (ebenfalls aus dem Umfeld von
+	// OpenPixelController).
 
 	remap = func(x, minIn, maxIn, minOut, maxOut float64) float64 {
 		t := (x - minIn) / (maxIn - minIn)
@@ -378,7 +413,7 @@ var (
 		return
 	}
 
-// ---------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 
 	f1 = func(t, x, y, p1 float64) float64 {
 		return math.Sin(x*p1 + t)
@@ -404,17 +439,12 @@ var (
 
 	ColorFields = NewLedGridProgram("All the named colors",
 		func(c *ledgrid.Canvas) {
-			// var colGrpIdx color.ColorGroup = 0
-			// var colIdx int = 0
 			var colName string
 			var nameList []string
 			var nameIdx int = 0
 
 			nameList = make([]string, len(color.Names))
 			copy(nameList, color.Names)
-			// rand.Shuffle(len(nameList), func(i, j int) {
-			// 	nameList[i], nameList[j] = nameList[j], nameList[i]
-			// })
 			colName = nameList[0]
 
 			rectPos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
@@ -426,13 +456,14 @@ var (
 
 			txtPos1 := fixed.P(width+1, height-1)
 			txtPos2 := fixed.P(1, height-1)
-			txtPos3 := fixed.P(-2*width, height-1)
+			txtPos3 := fixed.P(1, -1)
+			// txtPos3 := fixed.P(-2*width, height-1)
 			txt := ledgrid.NewFixedText(txtPos1, color.Black, "")
 			c.Add(0, rect, txt)
 
-			posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 1*time.Second)
+			posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 3*time.Second/2)
 			posAnim1.Curve = ledgrid.AnimationEaseOut
-			posAnim2 := ledgrid.NewFixedPosAnim(txt, txtPos3, 1*time.Second)
+			posAnim2 := ledgrid.NewFixedPosAnim(txt, txtPos3, time.Second/2)
 			posAnim2.Curve = ledgrid.AnimationEaseIn
 			posAnim2.Cont = true
 
@@ -469,13 +500,6 @@ var (
 			colTask := ledgrid.NewTask(func() {
 				oldColor := color.Map[colName]
 				nameIdx = (nameIdx + 1) % len(nameList)
-
-				// if colIdx >= len(color.Groups[colGrpIdx]) {
-				// 	colGrpIdx = (colGrpIdx + 1) % color.NumColorGroups
-				// 	colIdx = 0
-				// }
-				// colName = color.Groups[colGrpIdx][colIdx]
-
 				colName = nameList[nameIdx]
 				newColor := color.Map[colName]
 				fadeOut.Val2 = ledgrid.Const(oldColor.Interpolate(newColor, 0.5))
