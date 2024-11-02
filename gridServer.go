@@ -204,7 +204,8 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 				if err != nil {
 					log.Fatalf("Couldn't open movie file: %v", err)
 				}
-				for {
+				ticker := time.NewTicker(30 * time.Millisecond)
+				for range ticker.C {
 					n, err := fh.Read(buffer)
 					if n == 0 && errors.Is(err, io.EOF) {
 						break
