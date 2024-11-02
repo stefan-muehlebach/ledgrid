@@ -206,11 +206,11 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 				}
 				for {
 					n, err := fh.Read(buffer)
-					if n != p.bufferSize {
-						log.Printf("FileWatcher: read only %d bytes", n)
-					}
 					if n == 0 && errors.Is(err, io.EOF) {
 						break
+					}
+					if n != p.bufferSize {
+						log.Printf("FileWatcher: read only %d bytes", n)
 					}
 					p.Disp.Display(buffer)
 				}
