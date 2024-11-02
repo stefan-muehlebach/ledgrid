@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/rpc"
+	"os"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -19,6 +20,7 @@ const (
 	DefRPCPort  = 5332
 	DefOPCPort  = 7890
 	DefMovieDir = "/usr/local/share/ledgrid"
+	DefDoneDir  = "/usr/local/share/ledgrid/done"
 )
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
@@ -178,6 +180,9 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 }
 
 func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
+	var buffer []byte
+
+	buffer = make([]byte, p.bufferSize)
 	for {
 		select {
 		case err, ok := <-w.Errors:
@@ -189,7 +194,22 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
-			log.Printf("FileWatcher, got event '%s'", evt)
+			if evt.Has(fsnotify.Create) {
+				fileName := evt.Name
+				fh, err := os.Open(fileName)
+				if err != nil {
+					log.Fatalf("Couldn't open movie file: %v", err)
+				}
+				for {
+					n, err := fh.Read(buffer)
+					if n == 0 && errors.Is(err, io.EOF) {
+						break
+					}
+					p.Disp.Display(buffer)
+				}
+				fh.Close()
+				os.Rename(fileName, DefDoneDir)
+			}
 		}
 	}
 }
