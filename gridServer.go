@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"net/rpc"
 	"os"
+	"path"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -197,13 +198,17 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 			log.Printf("FileWatcher: event recvd.: %s", evt)
 			if evt.Has(fsnotify.Create) {
 				log.Printf("FileWatcher: new movie file is here")
-				fileName := evt.Name
-				fh, err := os.Open(fileName)
+				filePath := evt.Name
+				fileName := path.Base(filePath)
+				fh, err := os.Open(filePath)
 				if err != nil {
 					log.Fatalf("Couldn't open movie file: %v", err)
 				}
 				for {
 					n, err := fh.Read(buffer)
+					if n != p.bufferSize {
+						log.Printf("FileWatcher: read only %d bytes", n)
+					}
 					if n == 0 && errors.Is(err, io.EOF) {
 						break
 					}
@@ -211,10 +216,12 @@ func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
 				}
 				log.Printf("FileWatcher: all data has been sent")
 				fh.Close()
-				err = os.Rename(fileName, DefDoneDir)
+				dstPath := path.Join(DefDoneDir, fileName)
+				err = os.Rename(filePath, dstPath)
 				if err != nil {
 					log.Fatalf("Couldn't move movie file to done directory: %v", err)
 				}
+				log.Printf("FileWatcher: movie sent to old files")
 			}
 		}
 	}
