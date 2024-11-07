@@ -34,7 +34,7 @@ var (
 						pos.X = float64(x)
 						dest := pos.Sub(mp).Normalize().Mul(20.0).Add(pos)
 						pix := ledgrid.NewDot(pos, col1)
-						c.Add(0, pix)
+						c.Add(pix)
 						aPos := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
 						grp.Add(aPos)
@@ -50,7 +50,7 @@ var (
 						pos.Y = float64(y)
 						dest := pos.Sub(mp).Normalize().Mul(20.0).Add(pos)
 						pix := ledgrid.NewPixel(pos.Int(), col2)
-						c.Add(0, pix)
+						c.Add(pix)
 						aPos := ledgrid.NewIntegerPosAnim(pix, dest.Int(), time.Second+rand.N(time.Second))
 						aPos.AutoReverse = true
 						grp.Add(aPos)
@@ -81,7 +81,7 @@ var (
 					// pos := geom.NewPointIMG(pt)
 					pix := ledgrid.NewDot(pos, col)
 
-					c.Add(0, pix)
+					c.Add(pix)
 
 					dur := time.Second + time.Duration(x)*time.Millisecond
 					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
@@ -151,30 +151,40 @@ var (
 					pt := image.Point{x, y}
 					pix := ledgrid.NewPixel(pt, color.GreenYellow)
 
-					c.Add(0, pix)
+					c.Add(pix)
 
-					aColorCyc1 := ledgrid.NewColorAnim(pix, color.LightSeaGreen, 2*time.Second)
+					aColorCyc1 := ledgrid.NewColorAnim(pix, color.LightSeaGreen, 1*time.Second)
 					aColorCyc1.AutoReverse = true
-					aColorCyc1.RepeatCount = 3
+					aColorCyc1.RepeatCount = 6
 					aColorCyc1.Curve = ledgrid.AnimationLinear
 					aColorCyc1.Cont = true
 					aColorCyc1.SetAnimPos(rand.Float64())
 
-					aColorTrans1 := ledgrid.NewColorAnim(pix, color.Fuchsia, 2*time.Second)
+					aColorTrans1 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0xff, 0x45, 0x00), 1*time.Second)
 					aColorTrans1.Curve = ledgrid.AnimationLinear
 					aColorTrans1.Cont = true
 
-					aColorCyc2 := ledgrid.NewColorAnim(pix, color.MediumPurple, 2*time.Second)
+					aColorCyc2 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0xfd, 0xd7, 0x00), 1*time.Second)
 					aColorCyc2.AutoReverse = true
-					aColorCyc2.RepeatCount = 3
+					aColorCyc2.RepeatCount = 6
 					aColorCyc2.Curve = ledgrid.AnimationLinear
 					aColorCyc2.Cont = true
 
-					aColorTrans2 := ledgrid.NewColorAnim(pix, color.GreenYellow, 2*time.Second)
+					aColorTrans2 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0xff, 0x00, 0xff), 1*time.Second)
 					aColorTrans2.Curve = ledgrid.AnimationLinear
 					aColorTrans2.Cont = true
 
-					aColorSeq := ledgrid.NewSequence(aColorCyc1, aColorTrans1, aColorCyc2, aColorTrans2)
+					aColorCyc3 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0x0e, 0x4f, 0x92), 1*time.Second)
+					aColorCyc3.AutoReverse = true
+					aColorCyc3.RepeatCount = 6
+					aColorCyc3.Curve = ledgrid.AnimationLinear
+					aColorCyc3.Cont = true
+
+					aColorTrans3 := ledgrid.NewColorAnim(pix, color.GreenYellow, 1*time.Second)
+					aColorTrans3.Curve = ledgrid.AnimationLinear
+					aColorTrans3.Cont = true
+
+					aColorSeq := ledgrid.NewSequence(aColorCyc1, aColorTrans1, aColorCyc2, aColorTrans2, aColorCyc3, aColorTrans3)
 					aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 					aGrpLedColor.Add(aColorSeq)
@@ -236,23 +246,20 @@ var (
 				x := xMin
 				for col := range c.Rect.Dx() {
 					pix := ledgrid.NewPixel(image.Point{col, row}, color.Black)
-					c.Add(0, pix)
+					c.Add(pix)
 					anim := ledgrid.NewShaderAnim(pix, fader, x, y, PlasmaShaderFunc)
 					aGrp.Add(anim)
 					x += dPix
 				}
 				y -= dPix
 			}
-			c.Add(0, txt)
+			c.Add(txt)
 
 			aGrp.Start()
 			aPalTl.Start()
 		})
 
-	// --------------------------------------------------------------------------
-	//
-	// The new kid on the block... ;-)
-	//
+	// A color shader - the new thing people are talking about.
 	ShowTheColorShader = NewLedGridProgram("Show a color shader!",
 		func(c *ledgrid.Canvas) {
 			var xMin, xMax, yMin, yMax, dx, dy float64
@@ -277,7 +284,7 @@ var (
 				x := xMin
 				for col := range c.Rect.Dx() {
 					pix := ledgrid.NewPixel(image.Point{col, row}, color.Black)
-					c.Add(0, pix)
+					c.Add(pix)
 					anim := ledgrid.NewColorShaderAnim(pix, x, 0.0, y, idx, nPix, LavaLampShader)
 					idx += 1
 					aGrp.Add(anim)
@@ -459,7 +466,7 @@ var (
 			txtPos3 := fixed.P(1, -1)
 			// txtPos3 := fixed.P(-2*width, height-1)
 			txt := ledgrid.NewFixedText(txtPos1, color.Black, "")
-			c.Add(0, rect, txt)
+			c.Add(rect, txt)
 
 			posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 3*time.Second/2)
 			posAnim1.Curve = ledgrid.AnimationEaseOut
@@ -518,46 +525,37 @@ var (
 	FirePlace = NewLedGridProgram("Fireplace",
 		func(c *ledgrid.Canvas) {
 			fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
-			c.Add(0, fire)
+			c.Add(fire)
 			fire.Start()
 		})
 
-	SpecialCamera = NewLedGridProgram("Camera in differential mode",
-		func(c *ledgrid.Canvas) {
-			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-			size := geom.Point{float64(width), float64(height)}
-
-			cam := NewHistCamera(pos, size, 100, color.SkyBlue)
-			c.Add(0, cam)
-			cam.Start()
-		})
 )
 
 // ---------------------------------------------------------------------------
 
-type ColorSampler struct {
-	ledgrid.CanvasObjectEmbed
-	colGrp color.ColorGroup
-}
+// type ColorSampler struct {
+// 	ledgrid.CanvasObjectEmbed
+// 	colGrp color.ColorGroup
+// }
 
-func NewColorSampler(colGrp color.ColorGroup) *ColorSampler {
-	c := &ColorSampler{}
-	c.CanvasObjectEmbed.Extend(c)
-	c.colGrp = colGrp
-	return c
-}
+// func NewColorSampler(colGrp color.ColorGroup) *ColorSampler {
+// 	c := &ColorSampler{}
+// 	c.CanvasObjectEmbed.Extend(c)
+// 	c.colGrp = colGrp
+// 	return c
+// }
 
-func (c *ColorSampler) Draw(canv *ledgrid.Canvas) {
-	for i, colorName := range color.Groups[c.colGrp] {
-		col := color.Map[colorName]
-		for j := range 2 {
-			x := 2*i + j
-			if x >= width {
-				return
-			}
-			for y := range height {
-				canv.GC.SetPixel(x, y, col)
-			}
-		}
-	}
-}
+// func (c *ColorSampler) Draw(canv *ledgrid.Canvas) {
+// 	for i, colorName := range color.Groups[c.colGrp] {
+// 		col := color.Map[colorName]
+// 		for j := range 2 {
+// 			x := 2*i + j
+// 			if x >= width {
+// 				return
+// 			}
+// 			for y := range height {
+// 				canv.GC.SetPixel(x, y, col)
+// 			}
+// 		}
+// 	}
+// }

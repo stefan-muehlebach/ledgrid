@@ -54,7 +54,7 @@ var (
 			aFadeOut := ledgrid.NewFadeAnim(mario, ledgrid.FadeOut, 3*time.Second)
 			aFadeOut.Cont = true
 
-			c.Add(0, flame1, flame2, mario)
+			c.Add(flame1, flame2, mario)
 
 			aSeq := ledgrid.NewSequence(
                 aFadeIn,
@@ -97,7 +97,7 @@ var (
 				aTimeline.Add(t0, ledgrid.NewHideShowAnimation(img))
 				aTimeline.Add(t1, ledgrid.NewAngleAnim(img, 6*math.Pi, 3*time.Second))
 				aTimeline.Add(t2, ledgrid.NewHideShowAnimation(img))
-				c.Add(0, img)
+				c.Add(img)
 			}
 			aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
 			aTimeline.Start()
@@ -109,7 +109,7 @@ var (
 			img := ledgrid.NewImage(imgPos, "images/skull.png")
 			img.Size = geom.Point{float64(width / 2), float64(height / 2)}
 			img.SetAlign(ledgrid.AlignBottom)
-			c.Add(0, img)
+			c.Add(img)
 
 			aAlignRight := ledgrid.NewTask(func() {
 				img.SetAlign(ledgrid.AlignRight)

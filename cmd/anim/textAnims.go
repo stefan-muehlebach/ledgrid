@@ -23,7 +23,7 @@ var (
 			t7 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "Lochbach", color.Gold)
 			t8 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "wohnen", color.Gold)
 
-			c.Add(0, t1, t2, t4, t5, t6, t7, t8)
+			c.Add(t1, t2, t4, t5, t6, t7, t8)
 
 			aAngle1 := ledgrid.NewAngleAnim(t1, -2*math.Pi, 7*time.Second)
 			aAngle1.Curve = ledgrid.AnimationLinear

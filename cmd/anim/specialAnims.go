@@ -33,7 +33,7 @@ var (
 					t := rand.Float64()
 					col := color.Black
 					pix := ledgrid.NewDot(pos, col)
-					c.Add(0, pix)
+					c.Add(pix)
 
 					dur := time.Second + time.Duration(10*x+20*y)*time.Millisecond
 					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
@@ -83,7 +83,7 @@ var (
 			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 5*time.Second)
 			aTxt3.AutoReverse = true
-			c.Add(0, txt1, txt2, txt3)
+			c.Add(txt1, txt2, txt3)
 
 			aTimel := ledgrid.NewTimeline(40 * time.Second)
 			aTimel.Add(0, aGrpFadeIn)

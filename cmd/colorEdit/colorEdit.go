@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
@@ -49,7 +48,10 @@ func main() {
 	var width int = 40
 	var height int = 10
 	var host string = "raspi-3"
-	var port uint = 5333
+	// var port uint = 5333
+	var dataPort, rpcPort uint
+	var useTCP bool
+	var network string
 
 	var stdscr *gc.Window
 	var winGrid, winHelp *gc.Window
@@ -57,9 +59,10 @@ func main() {
 	var curRow, selRow, curCol, selCol int
 	var curColor int
 	var err error
+    var gridClient ledgrid.GridClient
 	var ledGrid *ledgrid.LedGrid
 	var ledColor color.LedColor
-    var palIdx int
+	var palIdx int
 	var curColorChanged bool
 	var redrawGrid bool
 	var cursorMoved bool
@@ -71,28 +74,38 @@ func main() {
 	var gammaValues [3]float64
 	var gridWidth, gridHeight int
 	var termWidth, termHeight int
-	// var gridSize image.Point
+	var gridSize image.Point
 	var selRect image.Rectangle
 	var clipRect image.Rectangle
 	var clipData []color.LedColor
 	var modConf conf.ModuleConfig
 
-	flag.IntVar(&width, "width", width, "Width of panel")
-	flag.IntVar(&height, "height", height, "Height of panel")
+	// flag.IntVar(&width, "width", width, "Width of panel")
+	// flag.IntVar(&height, "height", height, "Height of panel")
+
 	flag.StringVar(&host, "host", host, "Controller hostname")
-	flag.UintVar(&port, "port", port, "Controller port")
+	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
+	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
+
+	// flag.StringVar(&host, "host", host, "Controller hostname")
+	// flag.UintVar(&port, "port", port, "Controller port")
 	flag.Parse()
 
-	{
-		modConf = conf.ModuleConfig{
-			{Col: 0, Row: 0, Mod: conf.ModLR000, Idx: 0},
-			{Col: 1, Row: 0, Mod: conf.ModLR000, Idx: 100},
-			{Col: 2, Row: 0, Mod: conf.ModLR000, Idx: 200},
-		}
-		width = 30
-		height = 10
+	if useTCP {
+		network = "tcp"
+	} else {
+		network = "udp"
 	}
-	fmt.Printf("size of modConf: %v\n", modConf.Size())
+
+	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+	modConf = gridClient.ModuleConfig()
+	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
+	// gR, gG, gB = ledGrid.Client.Gamma()
+
+	gridSize = ledGrid.Rect.Size()
+	width = gridSize.X
+	height = gridSize.Y
 
 	// gridSize = image.Point{width, height}
 	gridWidth = 7*width + 10
@@ -103,7 +116,7 @@ func main() {
 	selRect = image.Rect(0, 0, 1, 1)
 
 	// if modConf != nil {
-	ledGrid = ledgrid.NewLedGrid(host, port, modConf)
+	// ledGrid = ledgrid.NewLedGrid(host, port, modConf)
 	// } else {
 	// ledGrid = ledgrid.NewLedGridBySize(host, port, gridSize)
 	// }
@@ -444,8 +457,8 @@ main:
 			redrawGrid = true
 
 		case Ctrl('p'):
-            palName := ledgrid.PaletteNames[palIdx]
-            palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
+			palName := ledgrid.PaletteNames[palIdx]
+			palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
 			pal := ledgrid.PaletteMap[palName]
 			for row := 0; row < ledGrid.Rect.Dy(); row++ {
 				for col := 0; col < ledGrid.Rect.Dx(); col++ {

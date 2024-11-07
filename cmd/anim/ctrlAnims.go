@@ -20,7 +20,7 @@ var (
 			rColor2 := color.GreenYellow
 
 			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
-			c.Add(0, r)
+			c.Add(r)
 
 			aPos := ledgrid.NewPositionAnim(r, rPos2, 3000*time.Millisecond)
 			aPos.AutoReverse = true
@@ -63,7 +63,7 @@ var (
 			// rSize3.Y = rSize4.Y
 
 			r := ledgrid.NewRectangle(rPos, sizeList[0], colorList[0])
-			c.Add(0, r)
+			c.Add(r)
 
 			for i, size := range sizeList {
 				sizeAnims[i] = ledgrid.NewSizeAnim(r, size, time.Second)
@@ -106,7 +106,7 @@ var (
 
 			r2 := ledgrid.NewEllipse(r2Pos, r2Size1, color.Gold)
 			r4 := ledgrid.NewEllipse(r4Pos, r4Size1, color.Gold)
-			c.Add(0, r1, r3, r2, r4)
+			c.Add(r1, r3, r2, r4)
 
 			aAngle1 := ledgrid.NewAngleAnim(r1, 0.5*math.Pi, time.Second)
 			aAngle2 := ledgrid.NewAngleAnim(r1, 0.0, time.Second)

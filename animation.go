@@ -3,10 +3,8 @@ package ledgrid
 import (
 	"encoding/gob"
 	"image"
-	"log"
 	"math"
 	"math/rand/v2"
-	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -38,10 +36,10 @@ const (
 // Anschluss, dass alle darstellbaren Objekte neu gezeichnet werden und sendet
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
-	AnimList   [NumLayers][]Animation
-	animMutex  [NumLayers]*sync.RWMutex
-	Canvas     *Canvas
-	ledGrid    *LedGrid
+	AnimList  [NumLayers][]Animation
+	animMutex [NumLayers]*sync.RWMutex
+	// Canvas     *Canvas
+	// ledGrid    *LedGrid
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
@@ -53,7 +51,8 @@ type AnimationController struct {
 	syncChan   chan bool
 }
 
-func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationController {
+func NewAnimationController(syncChan chan bool) *AnimationController {
+	// func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationController {
 	if AnimCtrl != nil {
 		return AnimCtrl
 	}
@@ -62,19 +61,19 @@ func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationControll
 		a.AnimList[i] = make([]Animation, 0)
 		a.animMutex[i] = &sync.RWMutex{}
 	}
-	a.Canvas = canvas
-	a.ledGrid = ledGrid
+	// a.Canvas = canvas
+	// a.ledGrid = ledGrid
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = NewStopwatch()
 	a.numThreads = runtime.NumCPU()
 	a.delay = time.Duration(0)
-	a.syncChan = make(chan bool)
+	a.syncChan = syncChan
 
 	AnimCtrl = a
 	go a.backgroundThread()
 	a.running = true
 
-	canvas.StartRefresh(a.syncChan, ledGrid.syncChan)
+	// canvas.StartRefresh(a.syncChan, ledGrid.syncChan)
 
 	return a
 }
@@ -157,6 +156,9 @@ func (a *AnimationController) IsRunning() bool {
 
 // Diese Funktion wird im Hintergrund gestartet und ist fuer die Koordination
 // von Animation, Zeichnen und Sender der Daten zur Hardware verantwortlich.
+// TO DO: in Zukunft sollte die Koordination durch das Objekt LedGrid
+// vorgenommen werden. Davon ist in jedem Programm nur eine Instanz vorhanden
+// AnimationController's koennte es grundsaetzlich mehrere geben.
 func (a *AnimationController) backgroundThread() {
 	var wg sync.WaitGroup
 
@@ -208,31 +210,31 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.Wa
 	}
 }
 
-func (a *AnimationController) Save(fileName string) {
-	fh, err := os.Create(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't create file: %v", err)
-	}
-	defer fh.Close()
-	gobEncoder := gob.NewEncoder(fh)
-	err = gobEncoder.Encode(a)
-	if err != nil {
-		log.Fatalf("Couldn't encode data: %v", err)
-	}
-}
+// func (a *AnimationController) Save(fileName string) {
+// 	fh, err := os.Create(fileName)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't create file: %v", err)
+// 	}
+// 	defer fh.Close()
+// 	gobEncoder := gob.NewEncoder(fh)
+// 	err = gobEncoder.Encode(a)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't encode data: %v", err)
+// 	}
+// }
 
-func (a *AnimationController) Load(fileName string) {
-	fh, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't create file: %v", err)
-	}
-	defer fh.Close()
-	gobDecoder := gob.NewDecoder(fh)
-	err = gobDecoder.Decode(a)
-	if err != nil {
-		log.Fatalf("Couldn't decode data: %v", err)
-	}
-}
+// func (a *AnimationController) Load(fileName string) {
+// 	fh, err := os.Open(fileName)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't create file: %v", err)
+// 	}
+// 	defer fh.Close()
+// 	gobDecoder := gob.NewDecoder(fh)
+// 	err = gobDecoder.Decode(a)
+// 	if err != nil {
+// 		log.Fatalf("Couldn't decode data: %v", err)
+// 	}
+// }
 
 func (a *AnimationController) Watch() *Stopwatch {
 	return a.animWatch
@@ -423,7 +425,6 @@ type NormAnimation interface {
 	Tick(t float64)
 }
 
-
 // Haben Animationen eine Dauer, so koennen sie dieses Embeddable einbinden
 // und erhalten somit die klassischen Methoden fuer das Setzen und Abfragen
 // der Dauer.
@@ -527,7 +528,6 @@ func (a *SuspContAnimation) IsRunning() bool {
 	return false
 }
 
-
 // Dieses Embeddable wird von allen Animationen verwendet, welche eine
 // Animation implementieren, die folgende Kriterien aufweist:
 //   - sie hat eine begrenzte Laufzeit (ohne Beruecksichtiung von Umkehrungen
@@ -594,7 +594,7 @@ func (a *NormAnimationEmbed) Start() {
 		return
 	}
 	a.start = AnimCtrl.Now()
-    a.reverse = false
+	a.reverse = false
 	if a.startPos > 0.0 {
 		if a.AutoReverse {
 			a.startPos *= 2.0
@@ -697,17 +697,17 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 // wo ein unmittelbares Fortfahren der Animationen nicht gewuenscht ist und
 // wo der Einsatz der Timeline zu aufwaendig ist.
 type Delay struct {
-    NormAnimationEmbed
+	NormAnimationEmbed
 }
 
 func NewDelay(d time.Duration) *Delay {
-    a := &Delay{}
-    a.SetDuration(d)
-    a.NormAnimationEmbed.Extend(a)
-    return a
+	a := &Delay{}
+	a.SetDuration(d)
+	a.NormAnimationEmbed.Extend(a)
+	return a
 }
 
-func (a *Delay) Init() {}
+func (a *Delay) Init()          {}
 func (a *Delay) Tick(t float64) {}
 
 // Folgende Datentypen lassen sich 'animieren', d.h. ueber einen bestimmten
@@ -939,8 +939,8 @@ type Sizeable interface {
 }
 
 type SizeAnimation struct {
-    GenericAnimation[geom.Point]
-    Path Path
+	GenericAnimation[geom.Point]
+	Path Path
 }
 
 func NewSizeAnim(obj Sizeable, val2 geom.Point, dur time.Duration) *SizeAnimation {
@@ -961,8 +961,6 @@ func (a *SizeAnimation) Tick(t float64) {
 	dp.Y *= s.Y
 	*a.ValPtr = a.val1.Add(dp)
 }
-
-
 
 // Animation fuer eine Positionsveraenderung anhand des Fixed-Datentyps
 // [fixed/Point26_6]. Dies wird insbesondere für die Positionierung von

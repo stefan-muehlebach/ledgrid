@@ -26,7 +26,7 @@ var (
 			c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
 			c3 := ledgrid.NewEllipse(pos3, cSize, color.SkyBlue)
 			c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
-			c.Add(0, c1, c2, c3, c4)
+			c.Add(c1, c2, c3, c4)
 
 			c1Path := ledgrid.NewPathAnim(c1, pathA, geom.Point{float64(width) / 3.0, float64(height - 4)}, duration)
 			c1Path.AutoReverse = true
@@ -106,7 +106,7 @@ var (
 			polyPath3 := ledgrid.NewPolygonPath(ptList...)
 
 			c1 := ledgrid.NewDot(cPos, color.GreenYellow)
-			c.Add(0, c1)
+			c.Add(c1)
 
 			aPath1 := ledgrid.NewPolyPathAnim(c1, polyPath1, 14*time.Second)
 			aPath1.AutoReverse = true
@@ -133,7 +133,7 @@ var (
 
 			c1 := ledgrid.NewEllipse(pos1, size1, color.SkyBlue)
 			c2 := ledgrid.NewEllipse(pos2, size2, color.GreenYellow)
-			c.Add(0, c1, c2)
+			c.Add(c1, c2)
 
 			aPos1 := ledgrid.NewPositionAnim(c1, geom.Point{}, 1300*time.Millisecond)
 			aPos1.Cont = true

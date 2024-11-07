@@ -15,18 +15,18 @@ import (
 )
 
 const (
-	defHost = "raspi-3"
-    defWidth = 40
-    defHeight = 10
+	defHost   = "raspi-3"
+	defWidth  = 40
+	defHeight = 10
 )
 
 var (
 	width, height int
 	gridSize      image.Point
-	//backAlpha     = 1.0
-	gridClient ledgrid.GridClient
-	ledGrid    *ledgrid.LedGrid
-	canvas     *ledgrid.Canvas
+	gridClient    ledgrid.GridClient
+	ledGrid       *ledgrid.LedGrid
+	animCtrl      *ledgrid.AnimationController
+	canvas        *ledgrid.Canvas
 )
 
 //----------------------------------------------------------------------------
@@ -82,11 +82,14 @@ var (
 		CirclingCircles,
 		ChasingCircles,
 		PushingRectangles,
+		FlyingRectangle,
+		RectanglesJourney,
 		RegularPolygonTest,
 		GlowingPixels,
-        GlowAgainPixels,
+		GlowAgainPixels,
 		MovingPixels,
 		EffectFaderTest,
+		OrdinaryCamera,
 		SpecialCamera,
 		BlinkenAnimation,
 		MovingText,
@@ -112,16 +115,16 @@ func main() {
 	var gR, gG, gB float64
 	var modConf conf.ModuleConfig
 	var timeout time.Duration
-    var outFile string
+	var outFile string
 
 	for i, prog := range programList {
 		id := 'a' + i
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
-    	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
-    flag.StringVar(&outFile, "out", "", "Send all data to this file")
+	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
 	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
@@ -143,11 +146,11 @@ func main() {
 		network = "udp"
 	}
 
-    if outFile != "" {
-        gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
-    } else {
-        	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
-    }
+	if outFile != "" {
+		gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
+	} else {
+		gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+	}
 	modConf = gridClient.ModuleConfig()
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 	gR, gG, gB = ledGrid.Client.Gamma()
@@ -156,8 +159,10 @@ func main() {
 	width = gridSize.X
 	height = gridSize.Y
 
-	canvas = ledgrid.NewCanvas(gridSize)
-	ledgrid.NewAnimationController(canvas, ledGrid)
+	canvas = ledGrid.Canvas
+	animCtrl = ledGrid.AnimCtrl
+
+	ledGrid.StartRefresh()
 
 	if runInteractive {
 		progId = -1
@@ -197,43 +202,43 @@ func main() {
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
 				ledgrid.AnimCtrl.PurgeAll()
-				canvas.PurgeAll()
+				canvas.Purge()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				ledGrid.Client.Watch().Reset()
 				programList[progId].Run(canvas)
 			}
-			if ch == 'S' {
-				ledgrid.AnimCtrl.Save("gobs/program01.gob")
-			}
-			if ch == 'L' {
-				ledgrid.AnimCtrl.Suspend()
-				ledgrid.AnimCtrl.PurgeAll()
-				ledgrid.AnimCtrl.Watch().Reset()
-				canvas.PurgeAll()
-				canvas.Watch().Reset()
-				time.Sleep(60 * time.Millisecond)
-				ledgrid.AnimCtrl.Load("gobs/program01.gob")
-				ledgrid.AnimCtrl.Continue()
-				// fmt.Printf("canvas  >>> %+v\n", canvas)
-				// for i, obj := range canvas.ObjList {
-				i := 0
-				for ele := canvas.ObjList[0].Front(); ele != nil; ele = ele.Next() {
-					obj := ele.Value.(ledgrid.CanvasObject)
-					if obj == nil {
-						continue
-					}
-					fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
-					i++
-				}
-				// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
-				for i, anim := range ledgrid.AnimCtrl.AnimList {
-					if anim == nil {
-						continue
-					}
-					fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
-				}
-			}
+			// if ch == 'S' {
+			// 	ledgrid.AnimCtrl.Save("gobs/program01.gob")
+			// }
+			// if ch == 'L' {
+			// 	ledgrid.AnimCtrl.Suspend()
+			// 	ledgrid.AnimCtrl.PurgeAll()
+			// 	ledgrid.AnimCtrl.Watch().Reset()
+			// 	canvas.PurgeAll()
+			// 	canvas.Watch().Reset()
+			// 	time.Sleep(60 * time.Millisecond)
+			// 	ledgrid.AnimCtrl.Load("gobs/program01.gob")
+			// 	ledgrid.AnimCtrl.Continue()
+			// 	// fmt.Printf("canvas  >>> %+v\n", canvas)
+			// 	// for i, obj := range canvas.ObjList {
+			// 	i := 0
+			// 	for ele := canvas.ObjList[0].Front(); ele != nil; ele = ele.Next() {
+			// 		obj := ele.Value.(ledgrid.CanvasObject)
+			// 		if obj == nil {
+			// 			continue
+			// 		}
+			// 		fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
+			// 		i++
+			// 	}
+			// 	// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
+			// 	for i, anim := range ledgrid.AnimCtrl.AnimList {
+			// 		if anim == nil {
+			// 			continue
+			// 		}
+			// 		fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
+			// 	}
+			// }
 			if ch == '+' {
 				gR += 0.1
 				gG += 0.1

@@ -31,11 +31,12 @@ const (
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
 type Canvas struct {
-	ObjList            [NumLayers]*list.List
+	ObjList            *list.List
 	BackColor          color.LedColor
 	Rect               image.Rectangle
 	Img                draw.Image
 	GC                 *gg.Context
+	Mask               *image.Alpha
 	objMutex           *sync.RWMutex
 	paintWatch         *Stopwatch
 	syncAnim, syncSend chan bool
@@ -43,24 +44,29 @@ type Canvas struct {
 
 func NewCanvas(size image.Point) *Canvas {
 	c := &Canvas{}
-	for i := range NumLayers {
-		c.ObjList[i] = list.New()
-	}
+	c.ObjList = list.New()
 	c.BackColor = color.Black
 	c.Rect = image.Rectangle{Max: size}
 	c.Img = image.NewRGBA(c.Rect)
 	c.GC = gg.NewContextForRGBA(c.Img.(*image.RGBA))
+	c.Mask = image.NewAlpha(c.Rect)
+	for row := range c.Mask.Rect.Dy() {
+		for col := range c.Mask.Rect.Dx() {
+			c.Mask.SetAlpha(col, row, gocolor.Alpha{0xff})
+		}
+	}
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
 }
 
 func (c *Canvas) Close() {
-	for layer := range NumLayers {
-		c.Purge(layer)
-	}
+	c.Purge()
 }
 
+// The following methods implement the image.Image (resp. draw.Image)
+// interface. A Canvas object can therefore be used as the destination as well
+// as the source for all kind of drawings.
 func (c *Canvas) ColorModel() gocolor.Model {
 	return gocolor.RGBAModel
 }
@@ -79,71 +85,45 @@ func (c *Canvas) Set(x, y int, col gocolor.Color) {
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
-func (c *Canvas) Add(layer int, objs ...CanvasObject) {
+func (c *Canvas) Add(objs ...CanvasObject) {
 	c.objMutex.Lock()
 	for _, obj := range objs {
-		c.ObjList[layer].PushBack(obj)
+		c.ObjList.PushBack(obj)
 	}
 	c.objMutex.Unlock()
 }
 
-func (c *Canvas) Del(layer int, obj CanvasObject) {
-	for ele := c.ObjList[layer].Front(); ele != nil; ele = ele.Next() {
+func (c *Canvas) Del(obj CanvasObject) {
+	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
 		o := ele.Value.(CanvasObject)
 		if o == obj {
-			c.ObjList[layer].Remove(ele)
+			c.ObjList.Remove(ele)
 			return
 		}
 	}
 }
 
-func (c *Canvas) PurgeAll() {
-	for layer := range NumLayers {
-		c.Purge(layer)
-	}
-}
-
 // Loescht alle Objekte von der Zeichenflaeche.
-func (c *Canvas) Purge(layer int) {
+func (c *Canvas) Purge() {
 	c.objMutex.Lock()
-	c.ObjList[layer].Init()
+	c.ObjList.Init()
 	c.objMutex.Unlock()
 }
 
 func (c *Canvas) Refresh() {
+	c.paintWatch.Start()
 	c.GC.SetFillColor(c.BackColor)
 	c.GC.Clear()
 	c.objMutex.RLock()
-	for layer := range NumLayers {
-		for ele := c.ObjList[layer].Front(); ele != nil; ele = ele.Next() {
-			obj := ele.Value.(CanvasObject)
-			if !obj.IsVisible() {
-				continue
-			}
-			obj.Draw(c)
+	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
+		obj := ele.Value.(CanvasObject)
+		if !obj.IsVisible() {
+			continue
 		}
+		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-}
-
-func (c *Canvas) StartRefresh(syncAnim, syncSend chan bool) {
-	c.syncAnim = syncAnim
-	c.syncSend = syncSend
-	go c.refreshThread()
-}
-
-func (c *Canvas) refreshThread() {
-	for {
-		<-c.syncSend
-		<-c.syncAnim
-		c.paintWatch.Start()
-		c.Refresh()
-		c.syncAnim <- true
-		draw.Draw(AnimCtrl.ledGrid, AnimCtrl.ledGrid.Bounds(), c.Img,
-			image.Point{}, draw.Over)
-		c.paintWatch.Stop()
-		c.syncSend <- true
-	}
+	c.paintWatch.Stop()
 }
 
 func (c *Canvas) Watch() *Stopwatch {
@@ -215,7 +195,8 @@ var (
 
 // Embeddables fuer die einfachere Animation diverser Attribute. Diese Records
 // sind jeweils so aufgebaut, dass ihr Name auf den Namen des Attributes
-// verweist (Bsp: PosEmbed
+// verweist (Bsp: PosEmbed hat ein Feld namens Pos und eine Methode PosPtr(),
+// welche einen Pointer auf das Feld Pos liefert).
 type PosEmbed struct {
 	Pos geom.Point
 }
@@ -581,7 +562,7 @@ func NewText(pos geom.Point, text string, col color.LedColor) *Text {
 	t.CanvasObjectEmbed.Extend(t)
 	t.FadeEmbed.Init(&t.Color)
 	t.SetFont(defFont, defFontSize)
-    t.SetAlign(AlignCenter | AlignMiddle)
+	t.SetAlign(AlignCenter | AlignMiddle)
 	return t
 }
 

@@ -240,7 +240,7 @@ var (
 			size := geom.Point{float64(width), float64(height)}
 
 			cam := NewCamera(pos, size)
-			c.Add(1, cam)
+			c.Add(cam)
 			cam.Start()
 			mask := cam.Mask
 
@@ -267,14 +267,14 @@ var (
 					time.Sleep(1 * time.Second)
 					for i, effect := range effectList {
 						ledgrid.AnimCtrl.Purge(0)
-						c.Purge(0)
+						c.Purge()
 						for _, pts := range EffectFader(effect) {
 							for _, pp := range pts {
 								p0, p1 := pp.src, pp.dst
 								src = geom.NewPointIMG(p0)
 								dst = geom.NewPointIMG(p1)
 								pixAway := ledgrid.NewDot(src, colorList[i].Alpha(0.0))
-								c.Add(1, pixAway)
+								c.Add(pixAway)
 
 								aMask := ledgrid.NewTask(func() {
 									idx := mask.PixOffset(p0.X, p0.Y)
