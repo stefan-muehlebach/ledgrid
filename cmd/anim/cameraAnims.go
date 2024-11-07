@@ -1,6 +1,7 @@
 package main
 
 import (
+    gocolor "image/color"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
@@ -8,12 +9,18 @@ import (
 
 var (
 	OrdinaryCamera = NewLedGridProgram("Ordinary camera",
-		func(c *ledgrid.Canvas) {
+		func(c1 *ledgrid.Canvas) {
+			c2, _ := ledGrid.NewCanvas()
 			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 			size := geom.Point{float64(width), float64(height)}
 
 			cam := NewCamera(pos, size)
-			c.Add(cam)
+			c2.Add(cam)
+            for y := range c2.Rect.Dy() {
+                for x := range c2.Rect.Dx()/2 {
+                    c2.Mask.SetAlpha(x, y, gocolor.Alpha{0x00})
+                }
+            }
 			cam.Start()
 		})
 

@@ -159,7 +159,7 @@ func main() {
 	width = gridSize.X
 	height = gridSize.Y
 
-	canvas = ledGrid.Canvas
+	canvas = ledGrid.Canvas(0)
 	animCtrl = ledGrid.AnimCtrl
 
 	ledGrid.StartRefresh()

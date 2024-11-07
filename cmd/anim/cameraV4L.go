@@ -27,7 +27,7 @@ type Camera struct {
 	imgMutex  [2]*sync.RWMutex
 	scaler    draw.Scaler
 	srcRect   image.Rectangle
-	Mask      *image.Alpha
+	// Mask      *image.Alpha
 	doneChan  chan bool
 	cancel    context.CancelFunc
 	running   bool
@@ -52,10 +52,10 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c.imgMutex[1] = &sync.RWMutex{}
 	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
-	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
-	for i := range c.Mask.Pix {
-		c.Mask.Pix[i] = 0xff
-	}
+	// c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
+	// for i := range c.Mask.Pix {
+	// 	c.Mask.Pix[i] = 0xff
+	// }
 	ledgrid.AnimCtrl.Add(1, c)
 	return c
 }
@@ -154,6 +154,6 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
 	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img[idx], c.srcRect,
-		draw.Over, &draw.Options{DstMask: c.Mask})
+		draw.Over, nil)
 	c.imgMutex[idx].RUnlock()
 }

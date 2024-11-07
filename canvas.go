@@ -45,7 +45,7 @@ type Canvas struct {
 func NewCanvas(size image.Point) *Canvas {
 	c := &Canvas{}
 	c.ObjList = list.New()
-	c.BackColor = color.Black
+	c.BackColor = color.Transparent
 	c.Rect = image.Rectangle{Max: size}
 	c.Img = image.NewRGBA(c.Rect)
 	c.GC = gg.NewContextForRGBA(c.Img.(*image.RGBA))

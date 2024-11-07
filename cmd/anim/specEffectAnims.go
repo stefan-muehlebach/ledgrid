@@ -235,14 +235,15 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 
 var (
 	EffectFaderTest = NewLedGridProgram("Camera images with some nice fading effects",
-		func(c *ledgrid.Canvas) {
+		func(canv1 *ledgrid.Canvas) {
 			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 			size := geom.Point{float64(width), float64(height)}
 
+			canv2, _ := ledGrid.NewCanvas()
+
 			cam := NewCamera(pos, size)
-			c.Add(cam)
+			canv1.Add(cam)
 			cam.Start()
-			mask := cam.Mask
 
 			go func() {
 				var src, dst geom.Point
@@ -267,18 +268,18 @@ var (
 					time.Sleep(1 * time.Second)
 					for i, effect := range effectList {
 						ledgrid.AnimCtrl.Purge(0)
-						c.Purge()
+						canv1.Purge()
 						for _, pts := range EffectFader(effect) {
 							for _, pp := range pts {
 								p0, p1 := pp.src, pp.dst
 								src = geom.NewPointIMG(p0)
 								dst = geom.NewPointIMG(p1)
 								pixAway := ledgrid.NewDot(src, colorList[i].Alpha(0.0))
-								c.Add(pixAway)
+								canv1.Add(pixAway)
 
 								aMask := ledgrid.NewTask(func() {
-									idx := mask.PixOffset(p0.X, p0.Y)
-									mask.Pix[idx] = 0x00
+									idx := canv2.Mask.PixOffset(p0.X, p0.Y)
+									canv2.Mask.Pix[idx] = 0x00
 								})
 
 								aDur := 200*time.Millisecond + rand.N(300*time.Millisecond)
@@ -308,8 +309,8 @@ var (
 							}
 						}
 						time.Sleep(3 * time.Second)
-						for i := range mask.Pix {
-							mask.Pix[i] = 0xff
+						for i := range canv2.Mask.Pix {
+							canv2.Mask.Pix[i] = 0xff
 						}
 					}
 				}

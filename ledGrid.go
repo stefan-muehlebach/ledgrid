@@ -1,8 +1,11 @@
 package ledgrid
 
 import (
+	"container/list"
 	"image"
 	"image/color"
+	"log"
+	"sync"
 
 	ledcolor "github.com/stefan-muehlebach/ledgrid/color"
 	"github.com/stefan-muehlebach/ledgrid/conf"
@@ -25,7 +28,9 @@ type LedGrid struct {
 	// dass sowohl AnimationController als auch Canvas(es) hier vermerkt
 	// sein muessen.
 	AnimCtrl *AnimationController
-	Canvas   *Canvas
+	// Canvas   *Canvas
+	CanvasList *list.List
+	canvMutex  *sync.RWMutex
 
 	// Mit dieser Struktur (slice of slices) werden Pixel-Koordinaten in
 	// Indizes uebersetzt.
@@ -50,7 +55,12 @@ func NewLedGrid(client GridClient, modConf conf.ModuleConfig) *LedGrid {
 	g.idxMap = modConf.IndexMap()
 	g.syncChan = make(chan bool)
 	g.AnimCtrl = NewAnimationController(g.syncChan)
-	g.Canvas = NewCanvas(g.Rect.Size())
+	// g.Canvas = NewCanvas(g.Rect.Size())
+	g.CanvasList = list.New()
+	g.canvMutex = &sync.RWMutex{}
+
+	g.NewCanvas()
+
 	return g
 }
 
@@ -136,16 +146,66 @@ func (g *LedGrid) Show() {
 	g.Client.Send(g.Pix)
 }
 
+// Erzeugt ein neues Canvas-Objekt und hanegt es an den Schluss der Liste.
+// Beim Zeichnen geht LedGrid von hinten nach vorne
+func (g *LedGrid) NewCanvas() (*Canvas, int) {
+	canv := NewCanvas(g.Rect.Size())
+	g.canvMutex.Lock()
+	g.CanvasList.PushBack(canv)
+	layer := g.CanvasList.Len() - 1
+	g.canvMutex.Unlock()
+	return canv, layer
+}
+
+func (g *LedGrid) DelCanvas(canv *Canvas) {
+	for elem := g.CanvasList.Front().Next(); elem != nil; elem = elem.Next() {
+		obj := elem.Value.(*Canvas)
+		if obj == canv {
+			g.CanvasList.Remove(elem)
+			return
+		}
+	}
+}
+
+// Liefert das Canvas-Objekt zurueck, welches fuer den Layer layer definiert
+// ist. Per Default ist nur Layer 0 vorhanden, die Methode bricht ab, wenn
+// es kein Canvas-Objekt zum gewuenschten Layer gibt.
+func (g *LedGrid) Canvas(layer int) *Canvas {
+	var elem *list.Element
+	var id int
+
+	if layer >= g.CanvasList.Len() {
+		log.Fatalf("Cannot access canvas[%d]; only %d in list", layer, g.CanvasList.Len())
+		return nil
+	}
+	for elem, id = g.CanvasList.Front(), 0; elem != nil; elem, id = elem.Next(), id+1 {
+		if id == layer {
+			break
+		}
+	}
+	return elem.Value.(*Canvas)
+}
+
 func (g *LedGrid) StartRefresh() {
 	go g.refreshThread()
 }
 
 func (g *LedGrid) refreshThread() {
+	var canv *Canvas
+	var ok bool
+
 	for {
 		<-g.syncChan
-		g.Canvas.Refresh()
-		draw.DrawMask(g, g.Bounds(), g.Canvas.Img, image.Point{},
-			g.Canvas.Mask, image.Point{}, draw.Over)
+		g.canvMutex.RLock()
+		for ele := g.CanvasList.Back(); ele != nil; ele = ele.Prev() {
+			if canv, ok = ele.Value.(*Canvas); !ok {
+				log.Fatalf("Wrong data in canvas-list")
+			}
+			canv.Refresh()
+			draw.DrawMask(g, g.Bounds(), canv.Img, image.Point{},
+				canv.Mask, image.Point{}, draw.Over)
+		}
+		g.canvMutex.RUnlock()
 		g.syncChan <- true
 		g.Show()
 	}
