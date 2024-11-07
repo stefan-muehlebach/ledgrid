@@ -45,12 +45,12 @@ func NewNetGridClient(host string, network string, port, rpcPort uint) GridClien
 
 	p.conn, err = net.Dial(network, hostPortData)
 	if err != nil {
-		log.Fatal("Error in Dial(dataPort): %v", err)
+		log.Fatalf("Error in Dial(dataPort): %v", err)
 	}
 
 	p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
 	if err != nil {
-		log.Fatal("Error in Dial(rpcPort): %v", err)
+		log.Fatalf("Error in Dial(rpcPort): %v", err)
 	}
 	p.sendWatch = NewStopwatch()
 
