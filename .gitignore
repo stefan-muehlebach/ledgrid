@@ -10,7 +10,7 @@ cmd/gui/gui
 cmd/gridController/gridController
 cmd/gridEmulator/gridEmulator
 cmd/paletteGui/paletteGui
-cmd/playground/
+cmd/playground
 old/
 old_20240815/
 *.swp
