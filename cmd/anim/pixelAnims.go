@@ -13,6 +13,13 @@ import (
 )
 
 var (
+	colorList = [][]color.LedColor{
+		{color.White, color.Black},
+		{color.NewLedColorRGB(0xab, 0xff, 0x5e), color.NewLedColorRGB(0x12, 0x88, 0x81)},
+		{color.NewLedColorRGB(0xff, 0xff, 0x00), color.NewLedColorRGB(0xc2, 0x1a, 0x00)},
+		{color.NewLedColorRGB(0xff, 0x00, 0xff), color.NewLedColorRGB(0x0e, 0x4f, 0x92)},
+	}
+
 	MovingPixels = NewLedGridProgram("Moving pixels",
 		func(c *ledgrid.Canvas) {
 			mp := geom.Point{float64(width)/2 - 0.5, float64(height)/2 - 0.5}
@@ -23,7 +30,7 @@ var (
 				xMin, xMax := float64(3+i), float64(width-3-i)
 				yMin, yMax := float64(3+i), float64(height-3-i)
 				col1 := color.RandGroupColor(color.Blues).Dark(float64(5-i) * 0.1)
-                col2 := color.RandGroupColor(color.Reds).Dark(float64(5-i) * 0.1)
+				col2 := color.RandGroupColor(color.Reds).Dark(float64(5-i) * 0.1)
 				posList := []geom.Point{
 					geom.Point{0.0, yMin},
 					geom.Point{0.0, yMax - 1},
@@ -72,7 +79,7 @@ var (
 			for y := range c.Rect.Dy() {
 				for x := range c.Rect.Dx() {
 					t := rand.Float64()
-					col := (color.DimGray.Dark(0.3)).Interpolate((color.DarkGrey.Dark(0.3)), t)
+					col := colorList[0][0].Interpolate(colorList[0][1], t)
 
 					// pt := image.Point{x, y}
 					// pix := ledgrid.NewPixel(pt, col)
@@ -89,57 +96,142 @@ var (
 					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 					aAlpha.Start()
 
-					aColor := ledgrid.NewColorAnim(pix, col, 1*time.Second)
+					aColor := ledgrid.NewColorAnim(pix, colorList[0][0].Interpolate(colorList[0][1], t), 4*time.Second)
 					aColor.Cont = true
 					aGrpGrey.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, colorList[1][0].Interpolate(colorList[1][1], t), 4*time.Second)
 					aColor.Cont = true
 					aGrpPurple.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, color.Gold.Interpolate(color.Khaki, t), 4*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, colorList[2][0].Interpolate(colorList[2][1], t), 4*time.Second)
 					aColor.Cont = true
 					aGrpYellow.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, color.GreenYellow.Interpolate(color.LightSeaGreen, t), 4*time.Second)
+					aColor = ledgrid.NewColorAnim(pix, colorList[3][0].Interpolate(colorList[3][1], t), 4*time.Second)
 					aColor.Cont = true
 					aGrpGreen.Add(aColor)
 				}
 			}
 
-			aSeq := ledgrid.NewSequence(aGrpPurple, aGrpYellow, aGrpGreen, aGrpGrey)
-			aSeq.RepeatCount = ledgrid.AnimationRepeatForever
-			aSeq.Start()
+			// aSeq := ledgrid.NewSequence(aGrpPurple, aGrpYellow, aGrpGreen, aGrpGrey)
+			// aSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			// aSeq.Start()
 
-			// txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LORENZ")
-			// txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			// aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
-			// aTxt1.AutoReverse = true
-			// txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "SIMON")
-			// txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			// aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
-			// aTxt2.AutoReverse = true
-			// txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "REBEKKA")
-			// txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			// aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
-			// aTxt3.AutoReverse = true
-			// c.Add(0, txt1, txt2, txt3)
+			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "WEIT")
+			txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
+			aTxt1.AutoReverse = true
+			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "UEBER DAS")
+			txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
+			aTxt2.AutoReverse = true
+			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "LAND")
+			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
+			aTxt3.AutoReverse = true
+			c.Add(txt1, txt2, txt3)
 
-			// aTimel := ledgrid.NewTimeline(42 * time.Second)
-			// aTimel.Add(7*time.Second, aGrpPurple)
-			// aTimel.Add(12*time.Second, aTxt1)
-			// aTimel.Add(13*time.Second, aGrpGrey)
+			aTimel := ledgrid.NewTimeline(42 * time.Second)
+			aTimel.Add(7*time.Second, aGrpPurple)
+			aTimel.Add(12*time.Second, aTxt1)
+			aTimel.Add(13*time.Second, aGrpGrey)
 
-			// aTimel.Add(22*time.Second, aGrpYellow)
-			// aTimel.Add(27*time.Second, aTxt2)
-			// aTimel.Add(28*time.Second, aGrpGrey)
+			aTimel.Add(22*time.Second, aGrpYellow)
+			aTimel.Add(27*time.Second, aTxt2)
+			aTimel.Add(28*time.Second, aGrpGrey)
 
-			// aTimel.Add(35*time.Second, aGrpGreen)
-			// aTimel.Add(40*time.Second, aTxt3)
-			// aTimel.Add(41*time.Second, aGrpGrey)
-			// aTimel.RepeatCount = ledgrid.AnimationRepeatForever
+			aTimel.Add(35*time.Second, aGrpGreen)
+			aTimel.Add(40*time.Second, aTxt3)
+			aTimel.Add(41*time.Second, aGrpGrey)
+			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
 
-			// aTimel.Start()
+			aTimel.Start()
+		})
+
+	ColorFields = NewLedGridProgram("All the named colors",
+		func(c *ledgrid.Canvas) {
+			var colName string
+			var nameList []string
+			var nameIdx int = 0
+
+			nameList = make([]string, len(color.Names))
+			copy(nameList, color.Names)
+			colName = nameList[0]
+
+			rectPos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+			rectSize := geom.Point{float64(width), float64(height)}
+
+			rect := ledgrid.NewRectangle(rectPos, rectSize, color.Black)
+			rect.StrokeWidth = 0.0
+			rect.FillColor = color.Black
+
+			txtPos1 := fixed.P(width+1, height-1)
+			txtPos2 := fixed.P(1, height-1)
+			txtPos3 := fixed.P(1, -1)
+			// txtPos3 := fixed.P(-2*width, height-1)
+			txt := ledgrid.NewFixedText(txtPos1, color.Black, "")
+			c.Add(rect, txt)
+
+			posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 3*time.Second/2)
+			posAnim1.Curve = ledgrid.AnimationEaseOut
+			posAnim2 := ledgrid.NewFixedPosAnim(txt, txtPos3, time.Second/2)
+			posAnim2.Curve = ledgrid.AnimationEaseIn
+			posAnim2.Cont = true
+
+			fadeIn := ledgrid.NewFillColorAnim(rect, color.Map[colName], 1*time.Second)
+			fadeIn.Curve = ledgrid.AnimationEaseOut
+			fadeIn.Cont = true
+			fadeOut := ledgrid.NewFillColorAnim(rect, color.Black, 1*time.Second)
+			fadeOut.Curve = ledgrid.AnimationEaseIn
+			fadeOut.Cont = true
+			txtTask := ledgrid.NewTask(func() {
+				var txtColor color.LedColor
+
+				col := color.Map[colName]
+				h, s, l := col.HSL()
+				switch {
+				case s == 0:
+					txtColor = color.Gray
+				case h >= 60:
+					txtColor = color.Red
+				case h >= -60:
+					txtColor = color.Blue
+				default:
+					txtColor = color.Green
+				}
+
+				if l > 0.4 {
+					txtColor = color.Gray.Dark(0.7)
+				} else {
+					txtColor = color.Gray.Bright(0.5)
+				}
+				txt.SetText(colName)
+				txt.Color = txtColor
+			})
+			colTask := ledgrid.NewTask(func() {
+				oldColor := color.Map[colName]
+				nameIdx = (nameIdx + 1) % len(nameList)
+				colName = nameList[nameIdx]
+				newColor := color.Map[colName]
+				fadeOut.Val2 = ledgrid.Const(oldColor.Interpolate(newColor, 0.5))
+				fadeIn.Val2 = ledgrid.Const(newColor)
+			})
+
+			timeLine := ledgrid.NewTimeline(3 * time.Second)
+			timeLine.Add(0*time.Second, txtTask, posAnim1, fadeIn)
+			timeLine.Add(1500*time.Millisecond, colTask)
+			timeLine.Add(2*time.Second, fadeOut, posAnim2)
+			timeLine.RepeatCount = ledgrid.AnimationRepeatForever
+
+			timeLine.Start()
+		})
+
+	FirePlace = NewLedGridProgram("Fireplace",
+		func(c *ledgrid.Canvas) {
+			fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
+			c.Add(fire)
+			fire.Start()
 		})
 
 	GlowAgainPixels = NewLedGridProgram("Glow-again, you pixels you!",
@@ -149,42 +241,39 @@ var (
 			for y := range c.Rect.Dy() {
 				for x := range c.Rect.Dx() {
 					pt := image.Point{x, y}
-					pix := ledgrid.NewPixel(pt, color.GreenYellow)
+					pix := ledgrid.NewPixel(pt, colorList[0][0])
 
 					c.Add(pix)
 
-					aColorCyc1 := ledgrid.NewColorAnim(pix, color.LightSeaGreen, 1*time.Second)
-					aColorCyc1.AutoReverse = true
-					aColorCyc1.RepeatCount = 6
-					aColorCyc1.Curve = ledgrid.AnimationLinear
-					aColorCyc1.Cont = true
-					aColorCyc1.SetAnimPos(rand.Float64())
+					aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], 1*time.Second)
+					aColorCyc.AutoReverse = true
+					aColorCyc.RepeatCount = 6
+					aColorCyc.Curve = ledgrid.AnimationLinear
+					aColorCyc.Cont = true
+					aColorCyc.SetAnimPos(rand.Float64())
 
-					aColorTrans1 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0xff, 0x45, 0x00), 1*time.Second)
-					aColorTrans1.Curve = ledgrid.AnimationLinear
-					aColorTrans1.Cont = true
+					aColorSeq := ledgrid.NewSequence(aColorCyc)
 
-					aColorCyc2 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0xfd, 0xd7, 0x00), 1*time.Second)
-					aColorCyc2.AutoReverse = true
-					aColorCyc2.RepeatCount = 6
-					aColorCyc2.Curve = ledgrid.AnimationLinear
-					aColorCyc2.Cont = true
+					for _, colPair := range colorList[1:] {
 
-					aColorTrans2 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0xff, 0x00, 0xff), 1*time.Second)
-					aColorTrans2.Curve = ledgrid.AnimationLinear
-					aColorTrans2.Cont = true
+						aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], 1*time.Second)
+						aColorTrans.Curve = ledgrid.AnimationLinear
+						aColorTrans.Cont = true
 
-					aColorCyc3 := ledgrid.NewColorAnim(pix, color.NewLedColorRGB(0x0e, 0x4f, 0x92), 1*time.Second)
-					aColorCyc3.AutoReverse = true
-					aColorCyc3.RepeatCount = 6
-					aColorCyc3.Curve = ledgrid.AnimationLinear
-					aColorCyc3.Cont = true
+						aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], 1*time.Second)
+						aColorCyc.AutoReverse = true
+						aColorCyc.RepeatCount = 6
+						aColorCyc.Curve = ledgrid.AnimationLinear
+						aColorCyc.Cont = true
 
-					aColorTrans3 := ledgrid.NewColorAnim(pix, color.GreenYellow, 1*time.Second)
-					aColorTrans3.Curve = ledgrid.AnimationLinear
-					aColorTrans3.Cont = true
+						aColorSeq.Add(aColorTrans, aColorCyc)
+					}
 
-					aColorSeq := ledgrid.NewSequence(aColorCyc1, aColorTrans1, aColorCyc2, aColorTrans2, aColorCyc3, aColorTrans3)
+					aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], 1*time.Second)
+					aColorTrans.Curve = ledgrid.AnimationLinear
+					aColorTrans.Cont = true
+
+					aColorSeq.Add(aColorTrans)
 					aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 					aGrpLedColor.Add(aColorSeq)
@@ -443,92 +532,6 @@ var (
 		v := (v1+v2+v3)/6.0 + 0.5
 		return v
 	}
-
-	ColorFields = NewLedGridProgram("All the named colors",
-		func(c *ledgrid.Canvas) {
-			var colName string
-			var nameList []string
-			var nameIdx int = 0
-
-			nameList = make([]string, len(color.Names))
-			copy(nameList, color.Names)
-			colName = nameList[0]
-
-			rectPos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-			rectSize := geom.Point{float64(width), float64(height)}
-
-			rect := ledgrid.NewRectangle(rectPos, rectSize, color.Black)
-			rect.StrokeWidth = 0.0
-			rect.FillColor = color.Black
-
-			txtPos1 := fixed.P(width+1, height-1)
-			txtPos2 := fixed.P(1, height-1)
-			txtPos3 := fixed.P(1, -1)
-			// txtPos3 := fixed.P(-2*width, height-1)
-			txt := ledgrid.NewFixedText(txtPos1, color.Black, "")
-			c.Add(rect, txt)
-
-			posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 3*time.Second/2)
-			posAnim1.Curve = ledgrid.AnimationEaseOut
-			posAnim2 := ledgrid.NewFixedPosAnim(txt, txtPos3, time.Second/2)
-			posAnim2.Curve = ledgrid.AnimationEaseIn
-			posAnim2.Cont = true
-
-			fadeIn := ledgrid.NewFillColorAnim(rect, color.Map[colName], 1*time.Second)
-			fadeIn.Curve = ledgrid.AnimationEaseOut
-			fadeIn.Cont = true
-			fadeOut := ledgrid.NewFillColorAnim(rect, color.Black, 1*time.Second)
-			fadeOut.Curve = ledgrid.AnimationEaseIn
-			fadeOut.Cont = true
-			txtTask := ledgrid.NewTask(func() {
-				var txtColor color.LedColor
-
-				col := color.Map[colName]
-				h, s, l := col.HSL()
-				switch {
-				case s == 0:
-					txtColor = color.Gray
-				case h >= 60:
-					txtColor = color.Red
-				case h >= -60:
-					txtColor = color.Blue
-				default:
-					txtColor = color.Green
-				}
-
-				if l > 0.4 {
-					txtColor = color.Gray.Dark(0.7)
-				} else {
-					txtColor = color.Gray.Bright(0.5)
-				}
-				txt.SetText(colName)
-				txt.Color = txtColor
-			})
-			colTask := ledgrid.NewTask(func() {
-				oldColor := color.Map[colName]
-				nameIdx = (nameIdx + 1) % len(nameList)
-				colName = nameList[nameIdx]
-				newColor := color.Map[colName]
-				fadeOut.Val2 = ledgrid.Const(oldColor.Interpolate(newColor, 0.5))
-				fadeIn.Val2 = ledgrid.Const(newColor)
-			})
-
-			timeLine := ledgrid.NewTimeline(3 * time.Second)
-			timeLine.Add(0*time.Second, txtTask, posAnim1, fadeIn)
-			timeLine.Add(1500*time.Millisecond, colTask)
-			timeLine.Add(2*time.Second, fadeOut, posAnim2)
-			timeLine.RepeatCount = ledgrid.AnimationRepeatForever
-
-			timeLine.Start()
-		})
-
-	FirePlace = NewLedGridProgram("Fireplace",
-		func(c *ledgrid.Canvas) {
-			fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
-			c.Add(fire)
-			fire.Start()
-		})
-
 )
 
 // ---------------------------------------------------------------------------

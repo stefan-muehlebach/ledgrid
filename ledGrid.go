@@ -131,13 +131,24 @@ func (g *LedGrid) PixOffset(x, y int) int {
 // Farbe gebracht werden. Das Anzeigen, resp. der Refresh des Panel ist
 // Teil dieser Methode.
 func (g *LedGrid) Clear(c ledcolor.LedColor) {
-	for idx := 0; idx < len(g.Pix); idx += 3 {
-		dst := g.Pix[idx : idx+3 : idx+3]
-		dst[0] = c.R
-		dst[1] = c.G
-		dst[2] = c.B
+	draw.Draw(g, g.Rect, image.NewUniform(c), image.Point{}, draw.Src)
+	// for idx := 0; idx < len(g.Pix); idx += 3 {
+	// 	dst := g.Pix[idx : idx+3 : idx+3]
+	// 	dst[0] = c.R
+	// 	dst[1] = c.G
+	// 	dst[2] = c.B
+	// }
+}
+
+func (g *LedGrid) Reset() {
+	g.AnimCtrl.PurgeAll()
+	for elem := g.CanvasList.Front(); elem != nil; elem = elem.Next() {
+		canv, ok := elem.Value.(*Canvas)
+		if !ok {
+			continue
+		}
+		canv.Reset()
 	}
-	g.Show()
 }
 
 // Zeigt den aktuellen Inhalt des Grid auf der beim Erstellen spezifizierten
@@ -197,6 +208,7 @@ func (g *LedGrid) refreshThread() {
 	for {
 		<-g.syncChan
 		g.canvMutex.RLock()
+		g.Clear(ledcolor.Black)
 		for ele := g.CanvasList.Back(); ele != nil; ele = ele.Prev() {
 			if canv, ok = ele.Value.(*Canvas); !ok {
 				log.Fatalf("Wrong data in canvas-list")

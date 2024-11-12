@@ -1,7 +1,9 @@
 package main
 
 import (
-    gocolor "image/color"
+	"image"
+	gocolor "image/color"
+
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
@@ -16,11 +18,14 @@ var (
 
 			cam := NewCamera(pos, size)
 			c2.Add(cam)
-            for y := range c2.Rect.Dy() {
-                for x := range c2.Rect.Dx()/2 {
-                    c2.Mask.SetAlpha(x, y, gocolor.Alpha{0x00})
-                }
-            }
+
+			mask := image.NewAlpha(c2.Rect)
+			for y := range c2.Rect.Dy() {
+				for x := range c2.Rect.Dx() / 2 {
+					mask.Set(x, y, gocolor.Alpha{0xff})
+				}
+			}
+            c2.Mask = mask
 			cam.Start()
 		})
 

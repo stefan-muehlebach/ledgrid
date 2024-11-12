@@ -1,8 +1,9 @@
-// effectFaderTests.go
 package main
 
 import (
 	"image"
+	gocolor "image/color"
+	"image/draw"
 	"iter"
 	"math/rand/v2"
 	"slices"
@@ -240,9 +241,12 @@ var (
 			size := geom.Point{float64(width), float64(height)}
 
 			canv2, _ := ledGrid.NewCanvas()
+			mask := image.NewAlpha(canv2.Rect)
+			draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
+			canv2.Mask = mask
 
 			cam := NewCamera(pos, size)
-			canv1.Add(cam)
+			canv2.Add(cam)
 			cam.Start()
 
 			go func() {
@@ -278,8 +282,7 @@ var (
 								canv1.Add(pixAway)
 
 								aMask := ledgrid.NewTask(func() {
-									idx := canv2.Mask.PixOffset(p0.X, p0.Y)
-									canv2.Mask.Pix[idx] = 0x00
+									mask.Set(p0.X, p0.Y, gocolor.Alpha{0x00})
 								})
 
 								aDur := 200*time.Millisecond + rand.N(300*time.Millisecond)
@@ -309,9 +312,7 @@ var (
 							}
 						}
 						time.Sleep(3 * time.Second)
-						for i := range canv2.Mask.Pix {
-							canv2.Mask.Pix[i] = 0xff
-						}
+						draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
 					}
 				}
 			}()

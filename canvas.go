@@ -36,7 +36,7 @@ type Canvas struct {
 	Rect               image.Rectangle
 	Img                draw.Image
 	GC                 *gg.Context
-	Mask               *image.Alpha
+	Mask               image.Image
 	objMutex           *sync.RWMutex
 	paintWatch         *Stopwatch
 	syncAnim, syncSend chan bool
@@ -49,12 +49,7 @@ func NewCanvas(size image.Point) *Canvas {
 	c.Rect = image.Rectangle{Max: size}
 	c.Img = image.NewRGBA(c.Rect)
 	c.GC = gg.NewContextForRGBA(c.Img.(*image.RGBA))
-	c.Mask = image.NewAlpha(c.Rect)
-	for row := range c.Mask.Rect.Dy() {
-		for col := range c.Mask.Rect.Dx() {
-			c.Mask.SetAlpha(col, row, gocolor.Alpha{0xff})
-		}
-	}
+	c.Mask = image.NewUniform(gocolor.Alpha{0xff})
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
@@ -83,6 +78,26 @@ func (c *Canvas) Set(x, y int, col gocolor.Color) {
 	c.Img.Set(x, y, col)
 }
 
+func (c *Canvas) Clear(col color.LedColor) {
+    draw.Draw(c.Img, c.Rect, image.NewUniform(col), image.Point{}, draw.Src)
+	// img := c.Img.(*image.RGBA)
+	// for idx := 0; idx < len(img.Pix); idx += 4 {
+	// 	dst := img.Pix[idx : idx+4 : idx+4]
+	// 	dst[0] = col.R
+	// 	dst[1] = col.G
+	// 	dst[2] = col.B
+	// 	dst[3] = col.A
+	// }
+}
+
+// Loescht alle Objekte aus der Zeichenflaeche, setzt die Farbe des Canvas
+// auf c.BackColor und setzt die Maske zurueck auf Volltransparent.
+func (c *Canvas) Reset() {
+    c.Purge()
+    c.Clear(c.BackColor)
+    c.Mask = image.NewUniform(gocolor.Alpha{0xff})
+}
+
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
 func (c *Canvas) Add(objs ...CanvasObject) {
@@ -93,6 +108,7 @@ func (c *Canvas) Add(objs ...CanvasObject) {
 	c.objMutex.Unlock()
 }
 
+// Loescht ein einzelnes Objekt von der Zeichenflaeche.
 func (c *Canvas) Del(obj CanvasObject) {
 	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
 		o := ele.Value.(CanvasObject)
@@ -112,8 +128,7 @@ func (c *Canvas) Purge() {
 
 func (c *Canvas) Refresh() {
 	c.paintWatch.Start()
-	c.GC.SetFillColor(c.BackColor)
-	c.GC.Clear()
+	c.Clear(c.BackColor)
 	c.objMutex.RLock()
 	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(CanvasObject)

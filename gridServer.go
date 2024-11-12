@@ -8,26 +8,26 @@ import (
 	"net/http"
 	"net/netip"
 	"net/rpc"
-	"os"
-	"path"
+	// "os"
+	// "path"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
+	// "github.com/fsnotify/fsnotify"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
 	DefDataPort = 5333
 	DefRPCPort  = 5332
-	DefOPCPort  = 7890
-	DefMovieDir = "/usr/local/share/ledgrid"
-	DefDoneDir  = "/usr/local/share/ledgrid/done"
+	// DefMovieDir = "/usr/local/share/ledgrid"
+	// DefDoneDir  = "/usr/local/share/ledgrid/done"
 )
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type GridServer struct {
 	Disp                 Displayer
+	RecvBytes, SentBytes int
 	udpAddr              *net.UDPAddr
 	udpConn              *net.UDPConn
 	tcpAddr              *net.TCPAddr
@@ -38,8 +38,7 @@ type GridServer struct {
 	maxValue             [3]uint8
 	drawTestPattern      bool
 	sendWatch            *Stopwatch
-	RecvBytes, SentBytes int
-	watcher              *fsnotify.Watcher
+	// watcher              *fsnotify.Watcher
 }
 
 // Damit wird eine neue Instanz eines GridServers erzeugt. Mit port wird
@@ -100,14 +99,14 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	}
 
 	// Zu allerletzt kommt der letzte Schrei: das Abspielen von Movies.
-	p.watcher, err = fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatalf("Couldn't create directory watcher: %v", err)
-	}
-	err = p.watcher.Add(DefMovieDir)
-	if err != nil {
-		log.Fatalf("Couldn't add directory to watcher: %v", err)
-	}
+	// p.watcher, err = fsnotify.NewWatcher()
+	// if err != nil {
+	// 	log.Fatalf("Couldn't create directory watcher: %v", err)
+	// }
+	// err = p.watcher.Add(DefMovieDir)
+	// if err != nil {
+	// 	log.Fatalf("Couldn't add directory to watcher: %v", err)
+	// }
 
 	return p
 }
@@ -116,7 +115,7 @@ func (p *GridServer) HandleEvents() {
 	go p.HandleMessage(p.udpConn)
 	go p.HandleTCP(p.tcpListener)
 	go http.Serve(p.rpcListener, nil)
-	go p.WatchDirectory(p.watcher)
+	// go p.WatchDirectory(p.watcher)
 }
 
 // Schliesst die diversen Verbindungen.
@@ -124,7 +123,7 @@ func (p *GridServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
 	p.rpcListener.Close()
-	p.watcher.Close()
+	// p.watcher.Close()
 	p.Disp.Close()
 }
 
@@ -180,53 +179,53 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 	}
 }
 
-func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
-	var buffer []byte
+// func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
+// 	var buffer []byte
 
-	buffer = make([]byte, p.bufferSize)
-	for {
-		select {
-		case err, ok := <-w.Errors:
-			if !ok {
-				return
-			}
-			log.Printf("FileWatcher: ERROR: %s", err)
-		case evt, ok := <-w.Events:
-			if !ok {
-				return
-			}
-			// log.Printf("FileWatcher: event recvd.: %s", evt)
-			if evt.Has(fsnotify.Create) {
-				// log.Printf("FileWatcher: new movie file is here")
-				filePath := evt.Name
-				fileName := path.Base(filePath)
-				fh, err := os.Open(filePath)
-				if err != nil {
-					log.Fatalf("Couldn't open movie file: %v", err)
-				}
-				ticker := time.NewTicker(30 * time.Millisecond)
-				for range ticker.C {
-					n, err := fh.Read(buffer)
-					if n == 0 && errors.Is(err, io.EOF) {
-						break
-					}
-					// if n != p.bufferSize {
-					// 	log.Printf("FileWatcher: read only %d bytes", n)
-					// }
-					p.Disp.Display(buffer)
-				}
-				// log.Printf("FileWatcher: all data has been sent")
-				fh.Close()
-				dstPath := path.Join(DefDoneDir, fileName)
-				err = os.Rename(filePath, dstPath)
-				if err != nil {
-					log.Fatalf("Couldn't move movie file to done directory: %v", err)
-				}
-				// log.Printf("FileWatcher: movie sent to old files")
-			}
-		}
-	}
-}
+// 	buffer = make([]byte, p.bufferSize)
+// 	for {
+// 		select {
+// 		case err, ok := <-w.Errors:
+// 			if !ok {
+// 				return
+// 			}
+// 			log.Printf("FileWatcher: ERROR: %s", err)
+// 		case evt, ok := <-w.Events:
+// 			if !ok {
+// 				return
+// 			}
+// 			// log.Printf("FileWatcher: event recvd.: %s", evt)
+// 			if evt.Has(fsnotify.Create) {
+// 				// log.Printf("FileWatcher: new movie file is here")
+// 				filePath := evt.Name
+// 				fileName := path.Base(filePath)
+// 				fh, err := os.Open(filePath)
+// 				if err != nil {
+// 					log.Fatalf("Couldn't open movie file: %v", err)
+// 				}
+// 				ticker := time.NewTicker(30 * time.Millisecond)
+// 				for range ticker.C {
+// 					n, err := fh.Read(buffer)
+// 					if n == 0 && errors.Is(err, io.EOF) {
+// 						break
+// 					}
+// 					// if n != p.bufferSize {
+// 					// 	log.Printf("FileWatcher: read only %d bytes", n)
+// 					// }
+// 					p.Disp.Display(buffer)
+// 				}
+// 				// log.Printf("FileWatcher: all data has been sent")
+// 				fh.Close()
+// 				dstPath := path.Join(DefDoneDir, fileName)
+// 				err = os.Rename(filePath, dstPath)
+// 				if err != nil {
+// 					log.Fatalf("Couldn't move movie file to done directory: %v", err)
+// 				}
+// 				// log.Printf("FileWatcher: movie sent to old files")
+// 			}
+// 		}
+// 	}
+// }
 
 func (p *GridServer) Watch() *Stopwatch {
 	return p.sendWatch
