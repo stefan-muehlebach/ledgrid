@@ -15,9 +15,9 @@ import (
 var (
 	colorList = [][]color.LedColor{
 		{color.White, color.Black},
-		{color.NewLedColorRGB(0xab, 0xff, 0x5e), color.NewLedColorRGB(0x12, 0x88, 0x81)},
+		{color.NewLedColorRGB(0x12, 0x88, 0x81), color.NewLedColorRGB(0xab, 0xff, 0x5e)},
 		{color.NewLedColorRGB(0xff, 0xff, 0x00), color.NewLedColorRGB(0xc2, 0x1a, 0x00)},
-		{color.NewLedColorRGB(0xff, 0x00, 0xff), color.NewLedColorRGB(0x0e, 0x4f, 0x92)},
+		{color.NewLedColorRGB(0x0e, 0x4f, 0x92), color.NewLedColorRGB(0xff, 0x00, 0xff)},
 	}
 
 	MovingPixels = NewLedGridProgram("Moving pixels",
@@ -149,6 +149,54 @@ var (
 			aTimel.Start()
 		})
 
+	GlowAgainPixels = NewLedGridProgram("Glow-again, you pixels you!",
+		func(c *ledgrid.Canvas) {
+			aGrpLedColor := ledgrid.NewGroup()
+
+			for y := range c.Rect.Dy() {
+				for x := range c.Rect.Dx() {
+					pt := image.Point{x, y}
+					pix := ledgrid.NewPixel(pt, colorList[0][0])
+
+					c.Add(pix)
+
+					aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], 1*time.Second)
+					aColorCyc.AutoReverse = true
+					aColorCyc.RepeatCount = 6
+					aColorCyc.Curve = ledgrid.AnimationLinear
+					aColorCyc.Cont = true
+					aColorCyc.Pos = rand.Float64()
+
+					aColorSeq := ledgrid.NewSequence(aColorCyc)
+
+					for _, colPair := range colorList[1:] {
+
+						aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], 1*time.Second)
+						aColorTrans.Curve = ledgrid.AnimationLinear
+						aColorTrans.Cont = true
+
+						aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], 1*time.Second)
+						aColorCyc.AutoReverse = true
+						aColorCyc.RepeatCount = 6
+						aColorCyc.Curve = ledgrid.AnimationLinear
+						aColorCyc.Cont = true
+
+						aColorSeq.Add(aColorTrans, aColorCyc)
+					}
+
+					aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], 1*time.Second)
+					aColorTrans.Curve = ledgrid.AnimationLinear
+					aColorTrans.Cont = true
+
+					aColorSeq.Add(aColorTrans)
+					aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+
+					aGrpLedColor.Add(aColorSeq)
+				}
+			}
+			aGrpLedColor.Start()
+		})
+
 	ColorFields = NewLedGridProgram("All the named colors",
 		func(c *ledgrid.Canvas) {
 			var colName string
@@ -234,53 +282,6 @@ var (
 			fire.Start()
 		})
 
-	GlowAgainPixels = NewLedGridProgram("Glow-again, you pixels you!",
-		func(c *ledgrid.Canvas) {
-			aGrpLedColor := ledgrid.NewGroup()
-
-			for y := range c.Rect.Dy() {
-				for x := range c.Rect.Dx() {
-					pt := image.Point{x, y}
-					pix := ledgrid.NewPixel(pt, colorList[0][0])
-
-					c.Add(pix)
-
-					aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], 1*time.Second)
-					aColorCyc.AutoReverse = true
-					aColorCyc.RepeatCount = 6
-					aColorCyc.Curve = ledgrid.AnimationLinear
-					aColorCyc.Cont = true
-					aColorCyc.SetAnimPos(rand.Float64())
-
-					aColorSeq := ledgrid.NewSequence(aColorCyc)
-
-					for _, colPair := range colorList[1:] {
-
-						aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], 1*time.Second)
-						aColorTrans.Curve = ledgrid.AnimationLinear
-						aColorTrans.Cont = true
-
-						aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], 1*time.Second)
-						aColorCyc.AutoReverse = true
-						aColorCyc.RepeatCount = 6
-						aColorCyc.Curve = ledgrid.AnimationLinear
-						aColorCyc.Cont = true
-
-						aColorSeq.Add(aColorTrans, aColorCyc)
-					}
-
-					aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], 1*time.Second)
-					aColorTrans.Curve = ledgrid.AnimationLinear
-					aColorTrans.Cont = true
-
-					aColorSeq.Add(aColorTrans)
-					aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
-
-					aGrpLedColor.Add(aColorSeq)
-				}
-			}
-			aGrpLedColor.Start()
-		})
 
 	ShowThePaletteShader = NewLedGridProgram("Show a palette shader!",
 		func(c *ledgrid.Canvas) {

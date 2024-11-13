@@ -15,8 +15,8 @@ type Group struct {
 	DurationEmbed
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
-    // Liste, der durch diese Gruppe gestarteten Tasks.
-	Tasks            []Task
+	// Liste, der durch diese Gruppe gestarteten Tasks.
+	Tasks []Task
 
 	start, stop, end time.Time
 	repeatsLeft      int
@@ -36,10 +36,16 @@ func NewGroup(tasks ...Task) *Group {
 // Fuegt der Gruppe weitere Animationen hinzu.
 func (a *Group) Add(tasks ...Task) {
 	for _, task := range tasks {
+		a.Tasks = append(a.Tasks, task)
+	}
+}
+
+func (a *Group) updateDuration() {
+	a.duration = time.Duration(0)
+	for _, task := range a.Tasks {
 		if anim, ok := task.(TimedAnimation); ok {
 			a.duration = max(a.duration, anim.Duration())
 		}
-		a.Tasks = append(a.Tasks, task)
 	}
 }
 
@@ -48,6 +54,7 @@ func (a *Group) Start() {
 	if a.running {
 		return
 	}
+	a.updateDuration()
 	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
@@ -97,6 +104,7 @@ func (a *Group) Update(t time.Time) bool {
 		} else if a.repeatsLeft > 0 {
 			a.repeatsLeft--
 		}
+		a.updateDuration()
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
 		for _, task := range a.Tasks {
@@ -130,22 +138,29 @@ func NewSequence(tasks ...Task) *Sequence {
 	return a
 }
 
+func (a *Sequence) TimeInfo() (start, end time.Time) {
+	return a.start, a.end
+}
+
 // Fuegt der Sequenz weitere Animationen hinzu.
 func (a *Sequence) Add(tasks ...Task) {
 	for _, task := range tasks {
-		if anim, ok := task.(TimedAnimation); ok {
-			a.duration = a.duration + anim.Duration()
-		}
 		a.Tasks = append(a.Tasks, task)
 	}
 }
 
 func (a *Sequence) Put(tasks ...Task) {
 	for _, task := range tasks {
+		a.Tasks = append([]Task{task}, a.Tasks...)
+	}
+}
+
+func (a *Sequence) updateDuration() {
+	a.duration = time.Duration(0)
+	for _, task := range a.Tasks {
 		if anim, ok := task.(TimedAnimation); ok {
 			a.duration = a.duration + anim.Duration()
 		}
-		a.Tasks = append([]Task{task}, a.Tasks...)
 	}
 }
 
@@ -154,6 +169,7 @@ func (a *Sequence) Start() {
 	if a.running {
 		return
 	}
+	a.updateDuration()
 	a.start = AnimCtrl.Now()
 	a.end = a.start.Add(a.duration)
 	a.activeTask = 0
@@ -206,6 +222,7 @@ func (a *Sequence) Update(t time.Time) bool {
 			} else if a.repeatsLeft > 0 {
 				a.repeatsLeft--
 			}
+			a.updateDuration()
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
 			a.activeTask = 0

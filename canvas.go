@@ -795,7 +795,7 @@ func NewSprite(pos geom.Point) *Sprite {
 	i := &Sprite{}
 	i.CanvasObjectEmbed.Extend(i)
 	i.NormAnimationEmbed.Extend(i)
-	i.Pos = pos
+	i.Image.Pos = pos
 	i.Curve = AnimationLinear
 	i.ax, i.ay = 0.5, 0.5
 	i.Mask = NewMyUniform(0xff)

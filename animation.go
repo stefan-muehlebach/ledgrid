@@ -241,11 +241,12 @@ func (a *AnimationController) Watch() *Stopwatch {
 }
 
 func (a *AnimationController) Now() time.Time {
-	delay := a.delay
-	if !a.running {
-		delay += time.Since(a.stop)
-	}
-	return time.Now().Add(delay)
+    return a.animPit
+	// delay := a.delay
+	// if !a.running {
+	// 	delay += time.Since(a.stop)
+	// }
+	// return time.Now().Add(delay)
 }
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
@@ -546,10 +547,12 @@ type NormAnimationEmbed struct {
 	// Abfragen der Laufzeit importiert.
 	DurationEmbed
 
+    Pos float64
+
 	wrapper          NormAnimation
 	reverse          bool
 	start, stop, end time.Time
-	total, startPos  float64
+	total float64
 	repeatsLeft      int
 	running          bool
 }
@@ -575,15 +578,19 @@ func (a *NormAnimationEmbed) Duration() time.Duration {
 	if a.AutoReverse {
 		factor *= 2
 	}
-	if a.startPos > 0.0 {
+	if a.Pos > 0.0 {
 		if a.AutoReverse {
-			startDiff = time.Duration(a.startPos * 2.0 * float64(a.duration))
+			startDiff = time.Duration(a.Pos * 2.0 * float64(a.duration))
 		} else {
-			startDiff = time.Duration(a.startPos * float64(a.duration))
+			startDiff = time.Duration(a.Pos * float64(a.duration))
 		}
 	}
 
 	return time.Duration(factor)*a.duration - startDiff
+}
+
+func (a *NormAnimationEmbed) TimeInfo () (start, end time.Time, total float64) {
+    return a.start, a.end, a.total
 }
 
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
@@ -595,16 +602,16 @@ func (a *NormAnimationEmbed) Start() {
 	}
 	a.start = AnimCtrl.Now()
 	a.reverse = false
-	if a.startPos > 0.0 {
+	if a.Pos > 0.0 {
 		if a.AutoReverse {
-			a.startPos *= 2.0
-			if a.startPos >= 1.0 {
+			a.Pos *= 2.0
+			if a.Pos >= 1.0 {
 				a.reverse = true
-				a.startPos -= 1.0
+				a.Pos -= 1.0
 			}
 		}
-		a.start = a.start.Add(-time.Duration(a.startPos * float64(a.duration)))
-		a.startPos = 0.0
+		a.start = a.start.Add(-time.Duration(a.Pos * float64(a.duration)))
+		a.Pos = 0.0
 	}
 	a.end = a.start.Add(a.duration)
 	a.total = a.end.Sub(a.start).Seconds()
@@ -641,9 +648,9 @@ func (a *NormAnimationEmbed) IsRunning() bool {
 	return a.running
 }
 
-func (a *NormAnimationEmbed) SetAnimPos(r float64) {
-	a.startPos = r
-}
+// func (a *NormAnimationEmbed) SetAnimPos(r float64) {
+// 	a.startPos = r
+// }
 
 // Diese Methode ist fuer die korrekte Abwicklung (Beachtung von Reverse und
 // RepeatCount, etc) einer Animation zustaendig. Wenn die Animation zu Ende

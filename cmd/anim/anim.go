@@ -85,6 +85,7 @@ var (
 		FlyingRectangle,
 		RectanglesJourney,
 		RegularPolygonTest,
+		AsyncColorFade,
 		GlowingPixels,
 		GlowAgainPixels,
 		MovingPixels,
@@ -201,10 +202,10 @@ func main() {
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
-                ledGrid.Reset()
+				ledGrid.Reset()
 				// ledgrid.AnimCtrl.PurgeAll()
 				// canvas.Purge()
-                // canvas.Reset()
+				// canvas.Reset()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				ledGrid.Client.Watch().Reset()
