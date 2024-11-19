@@ -2,32 +2,45 @@ package ledgrid
 
 import (
 	"errors"
+    "fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/rpc"
-	// "os"
-	// "path"
 	"time"
 
-	// "github.com/fsnotify/fsnotify"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
 	DefDataPort = 5333
 	DefRPCPort  = 5332
-	// DefMovieDir = "/usr/local/share/ledgrid"
-	// DefDoneDir  = "/usr/local/share/ledgrid/done"
 )
+
+type ByteCount int64
+
+func (b ByteCount) String() string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
+}
 
 // Der GridServer wird auf jenem Geraet gestartet, an dem das LedGrid via
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type GridServer struct {
 	Disp                 Displayer
-	RecvBytes, SentBytes int
+	// RecvBytes, SentBytes int
+    RecvBytes, SentBytes ByteCount
 	udpAddr              *net.UDPAddr
 	udpConn              *net.UDPConn
 	tcpAddr              *net.TCPAddr
@@ -38,7 +51,6 @@ type GridServer struct {
 	maxValue             [3]uint8
 	drawTestPattern      bool
 	sendWatch            *Stopwatch
-	// watcher              *fsnotify.Watcher
 }
 
 // Damit wird eine neue Instanz eines GridServers erzeugt. Mit port wird
@@ -51,14 +63,6 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 
 	p := &GridServer{Disp: disp}
 	p.bufferSize = 3 * disp.NumLeds()
-	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
-	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus
-	// der LED-Kette entfernten) und die fehlerhaften (d.h. die LEDs, welche
-	// als Farbe immer Schwarz erhalten sollen).
-	// p.buffer = make([]byte, bufferSize)
-
-	// Anschliessend werden die Tabellen fuer die Farbwertkorrektur und die
-	// maximale Helligkeit erstellt.
 	p.maxValue = [3]uint8{255, 255, 255}
 
 	p.sendWatch = NewStopwatch()
@@ -97,16 +101,6 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 		log.Fatal("RPC listen error:", err)
 	}
 
-	// Zu allerletzt kommt der letzte Schrei: das Abspielen von Movies.
-	// p.watcher, err = fsnotify.NewWatcher()
-	// if err != nil {
-	// 	log.Fatalf("Couldn't create directory watcher: %v", err)
-	// }
-	// err = p.watcher.Add(DefMovieDir)
-	// if err != nil {
-	// 	log.Fatalf("Couldn't add directory to watcher: %v", err)
-	// }
-
 	return p
 }
 
@@ -114,7 +108,6 @@ func (p *GridServer) HandleEvents() {
 	go p.HandleMessage(p.udpConn)
 	go p.HandleTCP(p.tcpListener)
 	go http.Serve(p.rpcListener, nil)
-	// go p.WatchDirectory(p.watcher)
 }
 
 // Schliesst die diversen Verbindungen.
@@ -122,7 +115,6 @@ func (p *GridServer) Close() {
 	p.udpConn.Close()
 	p.tcpListener.Close()
 	p.rpcListener.Close()
-	// p.watcher.Close()
 	p.Disp.Close()
 }
 
@@ -145,10 +137,10 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 			}
 			log.Fatalf("Failed Read(): %v", err)
 		}
-		p.RecvBytes += bufferSize
+		p.RecvBytes += ByteCount(bufferSize)
 		p.sendWatch.Start()
 		p.Disp.Display(buffer)
-		p.SentBytes += bufferSize
+		p.SentBytes += ByteCount(bufferSize)
 		p.sendWatch.Stop()
 	}
 
@@ -158,7 +150,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 		buffer[i] = 0x00
 	}
 	p.Disp.Send(buffer)
-	p.SentBytes += len(buffer)
+	p.SentBytes += ByteCount(len(buffer))
 }
 
 // Damit werden Meldungen via TCP empfangen und verarbeitet.
@@ -177,54 +169,6 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 		go p.HandleMessage(conn)
 	}
 }
-
-// func (p *GridServer) WatchDirectory(w *fsnotify.Watcher) {
-// 	var buffer []byte
-
-// 	buffer = make([]byte, p.bufferSize)
-// 	for {
-// 		select {
-// 		case err, ok := <-w.Errors:
-// 			if !ok {
-// 				return
-// 			}
-// 			log.Printf("FileWatcher: ERROR: %s", err)
-// 		case evt, ok := <-w.Events:
-// 			if !ok {
-// 				return
-// 			}
-// 			// log.Printf("FileWatcher: event recvd.: %s", evt)
-// 			if evt.Has(fsnotify.Create) {
-// 				// log.Printf("FileWatcher: new movie file is here")
-// 				filePath := evt.Name
-// 				fileName := path.Base(filePath)
-// 				fh, err := os.Open(filePath)
-// 				if err != nil {
-// 					log.Fatalf("Couldn't open movie file: %v", err)
-// 				}
-// 				ticker := time.NewTicker(30 * time.Millisecond)
-// 				for range ticker.C {
-// 					n, err := fh.Read(buffer)
-// 					if n == 0 && errors.Is(err, io.EOF) {
-// 						break
-// 					}
-// 					// if n != p.bufferSize {
-// 					// 	log.Printf("FileWatcher: read only %d bytes", n)
-// 					// }
-// 					p.Disp.Display(buffer)
-// 				}
-// 				// log.Printf("FileWatcher: all data has been sent")
-// 				fh.Close()
-// 				dstPath := path.Join(DefDoneDir, fileName)
-// 				err = os.Rename(filePath, dstPath)
-// 				if err != nil {
-// 					log.Fatalf("Couldn't move movie file to done directory: %v", err)
-// 				}
-// 				// log.Printf("FileWatcher: movie sent to old files")
-// 			}
-// 		}
-// 	}
-// }
 
 func (p *GridServer) Watch() *Stopwatch {
 	return p.sendWatch
@@ -355,10 +299,6 @@ func (p *GridServer) ToggleTestPattern() bool {
 }
 
 // Die folgenden Methoden koennen via RPC vom Client aufgerufen werden.
-// Die Methode RPCDraw ist nur der Vollstaendigkeit halber vorhanden. In
-// der Praxis hat sich das Senden der Bilddaten via RPC als zu langsam
-// erwiesen und wurde auf UDP umgestellt.
-
 type NumLedsArg int
 
 func (p *GridServer) RPCNumLeds(arg int, reply *NumLedsArg) error {
@@ -402,8 +342,3 @@ func (p *GridServer) RPCModuleConfig(arg int, reply *ModuleConfigArg) error {
 	reply.ModuleConfig = p.Disp.ModuleConfig()
 	return nil
 }
-
-// func (p *GridServer) RPCSetModuleConfig(arg ModuleConfigArg, reply *int) error {
-//     p.Disp.SetModuleConfig(arg.ModuleConfig)
-//     return nil
-// }

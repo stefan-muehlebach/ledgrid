@@ -36,10 +36,10 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 			return
 
 		case syscall.SIGUSR1:
-			log.Printf("Some server statistics:")
+			log.Printf("Server statistics:")
 			log.Printf("   %v", gridServer.Watch())
-			log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
-			log.Printf("   %d bytes sent by the controller", gridServer.SentBytes)
+			log.Printf("   %v bytes received by the controller", gridServer.RecvBytes)
+			log.Printf("   %v bytes sent by the controller", gridServer.SentBytes)
 			log.Printf("Current gamma values:")
 			r, g, b := gridServer.Gamma()
 			log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
@@ -77,9 +77,6 @@ func PlayFile(fileName string) {
 		if n == 0 && errors.Is(err, io.EOF) {
 			break
 		}
-		// if n != p.bufferSize {
-		// 	log.Printf("FileWatcher: read only %d bytes", n)
-		// }
 		client.Send(buffer)
 	}
 	fh.Close()
