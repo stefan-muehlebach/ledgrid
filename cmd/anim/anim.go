@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defHost   = "raspi-3"
+	defHost = "raspi-3"
 	defWidth  = 40
 	defHeight = 10
 )
@@ -94,6 +94,7 @@ var (
 		SpecialCamera,
 		BlinkenAnimation,
 		MovingText,
+		ClockAnim,
 		SlideTheShow,
 		ShowThePaletteShader,
 		ShowTheColorShader,
@@ -123,8 +124,8 @@ func main() {
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
-	flag.IntVar(&width, "width", defWidth, "Width of panel")
-	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
+	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
 	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")

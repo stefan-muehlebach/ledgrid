@@ -101,7 +101,7 @@ func (c *HistCamera) Duration() time.Duration {
 
 func (c *HistCamera) SetDuration(dur time.Duration) {}
 
-func (c *HistCamera) Start() {
+func (c *HistCamera) StartAt(t time.Time) {
 	var err error
 	var ctx context.Context
 
@@ -116,6 +116,9 @@ func (c *HistCamera) Start() {
 
 	go c.captureThread()
 	c.running = true
+}
+func (c *HistCamera) Start() {
+    c.StartAt(time.Now())
 }
 
 func (c *HistCamera) Suspend() {

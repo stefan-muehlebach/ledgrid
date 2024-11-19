@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"golang.org/x/image/math/fixed"
 	"math"
 	"time"
 
@@ -9,7 +11,69 @@ import (
 	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
+func f2f(x float64) fixed.Int26_6 {
+	return fixed.Int26_6(math.Round(x * 64))
+}
+func p2p(x, y float64) fixed.Point26_6 {
+    return fixed.Point26_6{f2f(x), f2f(y)}
+}
+
 var (
+    ClockAnim = NewLedGridProgram("Clock Animation",
+        func(c *ledgrid.Canvas) {
+            var digitList[4] *ledgrid.FixedText
+            var colFade[4] *ledgrid.ColorAnimation
+            var d[4] int
+
+            for i := range 4 {
+                pos := p2p(float64(3-i)*float64(width)/4.0+2.0, float64(height)-1.0)
+                digit := ledgrid.NewFixedText(pos, color.Blue, "0")
+                digit.SetFont(ledgrid.Fixed5x7)
+                digitList[i] = digit
+
+                c.Add(digit)
+            }
+
+            timeLine1 := ledgrid.NewTimeline(time.Second)
+            timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
+            timeLine1.Add(0, ledgrid.NewTask(func() {
+                d[0] = (d[0]+1) % 10
+                if d[0] == 0 {
+                    d[1] = (d[1]+1) % 6
+                    if d[1] == 0 {
+                        d[2] = (d[2]+1) % 10
+                        if d[2] == 0 {
+                            d[3] = (d[3]+1) % 6
+                        }
+                    }
+                }
+                for i := range 4 {
+                    ch := fmt.Sprintf("%d", d[i])
+                    digitList[i].SetText(ch)
+                }
+            }))
+
+            digitColor := color.Blue
+            for i := range 4 {
+                colFade[i] = ledgrid.NewColorAnim(digitList[i], digitColor, 2*time.Second)
+                colFade[i].Val2 = func() color.LedColor {
+                    return digitColor
+                }
+                colFade[i].Cont = true
+                colFade[i].Curve = ledgrid.AnimationLinear
+            }
+
+            timeLine2 := ledgrid.NewTimeline(3 * time.Second)
+            timeLine2.RepeatCount = ledgrid.AnimationRepeatForever
+            timeLine2.Add(0, ledgrid.NewTask(func() {
+                digitColor = color.RandColor()
+            }))
+            timeLine2.Add(time.Second, colFade[0], colFade[1], colFade[2], colFade[3])
+
+            timeLine1.Start()
+            timeLine2.Start()
+        })
+
 	MovingText = NewLedGridProgram("Moving text",
 		func(c *ledgrid.Canvas) {
 			t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", color.LightSeaGreen)

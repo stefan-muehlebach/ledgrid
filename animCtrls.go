@@ -50,18 +50,22 @@ func (a *Group) updateDuration() {
 }
 
 // Startet die Gruppe.
-func (a *Group) Start() {
+func (a *Group) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
 	a.updateDuration()
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
 	for _, task := range a.Tasks {
-		task.Start()
+		task.StartAt(t)
 	}
+}
+
+func (a *Group) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Gruppe.
@@ -108,7 +112,7 @@ func (a *Group) Update(t time.Time) bool {
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
 		for _, task := range a.Tasks {
-			task.Start()
+			task.StartAt(t)
 		}
 	}
 	return true
@@ -165,17 +169,21 @@ func (a *Sequence) updateDuration() {
 }
 
 // Startet die Sequenz.
-func (a *Sequence) Start() {
+func (a *Sequence) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
 	a.updateDuration()
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.end = a.start.Add(a.duration)
 	a.activeTask = 0
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	a.Tasks[a.activeTask].Start()
+	a.Tasks[a.activeTask].StartAt(t)
+}
+
+func (a *Sequence) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
@@ -226,11 +234,11 @@ func (a *Sequence) Update(t time.Time) bool {
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
 			a.activeTask = 0
-			a.Tasks[a.activeTask].Start()
+			a.Tasks[a.activeTask].StartAt(t)
 		}
 		return true
 	}
-	a.Tasks[a.activeTask].Start()
+	a.Tasks[a.activeTask].StartAt(t)
 	return true
 }
 
@@ -292,15 +300,19 @@ func (a *Timeline) Add(pit time.Duration, tasks ...Task) {
 }
 
 // Startet die Timeline.
-func (a *Timeline) Start() {
+func (a *Timeline) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.nextSlot = 0
 	a.running = true
+}
+
+func (a *Timeline) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Timeline.
@@ -348,7 +360,7 @@ func (a *Timeline) Update(t time.Time) bool {
 	slot := a.Slots[a.nextSlot]
 	if t.Sub(a.start) >= slot.Duration {
 		for _, task := range slot.Tasks {
-			task.Start()
+			task.StartAt(t)
 		}
 		a.nextSlot++
 	}

@@ -13,72 +13,72 @@ import (
 )
 
 var (
-    AsyncColorFade = NewLedGridProgram("Async color fade",
-        func(c *ledgrid.Canvas) {
-            var posList []geom.Point
-            var objList []*ledgrid.Rectangle
-            var fadeList []*ledgrid.ColorAnimation
-            var seqList []*ledgrid.Sequence
-            var numObjs int = 10
+	AsyncColorFade = NewLedGridProgram("Async color fade",
+		func(c *ledgrid.Canvas) {
+			var posList []geom.Point
+			var objList []*ledgrid.Rectangle
+			var fadeList []*ledgrid.ColorAnimation
+			var seqList []*ledgrid.Sequence
+			var numObjs int = 10
 
-            color1 := color.NewLedColorRGB(0x0e, 0x4f, 0x92)
-            color2 := color.NewLedColorRGB(0xff, 0x00, 0xff)
-            color3 := color.NewLedColorRGB(0xab, 0xff, 0x5e)
+			color1 := color.NewLedColorRGB(0x0e, 0x4f, 0x92)
+			color2 := color.NewLedColorRGB(0xff, 0x00, 0xff)
+			color3 := color.NewLedColorRGB(0xab, 0xff, 0x5e)
 
-            posList = make([]geom.Point, numObjs)
-            posList[0] = geom.Point{1.5, float64(height)/2.0}
-            for i := range posList[1:] {
-                posList[i+1] = posList[i].AddXY(4.0, 0.0)
-            }
-            size := geom.Point{2.0, 9.0}
+			posList = make([]geom.Point, numObjs)
+			posList[0] = geom.Point{1.5, float64(height) / 2.0}
+			for i := range posList[1:] {
+				posList[i+1] = posList[i].AddXY(4.0, 0.0)
+			}
+			size := geom.Point{2.0, 9.0}
 
-            objList = make([]*ledgrid.Rectangle, numObjs)
-            for i := range objList {
-                obj := ledgrid.NewRectangle(posList[i], size, color1)
-                objList[i] = obj
-                c.Add(obj)
-            }
+			objList = make([]*ledgrid.Rectangle, numObjs)
+			for i := range objList {
+				obj := ledgrid.NewRectangle(posList[i], size, color1)
+				objList[i] = obj
+				c.Add(obj)
+			}
 
-            animGrp := ledgrid.NewGroup()
-            fadeList = make([]*ledgrid.ColorAnimation, numObjs)
-            seqList = make([]*ledgrid.Sequence, numObjs)
-            for i := range objList {
-                fade1 := ledgrid.NewColorAnim(objList[i], color2, 1*time.Second)
-                fade1.AutoReverse = true
-                fade1.RepeatCount = 6
-                fade1.Curve = ledgrid.AnimationLinear
-                fade1.Pos = float64(i)*0.5/float64(numObjs-1)
-                fadeList[i] = fade1
+			animGrp := ledgrid.NewGroup()
+			fadeList = make([]*ledgrid.ColorAnimation, numObjs)
+			seqList = make([]*ledgrid.Sequence, numObjs)
+			for i := range objList {
+				fade1 := ledgrid.NewColorAnim(objList[i], color2, 1*time.Second)
+				fade1.AutoReverse = true
+				fade1.RepeatCount = 6
+				fade1.Curve = ledgrid.AnimationLinear
+				fade1.Pos = float64(i) * 0.5 / float64(numObjs-1)
+				fadeList[i] = fade1
 
-                fade2 := ledgrid.NewColorAnim(objList[i], color3, 1*time.Second)
-                fade2.AutoReverse = true
-                fade2.RepeatCount = 6
-                fade2.Curve = ledgrid.AnimationLinear
+				fade2 := ledgrid.NewColorAnim(objList[i], color3, 1*time.Second)
+				fade2.AutoReverse = true
+				fade2.RepeatCount = 6
+				fade2.Curve = ledgrid.AnimationLinear
 
-                seq := ledgrid.NewSequence(fade1, fade2)
-                seq.RepeatCount = ledgrid.AnimationRepeatForever
+				seq := ledgrid.NewSequence(fade1, fade2)
+				seq.RepeatCount = ledgrid.AnimationRepeatForever
 
-                seqList[i] = seq
-                animGrp.Add(seq)
-            }
-            animGrp.Start()
+				seqList[i] = seq
+				animGrp.Add(seq)
+			}
+			animGrp.Start()
 
-            ticker := time.NewTicker(10 * time.Second)
-            go func() {
-                for range ticker.C {
-                    fmt.Printf("\nList of sequences:\n")
-                    for i, seq := range seqList {
-                        sStart, sEnd := seq.TimeInfo()
-                        fStart, fEnd, fTotal := fadeList[i].TimeInfo()
-                        fmt.Printf("[%d]\n", i)
-                        fmt.Printf("     Duration: %v\n", seq.Duration())
-                        fmt.Printf("     Start: %v; End: %v\n", sStart, sEnd)
-                        fmt.Printf("     Start: %v; End: %v\n", fStart, fEnd)
-                        fmt.Printf("     Total: %f\n", fTotal)
-                    }
-                }
-            }()
-        })
+			ticker := time.NewTicker(10 * time.Second)
+			go func() {
+				for range ticker.C {
+					fmt.Printf("\nList of sequences:\n")
+					for i, seq := range seqList {
+						sStart, sEnd := seq.TimeInfo()
+						fStart, fEnd, fTotal := fadeList[i].TimeInfo()
+						fmt.Printf("[%d]\n", i)
+						fmt.Printf("     Duration: %v\n", seq.Duration())
+						fmt.Printf("     Start: %v; End: %v\n", sStart, sEnd)
+						fmt.Printf("     Start: %v; End: %v\n", fStart, fEnd)
+						fmt.Printf("     Total: %f\n", fTotal)
+					}
+				}
+			}()
+		})
 
 	CirclingCircles = NewLedGridProgram("Circling circles",
 		func(c *ledgrid.Canvas) {
@@ -377,127 +377,143 @@ var (
 
 	RectanglesJourney = NewLedGridProgram("Rectangles journey",
 		func(c *ledgrid.Canvas) {
+			var posList [3]geom.Point
+			var animList [3]*ledgrid.PathAnimation
+            var dotList [3]*ledgrid.Dot
+
 			r1Pos1 := geom.Point{4.0, float64(height) / 2.0}
 			r1Pos2 := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 			r1Pos3 := geom.Point{float64(width) - 4.0, float64(height) / 2.0}
 			r1Size := geom.Point{7.0, 3.0}
 
-			c1Pos1 := geom.Point{2.0 * float64(width) / 3.0, float64(height) / 4.0}
-			c1Pos2 := c1Pos1.SubXY(float64(width)+4, 0.0)
-			c2Pos1 := geom.Point{float64(width) / 3.0, 3.0 * float64(height) / 4.0}
-			c2Pos2 := c2Pos1.SubXY(float64(width)+4, 0.0)
-			c3Pos1 := geom.Point{3.0 * float64(width) / 4.0, float64(height) / 2.0}
-			c3Pos2 := c3Pos1.SubXY(float64(width)+4, 0.0)
+			// c1Pos1 := geom.Point{2.0 * float64(width) / 3.0, float64(height) / 4.0}
+			// c1Pos2 := c1Pos1.SubXY(float64(width)+4, 0.0)
+			// c2Pos1 := geom.Point{float64(width) / 3.0, 3.0 * float64(height) / 4.0}
+			// c2Pos2 := c2Pos1.SubXY(float64(width)+4, 0.0)
+			// c3Pos1 := geom.Point{3.0 * float64(width) / 4.0, float64(height) / 2.0}
+			// c3Pos2 := c3Pos1.SubXY(float64(width)+4, 0.0)
 
-			c4Pos1 := geom.Point{float64(width) + 2.0, float64(height) / 4.0}
-			c4Pos2 := c4Pos1.SubXY(float64(width)+4, 0.0)
+			// c4Pos1 := geom.Point{float64(width) + 2.0, float64(height) / 4.0}
+			// c4Pos2 := c4Pos1.SubXY(float64(width)+4, 0.0)
 
 			r1 := ledgrid.NewRectangle(r1Pos1, r1Size, color.GreenYellow)
 
-			c1 := ledgrid.NewDot(c1Pos1, color.LightBlue)
-			c2 := ledgrid.NewDot(c2Pos1, color.LightBlue)
-			c3 := ledgrid.NewDot(c3Pos1, color.LightBlue)
-			c4 := ledgrid.NewDot(c4Pos1, color.LightBlue)
+			// c1 := ledgrid.NewDot(c1Pos1, color.LightBlue)
+			// c2 := ledgrid.NewDot(c2Pos1, color.LightBlue)
+			// c3 := ledgrid.NewDot(c3Pos1, color.LightBlue)
+			dotList[0] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue)
+			dotList[1] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue.Dark(0.2))
+			dotList[2] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue.Dark(0.4))
 
-			randTask := ledgrid.NewTask(func() {
-				pos1 := geom.Point{float64(width) + 2.0, float64(height) * rand.Float64()}
-				pos2 := pos1.SubXY(float64(width)+4.0, 0.0)
-				dot := ledgrid.NewDot(pos1, color.LightBlue)
-				c.Add(dot)
-				posAnim := ledgrid.NewPositionAnim(dot, pos2, time.Second)
-				posAnim.Curve = ledgrid.AnimationLinear
-				posAnim.Start()
-			})
+			// randTask := ledgrid.NewTask(func() {
+			// 	pos1 := geom.Point{float64(width) + 2.0, float64(height) * rand.Float64()}
+			// 	pos2 := pos1.SubXY(float64(width)+4.0, 0.0)
+			// 	dot := ledgrid.NewDot(pos1, color.LightBlue)
+			// 	c.Add(dot)
+			// 	posAnim := ledgrid.NewPositionAnim(dot, pos2, time.Second)
+			// 	posAnim.Curve = ledgrid.AnimationLinear
+			// 	posAnim.Start()
+			// })
 
-			c.Add(r1, c1, c2, c3, c4)
+			c.Add(dotList[2], dotList[1], dotList[0], r1)
 
 			aPos2 := ledgrid.NewPositionAnim(r1, r1Pos2, 1000*time.Millisecond)
 			aPos2.Curve = ledgrid.AnimationEaseIn
-
 			aPos3 := ledgrid.NewPositionAnim(r1, r1Pos3, 1000*time.Millisecond)
 			aPos3.Curve = ledgrid.AnimationEaseOut
 			aPos3.Cont = true
 
-			aPos4 := ledgrid.NewPositionAnim(c1, c1Pos2, time.Second)
-			aPos4.Curve = ledgrid.AnimationLinear
-			aPos5 := ledgrid.NewPositionAnim(c2, c2Pos2, time.Second)
-			aPos5.Curve = ledgrid.AnimationLinear
-			aPos6 := ledgrid.NewPositionAnim(c3, c3Pos2, time.Second)
-			aPos6.Curve = ledgrid.AnimationLinear
-			aPos7 := ledgrid.NewPositionAnim(c4, c4Pos2, time.Second)
-			aPos7.Curve = ledgrid.AnimationLinear
+			for i := range 3 {
+				animList[i] = ledgrid.NewPositionAnim(dotList[i], geom.Point{}, time.Duration(i+1)*time.Second)
+				animList[i].Curve = ledgrid.AnimationLinear
+				animList[i].Val1 = func() geom.Point {
+					posList[i] = geom.Point{float64(width + 2), float64(rand.IntN(10))}
+					return posList[i]
+				}
+				animList[i].Val2 = func() geom.Point {
+					return posList[i].SubXY(float64(width+5), 0.0)
+				}
+			}
 
-			tl := ledgrid.NewTimeline(6 * time.Second)
-			tl.RepeatCount = ledgrid.AnimationRepeatForever
+			tl := ledgrid.NewTimeline(5 * time.Second)
+			tl.RepeatCount = 1
 
-			tl.Add(1000*time.Millisecond, aPos2)
-			tl.Add(2000*time.Millisecond, aPos4, aPos5, aPos6)
-			tl.Add(3000*time.Millisecond, aPos7)
-			tl.Add(3500*time.Millisecond, randTask)
-			tl.Add(4200*time.Millisecond, randTask)
-			tl.Add(4600*time.Millisecond, randTask)
-			tl.Add(5000*time.Millisecond, aPos3)
+			// tl.Add(1000*time.Millisecond, aPos2)
+			// tl.Add(2000*time.Millisecond, posAnim, aPos5, aPos6)
+			tl.Add(0000*time.Millisecond, animList[0])
+			tl.Add(1100*time.Millisecond, animList[0])
+			tl.Add(2500*time.Millisecond, animList[0])
+			tl.Add(3900*time.Millisecond, animList[0])
 
-			// Timeline positions for the second rectangle
+			tl.Add( 900*time.Millisecond, animList[1])
+			tl.Add(3000*time.Millisecond, animList[1])
 
-			tl.Start()
+			tl.Add( 200*time.Millisecond, animList[2])
+
+			// tl.Add(3500*time.Millisecond, randTask)
+			// tl.Add(4200*time.Millisecond, randTask)
+			// tl.Add(9000*time.Millisecond, aPos3)
+
+			seq := ledgrid.NewSequence(aPos2, tl, aPos3)
+
+			seq.Start()
 		})
 )
 
 //----------------------------------------------------------------------------
 
-type BouncingEllipse struct {
-	ledgrid.Ellipse
-	Vel, Acc geom.Point
-	Field    geom.Rectangle
-}
+// type BouncingEllipse struct {
+// 	ledgrid.Ellipse
+// 	Vel, Acc geom.Point
+// 	Field    geom.Rectangle
+// }
 
-func NewBouncingEllipse(pos, size geom.Point, col color.LedColor) *BouncingEllipse {
-	b := &BouncingEllipse{}
-	b.Ellipse = *ledgrid.NewEllipse(pos, size, col)
-	b.Vel = geom.Point{}
-	b.Acc = geom.Point{}
-	return b
-}
+// func NewBouncingEllipse(pos, size geom.Point, col color.LedColor) *BouncingEllipse {
+// 	b := &BouncingEllipse{}
+// 	b.Ellipse = *ledgrid.NewEllipse(pos, size, col)
+// 	b.Vel = geom.Point{}
+// 	b.Acc = geom.Point{}
+// 	return b
+// }
 
-func (b *BouncingEllipse) Update(pit time.Time) bool {
-	deltaVel := b.Acc.Mul(0.3)
-	b.Vel = b.Vel.Add(deltaVel)
-	b.Pos = b.Pos.Add(b.Vel)
-	if b.Pos.X < b.Field.Min.X || b.Pos.X >= b.Field.Max.X {
-		b.Vel.X = -b.Vel.X
-	}
-	if b.Pos.Y < b.Field.Min.Y || b.Pos.Y >= b.Field.Max.Y {
-		b.Vel.Y = -b.Vel.Y
-	}
-	return true
-}
+// func (b *BouncingEllipse) Update(pit time.Time) bool {
+// 	deltaVel := b.Acc.Mul(0.3)
+// 	b.Vel = b.Vel.Add(deltaVel)
+// 	b.Pos = b.Pos.Add(b.Vel)
+// 	if b.Pos.X < b.Field.Min.X || b.Pos.X >= b.Field.Max.X {
+// 		b.Vel.X = -b.Vel.X
+// 	}
+// 	if b.Pos.Y < b.Field.Min.Y || b.Pos.Y >= b.Field.Max.Y {
+// 		b.Vel.Y = -b.Vel.Y
+// 	}
+// 	return true
+// }
 
-func (b *BouncingEllipse) Duration() time.Duration {
-	return time.Duration(0)
-}
-func (b *BouncingEllipse) SetDuration(dur time.Duration) {}
-func (b *BouncingEllipse) Start()                        {}
-func (b *BouncingEllipse) Suspend()                      {}
-func (b *BouncingEllipse) Continue()                     {}
-func (b *BouncingEllipse) IsRunning() bool {
-	return true
-}
+// func (b *BouncingEllipse) Duration() time.Duration {
+// 	return time.Duration(0)
+// }
+// func (b *BouncingEllipse) SetDuration(dur time.Duration) {}
+// func (b *BouncingEllipse) Start()                        {}
+// func (b *BouncingEllipse) Suspend()                      {}
+// func (b *BouncingEllipse) Continue()                     {}
+// func (b *BouncingEllipse) IsRunning() bool {
+// 	return true
+// }
 
-func BounceAround(c *ledgrid.Canvas) {
-	pos1 := geom.Point{2.0, 2.0}
-	pos2 := geom.Point{37.0, 7.0}
-	size := geom.Point{4.0, 4.0}
-	vel1 := geom.Point{0.15, 0.075}
-	vel2 := geom.Point{-0.35, -0.25}
+// func BounceAround(c *ledgrid.Canvas) {
+// 	pos1 := geom.Point{2.0, 2.0}
+// 	pos2 := geom.Point{37.0, 7.0}
+// 	size := geom.Point{4.0, 4.0}
+// 	vel1 := geom.Point{0.15, 0.075}
+// 	vel2 := geom.Point{-0.35, -0.25}
 
-	obj1 := NewBouncingEllipse(pos1, size, color.GreenYellow)
-	obj1.Vel = vel1
-	obj1.Field = geom.NewRectangleIMG(c.Rect)
-	obj2 := NewBouncingEllipse(pos2, size, color.LightSeaGreen)
-	obj2.Vel = vel2
-	obj2.Field = geom.NewRectangleIMG(c.Rect)
+// 	obj1 := NewBouncingEllipse(pos1, size, color.GreenYellow)
+// 	obj1.Vel = vel1
+// 	obj1.Field = geom.NewRectangleIMG(c.Rect)
+// 	obj2 := NewBouncingEllipse(pos2, size, color.LightSeaGreen)
+// 	obj2.Vel = vel2
+// 	obj2.Field = geom.NewRectangleIMG(c.Rect)
 
-	c.Add(obj1, obj2)
-	ledgrid.AnimCtrl.Add(0, obj1, obj2)
-}
+// 	c.Add(obj1, obj2)
+// 	ledgrid.AnimCtrl.Add(0, obj1, obj2)
+// }

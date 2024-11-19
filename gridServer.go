@@ -50,7 +50,6 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	var addrPort netip.AddrPort
 
 	p := &GridServer{Disp: disp}
-	// RegisterDisplayer(0, disp)
 	p.bufferSize = 3 * disp.NumLeds()
 	// Dann erstellen wir einen Buffer fuer die via Netzwerk eintreffenden
 	// Daten und initialisieren, die Slices fuer die fehlenden (d.h. aus

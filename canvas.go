@@ -892,12 +892,16 @@ func (f *Fire) Duration() time.Duration {
 
 func (f *Fire) SetDuration(dur time.Duration) {}
 
-func (f *Fire) Start() {
+func (f *Fire) StartAt(t time.Time) {
 	if f.running {
 		return
 	}
 	// Would do starting things here.
 	f.running = true
+}
+
+func (f *Fire) Start() {
+    f.StartAt(AnimCtrl.Now())
 }
 
 func (f *Fire) Stop() {

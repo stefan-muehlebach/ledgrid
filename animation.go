@@ -38,8 +38,6 @@ const (
 type AnimationController struct {
 	AnimList  [NumLayers][]Animation
 	animMutex [NumLayers]*sync.RWMutex
-	// Canvas     *Canvas
-	// ledGrid    *LedGrid
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
@@ -52,7 +50,6 @@ type AnimationController struct {
 }
 
 func NewAnimationController(syncChan chan bool) *AnimationController {
-	// func NewAnimationController(canvas *Canvas, ledGrid *LedGrid) *AnimationController {
 	if AnimCtrl != nil {
 		return AnimCtrl
 	}
@@ -61,8 +58,6 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 		a.AnimList[i] = make([]Animation, 0)
 		a.animMutex[i] = &sync.RWMutex{}
 	}
-	// a.Canvas = canvas
-	// a.ledGrid = ledGrid
 	a.ticker = time.NewTicker(refreshRate)
 	a.animWatch = NewStopwatch()
 	a.numThreads = runtime.NumCPU()
@@ -72,8 +67,6 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 	AnimCtrl = a
 	go a.backgroundThread()
 	a.running = true
-
-	// canvas.StartRefresh(a.syncChan, ledGrid.syncChan)
 
 	return a
 }
@@ -330,6 +323,28 @@ func RandPalette() PaletteFuncType {
 	}
 }
 
+var (
+    randColor, randGroupColor color.LedColor
+)
+
+func RandColor(new bool) AnimValueFunc[color.LedColor] {
+    return func() color.LedColor {
+        if new {
+            randColor = color.RandColor()
+        }
+        return randColor
+    }
+}
+
+func RandGroupColor(group color.ColorGroup, new bool) AnimValueFunc[color.LedColor] {
+    return func() color.LedColor {
+        if new {
+            randGroupColor = color.RandGroupColor(group)
+        }
+        return randGroupColor
+    }
+}
+
 // Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
 // Rechtecks r.
 func RandPoint(r geom.Rectangle) AnimValueFunc[geom.Point] {
@@ -384,6 +399,7 @@ func RandAlpha(a, b uint8) AnimValueFunc[uint8] {
 // wenn der Code hinter einem Task so kurz wie moeglich gehalten wird.
 type Task interface {
 	Start()
+    StartAt(t time.Time)
 }
 
 // Ein Job besitzt alle Eigenschaften und Moeglichkeiten eines Tasks, bietet
@@ -479,8 +495,11 @@ func NewTask(fn func()) *SimpleTask {
 	a := &SimpleTask{fn}
 	return a
 }
-func (a *SimpleTask) Start() {
+func (a *SimpleTask) StartAt(t time.Time) {
 	a.fn()
+}
+func (a *SimpleTask) Start() {
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
@@ -495,12 +514,15 @@ func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
 	return a
 }
 
-func (a *HideShowAnimation) Start() {
+func (a *HideShowAnimation) StartAt(t time.Time) {
 	if a.obj.IsVisible() {
 		a.obj.Hide()
 	} else {
 		a.obj.Show()
 	}
+}
+func (a *HideShowAnimation) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 func (a *HideShowAnimation) IsRunning() bool {
@@ -518,13 +540,17 @@ func NewSuspContAnimation(anim Animation) *SuspContAnimation {
 	a := &SuspContAnimation{anim: anim}
 	return a
 }
-func (a *SuspContAnimation) Start() {
+func (a *SuspContAnimation) StartAt(t time.Time) {
 	if a.anim.IsRunning() {
 		a.anim.Suspend()
 	} else {
 		a.anim.Continue()
 	}
 }
+func (a *SuspContAnimation) Start() {
+    a.StartAt(AnimCtrl.Now())
+}
+
 func (a *SuspContAnimation) IsRunning() bool {
 	return false
 }
@@ -596,11 +622,11 @@ func (a *NormAnimationEmbed) TimeInfo () (start, end time.Time, total float64) {
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
 // aktuell sind. Ist die Animaton bereits am Laufen ist diese Methode
 // ein no-op.
-func (a *NormAnimationEmbed) Start() {
+func (a *NormAnimationEmbed) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.reverse = false
 	if a.Pos > 0.0 {
 		if a.AutoReverse {
@@ -618,6 +644,10 @@ func (a *NormAnimationEmbed) Start() {
 	a.repeatsLeft = a.RepeatCount
 	a.wrapper.Init()
 	a.running = true
+}
+
+func (a *NormAnimationEmbed) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
@@ -1117,12 +1147,16 @@ func (a *ColorShaderAnim) Duration() time.Duration {
 func (a *ColorShaderAnim) SetDuration(d time.Duration) {}
 
 // Startet die Animation.
-func (a *ColorShaderAnim) Start() {
+func (a *ColorShaderAnim) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.running = true
+}
+
+func (a *ColorShaderAnim) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Animation.
@@ -1183,12 +1217,16 @@ func (a *ShaderAnimation) Duration() time.Duration {
 func (a *ShaderAnimation) SetDuration(d time.Duration) {}
 
 // Startet die Animation.
-func (a *ShaderAnimation) Start() {
+func (a *ShaderAnimation) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.running = true
+}
+
+func (a *ShaderAnimation) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Animation.

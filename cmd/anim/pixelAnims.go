@@ -17,7 +17,9 @@ var (
 		{color.White, color.Black},
 		{color.NewLedColorRGB(0x12, 0x88, 0x81), color.NewLedColorRGB(0xab, 0xff, 0x5e)},
 		{color.NewLedColorRGB(0xff, 0xff, 0x00), color.NewLedColorRGB(0xc2, 0x1a, 0x00)},
-		{color.NewLedColorRGB(0x0e, 0x4f, 0x92), color.NewLedColorRGB(0xff, 0x00, 0xff)},
+		// {color.NewLedColorRGB(0x0e, 0x4f, 0x92), color.NewLedColorRGB(0xff, 0x00, 0xff)},
+		{color.NewLedColorRGB(0xb2, 0x22, 0x22), color.NewLedColorRGB(0x00, 0x64, 0x00)},
+		{color.NewLedColorRGB(0xff, 0x14, 0x93), color.NewLedColorRGB(0x00, 0x00, 0x80)},
 	}
 
 	MovingPixels = NewLedGridProgram("Moving pixels",
@@ -152,6 +154,8 @@ var (
 	GlowAgainPixels = NewLedGridProgram("Glow-again, you pixels you!",
 		func(c *ledgrid.Canvas) {
 			aGrpLedColor := ledgrid.NewGroup()
+			dur := 3 * time.Second
+			numReps := 3
 
 			for y := range c.Rect.Dy() {
 				for x := range c.Rect.Dx() {
@@ -160,9 +164,9 @@ var (
 
 					c.Add(pix)
 
-					aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], 1*time.Second)
+					aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], dur)
 					aColorCyc.AutoReverse = true
-					aColorCyc.RepeatCount = 6
+					aColorCyc.RepeatCount = numReps
 					aColorCyc.Curve = ledgrid.AnimationLinear
 					aColorCyc.Cont = true
 					aColorCyc.Pos = rand.Float64()
@@ -171,20 +175,20 @@ var (
 
 					for _, colPair := range colorList[1:] {
 
-						aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], 1*time.Second)
+						aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], dur)
 						aColorTrans.Curve = ledgrid.AnimationLinear
 						aColorTrans.Cont = true
 
-						aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], 1*time.Second)
+						aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], dur)
 						aColorCyc.AutoReverse = true
-						aColorCyc.RepeatCount = 6
+						aColorCyc.RepeatCount = numReps
 						aColorCyc.Curve = ledgrid.AnimationLinear
 						aColorCyc.Cont = true
 
 						aColorSeq.Add(aColorTrans, aColorCyc)
 					}
 
-					aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], 1*time.Second)
+					aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], dur)
 					aColorTrans.Curve = ledgrid.AnimationLinear
 					aColorTrans.Cont = true
 
@@ -219,6 +223,7 @@ var (
 			txtPos3 := fixed.P(1, -1)
 			// txtPos3 := fixed.P(-2*width, height-1)
 			txt := ledgrid.NewFixedText(txtPos1, color.Black, "")
+			txt.SetFont(ledgrid.Fixed5x7)
 			c.Add(rect, txt)
 
 			posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 3*time.Second/2)
@@ -281,7 +286,6 @@ var (
 			c.Add(fire)
 			fire.Start()
 		})
-
 
 	ShowThePaletteShader = NewLedGridProgram("Show a palette shader!",
 		func(c *ledgrid.Canvas) {

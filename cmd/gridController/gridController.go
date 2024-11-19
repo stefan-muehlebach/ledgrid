@@ -1,22 +1,25 @@
 package main
 
 import (
-	"image"
-	"github.com/stefan-muehlebach/ledgrid/conf"
+	"errors"
 	"flag"
+	"image"
+	"io"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
-	defWidth           = 40
-	defHeight          = 10
+	defWidth  = 40
+	defHeight = 10
 
 	defMissingIDs = ""
 	defDefectIDs  = ""
@@ -57,25 +60,57 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 	}
 }
 
+func PlayFile(fileName string) {
+	var client ledgrid.GridClient
+	var buffer []byte
+
+	client = ledgrid.NewNetGridClient("localhost", "udp", dataPort, rpcPort)
+	buffer = make([]byte, 3*client.NumLeds())
+
+	fh, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't open move file: %v", err)
+	}
+	ticker := time.NewTicker(30 * time.Millisecond)
+	for range ticker.C {
+		n, err := fh.Read(buffer)
+		if n == 0 && errors.Is(err, io.EOF) {
+			break
+		}
+		// if n != p.bufferSize {
+		// 	log.Printf("FileWatcher: read only %d bytes", n)
+		// }
+		client.Send(buffer)
+	}
+	fh.Close()
+    client.Close()
+}
+
+var (
+	dataPort, rpcPort uint
+)
+
 func main() {
+	var inFile string
+
 	var width, height int
 	var customConfName string
 	var gridSize image.Point
 	var modConf conf.ModuleConfig
 
-	var dataPort, rpcPort uint
 	var baud int
 	var missingIDs, defectIDs string
 	var spiDevFile string = "/dev/spidev0.0"
 	var ws2801 ledgrid.Displayer
 	var gridServer *ledgrid.GridServer
 
+	flag.StringVar(&inFile, "play", "", "Play the animation in this file instead of running as a daemon")
+
 	// Verarbeite als erstes die Kommandozeilen-Optionen
-    	flag.IntVar(&width, "width", defWidth, "Width of panel")
+	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 
-	// flag.IntVar(&numPix, "numpix", defNumPix, "Number of pixels (for buffers and such)")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port (UPD as well as TCP)")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
@@ -83,8 +118,13 @@ func main() {
 	flag.StringVar(&defectIDs, "defect", defDefectIDs, "Comma separated list with IDs of defect LEDs (they will be blacked out)")
 	flag.Parse()
 
-    StartProfiling()
-    defer StopProfiling()
+	StartProfiling()
+	defer StopProfiling()
+
+	if inFile != "" {
+		PlayFile(inFile)
+		return
+	}
 
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
