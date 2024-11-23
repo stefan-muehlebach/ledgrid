@@ -3,7 +3,6 @@
 package main
 
 import (
-	"image"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -13,15 +12,13 @@ import (
 type Camera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
-	Mask   *image.Alpha
 	running   bool
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
-	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
-	ledgrid.AnimCtrl.Add(c)
+	ledgrid.AnimCtrl.Add(0, c)
 	return c
 }
 
@@ -31,12 +28,16 @@ func (c *Camera) Duration() time.Duration {
 
 func (c *Camera) SetDuration(dur time.Duration) {}
 
-func (c *Camera) Start() {
+func (c *Camera) StartAt(t time.Time) {
 	if c.running {
 		return
 	}
 	// Would do starting things here.
 	c.running = true
+}
+
+func (c *Camera) Start() {
+	c.StartAt(ledgrid.AnimCtrl.Now())
 }
 
 func (c *Camera) Stop() {
