@@ -5,7 +5,7 @@ cmd/anim/imagesSave/
 cmd/anim/blinken/gifInfo
 cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
-cmd/colorEdit/ledgrid.png
+cmd/colorEdit/*.png
 cmd/gui/gui
 cmd/gridController/gridController
 cmd/gridEmulator/gridEmulator
@@ -22,3 +22,7 @@ old_20240815/
 *.memprof
 *.trace
 *.bin
+.20240701/
+.20240815/
+genColorNew
+genFont

@@ -1,3 +1,4 @@
+
 // Dieses File wird automatisch durch genColor.go erstellt!
 // Manuelle Aenderungen werden bei der naechsten Ausfuehrung
 // automatisch ueberschrieben.

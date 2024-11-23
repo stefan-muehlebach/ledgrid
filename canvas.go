@@ -80,14 +80,6 @@ func (c *Canvas) Set(x, y int, col gocolor.Color) {
 
 func (c *Canvas) Clear(col color.LedColor) {
     draw.Draw(c.Img, c.Rect, image.NewUniform(col), image.Point{}, draw.Src)
-	// img := c.Img.(*image.RGBA)
-	// for idx := 0; idx < len(img.Pix); idx += 4 {
-	// 	dst := img.Pix[idx : idx+4 : idx+4]
-	// 	dst[0] = col.R
-	// 	dst[1] = col.G
-	// 	dst[2] = col.B
-	// 	dst[3] = col.A
-	// }
 }
 
 // Loescht alle Objekte aus der Zeichenflaeche, setzt die Farbe des Canvas

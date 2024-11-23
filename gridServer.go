@@ -19,6 +19,9 @@ const (
 	DefRPCPort  = 5332
 )
 
+// Der Datentyp ByteCount kann zum Zaehlen von Bytes verwendet werden (bspw.
+// bei Netzwerk- oder Datei-IO). Die Ausgabe als Text wird formatiert. So
+// werden 1024 als '1.0 kB' oder 4096 als '4.0 kB' dargestellt.
 type ByteCount int64
 
 func (b ByteCount) String() string {
@@ -39,8 +42,7 @@ func (b ByteCount) String() string {
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type GridServer struct {
 	Disp                 Displayer
-	// RecvBytes, SentBytes int
-    RecvBytes, SentBytes ByteCount
+   RecvBytes, SentBytes ByteCount
 	udpAddr              *net.UDPAddr
 	udpConn              *net.UDPConn
 	tcpAddr              *net.TCPAddr

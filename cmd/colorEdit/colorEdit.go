@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
@@ -9,11 +10,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/stefan-muehlebach/ledgrid/conf"
-
 	gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
@@ -23,14 +23,16 @@ const (
 	KEY_CRIGHT    = 0x231 /* Ctrl-right arrow */
 	KEY_CUP       = 0x237 /* Ctrl-up arrow */
 	KEY_CDOWN     = 0x20e /* Ctrl-down arrow */
-	KEY_ALEFT     = 0x220 /* Alt-left arrow */
-	KEY_ARIGHT    = 0x22f /* Alt-right arrow */
-	KEY_AINS      = 0x21b /* Alt-Insert */
-	KEY_ADEL      = 0x206 /* Alt-Delete */
-	KEY_AHOME     = 0x216 /* Alt-Home */
-	KEY_AEND      = 0x211 /* Alt-End */
-	KEY_APAGEUP   = 0x22a /* Alt-PageUp */
-	KEY_APAGEDOWN = 0x225 /* Alt-PageDown */
+	KEY_ALEFT     = 0x228 /* Alt-left arrow */
+	KEY_ARIGHT    = 0x237 /* Alt-right arrow */
+	KEY_AUP       = 0x23d /* Alt-up arrow */
+	KEY_ADOWN     = 0x214 /* Alt-down arrow */
+	KEY_AINS      = 0x223 /* Alt-Insert */
+	KEY_ADEL      = 0x20e /* Alt-Delete */
+	KEY_AHOME     = 0x21e /* Alt-Home */
+	KEY_AEND      = 0x219 /* Alt-End */
+	KEY_APAGEUP   = 0x232 /* Alt-PageUp */
+	KEY_APAGEDOWN = 0x22d /* Alt-PageDown */
 )
 
 func Ctrl(x gc.Key) gc.Key {
@@ -45,23 +47,23 @@ func between(x, a, b int) bool {
 }
 
 func main() {
-	var width int = 40
-	var height int = 10
 	var host string = "raspi-3"
-	// var port uint = 5333
+	var width, height int
 	var dataPort, rpcPort uint
 	var useTCP bool
 	var network string
 
+	var logFile *os.File
 	var stdscr *gc.Window
 	var winGrid, winHelp *gc.Window
 	var ch gc.Key
 	var curRow, selRow, curCol, selCol int
 	var curColor int
 	var err error
-    var gridClient ledgrid.GridClient
+	var gridClient ledgrid.GridClient
 	var ledGrid *ledgrid.LedGrid
 	var ledColor color.LedColor
+	var palMode bool
 	var palIdx int
 	var curColorChanged bool
 	var redrawGrid bool
@@ -80,16 +82,10 @@ func main() {
 	var clipData []color.LedColor
 	var modConf conf.ModuleConfig
 
-	// flag.IntVar(&width, "width", width, "Width of panel")
-	// flag.IntVar(&height, "height", height, "Height of panel")
-
 	flag.StringVar(&host, "host", host, "Controller hostname")
 	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
-
-	// flag.StringVar(&host, "host", host, "Controller hostname")
-	// flag.UintVar(&port, "port", port, "Controller port")
 	flag.Parse()
 
 	if useTCP {
@@ -101,19 +97,23 @@ func main() {
 	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
 	modConf = gridClient.ModuleConfig()
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
-	// gR, gG, gB = ledGrid.Client.Gamma()
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X
 	height = gridSize.Y
 
-	// gridSize = image.Point{width, height}
 	gridWidth = 7*width + 10
-	gridHeight = height + 7
+	gridHeight = height + 8
 	termWidth = gridWidth + 10
 	termHeight = gridHeight + 40
 
 	selRect = image.Rect(0, 0, 1, 1)
+
+	logFile, err = os.Create("colorEdit.log")
+	if err != nil {
+		log.Fatalf("Couldn't create log file: %v", err)
+	}
+	defer logFile.Close()
 
 	// if modConf != nil {
 	// ledGrid = ledgrid.NewLedGrid(host, port, modConf)
@@ -157,8 +157,8 @@ func main() {
 	winGrid.Keypad(true)
 	winGrid.Box(0, 0)
 
-	helpHeight, helpWidth := 20, 60
-	y, x = height+9, 4
+	helpHeight, helpWidth := 22, 70
+	y, x = height+10, 4
 
 	winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
 	if err != nil {
@@ -168,22 +168,23 @@ func main() {
 
 	winHelp.MovePrintf(1, 2, "|   R   |    G   |    B   |")
 	winHelp.MovePrintf(2, 2, "+-------+--------+--------+")
-	winHelp.MovePrintf(3, 2, "| [Ins] | [Home] | [PgUp] | increase color value")
-	winHelp.MovePrintf(4, 2, "| [Del] | [End]  | [PgDn] | decrease color value")
+	winHelp.MovePrintf(3, 2, "| [Ins] | [Home] | [PgUp] | increase color value by 1")
+	winHelp.MovePrintf(4, 2, "| [Del] | [End]  | [PgDn] | decrease color value by 1")
+	winHelp.MovePrintf(5, 2, "[Alt]-(above)   : inc/dec by 10")
 	winHelp.MovePrintf(6, 2, "[Cursor]        : Move selector")
 	winHelp.MovePrintf(7, 2, "[Alt]-Left/Right: Move color selector")
 	winHelp.MovePrintf(8, 2, "[Shift]-[Cursor]: Select range")
-	winHelp.MovePrintf(9, 2, "[Ctrl]-A        : Select all pixels")
-	winHelp.MovePrintf(10, 2, "[Ctrl]-C/X/V    : Copy/Cut/Paste selected color values")
+	winHelp.MovePrintf(9, 2, "[Ctrl]-a        : Select all pixels")
+	winHelp.MovePrintf(10, 2, "[Ctrl]-c/x/v    : Copy/Cut/Paste selected color values")
 	winHelp.MovePrintf(11, 2, "[Backspace]     : Clear selected pixels")
 	winHelp.MovePrintf(12, 2, "F               : Interpolate colors")
 	winHelp.MovePrintf(13, 2, "0-9a-f          : Enter new hex value for selected pixels")
 	winHelp.MovePrintf(14, 2, "g/G             : Decrease/increase gamma values by 0.1")
 	winHelp.MovePrintf(15, 2, "i               : Invert selected pixels")
 	winHelp.MovePrintf(16, 2, "+/-             : Darken/Brighten selected pixels")
-	winHelp.MovePrintf(17, 2, "[Ctrl]-O        : Load pixel data from file 'ledgrid.png'")
-	winHelp.MovePrintf(18, 2, "[Ctrl]-S        : Save pixel data to file 'ledgrid.png'")
-	winHelp.MovePrintf(20, 2, "q               : Quit")
+	winHelp.MovePrintf(17, 2, "[Ctrl]-l/s      : Load/Save pixel data from/to file 'ledgrid.png'")
+	winHelp.MovePrintf(18, 2, "[Ctrl]-p        : Toggle palette mode on/off")
+	winHelp.MovePrintf(19, 2, "q               : Quit")
 
 	winGrid.Refresh()
 	winHelp.Refresh()
@@ -257,6 +258,12 @@ main:
 		winGrid.AttrOff(gc.A_REVERSE)
 		winGrid.MovePrintf(row+2, 2, "Current gamma values        : %.2f, %.2f, %.2f",
 			gammaValues[0], gammaValues[1], gammaValues[2])
+		if palMode {
+			winGrid.MovePrintf(row+3, 2, "Current palette shown       : %-20s",
+				ledgrid.PaletteNames[palIdx])
+		} else {
+			winGrid.MovePrintf(row+3, 2, "                                               ")
+		}
 		winGrid.NoutRefresh()
 		winHelp.NoutRefresh()
 
@@ -306,7 +313,7 @@ main:
 		switch ch {
 
 		case 'C':
-			ledGrid.Clear(color.Black)
+			ledGrid.Clear(color.Transparent)
 			curCol, selCol = 0, 0
 			curRow, selRow = 0, 0
 			redrawGrid = true
@@ -409,7 +416,7 @@ main:
 			if ch == Ctrl('x') {
 				for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
 					for col := selRect.Min.X; col < selRect.Max.X; col++ {
-						ledGrid.SetLedColor(col, row, color.Black)
+						ledGrid.SetLedColor(col, row, color.Transparent)
 					}
 				}
 				redrawGrid = true
@@ -443,7 +450,7 @@ main:
 			}
 			fh.Close()
 
-		case Ctrl('o'):
+		case Ctrl('l'):
 			fh, err := os.Open("ledgrid.png")
 			if err != nil {
 				log.Fatalf("Couldn't open file: %v", err)
@@ -457,40 +464,38 @@ main:
 			redrawGrid = true
 
 		case Ctrl('p'):
-			palName := ledgrid.PaletteNames[palIdx]
-			palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
-			pal := ledgrid.PaletteMap[palName]
-			for row := 0; row < ledGrid.Rect.Dy(); row++ {
-				for col := 0; col < ledGrid.Rect.Dx(); col++ {
-					t := float64(col) / float64(ledGrid.Rect.Dx()-1)
-					c := pal.Color(t)
-					ledGrid.SetLedColor(col, row, c)
-				}
-			}
-			redrawGrid = true
+			palMode = !palMode
 
 		case gc.KEY_BACKSPACE:
 			for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
 				for col := selRect.Min.X; col < selRect.Max.X; col++ {
-					ledGrid.SetLedColor(col, row, color.Black)
+					ledGrid.SetLedColor(col, row, color.Transparent)
 				}
 			}
 			redrawGrid = true
 
 		case gc.KEY_LEFT:
-			if curCol > 0 {
-				curCol -= 1
+			if palMode {
+				palIdx = (palIdx - 1 + len(ledgrid.PaletteNames)) % len(ledgrid.PaletteNames)
+			} else {
+				if curCol > 0 {
+					curCol -= 1
+				}
+				selCol = curCol
+				selRow = curRow
+				cursorMoved = true
 			}
-			selCol = curCol
-			selRow = curRow
-			cursorMoved = true
 		case gc.KEY_RIGHT:
-			if curCol < ledGrid.Rect.Dx()-1 {
-				curCol += 1
+			if palMode {
+				palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
+			} else {
+				if curCol < ledGrid.Rect.Dx()-1 {
+					curCol += 1
+				}
+				selCol = curCol
+				selRow = curRow
+				cursorMoved = true
 			}
-			selCol = curCol
-			selRow = curRow
-			cursorMoved = true
 		case gc.KEY_UP:
 			if curRow > 0 {
 				curRow -= 1
@@ -591,7 +596,7 @@ main:
 			curColorChanged = true
 
 		default:
-			// fmt.Fprintf(os.Stderr, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
+			fmt.Fprintf(logFile, "Unhandled key: 0x%02x, '%s'\n", ch, gc.KeyString(ch))
 		}
 
 		if cursorMoved {
@@ -603,6 +608,19 @@ main:
 		if curColorChanged {
 			ledGrid.SetLedColor(curCol, curRow, ledColor)
 			curColorChanged = false
+			redrawGrid = true
+		}
+
+		if palMode {
+			palName := ledgrid.PaletteNames[palIdx]
+			pal := ledgrid.PaletteMap[palName]
+			for row := 0; row < ledGrid.Rect.Dy(); row++ {
+				for col := 0; col < ledGrid.Rect.Dx(); col++ {
+					t := float64(col) / float64(ledGrid.Rect.Dx()-1)
+					c := pal.Color(t)
+					ledGrid.SetLedColor(col, row, c)
+				}
+			}
 			redrawGrid = true
 		}
 

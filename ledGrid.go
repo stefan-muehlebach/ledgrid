@@ -28,7 +28,11 @@ type LedGrid struct {
 	// dass sowohl AnimationController als auch Canvas(es) hier vermerkt
 	// sein muessen.
 	AnimCtrl *AnimationController
-	// Canvas   *Canvas
+    // Es koennen eine ganze Reihe von Canvas'es verwendet werden - so um bspw.
+    // mit mehreren Layern oder Ueberblendungen zu arbeiten. Die Canvas'es
+    // werden in einer dynamischen Liste verwaltet. Die Darstellung beginnt
+    // mit dem hintersten Canvas und stellt zuletzt (d.h. zuvorderst) das
+    // Canvas am Anfang der Liste dar.
 	CanvasList *list.List
 	canvMutex  *sync.RWMutex
 
@@ -55,7 +59,6 @@ func NewLedGrid(client GridClient, modConf conf.ModuleConfig) *LedGrid {
 	g.idxMap = modConf.IndexMap()
 	g.syncChan = make(chan bool)
 	g.AnimCtrl = NewAnimationController(g.syncChan)
-	// g.Canvas = NewCanvas(g.Rect.Size())
 	g.CanvasList = list.New()
 	g.canvMutex = &sync.RWMutex{}
 
@@ -132,12 +135,6 @@ func (g *LedGrid) PixOffset(x, y int) int {
 // Teil dieser Methode.
 func (g *LedGrid) Clear(c ledcolor.LedColor) {
 	draw.Draw(g, g.Rect, image.NewUniform(c), image.Point{}, draw.Src)
-	// for idx := 0; idx < len(g.Pix); idx += 3 {
-	// 	dst := g.Pix[idx : idx+3 : idx+3]
-	// 	dst[0] = c.R
-	// 	dst[1] = c.G
-	// 	dst[2] = c.B
-	// }
 }
 
 func (g *LedGrid) Reset() {

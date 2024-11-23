@@ -14,12 +14,12 @@ import (
 
 var (
 	colorList = [][]color.LedColor{
-		{color.White, color.Black},
-		{color.NewLedColorRGB(0x12, 0x88, 0x81), color.NewLedColorRGB(0xab, 0xff, 0x5e)},
-		{color.NewLedColorRGB(0xff, 0xff, 0x00), color.NewLedColorRGB(0xc2, 0x1a, 0x00)},
-		// {color.NewLedColorRGB(0x0e, 0x4f, 0x92), color.NewLedColorRGB(0xff, 0x00, 0xff)},
-		{color.NewLedColorRGB(0xb2, 0x22, 0x22), color.NewLedColorRGB(0x00, 0x64, 0x00)},
-		{color.NewLedColorRGB(0xff, 0x14, 0x93), color.NewLedColorRGB(0x00, 0x00, 0x80)},
+		// {color.NewLedColorHex(0xffffff), color.NewLedColorHex(0x000000)}, // White to Black
+		{color.NewLedColorHex(0xb9b90a), color.NewLedColorHex(0x0a5853)}, // Yellow to LightBlue
+		{color.NewLedColorHex(0xa60c5f), color.NewLedColorHex(0x000080)}, // DeepPink to DarkBlue
+		{color.NewLedColorHex(0x959500), color.NewLedColorHex(0x710e00)}, // Yellow to OrangeRed
+		{color.NewLedColorHex(0x007400), color.NewLedColorHex(0x9a2222)}, // DarkGreen to DarkRed
+		{color.NewLedColorHex(0x814124), color.NewLedColorHex(0x4c8baa)}, // Salmon to LightBlue
 	}
 
 	MovingPixels = NewLedGridProgram("Moving pixels",
@@ -71,91 +71,91 @@ var (
 			aSeq.Start()
 		})
 
-	GlowingPixels = NewLedGridProgram("Glowing pixels",
-		func(c *ledgrid.Canvas) {
-			aGrpPurple := ledgrid.NewGroup()
-			aGrpYellow := ledgrid.NewGroup()
-			aGrpGreen := ledgrid.NewGroup()
-			aGrpGrey := ledgrid.NewGroup()
+	// GlowingPixels = NewLedGridProgram("Glowing pixels",
+	// 	func(c *ledgrid.Canvas) {
+	// 		aGrpPurple := ledgrid.NewGroup()
+	// 		aGrpYellow := ledgrid.NewGroup()
+	// 		aGrpGreen := ledgrid.NewGroup()
+	// 		aGrpGrey := ledgrid.NewGroup()
 
-			for y := range c.Rect.Dy() {
-				for x := range c.Rect.Dx() {
-					t := rand.Float64()
-					col := colorList[0][0].Interpolate(colorList[0][1], t)
+	// 		for y := range c.Rect.Dy() {
+	// 			for x := range c.Rect.Dx() {
+	// 				t := rand.Float64()
+	// 				col := colorList[0][0].Interpolate(colorList[0][1], t)
 
-					// pt := image.Point{x, y}
-					// pix := ledgrid.NewPixel(pt, col)
+	// 				// pt := image.Point{x, y}
+	// 				// pix := ledgrid.NewPixel(pt, col)
 
-					pos := geom.NewPoint(float64(x), float64(y))
-					// pos := geom.NewPointIMG(pt)
-					pix := ledgrid.NewDot(pos, col)
+	// 				pos := geom.NewPoint(float64(x), float64(y))
+	// 				// pos := geom.NewPointIMG(pt)
+	// 				pix := ledgrid.NewDot(pos, col)
 
-					c.Add(pix)
+	// 				c.Add(pix)
 
-					dur := time.Second + time.Duration(x)*time.Millisecond
-					aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
-					aAlpha.AutoReverse = true
-					aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
-					aAlpha.Start()
+	// 				dur := time.Second + time.Duration(x)*time.Millisecond
+	// 				aAlpha := ledgrid.NewFadeAnim(pix, 196, dur)
+	// 				aAlpha.AutoReverse = true
+	// 				aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
+	// 				aAlpha.Start()
 
-					aColor := ledgrid.NewColorAnim(pix, colorList[0][0].Interpolate(colorList[0][1], t), 4*time.Second)
-					aColor.Cont = true
-					aGrpGrey.Add(aColor)
+	// 				aColor := ledgrid.NewColorAnim(pix, colorList[0][0].Interpolate(colorList[0][1], t), 4*time.Second)
+	// 				aColor.Cont = true
+	// 				aGrpGrey.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, colorList[1][0].Interpolate(colorList[1][1], t), 4*time.Second)
-					aColor.Cont = true
-					aGrpPurple.Add(aColor)
+	// 				aColor = ledgrid.NewColorAnim(pix, colorList[1][0].Interpolate(colorList[1][1], t), 4*time.Second)
+	// 				aColor.Cont = true
+	// 				aGrpPurple.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, colorList[2][0].Interpolate(colorList[2][1], t), 4*time.Second)
-					aColor.Cont = true
-					aGrpYellow.Add(aColor)
+	// 				aColor = ledgrid.NewColorAnim(pix, colorList[2][0].Interpolate(colorList[2][1], t), 4*time.Second)
+	// 				aColor.Cont = true
+	// 				aGrpYellow.Add(aColor)
 
-					aColor = ledgrid.NewColorAnim(pix, colorList[3][0].Interpolate(colorList[3][1], t), 4*time.Second)
-					aColor.Cont = true
-					aGrpGreen.Add(aColor)
-				}
-			}
+	// 				aColor = ledgrid.NewColorAnim(pix, colorList[3][0].Interpolate(colorList[3][1], t), 4*time.Second)
+	// 				aColor.Cont = true
+	// 				aGrpGreen.Add(aColor)
+	// 			}
+	// 		}
 
-			// aSeq := ledgrid.NewSequence(aGrpPurple, aGrpYellow, aGrpGreen, aGrpGrey)
-			// aSeq.RepeatCount = ledgrid.AnimationRepeatForever
-			// aSeq.Start()
+	// 		// aSeq := ledgrid.NewSequence(aGrpPurple, aGrpYellow, aGrpGreen, aGrpGrey)
+	// 		// aSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	// 		// aSeq.Start()
 
-			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "WEIT")
-			txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
-			aTxt1.AutoReverse = true
-			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "UEBER DAS")
-			txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
-			aTxt2.AutoReverse = true
-			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "LAND")
-			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-			aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
-			aTxt3.AutoReverse = true
-			c.Add(txt1, txt2, txt3)
+	// 		txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "WEIT")
+	// 		txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+	// 		aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 2*time.Second)
+	// 		aTxt1.AutoReverse = true
+	// 		txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "UEBER DAS")
+	// 		txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+	// 		aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
+	// 		aTxt2.AutoReverse = true
+	// 		txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.OrangeRed.Alpha(0.0), "LAND")
+	// 		txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+	// 		aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 2*time.Second)
+	// 		aTxt3.AutoReverse = true
+	// 		c.Add(txt1, txt2, txt3)
 
-			aTimel := ledgrid.NewTimeline(42 * time.Second)
-			aTimel.Add(7*time.Second, aGrpPurple)
-			aTimel.Add(12*time.Second, aTxt1)
-			aTimel.Add(13*time.Second, aGrpGrey)
+	// 		aTimel := ledgrid.NewTimeline(42 * time.Second)
+	// 		aTimel.Add(7*time.Second, aGrpPurple)
+	// 		aTimel.Add(12*time.Second, aTxt1)
+	// 		aTimel.Add(13*time.Second, aGrpGrey)
 
-			aTimel.Add(22*time.Second, aGrpYellow)
-			aTimel.Add(27*time.Second, aTxt2)
-			aTimel.Add(28*time.Second, aGrpGrey)
+	// 		aTimel.Add(22*time.Second, aGrpYellow)
+	// 		aTimel.Add(27*time.Second, aTxt2)
+	// 		aTimel.Add(28*time.Second, aGrpGrey)
 
-			aTimel.Add(35*time.Second, aGrpGreen)
-			aTimel.Add(40*time.Second, aTxt3)
-			aTimel.Add(41*time.Second, aGrpGrey)
-			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
+	// 		aTimel.Add(35*time.Second, aGrpGreen)
+	// 		aTimel.Add(40*time.Second, aTxt3)
+	// 		aTimel.Add(41*time.Second, aGrpGrey)
+	// 		aTimel.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aTimel.Start()
-		})
+	// 		aTimel.Start()
+	// 	})
 
-	GlowAgainPixels = NewLedGridProgram("Glow-again, you pixels you!",
+	GlowingPixels = NewLedGridProgram("Glowing pixels with text",
 		func(c *ledgrid.Canvas) {
 			aGrpLedColor := ledgrid.NewGroup()
 			dur := 3 * time.Second
-			numReps := 3
+			numReps := 1
 
 			for y := range c.Rect.Dy() {
 				for x := range c.Rect.Dx() {
@@ -198,6 +198,63 @@ var (
 					aGrpLedColor.Add(aColorSeq)
 				}
 			}
+
+			txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "WEIT")
+			txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			txt1FadeIn := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 3*time.Second)
+			txt1Color := ledgrid.NewColorAnim(txt1, color.White, 1*time.Second)
+			txt1Color.AutoReverse = true
+			txt1FadeOut := ledgrid.NewFadeAnim(txt1, ledgrid.FadeOut, 1*time.Second)
+			txt1FadeOut.Cont = true
+			txt1Seq := ledgrid.NewSequence(txt1FadeIn, txt1Color, txt1FadeOut)
+
+			txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "UEBER")
+			txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			txt2FadeIn := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 3*time.Second)
+			txt2Color := ledgrid.NewColorAnim(txt2, color.White, 1*time.Second)
+			txt2Color.AutoReverse = true
+			txt2FadeOut := ledgrid.NewFadeAnim(txt2, ledgrid.FadeOut, 1*time.Second)
+			txt2FadeOut.Cont = true
+			txt2Seq := ledgrid.NewSequence(txt2FadeIn, txt2Color, txt2FadeOut)
+
+			txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "DAS")
+			txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			txt3FadeIn := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 3*time.Second)
+			txt3Color := ledgrid.NewColorAnim(txt3, color.White, 1*time.Second)
+			txt3Color.AutoReverse = true
+			txt3FadeOut := ledgrid.NewFadeAnim(txt3, ledgrid.FadeOut, 1*time.Second)
+			txt3FadeOut.Cont = true
+			txt3Seq := ledgrid.NewSequence(txt3FadeIn, txt3Color, txt3FadeOut)
+
+			txt4 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "LAND")
+			txt4.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			txt4FadeIn := ledgrid.NewFadeAnim(txt4, ledgrid.FadeIn, 3*time.Second)
+			txt4Color := ledgrid.NewColorAnim(txt4, color.White, 1*time.Second)
+			txt4Color.AutoReverse = true
+			txt4FadeOut := ledgrid.NewFadeAnim(txt4, ledgrid.FadeOut, 1*time.Second)
+			txt4FadeOut.Cont = true
+			txt4Seq := ledgrid.NewSequence(txt4FadeIn, txt4Color, txt4FadeOut)
+
+			txt5 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "GEREIST")
+			txt5.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+			txt5FadeIn := ledgrid.NewFadeAnim(txt5, ledgrid.FadeIn, 3*time.Second)
+			txt5Color := ledgrid.NewColorAnim(txt5, color.White, 1*time.Second)
+			txt5Color.AutoReverse = true
+			txt5FadeOut := ledgrid.NewFadeAnim(txt5, ledgrid.FadeOut, 1*time.Second)
+			txt5FadeOut.Cont = true
+			txt5Seq := ledgrid.NewSequence(txt5FadeIn, txt5Color, txt5FadeOut)
+
+			c.Add(txt1, txt2, txt3, txt4, txt5)
+
+			aTimel := ledgrid.NewTimeline(75 * time.Second)
+			aTimel.Add( 3*time.Second, txt1Seq)
+			aTimel.Add(18*time.Second, txt2Seq)
+			aTimel.Add(33*time.Second, txt3Seq)
+			aTimel.Add(48*time.Second, txt4Seq)
+			aTimel.Add(63*time.Second, txt5Seq)
+			aTimel.RepeatCount = ledgrid.AnimationRepeatForever
+
+			aTimel.Start()
 			aGrpLedColor.Start()
 		})
 

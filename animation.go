@@ -36,8 +36,8 @@ const (
 // Anschluss, dass alle darstellbaren Objekte neu gezeichnet werden und sendet
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
-	AnimList  [NumLayers][]Animation
-	animMutex [NumLayers]*sync.RWMutex
+	AnimList   [NumLayers][]Animation
+	animMutex  [NumLayers]*sync.RWMutex
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
@@ -234,7 +234,7 @@ func (a *AnimationController) Watch() *Stopwatch {
 }
 
 func (a *AnimationController) Now() time.Time {
-    return a.animPit
+	return a.animPit
 	// delay := a.delay
 	// if !a.running {
 	// 	delay += time.Since(a.stop)
@@ -324,25 +324,25 @@ func RandPalette() PaletteFuncType {
 }
 
 var (
-    randColor, randGroupColor color.LedColor
+	randColor, randGroupColor color.LedColor
 )
 
 func RandColor(new bool) AnimValueFunc[color.LedColor] {
-    return func() color.LedColor {
-        if new {
-            randColor = color.RandColor()
-        }
-        return randColor
-    }
+	return func() color.LedColor {
+		if new {
+			randColor = color.RandColor()
+		}
+		return randColor
+	}
 }
 
 func RandGroupColor(group color.ColorGroup, new bool) AnimValueFunc[color.LedColor] {
-    return func() color.LedColor {
-        if new {
-            randGroupColor = color.RandGroupColor(group)
-        }
-        return randGroupColor
-    }
+	return func() color.LedColor {
+		if new {
+			randGroupColor = color.RandGroupColor(group)
+		}
+		return randGroupColor
+	}
 }
 
 // Liefert bei jedem Aufruf einen zufaellig gewaehlten Punkt innerhalb des
@@ -399,7 +399,7 @@ func RandAlpha(a, b uint8) AnimValueFunc[uint8] {
 // wenn der Code hinter einem Task so kurz wie moeglich gehalten wird.
 type Task interface {
 	Start()
-    StartAt(t time.Time)
+	StartAt(t time.Time)
 }
 
 // Ein Job besitzt alle Eigenschaften und Moeglichkeiten eines Tasks, bietet
@@ -522,7 +522,7 @@ func (a *HideShowAnimation) StartAt(t time.Time) {
 	}
 }
 func (a *HideShowAnimation) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 func (a *HideShowAnimation) IsRunning() bool {
@@ -548,7 +548,7 @@ func (a *SuspContAnimation) StartAt(t time.Time) {
 	}
 }
 func (a *SuspContAnimation) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 func (a *SuspContAnimation) IsRunning() bool {
@@ -573,12 +573,12 @@ type NormAnimationEmbed struct {
 	// Abfragen der Laufzeit importiert.
 	DurationEmbed
 
-    Pos float64
+	Pos float64
 
 	wrapper          NormAnimation
 	reverse          bool
 	start, stop, end time.Time
-	total float64
+	total            float64
 	repeatsLeft      int
 	running          bool
 }
@@ -615,8 +615,8 @@ func (a *NormAnimationEmbed) Duration() time.Duration {
 	return time.Duration(factor)*a.duration - startDiff
 }
 
-func (a *NormAnimationEmbed) TimeInfo () (start, end time.Time, total float64) {
-    return a.start, a.end, a.total
+func (a *NormAnimationEmbed) TimeInfo() (start, end time.Time, total float64) {
+	return a.start, a.end, a.total
 }
 
 // Startet die Animation mit jenen Parametern, die zum Startzeitpunkt
@@ -647,7 +647,7 @@ func (a *NormAnimationEmbed) StartAt(t time.Time) {
 }
 
 func (a *NormAnimationEmbed) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Haelt die Animation an, laesst sie jedoch in der Animation-Queue der
@@ -1156,7 +1156,7 @@ func (a *ColorShaderAnim) StartAt(t time.Time) {
 }
 
 func (a *ColorShaderAnim) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Animation.
@@ -1226,7 +1226,7 @@ func (a *ShaderAnimation) StartAt(t time.Time) {
 }
 
 func (a *ShaderAnimation) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Animation.
