@@ -22,6 +22,7 @@ old_20240815/
 *.memprof
 *.trace
 *.bin
+*.mov
 .20240701/
 .20240815/
 genColorNew

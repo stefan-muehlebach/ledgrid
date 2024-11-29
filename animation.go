@@ -769,19 +769,33 @@ func Const[T AnimValue](v T) AnimValueFunc[T] {
 }
 
 // Damit der Code zu den Animationen so knapp und uebersichtlich wie moeglich
-// wird, ist ein Grossteil generisch implementiert.
+// wird, ist ein Grossteil generisch implementiert. GenericAnimation wird als
+// Grund-Typ von (nahezu) allen Animationen verwendet. Die Instanziierung
+// erfolgt ueber einen der Datenypen, welche in AnimValue zusammengefasst sind.
 type GenericAnimation[T AnimValue] struct {
+    // NormAnimationEmbed wird eingebunden, um Methoden wie Start(), Suspend(),
+    // Continue() nur einmal implementiern zu muessen.
 	NormAnimationEmbed
+    // ValPtr zeigt auf jenes Feld eines Record, welches durch diese Animation
+    // veraendert werden soll. Die Animation kenn also den Grund-Typ (Rectangle,
+    // Circle, Pixel, etc) nicht, sondern nur den zu animierenden Wert.
 	ValPtr     *T
-	val1, val2 T
+    // Val1 und Val2 enthalten Funktionen, mit welchen der Start-, resp. End-
+    // wert einer Animation zum Startzeitpunkt ermittelt werden. Damit lassen
+    // sich die Animationen sehr dynamisch gestalten.
 	Val1, Val2 AnimValueFunc[T]
+    // Ist Cont (Continue) auf true, dann wird val1 zum Startzeitpunkt mit
+    // dem aktuellen Wert hinter ValPtr belegt und nicht mit dem Funktionswert
+    // aus Val1.
 	Cont       bool
+	val1, val2 T
 }
 
 func (a *GenericAnimation[T]) InitAnim(valPtr *T, val2 T, dur time.Duration) {
 	a.ValPtr = valPtr
 	a.Val1 = Const(*valPtr)
 	a.Val2 = Const(val2)
+	a.Cont = true
 	a.SetDuration(dur)
 }
 

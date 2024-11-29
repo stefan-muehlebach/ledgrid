@@ -14,6 +14,10 @@ import (
 	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
+func init() {
+	programList.Add("Camera images with some nice fading effects", EffectFaderTest)
+}
+
 // The function Trace may be used in a range clause at the for statements.
 // It allows to iterate over all points between p1 and p2. Since p1 and p2
 // are of type image.Point, their coordinates are integers and the points
@@ -234,87 +238,83 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 	return nil
 }
 
-var (
-	EffectFaderTest = NewLedGridProgram("Camera images with some nice fading effects",
-		func(canv1 *ledgrid.Canvas) {
-			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-			size := geom.Point{float64(width), float64(height)}
+func EffectFaderTest(canv1 *ledgrid.Canvas) {
+	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+	size := geom.Point{float64(width), float64(height)}
 
-			canv2, _ := ledGrid.NewCanvas()
-			mask := image.NewAlpha(canv2.Rect)
-			draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
-			canv2.Mask = mask
+	canv2, _ := ledGrid.NewCanvas()
+	mask := image.NewAlpha(canv2.Rect)
+	draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
+	canv2.Mask = mask
 
-			cam := NewCamera(pos, size)
-			canv2.Add(cam)
-			cam.Start()
+	cam := NewCamera(pos, size)
+	canv2.Add(cam)
+	cam.Start()
 
-			go func() {
-				var src, dst geom.Point
-				effectList := []EffectType{
-					{In2Outside, Forward, ExitOver},
-					{Out2Inside, Forward, ExitAway},
-					{Top2Bottom, Forward, ExitOver},
-					{Bottom2Top, Forward, ExitAway},
-					{Left2Right, Backward, ExitAway},
-					{Right2Left, Forward, ExitOver},
-				}
-				colorList := []color.LedColor{
-					color.BlueViolet,
-					color.SkyBlue,
-					color.Lime,
-					color.YellowGreen,
-					color.Teal,
-					color.Gold,
-				}
+	go func() {
+		var src, dst geom.Point
+		effectList := []EffectType{
+			{In2Outside, Forward, ExitOver},
+			{Out2Inside, Forward, ExitAway},
+			{Top2Bottom, Forward, ExitOver},
+			{Bottom2Top, Forward, ExitAway},
+			{Left2Right, Backward, ExitAway},
+			{Right2Left, Forward, ExitOver},
+		}
+		colorList := []color.LedColor{
+			color.BlueViolet,
+			color.SkyBlue,
+			color.Lime,
+			color.YellowGreen,
+			color.Teal,
+			color.Gold,
+		}
 
-				for {
-					time.Sleep(1 * time.Second)
-					for i, effect := range effectList {
-						ledgrid.AnimCtrl.Purge(0)
-						canv1.Purge()
-						for _, pts := range EffectFader(effect) {
-							for _, pp := range pts {
-								p0, p1 := pp.src, pp.dst
-								src = geom.NewPointIMG(p0)
-								dst = geom.NewPointIMG(p1)
-								pixAway := ledgrid.NewDot(src, colorList[i].Alpha(0.0))
-								canv1.Add(pixAway)
+		for {
+			time.Sleep(1 * time.Second)
+			for i, effect := range effectList {
+				ledgrid.AnimCtrl.Purge(0)
+				canv1.Purge()
+				for _, pts := range EffectFader(effect) {
+					for _, pp := range pts {
+						p0, p1 := pp.src, pp.dst
+						src = geom.NewPointIMG(p0)
+						dst = geom.NewPointIMG(p1)
+						pixAway := ledgrid.NewDot(src, colorList[i].Alpha(0.0))
+						canv1.Add(pixAway)
 
-								aMask := ledgrid.NewTask(func() {
-									mask.Set(p0.X, p0.Y, gocolor.Alpha{0x00})
-								})
+						aMask := ledgrid.NewTask(func() {
+							mask.Set(p0.X, p0.Y, gocolor.Alpha{0x00})
+						})
 
-								aDur := 200*time.Millisecond + rand.N(300*time.Millisecond)
-								aFadeIn := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeIn, aDur)
-								aFadeIn.Curve = ledgrid.AnimationLazeIn
+						aDur := 200*time.Millisecond + rand.N(300*time.Millisecond)
+						aFadeIn := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeIn, aDur)
+						aFadeIn.Curve = ledgrid.AnimationLazeIn
 
-								aDur = time.Second + rand.N(time.Second)
-								aFadeOut := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeOut, 3*aDur/2)
-								aFadeOut.Curve = ledgrid.AnimationEaseIn
-								aFadeOut.Cont = true
-								aPos := ledgrid.NewPositionAnim(pixAway, dst, aDur)
-								aPos.Curve = ledgrid.AnimationEaseIn
-								aSeq := ledgrid.NewSequence(aFadeIn,
-									ledgrid.NewGroup(aMask, aFadeOut, aPos),
-								)
-								aSeq.Start()
-								if i%2 == 1 {
-									time.Sleep(20 * time.Millisecond)
-								}
-							}
-							if i%2 == 0 {
-								if effect.scanDir == Left2Right || effect.scanDir == Right2Left {
-									time.Sleep(250 * time.Millisecond)
-								} else {
-									time.Sleep(900 * time.Millisecond)
-								}
-							}
+						aDur = time.Second + rand.N(time.Second)
+						aFadeOut := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeOut, 3*aDur/2)
+						aFadeOut.Curve = ledgrid.AnimationEaseIn
+						aPos := ledgrid.NewPositionAnim(pixAway, dst, aDur)
+						aPos.Curve = ledgrid.AnimationEaseIn
+						aSeq := ledgrid.NewSequence(aFadeIn,
+							ledgrid.NewGroup(aMask, aFadeOut, aPos),
+						)
+						aSeq.Start()
+						if i%2 == 1 {
+							time.Sleep(20 * time.Millisecond)
 						}
-						time.Sleep(3 * time.Second)
-						draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
+					}
+					if i%2 == 0 {
+						if effect.scanDir == Left2Right || effect.scanDir == Right2Left {
+							time.Sleep(250 * time.Millisecond)
+						} else {
+							time.Sleep(900 * time.Millisecond)
+						}
 					}
 				}
-			}()
-		})
-)
+				time.Sleep(3 * time.Second)
+				draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
+			}
+		}
+	}()
+}

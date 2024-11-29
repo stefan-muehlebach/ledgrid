@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defHost = "raspi-3"
+	defHost   = "raspi-3"
 	defWidth  = 40
 	defHeight = 10
 )
@@ -31,18 +31,27 @@ var (
 
 //----------------------------------------------------------------------------
 
+type ProgramList []LedGridProgram
+
+type ProgramFunc func(c *ledgrid.Canvas)
+
+func (pl *ProgramList) Add(name string, runFunc ProgramFunc) {
+	prog := NewLedGridProgram(name, runFunc)
+	*pl = append(*pl, prog)
+}
+
 type LedGridProgram interface {
 	Name() string
 	Run(c *ledgrid.Canvas)
 }
 
-func NewLedGridProgram(name string, runFunc func(c *ledgrid.Canvas)) LedGridProgram {
+func NewLedGridProgram(name string, runFunc ProgramFunc) LedGridProgram {
 	return &simpleProgram{name, runFunc}
 }
 
 type simpleProgram struct {
 	name    string
-	runFunc func(c *ledgrid.Canvas)
+	runFunc ProgramFunc
 }
 
 func (p *simpleProgram) Name() string {
@@ -71,39 +80,7 @@ func SignalHandler(timeout time.Duration) {
 //----------------------------------------------------------------------------
 
 var (
-	programList = []LedGridProgram{
-		// FarewellGery,
-		GroupTest,
-		SequenceTest,
-		TimelineTest,
-		PathTest,
-		PolygonPathTest,
-		RandomWalk,
-		CirclingCircles,
-		ChasingCircles,
-		PushingRectangles,
-		FlyingRectangle,
-		RectanglesJourney,
-		RegularPolygonTest,
-		AsyncColorFade,
-		GlowingPixels,
-		// GlowAgainPixels,
-        FadeCanvases,
-        WipeTrans,
-		MovingPixels,
-		EffectFaderTest,
-		OrdinaryCamera,
-		SpecialCamera,
-		BlinkenAnimation,
-		MovingText,
-		ClockAnim,
-		SlideTheShow,
-		ShowThePaletteShader,
-		ShowTheColorShader,
-		ColorFields,
-		SingleImageAlign,
-		FirePlace,
-	}
+	programList ProgramList = make([]LedGridProgram, 0)
 )
 
 func main() {
@@ -122,7 +99,12 @@ func main() {
 	var outFile string
 
 	for i, prog := range programList {
-		id := 'a' + i
+		var id byte
+		if i < 26 {
+			id = byte('a' + i)
+		} else {
+			id = byte('A' + (i - 26))
+		}
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
@@ -175,12 +157,21 @@ func main() {
 			fmt.Printf("  Program\n")
 			fmt.Printf("---------------------------------------\n")
 			for i, prog := range programList {
+				var id byte
+
 				if ch >= 'a' && ch <= 'z' && i == progId {
 					fmt.Printf("> ")
 				} else {
 					fmt.Printf("  ")
 				}
-				fmt.Printf("[%c] %s\n", 'a'+i, prog.Name())
+
+				if i < 26 {
+					id = byte('a' + i)
+				} else {
+					id = byte('A' + (i - 26))
+				}
+
+				fmt.Printf("[%c] %s\n", id, prog.Name())
 			}
 			fmt.Printf("---------------------------------------\n")
 			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
@@ -195,8 +186,12 @@ func main() {
 				break
 			}
 
-			if ch >= 'a' && ch <= 'z' {
-				progId = int(ch - 'a')
+			if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+                if ch >= 'a' {
+				    progId = int(ch - 'a')
+                } else {
+                    progId = int(ch - 'A' + 26)
+                }
 				if progId < 0 || progId >= len(programList) {
 					continue
 				}
@@ -205,10 +200,8 @@ func main() {
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
+
 				ledGrid.Reset()
-				// ledgrid.AnimCtrl.PurgeAll()
-				// canvas.Purge()
-				// canvas.Reset()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				ledGrid.Client.Watch().Reset()
