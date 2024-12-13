@@ -1,0 +1,399 @@
+[
+  {
+    "ID": 9,
+    "Title": "Accent",
+    "Colors": [
+        "666666",
+        "BF5B17",
+        "F0027F",
+        "386CB0",
+        "FFFF99",
+        "FDC086",
+        "BEAED4",
+        "7FC97F"
+    ]
+  },
+  {
+    "ID": 36,
+    "Title": "CoolWarm",
+    "Colors": [
+        "B10127",
+        "C86450",
+        "D99A81",
+        "EBD9CF",
+        "D6DEEE",
+        "9AA8E3",
+        "757CD6",
+        "584EC4"
+    ]
+  },
+  {
+    "ID": 40,
+    "Title": "ChromaJS",
+    "Colors": [
+        "8B0000",
+        "B0062C",
+        "D21F47",
+        "EE4256",
+        "FF9777",
+        "FFBC94",
+        "FFDFB8",
+        "FFFFE0"
+    ]
+  },
+  {
+    "ID": 10,
+    "Title": "Dark",
+    "Colors": [
+        "666666",
+        "A6761D",
+        "E6AB02",
+        "66A61E",
+        "E7298A",
+        "7570B3",
+        "D95F02",
+        "1B9E77"
+    ]
+  },
+  {
+    "ID": 35,
+    "Title": "MoreLand",
+    "Colors": [
+        "B40426",
+        "E26953",
+        "F7A88A",
+        "EDD1C2",
+        "C9D8F0",
+        "9ABBFF",
+        "6889EE",
+        "3B4DC1"
+    ]
+  },
+  {
+    "ID": 11,
+    "Title": "Paired",
+    "Colors": [
+        "FF7F00",
+        "FDBF6F",
+        "E31A1C",
+        "FB9A99",
+        "33A02C",
+        "B2DF8A",
+        "1F78B4",
+        "A6CEE3"
+    ]
+  },
+    {
+    "ID": 39,
+    "Title": "Parula",
+    "Colors": [
+        "F9FB0E",
+        "F7CB34",
+        "C5BB5E",
+        "6BBC85",
+        "1BAFB5",
+        "108FD0",
+        "0568DF",
+        "352A87"
+    ]
+  },
+  {
+    "ID": 42,
+    "Title": "Plasma",
+    "Colors": [
+        "F0F921",
+        "FEBC2B",
+        "F48948",
+        "DB5B68",
+        "B93389",
+        "8B09A5",
+        "5402A3",
+        "0F0787"
+    ]
+  },
+  {
+    "ID": 14,
+    "Title": "Set",
+    "Colors": [
+        "F781BF",
+        "A65628",
+        "FFFF33",
+        "FF7F00",
+        "984EA3",
+        "4DAF4A",
+        "377EB8",
+        "E41A1C"
+    ]
+  },
+  {
+    "ID": 8,
+    "Title": "Spectral",
+    "Colors": [
+        "3288BD",
+        "66C2A5",
+        "ABDDA4",
+        "E6F598",
+        "FEE08B",
+        "FDAE61",
+        "F46D43",
+        "D53E4F"
+    ]
+  },
+  {
+    "ID": 38,
+    "Title": "Turbo",
+    "Colors": [
+        "7A0403",
+        "DB3A07",
+        "FE9A2D",
+        "D1E935",
+        "63FC6A",
+        "1CCED6",
+        "4777EF",
+        "31143F"
+    ]
+  },
+  {
+    "ID": 41,
+    "Title": "Viridis",
+    "Colors": [
+        "FDE725",
+        "9EDA3A",
+        "4BC26D",
+        "1FA187",
+        "277F8E",
+        "365B8D",
+        "46327F",
+        "440255"
+    ]
+  },
+  {
+    "ID": 100,
+    "Title": "B&W",
+    "Stops": [
+        {"Pos": 0.0, "Color": "ffffff"},
+        {"Pos": 1.0, "Color": "000000"}
+    ]
+  },
+  {
+    "ID": 101,
+    "Title": "Default",
+    "Stops": [
+        {"Pos": 0.0, "Color": "febc08"},
+        {"Pos": 0.3, "Color": "daf9fe"},
+        {"Pos": 1.0, "Color": "010662"}
+    ]
+  },
+  {
+    "ID": 102,
+    "Title": "EarthAndSky",
+    "Stops": [
+        {"Pos": 0.00, "Color": "ffffff"},
+        {"Pos": 0.13, "Color": "ffff00"},
+        {"Pos": 0.46, "Color": "ff3300"},
+        {"Pos": 0.76, "Color": "000099"},
+        {"Pos": 0.90, "Color": "0066ff"},
+        {"Pos": 1.00, "Color": "ffffff"}
+    ]
+  },
+  {
+    "ID": 103,
+	"Title": "Seashore",
+    "Stops": [
+		{"Pos": 0.00, "Color": "C9FEC2"},
+		{"Pos": 0.16, "Color": "E4E4A7"},
+		{"Pos": 0.33, "Color": "F15020"},
+		{"Pos": 0.50, "Color": "841C17"},
+		{"Pos": 0.66, "Color": "0574AE"},
+		{"Pos": 0.83, "Color": "89D2D0"},
+		{"Pos": 1.00, "Color": "C9FEC2"}
+    ]
+  },
+
+  {
+    "ID": 104,
+	"Title": "Pastell",
+    "Stops": [
+		{"Pos": 0.00, "Color": "CDD0D1"},
+		{"Pos": 0.18, "Color": "6F85FF"},
+		{"Pos": 0.42, "Color": "FF5B94"},
+		{"Pos": 0.63, "Color": "FFFF84"},
+		{"Pos": 0.86, "Color": "8BEE91"},
+		{"Pos": 1.00, "Color": "CDD0D1"}
+    ]
+  },
+
+  {
+    "ID": 105,
+	"Title": "Dark",
+    "Stops": [
+		{"Pos": 0.00, "Color": "A80000"},
+		{"Pos": 0.18, "Color": "004D95"},
+		{"Pos": 0.39, "Color": "D06912"},
+		{"Pos": 0.57, "Color": "007C2A"},
+		{"Pos": 0.78, "Color": "4B23BF"},
+		{"Pos": 1.00, "Color": "A80000"}
+    ]
+  },
+
+  {
+    "ID": 106,
+	"Title": "Darker",
+    "Stops": [
+		{"Pos": 0.00, "Color": "700000"},
+		{"Pos": 0.18, "Color": "003363"},
+		{"Pos": 0.39, "Color": "8a460c"},
+		{"Pos": 0.57, "Color": "00521c"},
+		{"Pos": 0.78, "Color": "32177f"},
+		{"Pos": 1.00, "Color": "700000"}
+    ]
+  },
+
+  {
+    "ID": 107,
+	"Title": "HotAndCold",
+    "Stops": [
+		{"Pos": 0.00, "Color": "FFFFFF"},
+		{"Pos": 0.16, "Color": "0066FF"},
+		{"Pos": 0.50, "Color": "333333"},
+		{"Pos": 0.84, "Color": "FF00CC"},
+		{"Pos": 1.00, "Color": "FFFFFF"}
+    ]
+  },
+
+  {
+    "ID": 108,
+	"Title": "Fire",
+    "Stops": [
+		{"Pos": 0.00, "Color": "000000"},
+		{"Pos": 0.10, "Color": "5f0809"},
+		{"Pos": 0.14, "Color": "5f0809"},
+		{"Pos": 0.29, "Color": "be1013"},
+		{"Pos": 0.43, "Color": "d23008"},
+		{"Pos": 0.57, "Color": "e45323"},
+		{"Pos": 0.71, "Color": "ee771c"},
+		{"Pos": 0.86, "Color": "f6960e"},
+		{"Pos": 1.00, "Color": "ffcd06"}
+    ]
+  },
+  {
+    "ID": 208,
+    "Title": "Hipster",
+    "Colors": [
+        "8d0e6b",
+        "053434",
+        "008080",
+        "4d4208",
+        "cdad0a"
+    ]
+  },
+  {
+    "ID": 209,
+    "Title": "Neon",
+    "Colors": [
+        "ffffff",
+        "0099cc",
+        "ff0099"
+    ]
+  },
+  {
+    "ID": 210,
+	"Title": "HotFire",
+    "Colors": [
+    		"be1013",
+		"d23008",
+		"e45323",
+		"ee771c",
+		"f6960e",
+		"ffcd06",
+		"f6960e",
+		"ee771c",
+		"e45323",
+		"d23008"
+    ]
+  },
+  {
+    "ID": 211,
+	"Title": "DarkJungle",
+    "Colors": [
+		"184918",
+		"406a3a",
+		"b1a658",
+		"a28d33",
+		"6a6232",
+		"a28d33",
+		"b1a658",
+		"406a3a"
+    ]
+  },
+  {
+    "ID": 212,
+	"Title": "Kitty",
+    "Colors": [
+	    "9f456b",
+	    "4f7a9a",
+	    "e6c84c"
+    ]
+  },
+  {
+    "ID": 213,
+	"Title": "Lantern",
+    "Colors": [
+	    "000000",
+	    "0D9A0D",
+	    "FFFFFF"
+    ]
+  },
+  {
+    "ID": 214,
+	"Title": "Lemming",
+    "Colors": [
+	    "000000",
+	    "0000ff",
+	    "00ff00",
+	    "ffffff"
+    ]
+  },
+  {
+    "ID": 215,
+    "Title": "MiamiVice",
+    "Colors": [
+	    "1be3ff",
+	    "ff82dc",
+	    "ffffff"
+   ]
+  },
+  {
+    "ID": 216,
+	"Title": "Nightspell",
+    "Colors": [
+	    "EDEEBA",
+	    "FEA81C",
+	    "B20152",
+	    "4B0B44",
+	    "240F37"
+    ]
+  },
+  {
+    "ID": 217,
+	"Title": "Wayyou",
+    "Colors": [
+	    "1C2130",
+	    "028F76",
+	    "B3E099",
+	    "FFEAAD",
+	    "D14334"
+    ]
+  },
+  {
+    "ID": 218,
+	"Title": "Weparted",
+    "Colors": [
+	    "027B7F",
+	    "FFA588",
+	    "D62957",
+	    "BF1E62",
+	    "572E4F"
+    ]
+  }
+]
