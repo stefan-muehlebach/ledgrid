@@ -23,6 +23,10 @@ import (
 	"golang.org/x/image/draw"
 )
 
+const (
+	NumLayers = 5
+)
+
 // Ein Canvas ist eine animierbare Zeichenflaeche. Ihr koennen eine beliebige
 // Anzahl von zeichenbaren Objekten (Interface CanvasObject) hinzugefuegt
 // werden.
@@ -32,6 +36,7 @@ type Canvas struct {
 	Rect               image.Rectangle
 	Img                draw.Image
 	GC                 *gg.Context
+	Mask               image.Image
 	objMutex           *sync.RWMutex
 	paintWatch         *Stopwatch
 	syncAnim, syncSend chan bool
@@ -40,10 +45,11 @@ type Canvas struct {
 func NewCanvas(size image.Point) *Canvas {
 	c := &Canvas{}
 	c.ObjList = list.New()
-	c.BackColor = color.Black
+	c.BackColor = color.Transparent
 	c.Rect = image.Rectangle{Max: size}
 	c.Img = image.NewRGBA(c.Rect)
 	c.GC = gg.NewContextForRGBA(c.Img.(*image.RGBA))
+	c.Mask = image.NewUniform(gocolor.Alpha{0xff})
 	c.objMutex = &sync.RWMutex{}
 	c.paintWatch = NewStopwatch()
 	return c
@@ -53,6 +59,9 @@ func (c *Canvas) Close() {
 	c.Purge()
 }
 
+// The following methods implement the image.Image (resp. draw.Image)
+// interface. A Canvas object can therefore be used as the destination as well
+// as the source for all kind of drawings.
 func (c *Canvas) ColorModel() gocolor.Model {
 	return gocolor.RGBAModel
 }
@@ -69,6 +78,18 @@ func (c *Canvas) Set(x, y int, col gocolor.Color) {
 	c.Img.Set(x, y, col)
 }
 
+func (c *Canvas) Clear(col color.LedColor) {
+    draw.Draw(c.Img, c.Rect, image.NewUniform(col), image.Point{}, draw.Src)
+}
+
+// Loescht alle Objekte aus der Zeichenflaeche, setzt die Farbe des Canvas
+// auf c.BackColor und setzt die Maske zurueck auf Volltransparent.
+func (c *Canvas) Reset() {
+    c.Purge()
+    c.Clear(c.BackColor)
+    c.Mask = image.NewUniform(gocolor.Alpha{0xff})
+}
+
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
 // entsprechenden Slice wird nicht synchronisiert.
 func (c *Canvas) Add(objs ...CanvasObject) {
@@ -79,15 +100,15 @@ func (c *Canvas) Add(objs ...CanvasObject) {
 	c.objMutex.Unlock()
 }
 
+// Loescht ein einzelnes Objekt von der Zeichenflaeche.
 func (c *Canvas) Del(obj CanvasObject) {
-    for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
-        o := ele.Value.(CanvasObject)
-        if o != obj {
-            continue
-        }
-        c.ObjList.Remove(ele)
-        break
-    }
+	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
+		o := ele.Value.(CanvasObject)
+		if o == obj {
+			c.ObjList.Remove(ele)
+			return
+		}
+	}
 }
 
 // Loescht alle Objekte von der Zeichenflaeche.
@@ -98,41 +119,18 @@ func (c *Canvas) Purge() {
 }
 
 func (c *Canvas) Refresh() {
-	c.GC.SetFillColor(c.BackColor)
-	c.GC.Clear()
+	c.paintWatch.Start()
+	c.Clear(c.BackColor)
 	c.objMutex.RLock()
 	for ele := c.ObjList.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(CanvasObject)
-		// if obj.IsDisabled() {
-		// 	c.ObjList.Remove(ele)
-		// 	continue
-		// }
 		if !obj.IsVisible() {
 			continue
 		}
 		obj.Draw(c)
 	}
 	c.objMutex.RUnlock()
-}
-
-func (c *Canvas) StartRefresh(syncAnim, syncSend chan bool) {
-	c.syncAnim = syncAnim
-	c.syncSend = syncSend
-	go c.refreshThread()
-}
-
-func (c *Canvas) refreshThread() {
-	for {
-		<-c.syncSend
-		<-c.syncAnim
-		c.paintWatch.Start()
-		c.Refresh()
-		c.syncAnim <- true
-		draw.Draw(AnimCtrl.ledGrid, AnimCtrl.ledGrid.Bounds(), c.Img,
-			image.Point{}, draw.Over)
-		c.paintWatch.Stop()
-		c.syncSend <- true
-	}
+	c.paintWatch.Stop()
 }
 
 func (c *Canvas) Watch() *Stopwatch {
@@ -204,24 +202,36 @@ var (
 
 // Embeddables fuer die einfachere Animation diverser Attribute. Diese Records
 // sind jeweils so aufgebaut, dass ihr Name auf den Namen des Attributes
-// verweist (Bsp: PosEmbed
+// verweist (Bsp: PosEmbed hat ein Feld namens Pos und eine Methode PosPtr(),
+// welche einen Pointer auf das Feld Pos liefert).
 type PosEmbed struct {
 	Pos geom.Point
 }
+
 func (e *PosEmbed) PosPtr() *geom.Point {
 	return &e.Pos
 }
 
 type FixedPosEmbed struct {
-    Pos fixed.Point26_6
+	Pos fixed.Point26_6
 }
+
 func (e *FixedPosEmbed) PosPtr() *fixed.Point26_6 {
+	return &e.Pos
+}
+
+type IntPosEmbed struct {
+	Pos image.Point
+}
+
+func (e *IntPosEmbed) PosPtr() *image.Point {
 	return &e.Pos
 }
 
 type SizeEmbed struct {
 	Size geom.Point
 }
+
 func (e *SizeEmbed) SizePtr() *geom.Point {
 	return &e.Size
 }
@@ -229,31 +239,24 @@ func (e *SizeEmbed) SizePtr() *geom.Point {
 type AngleEmbed struct {
 	Angle float64
 }
+
 func (e *AngleEmbed) AnglePtr() *float64 {
 	return &e.Angle
-}
-
-type FadeEmbed struct {
-	colPtr *color.LedColor
-}
-func (e *FadeEmbed) Init(c *color.LedColor) {
-	e.colPtr = c
-}
-func (e *FadeEmbed) AlphaPtr() *uint8 {
-	return &e.colPtr.A
 }
 
 type ColorEmbed struct {
 	Color color.LedColor
 }
+
 func (e *ColorEmbed) ColorPtr() *color.LedColor {
 	return &e.Color
 }
 
 type FilledColorEmbed struct {
 	ColorEmbed
-    FillColor color.LedColor
+	FillColor color.LedColor
 }
+
 func (e *FilledColorEmbed) FillColorPtr() *color.LedColor {
 	return &e.FillColor
 }
@@ -261,6 +264,7 @@ func (e *FilledColorEmbed) FillColorPtr() *color.LedColor {
 type StrokeWidthEmbed struct {
 	StrokeWidth float64
 }
+
 func (e *StrokeWidthEmbed) StrokeWidthPtr() *float64 {
 	return &e.StrokeWidth
 }
@@ -276,7 +280,7 @@ type Ellipse struct {
 	SizeEmbed
 	AngleEmbed
 	FilledColorEmbed
-    StrokeWidthEmbed
+	StrokeWidthEmbed
 	FillColorFnc string
 }
 
@@ -429,16 +433,17 @@ func (l *Line) Draw(c *Canvas) {
 // des Led-Grids interpretiert werden!
 type Pixel struct {
 	CanvasObjectEmbed
-	Pos   image.Point
-    ColorEmbed
-    FadeEmbed
+	IntPosEmbed
+	ColorEmbed
+	FadeEmbed
 }
 
 func NewPixel(pos image.Point, col color.LedColor) *Pixel {
-	p := &Pixel{Pos: pos}
-    p.Color = col
+	p := &Pixel{}
+	p.Pos = pos
+	p.Color = col
 	p.CanvasObjectEmbed.Extend(p)
-    p.FadeEmbed.Init(&p.Color)
+	p.FadeEmbed.Init(&p.Color)
 	return p
 }
 
@@ -513,7 +518,7 @@ const (
 //	1.0: y-Pos des Objektes bezieht sich auf seinen oberen Rand
 //
 // (ax und ay nehmen also in math. korrekter Richtung zu)
-type alignEmbed struct {
+type AlignEmbed struct {
 	ax, ay float64
 }
 
@@ -521,7 +526,7 @@ type alignEmbed struct {
 // y-Ausrichtung koennen damit gesetzt werden. Falls bei einer Ausrichtung
 // mehrere Werte angegeben wurden (bspw. AlignLeft | AlignCenter), so wird
 // fuer diese Ausrichtung keinen neuen Wert gesetzt.
-func (a *alignEmbed) SetAlign(align Align) {
+func (a *AlignEmbed) SetAlign(align Align) {
 	hAlign := align & alignHMask
 	vAlign := align & alignVMask
 	switch hAlign {
@@ -545,7 +550,7 @@ func (a *alignEmbed) SetAlign(align Align) {
 // Zur Darstellung von Text mit TrueType-Schriften
 type Text struct {
 	CanvasObjectEmbed
-	alignEmbed
+	AlignEmbed
 	PosEmbed
 	AngleEmbed
 	ColorEmbed
@@ -564,6 +569,7 @@ func NewText(pos geom.Point, text string, col color.LedColor) *Text {
 	t.CanvasObjectEmbed.Extend(t)
 	t.FadeEmbed.Init(&t.Color)
 	t.SetFont(defFont, defFontSize)
+	t.SetAlign(AlignCenter | AlignMiddle)
 	return t
 }
 
@@ -593,8 +599,8 @@ var (
 
 type FixedText struct {
 	CanvasObjectEmbed
-	alignEmbed
-    FixedPosEmbed
+	AlignEmbed
+	FixedPosEmbed
 	// Pos fixed.Point26_6
 	ColorEmbed
 	FadeEmbed
@@ -606,7 +612,7 @@ type FixedText struct {
 
 func NewFixedText(pos fixed.Point26_6, col color.LedColor, text string) *FixedText {
 	t := &FixedText{}
-    t.Pos = pos
+	t.Pos = pos
 	t.Color = col
 	t.CanvasObjectEmbed.Extend(t)
 	t.FadeEmbed.Init(&t.Color)
@@ -623,7 +629,7 @@ func (t *FixedText) SetFont(font font.Face) {
 }
 
 func (t *FixedText) SetAlign(align Align) {
-	t.alignEmbed.SetAlign(align)
+	t.AlignEmbed.SetAlign(align)
 	t.updateSize()
 }
 
@@ -649,6 +655,46 @@ func (t *FixedText) Draw(c *Canvas) {
 	t.drawer.DrawString(t.text)
 }
 
+type MyUniform struct {
+	C gocolor.Alpha
+}
+
+func NewMyUniform(val uint8) *MyUniform {
+	c := &MyUniform{}
+	c.C = gocolor.Alpha{val}
+	return c
+}
+
+func (c *MyUniform) At(x, y int) gocolor.Color {
+	return c.C
+}
+
+func (c *MyUniform) Bounds() image.Rectangle {
+	return image.Rectangle{image.Point{-1e9, -1e9}, image.Point{1e9, 1e9}}
+}
+
+func (c *MyUniform) RGBA() (r, g, b, a uint32) {
+	return c.C.RGBA()
+}
+
+func (c *MyUniform) ColorModel() gocolor.Model {
+	return c
+}
+
+func (c *MyUniform) Convert(gocolor.Color) gocolor.Color {
+	return c.C
+}
+
+func (c *MyUniform) RGBA64At(x, y int) gocolor.RGBA64 {
+	r, g, b, a := c.C.RGBA()
+	return gocolor.RGBA64{uint16(r), uint16(g), uint16(b), uint16(a)}
+}
+
+func (c *MyUniform) Opaque() bool {
+	_, _, _, a := c.C.RGBA()
+	return a == 0xffff
+}
+
 // Zur Darstellung von beliebigen Bildern (JPEG, PNG, etc). Wie Pos genau
 // interpretiert wird, ist vom Alignment (wie beim Text) abhaengig. Size
 // ist die Zielgroesse des Bildes auf dem LedGrid, ist per Default (0,0), was
@@ -656,11 +702,12 @@ func (t *FixedText) Draw(c *Canvas) {
 // bei der Ausgabe entsprechend skaliert.
 type Image struct {
 	CanvasObjectEmbed
-	alignEmbed
+	AlignEmbed
 	PosEmbed
 	SizeEmbed
 	AngleEmbed
-	Img draw.Image
+	Img  draw.Image
+	Mask *MyUniform
 }
 
 // Erzeugt ein neues Bild aus der Datei fileName und platziert es bei pos.
@@ -671,7 +718,12 @@ func NewImage(pos geom.Point, fileName string) *Image {
 	i.CanvasObjectEmbed.Extend(i)
 	i.Img = LoadImage(fileName)
 	i.ax, i.ay = 0.5, 0.5
+	i.Mask = NewMyUniform(0xff)
 	return i
+}
+
+func (i *Image) AlphaPtr() *uint8 {
+	return &i.Mask.C.A
 }
 
 func (i *Image) Read(fileName string) {
@@ -699,7 +751,8 @@ func (i *Image) Draw(c *Canvas) {
 	sin := math.Sin(i.Angle)
 	m := f64.Aff3{cos * sx, -sin * sy, -cos*i.ax*dx + sin*(1-i.ay)*dy + i.Pos.X,
 		sin * sx, cos * sy, -sin*i.ax*dx - cos*(1-i.ay)*dy + i.Pos.Y}
-	draw.BiLinear.Transform(c.Img, m, i.Img, i.Img.Bounds(), draw.Over, nil)
+	draw.BiLinear.Transform(c.Img, m, i.Img, i.Img.Bounds(), draw.Over,
+		&draw.Options{DstMask: i.Mask})
 }
 
 func LoadImage(fileName string) draw.Image {
@@ -734,9 +787,10 @@ func NewSprite(pos geom.Point) *Sprite {
 	i := &Sprite{}
 	i.CanvasObjectEmbed.Extend(i)
 	i.NormAnimationEmbed.Extend(i)
-	i.Pos = pos
+	i.Image.Pos = pos
 	i.Curve = AnimationLinear
 	i.ax, i.ay = 0.5, 0.5
+	i.Mask = NewMyUniform(0xff)
 	i.imgList = make([]draw.Image, 0)
 	i.durList = make([]time.Duration, 0)
 	return i
@@ -820,7 +874,7 @@ func NewFire(pos, size image.Point) *Fire {
 	f.cooling = fireDefCooling
 	f.sparking = fireDefSparking
 	f.pal = NewGradientPalette("Fire", fireGradient...)
-	AnimCtrl.Add(f)
+	AnimCtrl.Add(0, f)
 	return f
 }
 
@@ -830,12 +884,16 @@ func (f *Fire) Duration() time.Duration {
 
 func (f *Fire) SetDuration(dur time.Duration) {}
 
-func (f *Fire) Start() {
+func (f *Fire) StartAt(t time.Time) {
 	if f.running {
 		return
 	}
 	// Would do starting things here.
 	f.running = true
+}
+
+func (f *Fire) Start() {
+    f.StartAt(AnimCtrl.Now())
 }
 
 func (f *Fire) Stop() {

@@ -9,39 +9,49 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
-	defHost = "raspi-3"
-	defPort = 5333
+	defHost   = "raspi-3"
+	defWidth  = 40
+	defHeight = 10
 )
 
 var (
 	width, height int
 	gridSize      image.Point
-	backAlpha     = 1.0
+	gridClient    ledgrid.GridClient
 	ledGrid       *ledgrid.LedGrid
+	animCtrl      *ledgrid.AnimationController
 	canvas        *ledgrid.Canvas
 )
 
 //----------------------------------------------------------------------------
+
+type ProgramList []LedGridProgram
+
+type ProgramFunc func(c *ledgrid.Canvas)
+
+func (pl *ProgramList) Add(name string, runFunc ProgramFunc) {
+	prog := NewLedGridProgram(name, runFunc)
+	*pl = append(*pl, prog)
+}
 
 type LedGridProgram interface {
 	Name() string
 	Run(c *ledgrid.Canvas)
 }
 
-func NewLedGridProgram(name string, runFunc func(c *ledgrid.Canvas)) LedGridProgram {
+func NewLedGridProgram(name string, runFunc ProgramFunc) LedGridProgram {
 	return &simpleProgram{name, runFunc}
 }
 
 type simpleProgram struct {
 	name    string
-	runFunc func(c *ledgrid.Canvas)
+	runFunc ProgramFunc
 }
 
 func (p *simpleProgram) Name() string {
@@ -54,124 +64,60 @@ func (p *simpleProgram) Run(c *ledgrid.Canvas) {
 
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-
-var (
-	StopContShowHideTest = NewLedGridProgram("Hide/Show vs. Suspend/Continue by Tasks",
-		func(c *ledgrid.Canvas) {
-			rPos1 := geom.Point{5.0, float64(height) / 2.0}
-			rPos2 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
-			rSize1 := geom.Point{7.0, 7.0}
-			rSize2 := geom.Point{6.0, 6.0}
-			rColor1 := color.SkyBlue
-			rColor2 := color.GreenYellow
-
-			r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
-			c.Add(r)
-
-			aPos := ledgrid.NewPositionAnim(r, rPos2, 4*time.Second)
-			aPos.AutoReverse = true
-			aPos.RepeatCount = ledgrid.AnimationRepeatForever
-			aSize := ledgrid.NewSizeAnim(r, rSize2, 4*time.Second)
-			aSize.AutoReverse = true
-			aSize.RepeatCount = ledgrid.AnimationRepeatForever
-			aColor := ledgrid.NewColorAnim(r, rColor2, 4*time.Second)
-			aColor.AutoReverse = true
-			aColor.RepeatCount = ledgrid.AnimationRepeatForever
-			aAngle := ledgrid.NewAngleAnim(r, math.Pi, 4*time.Second)
-			aAngle.AutoReverse = true
-			aAngle.RepeatCount = ledgrid.AnimationRepeatForever
-
-			aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
-
-			aTimeline := ledgrid.NewTimeline(4 * time.Second)
-			aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
-			aTimeline.Add(1000*time.Millisecond, ledgrid.NewSuspContAnimation(aColor))
-			aTimeline.Add(1500*time.Millisecond, ledgrid.NewSuspContAnimation(aColor))
-			aTimeline.Add(2500*time.Millisecond, ledgrid.NewSuspContAnimation(aAngle))
-			aTimeline.Add(3000*time.Millisecond, ledgrid.NewSuspContAnimation(aAngle))
-			aTimeline.Add(1900*time.Millisecond, ledgrid.NewHideShowAnimation(r))
-			aTimeline.Add(2100*time.Millisecond, ledgrid.NewHideShowAnimation(r))
-
-			aGroup.Start()
-			aTimeline.Start()
-		})
-
-	SpecialCamera = NewLedGridProgram("Special camera",
-		func(c *ledgrid.Canvas) {
-			pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-			size := geom.Point{float64(width), float64(height)}
-
-			cam := NewHistCamera(pos, size, 100)
-			c.Add(cam)
-			cam.Start()
-		})
-)
-
-
-//----------------------------------------------------------------------------
-
-func SignalHandler() {
+func SignalHandler(timeout time.Duration) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
-	<-sigChan
+	if timeout == 0 {
+		timeout = time.Duration(math.MaxInt64)
+	}
+	timer := time.NewTimer(timeout)
+	select {
+	case <-sigChan:
+	case <-timer.C:
+	}
 }
 
 //----------------------------------------------------------------------------
 
 var (
-	programList = []LedGridProgram{
-		FarewellGery,
-		GroupTest,
-		SequenceTest,
-		TimelineTest,
-		StopContShowHideTest,
-		PathTest,
-		PolygonPathTest,
-		RandomWalk,
-		CirclingCircles,
-		ChasingCircles,
-		PushingRectangles,
-		RegularPolygonTest,
-		GlowingPixels,
-		MovingPixels,
-		// ImageFilterTest,
-		EffectFaderTest,
-		SpecialCamera,
-		BlinkenAnimation,
-		MovingText,
-		FixedFontTest,
-		SlideTheShow,
-		ShowTheShader,
-		ColorFields,
-		SingleImageAlign,
-		FirePlace,
-	}
+	programList ProgramList = make([]LedGridProgram, 0)
 )
 
 func main() {
 	var host string
-	var port uint
+	var dataPort, rpcPort uint
+	var useTCP bool
+	var network string
 	var input string
 	var ch byte
 	var progId int
 	var runInteractive bool
 	var progList string
 	var gR, gG, gB float64
-	var customConfName string
 	var modConf conf.ModuleConfig
+	var timeout time.Duration
+	var outFile string
 
 	for i, prog := range programList {
-		id := 'a' + i
+		var id byte
+		if i < 26 {
+			id = byte('a' + i)
+		} else {
+			id = byte('A' + (i - 26))
+		}
 		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
-	flag.IntVar(&width, "width", 40, "Width of LedGrid")
-	flag.IntVar(&height, "height", 10, "Height of LedGrid")
+	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
+	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
+	flag.StringVar(&outFile, "out", "", "Send all data to this file")
+
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
+	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
-	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
+	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
 
 	if len(input) > 0 {
@@ -180,21 +126,29 @@ func main() {
 	} else {
 		runInteractive = true
 	}
-
-	if customConfName != "" {
-		modConf.Load(customConfName + ".json")
-		ledGrid = ledgrid.NewLedGrid(host, port, modConf)
+	if useTCP {
+		network = "tcp"
 	} else {
-		ledGrid = ledgrid.NewLedGridBySize(host, port, image.Pt(width, height))
+		network = "udp"
 	}
+
+	if outFile != "" {
+		gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
+	} else {
+		gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+	}
+	modConf = gridClient.ModuleConfig()
+	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 	gR, gG, gB = ledGrid.Client.Gamma()
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X
 	height = gridSize.Y
 
-	canvas = ledgrid.NewCanvas(gridSize)
-	ledgrid.NewAnimationController(canvas, ledGrid)
+	canvas = ledGrid.Canvas(0)
+	animCtrl = ledGrid.AnimCtrl
+
+	ledGrid.StartRefresh()
 
 	if runInteractive {
 		progId = -1
@@ -203,12 +157,21 @@ func main() {
 			fmt.Printf("  Program\n")
 			fmt.Printf("---------------------------------------\n")
 			for i, prog := range programList {
+				var id byte
+
 				if ch >= 'a' && ch <= 'z' && i == progId {
 					fmt.Printf("> ")
 				} else {
 					fmt.Printf("  ")
 				}
-				fmt.Printf("[%c] %s\n", 'a'+i, prog.Name())
+
+				if i < 26 {
+					id = byte('a' + i)
+				} else {
+					id = byte('A' + (i - 26))
+				}
+
+				fmt.Printf("[%c] %s\n", id, prog.Name())
 			}
 			fmt.Printf("---------------------------------------\n")
 			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
@@ -223,8 +186,12 @@ func main() {
 				break
 			}
 
-			if ch >= 'a' && ch <= 'z' {
-				progId = int(ch - 'a')
+			if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+                if ch >= 'a' {
+				    progId = int(ch - 'a')
+                } else {
+                    progId = int(ch - 'A' + 26)
+                }
 				if progId < 0 || progId >= len(programList) {
 					continue
 				}
@@ -233,45 +200,44 @@ func main() {
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
-				ledgrid.AnimCtrl.Purge()
-				// ledgrid.AnimCtrl.Continue()
-				canvas.Purge()
+
+				ledGrid.Reset()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				ledGrid.Client.Watch().Reset()
 				programList[progId].Run(canvas)
 			}
-			if ch == 'S' {
-				ledgrid.AnimCtrl.Save("gobs/program01.gob")
-			}
-			if ch == 'L' {
-				ledgrid.AnimCtrl.Suspend()
-				ledgrid.AnimCtrl.Purge()
-				ledgrid.AnimCtrl.Watch().Reset()
-				canvas.Purge()
-				canvas.Watch().Reset()
-				time.Sleep(60 * time.Millisecond)
-				ledgrid.AnimCtrl.Load("gobs/program01.gob")
-				ledgrid.AnimCtrl.Continue()
-				// fmt.Printf("canvas  >>> %+v\n", canvas)
-				// for i, obj := range canvas.ObjList {
-				i := 0
-				for ele := canvas.ObjList.Front(); ele != nil; ele = ele.Next() {
-					obj := ele.Value.(ledgrid.CanvasObject)
-					if obj == nil {
-						continue
-					}
-					fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
-					i++
-				}
-				// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
-				for i, anim := range ledgrid.AnimCtrl.AnimList {
-					if anim == nil {
-						continue
-					}
-					fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
-				}
-			}
+			// if ch == 'S' {
+			// 	ledgrid.AnimCtrl.Save("gobs/program01.gob")
+			// }
+			// if ch == 'L' {
+			// 	ledgrid.AnimCtrl.Suspend()
+			// 	ledgrid.AnimCtrl.PurgeAll()
+			// 	ledgrid.AnimCtrl.Watch().Reset()
+			// 	canvas.PurgeAll()
+			// 	canvas.Watch().Reset()
+			// 	time.Sleep(60 * time.Millisecond)
+			// 	ledgrid.AnimCtrl.Load("gobs/program01.gob")
+			// 	ledgrid.AnimCtrl.Continue()
+			// 	// fmt.Printf("canvas  >>> %+v\n", canvas)
+			// 	// for i, obj := range canvas.ObjList {
+			// 	i := 0
+			// 	for ele := canvas.ObjList[0].Front(); ele != nil; ele = ele.Next() {
+			// 		obj := ele.Value.(ledgrid.CanvasObject)
+			// 		if obj == nil {
+			// 			continue
+			// 		}
+			// 		fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
+			// 		i++
+			// 	}
+			// 	// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
+			// 	for i, anim := range ledgrid.AnimCtrl.AnimList {
+			// 		if anim == nil {
+			// 			continue
+			// 		}
+			// 		fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
+			// 	}
+			// }
 			if ch == '+' {
 				gR += 0.1
 				gG += 0.1
@@ -295,7 +261,7 @@ func main() {
 			}
 		}
 		fmt.Printf("Quit by Ctrl-C\n")
-		SignalHandler()
+		SignalHandler(timeout)
 	}
 
 	ledgrid.AnimCtrl.Suspend()

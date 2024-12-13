@@ -2,54 +2,58 @@ package ledgrid
 
 import (
 	"fmt"
-	"image"
 	"log"
 	"net"
 	"net/rpc"
+	"os"
+
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // Um den clientseitigen Code so generisch wie moeglich zu halten, ist der
-// GridClient als Interface definiert. Zwei konkrete Implementationen
-// stehen zur Verfuegung:
-// - NetGridClient
-// - DummyGridClient
+// GridClient als Interface definiert. Aktuell stehen zwei Implementationen
+// am Start:
+//
+//	NetGridClient  - Verbindet sich via UDP und RPC mit einem externen
+//	                 gridController.
+//  FileSaveClient - Schreibt die Bilddaten in ein File, welches dann auf das
+//                   System mit dem Grid-Controller kopiert und dort direkt
+//                   abgespielt werden kann.
 type GridClient interface {
 	Send(buffer []byte)
-	Size() int
+	NumLeds() int
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
 	MaxBright() (r, g, b uint8)
 	SetMaxBright(r, g, b uint8)
+	ModuleConfig() conf.ModuleConfig
 	Watch() *Stopwatch
 	Close()
 }
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type NetGridClient struct {
-	addr      *net.UDPAddr
-	conn      *net.UDPConn
+	conn      net.Conn
 	rpcClient *rpc.Client
 	sendWatch *Stopwatch
 }
 
-func NewNetGridClient(host string, port uint) GridClient {
-	var hostPort string
+func NewNetGridClient(host string, network string, port, rpcPort uint) GridClient {
+	var hostPortData, hostPortRPC string
 	var err error
 
 	p := &NetGridClient{}
-	hostPort = fmt.Sprintf("%s:%d", host, port)
-	p.addr, err = net.ResolveUDPAddr("udp", hostPort)
+	hostPortData = fmt.Sprintf("%s:%d", host, port)
+	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
+
+	p.conn, err = net.Dial(network, hostPortData)
 	if err != nil {
-		log.Fatal(err)
-	}
-	p.conn, err = net.DialUDP("udp", nil, p.addr)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error in Dial(dataPort): %v", err)
 	}
 
-	p.rpcClient, err = rpc.DialHTTP("tcp", hostPort)
+	p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Fatalf("Error in Dial(rpcPort): %v", err)
 	}
 	p.sendWatch = NewStopwatch()
 
@@ -68,13 +72,15 @@ func (p *NetGridClient) Send(buffer []byte) {
 	p.sendWatch.Stop()
 }
 
-func (p *NetGridClient) Size() int {
-	var reply SizeArg
+// Die folgenden Methoden verpacken die entsprechenden RPC-Calls zum
+// Grid-Server.
+func (p *NetGridClient) NumLeds() int {
+	var reply NumLedsArg
 	var err error
 
-	err = p.rpcClient.Call("GridServer.RPCSize", 0, &reply)
+	err = p.rpcClient.Call("GridServer.RPCNumLeds", 0, &reply)
 	if err != nil {
-		log.Fatal("Size error:", err)
+		log.Fatal("NumLeds error:", err)
 	}
 	return int(reply)
 }
@@ -121,6 +127,17 @@ func (p *NetGridClient) SetMaxBright(r, g, b uint8) {
 	}
 }
 
+func (p *NetGridClient) ModuleConfig() conf.ModuleConfig {
+	var reply ModuleConfigArg
+	var err error
+
+	err = p.rpcClient.Call("GridServer.RPCModuleConfig", 0, &reply)
+	if err != nil {
+		log.Fatal("ModuleConfig error:", err)
+	}
+	return reply.ModuleConfig
+}
+
 func (p *NetGridClient) Watch() *Stopwatch {
 	return p.sendWatch
 }
@@ -130,42 +147,60 @@ func (p *NetGridClient) Close() {
 	p.conn.Close()
 }
 
-// Mit dieser Implementation des GridClient-Interfaces kann man ohne Zugriff
-// auf ein reales LED-Grid Software testen.
-type DummyGridClient struct {
-	size image.Point
+// Dieser Client-Typ schreibt alle Bilddaten in eine Datei, welche im
+// Anschluss auf ein System mit echter Hardware transferiert und dort
+// wie ein Film abgespielt wird.
+type FileSaveClient struct {
+	fh        *os.File
+	modConf   conf.ModuleConfig
+	sendWatch *Stopwatch
 }
 
-func NewDummyGridClient(size image.Point) GridClient {
-	p := &DummyGridClient{size: size}
+func NewFileSaveClient(fileName string, modConf conf.ModuleConfig) GridClient {
+	var err error
+
+	p := &FileSaveClient{}
+
+	p.fh, err = os.Create(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't create file: %v", err)
+	}
+	p.modConf = modConf
+	p.sendWatch = NewStopwatch()
+
 	return p
 }
 
-func (p *DummyGridClient) Send(buffer []byte) { }
-
-func (p *DummyGridClient) Size() int {
-	return p.size.X * p.size.Y
+func (p *FileSaveClient) Send(buffer []byte) {
+	if _, err := p.fh.Write(buffer); err != nil {
+		log.Fatalf("Couldnt' write data to file: %v", err)
+	}
 }
 
-func (p *DummyGridClient) Gamma() (r, g, b float64) {
+func (p *FileSaveClient) NumLeds() int {
+	return len(p.modConf) * (conf.ModuleDim.X * conf.ModuleDim.Y)
+}
+
+func (p *FileSaveClient) Gamma() (r, g, b float64) {
 	return 1.0, 1.0, 1.0
 }
 
-func (p *DummyGridClient) SetGamma(r, g, b float64) {}
+func (p *FileSaveClient) SetGamma(r, g, b float64) {}
 
-func (p *DummyGridClient) MaxBright() (r, g, b uint8) {
+func (p *FileSaveClient) MaxBright() (r, g, b uint8) {
 	return 0xff, 0xff, 0xff
 }
 
-func (p *DummyGridClient) SetMaxBright(r, g, b uint8) {}
+func (p *FileSaveClient) SetMaxBright(r, g, b uint8) {}
 
-func (p *DummyGridClient) Watch() *Stopwatch {
-    // TO DO: even a dummy implementation of the client should return a
-    // usable Stopwatch. Otherwise, the calling function may crash if we just
-    // return nil...
-	return nil
+func (p *FileSaveClient) ModuleConfig() conf.ModuleConfig {
+	return p.modConf
 }
 
-func (p *DummyGridClient) Close() {}
+func (p *FileSaveClient) Watch() *Stopwatch {
+	return p.sendWatch
+}
 
-
+func (p *FileSaveClient) Close() {
+	p.fh.Close()
+}

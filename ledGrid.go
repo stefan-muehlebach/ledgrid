@@ -1,11 +1,15 @@
 package ledgrid
 
 import (
+	"container/list"
 	"image"
 	"image/color"
+	"log"
+	"sync"
 
 	ledcolor "github.com/stefan-muehlebach/ledgrid/color"
 	"github.com/stefan-muehlebach/ledgrid/conf"
+	"golang.org/x/image/draw"
 )
 
 // Entspricht dem Bild, welches auf einem LED-Panel angezeigt werden kann.
@@ -18,60 +22,59 @@ type LedGrid struct {
 	// Enthaelt die Farbwerte red, green, blue (RGB) fuer jede LED, welche
 	// das LedGrid ausmachen. Die Reihenfolge entspricht dabei der
 	// Verkabelung!
-	Pix []uint8
-    Client GridClient
+	Pix    []uint8
+	Client GridClient
+	// Neu ist das Objekt LedGrid die zentrale steuernde Instanz. Das bedeutet
+	// dass sowohl AnimationController als auch Canvas(es) hier vermerkt
+	// sein muessen.
+	AnimCtrl *AnimationController
+    // Es koennen eine ganze Reihe von Canvas'es verwendet werden - so um bspw.
+    // mit mehreren Layern oder Ueberblendungen zu arbeiten. Die Canvas'es
+    // werden in einer dynamischen Liste verwaltet. Die Darstellung beginnt
+    // mit dem hintersten Canvas und stellt zuletzt (d.h. zuvorderst) das
+    // Canvas am Anfang der Liste dar.
+	CanvasList *list.List
+	canvMutex  *sync.RWMutex
+
 	// Mit dieser Struktur (slice of slices) werden Pixel-Koordinaten in
 	// Indizes uebersetzt.
-	idxMap conf.IndexMap
-    syncChan chan bool
+	idxMap   conf.IndexMap
+	syncChan chan bool
 }
 
-// Erstellt ein neues LED-Panel. size enthaelt die Dimension des (gesamten)
-// Panels. Wird bei modConf nil uebergeben, so wird eine Default-Konfiguration
-// der Module angenommen, welche bei DefaultModuleConfig naeher beschrieben
-// wird.
-// func NewLedGrid(size image.Point, modConf conf.ModuleConfig) *LedGrid {
-// 	g := &LedGrid{}
-// 	g.Rect = image.Rectangle{Max: size}
-// 	g.Pix = make([]uint8, 3*g.Rect.Dx()*g.Rect.Dy())
-
-// 	// Autom. Formatwahl
-// 	if modConf == nil {
-// 		modConf = conf.DefaultModuleConfig(g.Rect.Size())
-// 	}
-
-// 	g.idxMap = modConf.IndexMap()
-//     g.syncChan = make(chan bool)
-//     go g.refreshThread()
-// 	return g
-// }
-
-// Dies ist die neue Art, ein LedGrid-Objekt zu erstellen. Der GridClient
-// (d.h. der Client-seitige Teil fuer die Ansteuerung) ist dabei Teil von
-// LedGrid. Mit Angaben von host und port kann die Groesse des Panels (oder
-// Emulations-Fensters) selbst. ermittelt werden.
-func NewLedGridBySize(host string, port uint, size image.Point) *LedGrid {
-    modConf := conf.DefaultModuleConfig(size)
-    return NewLedGrid(host, port, modConf)
+// Erstellt ein neues LedGrid-Objekt, welches die Groesse size in Anzahl LEDs
+// horizontal, resp. vertikal hat. Die Verkabelung wird vollflaechig und
+// gem. Methode DefaultModuleConfig vorgenommen.
+func NewLedGridBySize(client GridClient, size image.Point) *LedGrid {
+	modConf := conf.DefaultModuleConfig(size)
+	return NewLedGrid(client, modConf)
 }
 
-func NewLedGrid(host string, port uint, modConf conf.ModuleConfig) *LedGrid {
-    g := &LedGrid{}
-    g.Client = NewNetGridClient(host, port)
-    g.Rect = image.Rectangle{Max: modConf.Size()}
-    g.Pix = make([]uint8, 3*len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
+// Erstellt ein neues LedGrid-Objekt, welches als Verkabelung modConf hat.
+func NewLedGrid(client GridClient, modConf conf.ModuleConfig) *LedGrid {
+	g := &LedGrid{}
+	g.Client = client
+	g.Rect = image.Rectangle{Max: modConf.Size()}
+	g.Pix = make([]uint8, 3*len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 	g.idxMap = modConf.IndexMap()
-    g.syncChan = make(chan bool)
-    go g.refreshThread()
+	g.syncChan = make(chan bool)
+	g.AnimCtrl = NewAnimationController(g.syncChan)
+	g.CanvasList = list.New()
+	g.canvMutex = &sync.RWMutex{}
+
+	g.NewCanvas()
+
 	return g
 }
 
 func (g *LedGrid) Close() {
-    g.Client.Close()
+	g.Client.Close()
 }
 
-// Die folgenden Methoden implementieren das image.Image Interface (resp.
-// draw.Image).
+// The following methods implement the draw.Image interface, LedGrid can
+// therefore be used as the destination for all kind of drawings - especially
+// for a call to draw.Draw() in order to compose the data from Canvas
+// objects before sending the picture to a GridClient.
 func (g *LedGrid) ColorModel() color.Model {
 	return ledcolor.LedColorModel
 }
@@ -97,9 +100,9 @@ func (g *LedGrid) LedColorAt(x, y int) ledcolor.LedColor {
 		return ledcolor.LedColor{}
 	}
 	idx := g.PixOffset(x, y)
-    if idx < 0 {
-        return ledcolor.Black
-    }
+	if idx < 0 {
+		return ledcolor.Black
+	}
 	src := g.Pix[idx : idx+3 : idx+3]
 	return ledcolor.NewLedColorRGB(src[0], src[1], src[2])
 }
@@ -110,9 +113,9 @@ func (g *LedGrid) SetLedColor(x, y int, c ledcolor.LedColor) {
 		return
 	}
 	idx := g.PixOffset(x, y)
-    if idx < 0 {
-        return
-    }
+	if idx < 0 {
+		return
+	}
 	dst := g.Pix[idx : idx+3 : idx+3]
 	dst[0] = c.R
 	dst[1] = c.G
@@ -124,34 +127,95 @@ func (g *LedGrid) SetLedColor(x, y int, c ledcolor.LedColor) {
 // schlangenfoermig angeordnet sind, und der Beginn der LED-Kette frei
 // waehlbar in einer Ecke des Panels liegen kann.
 func (g *LedGrid) PixOffset(x, y int) int {
-	return 3*g.idxMap[x][y]
+	return 3 * g.idxMap[x][y]
 }
 
 // Mit Clear kann das ganze Grid geloescht, resp. alle LEDs auf die gleiche
 // Farbe gebracht werden. Das Anzeigen, resp. der Refresh des Panel ist
 // Teil dieser Methode.
 func (g *LedGrid) Clear(c ledcolor.LedColor) {
-	for idx := 0; idx < len(g.Pix); idx += 3 {
-		dst := g.Pix[idx : idx+3 : idx+3]
-		dst[0] = c.R
-		dst[1] = c.G
-		dst[2] = c.B
+	draw.Draw(g, g.Rect, image.NewUniform(c), image.Point{}, draw.Src)
+}
+
+func (g *LedGrid) Reset() {
+	g.AnimCtrl.PurgeAll()
+	for elem := g.CanvasList.Front(); elem != nil; elem = elem.Next() {
+		canv, ok := elem.Value.(*Canvas)
+		if !ok {
+			continue
+		}
+		canv.Reset()
 	}
-    g.Show()
 }
 
 // Zeigt den aktuellen Inhalt des Grid auf der beim Erstellen spezifizierten
 // Hardware dar.
 func (g *LedGrid) Show() {
-    g.Client.Send(g.Pix)
+	g.Client.Send(g.Pix)
+}
+
+// Erzeugt ein neues Canvas-Objekt und hanegt es an den Schluss der Liste.
+// Beim Zeichnen geht LedGrid von hinten nach vorne
+func (g *LedGrid) NewCanvas() (*Canvas, int) {
+	canv := NewCanvas(g.Rect.Size())
+	g.canvMutex.Lock()
+	g.CanvasList.PushBack(canv)
+	layer := g.CanvasList.Len() - 1
+	g.canvMutex.Unlock()
+	return canv, layer
+}
+
+func (g *LedGrid) DelCanvas(canv *Canvas) {
+	for elem := g.CanvasList.Front().Next(); elem != nil; elem = elem.Next() {
+		obj := elem.Value.(*Canvas)
+		if obj == canv {
+			g.CanvasList.Remove(elem)
+			return
+		}
+	}
+}
+
+// Liefert das Canvas-Objekt zurueck, welches fuer den Layer layer definiert
+// ist. Per Default ist nur Layer 0 vorhanden, die Methode bricht ab, wenn
+// es kein Canvas-Objekt zum gewuenschten Layer gibt.
+func (g *LedGrid) Canvas(layer int) *Canvas {
+	var elem *list.Element
+	var id int
+
+	if layer >= g.CanvasList.Len() {
+		log.Fatalf("Cannot access canvas[%d]; only %d in list", layer, g.CanvasList.Len())
+		return nil
+	}
+	for elem, id = g.CanvasList.Front(), 0; elem != nil; elem, id = elem.Next(), id+1 {
+		if id == layer {
+			break
+		}
+	}
+	return elem.Value.(*Canvas)
+}
+
+func (g *LedGrid) StartRefresh() {
+	go g.refreshThread()
 }
 
 func (g *LedGrid) refreshThread() {
-    g.syncChan <- true
-    for {
-        <- g.syncChan
-        g.Client.Send(g.Pix)
-        g.syncChan <- true
-    }
-}
+	var canv *Canvas
+	var ok bool
 
+	for {
+		<-g.syncChan
+		g.canvMutex.RLock()
+		g.Clear(ledcolor.Black)
+		for ele := g.CanvasList.Back(); ele != nil; ele = ele.Prev() {
+			if canv, ok = ele.Value.(*Canvas); !ok {
+				log.Fatalf("Wrong data in canvas-list")
+			}
+			canv.Refresh()
+			draw.DrawMask(g, g.Bounds(), canv.Img, image.Point{},
+				canv.Mask, image.Point{}, draw.Over)
+		}
+		g.canvMutex.RUnlock()
+		g.syncChan <- true
+		g.Show()
+	}
+}

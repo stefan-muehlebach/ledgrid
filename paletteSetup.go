@@ -10,7 +10,7 @@ import (
 )
 
 //go:embed data/*.json
-var colorFiles embed.FS
+var paletteFS embed.FS
 
 type JsonPalette struct {
 	ID       int
@@ -24,7 +24,7 @@ type JsonPalette struct {
 func ReadJsonData(fileName string) []JsonPalette {
 	var jsonPaletteList []JsonPalette
 
-	data, err := colorFiles.ReadFile(path.Join("data", fileName))
+	data, err := paletteFS.ReadFile(path.Join("data", fileName))
 	if err != nil {
 		log.Fatalf("ReadFile failed: %v", err)
 	}
@@ -39,14 +39,12 @@ func ReadJsonData(fileName string) []JsonPalette {
 	return jsonPaletteList
 }
 
-func ReadJsonPalette(fileName string) {
+func InitGradientPalettes(fileName string) {
 	var jsonPaletteList []JsonPalette
 
     jsonPaletteList = ReadJsonData(fileName)
 
-	// log.Printf("ReadPixelPalettes(): %d entries unmarshalled", len(colorListJson))
 	for _, rec := range jsonPaletteList {
-		// log.Printf("%+v", rec)
 		if len(rec.Colors) > 0 {
 			if rec.IsSlice {
 				pal := NewSlicePalette(rec.Name, rec.Colors...)
@@ -57,19 +55,17 @@ func ReadJsonPalette(fileName string) {
 				PaletteNames = append(PaletteNames, rec.Name)
 				PaletteMap[rec.Name] = pal
 			}
-			// PaletteList = append(PaletteList, pal)
 		} else if len(rec.Stops) > 0 {
 			pal := NewGradientPalette(rec.Name, rec.Stops...)
 			PaletteNames = append(PaletteNames, rec.Name)
 			PaletteMap[rec.Name] = pal
-			// PaletteList = append(PaletteList, pal)
 		} else {
 			log.Printf("Palette '%s' has no colors", rec.Name)
 		}
 	}
 }
 
-func ReadNamedColors() {
+func InitUniformPalettes() {
 	for _, colorName := range color.Names {
 		ColorNames = append(ColorNames, colorName)
 		pal := NewUniformPalette(colorName, color.Map[colorName])
@@ -82,6 +78,7 @@ func ReadNamedColors() {
 }
 
 func init() {
-	ReadJsonPalette("palettes.json")
-	ReadNamedColors()
+	InitGradientPalettes("palSlice.json")
+    InitGradientPalettes("palGradient.json")
+	InitUniformPalettes()
 }

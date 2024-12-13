@@ -2,14 +2,15 @@ cmd/anim/anim
 cmd/anim/animation.log
 cmd/anim/canvas.log
 cmd/anim/imagesSave/
-cmd/anim/blinken/readGif
+cmd/anim/blinken/gifInfo
 cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
-cmd/colorEdit/ledgrid.png
+cmd/colorEdit/*.png
 cmd/gui/gui
 cmd/gridController/gridController
 cmd/gridEmulator/gridEmulator
 cmd/paletteGui/paletteGui
+cmd/playground
 old/
 old_20240815/
 *.swp
@@ -20,3 +21,9 @@ old_20240815/
 *.cpuprof
 *.memprof
 *.trace
+*.bin
+*.mov
+.20240701/
+.20240815/
+genColorNew
+genFont

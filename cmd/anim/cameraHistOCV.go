@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
-	"github.com/stefan-muehlebach/gg/color"
 	"github.com/stefan-muehlebach/ledgrid"
+	"github.com/stefan-muehlebach/ledgrid/color"
 
 	"gocv.io/x/gocv"
 	"golang.org/x/image/draw"
@@ -25,6 +25,7 @@ type HistCamera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size        geom.Point
 	Rect             image.Rectangle
+    Color            *ledgrid.UniformPalette
 	dev              *gocv.VideoCapture
 	imgIdx, histLen  int
 	rawImg           *image.RGBA
@@ -40,9 +41,10 @@ type HistCamera struct {
 	doneChan         chan bool
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
+func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistCamera {
 	c := &HistCamera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
+    c.Color = ledgrid.NewUniformPalette("Uniform", col)
 	dstRatio := size.X / size.Y
 	srcRatio := float64(camWidth) / float64(camHeight)
 	if dstRatio > srcRatio {
@@ -81,7 +83,7 @@ func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
 
 	c.doneChan = make(chan bool)
 
-	ledgrid.AnimCtrl.Add(c)
+	ledgrid.AnimCtrl.Add(1, c)
 	return c
 }
 
@@ -218,8 +220,8 @@ func (c *HistCamera) Draw(canv *ledgrid.Canvas) {
 
 	// Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
 	// aus).
-	uniform := image.NewUniform(color.SkyBlue)
-	c.scaler.Scale(canv.Img, c.Rect, uniform, c.srcRect, draw.Over, &draw.Options{
-		SrcMask: c.srcMask,
-	})
+	c.scaler.Scale(canv.Img, c.Rect, c.Color, c.srcRect,
+        draw.Over, &draw.Options{
+		    SrcMask: c.srcMask,
+	    })
 }

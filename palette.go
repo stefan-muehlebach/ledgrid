@@ -17,6 +17,9 @@ type ColorSource interface {
 	// bsp. als Parameter im Intervall [0,1], als Index (natuerliche Zahl)
 	// einer Farbenliste oder gar nicht, wenn die Farbquelle einfarbig ist.
 	Color(v float64) ledcolor.LedColor
+    // Da alle Paletten noch einen Namen haben, der bspw. in einem GUI- oder
+    // TUI-Element dargestellt werden kann, existiert diese Methode.
+    Name() string
 }
 
 var (
@@ -32,7 +35,7 @@ var (
 
 	ColorNames = []string{}
 	// ColorList = []ColorSource{}
-	ColorMap = map[string]ColorSource{}
+	ColorMap = map[string]*UniformPalette{}
 )
 
 // Gradienten-Paletten basieren auf einer Anzahl Farben (Stuetzstellen)
@@ -41,9 +44,7 @@ var (
 // gehoerenden Farbe.
 type GradientPalette struct {
 	stops []ColorStop
-	// Mit dieser Funktion wird die Interpolation zwischen den gesetzten
-	// Farbwerten realisiert.
-	// fnc InterpolFuncType
+    name string
 }
 
 // Dieser (interne) Typ wird verwendet, um einen bestimmten Wert im Interval
@@ -66,6 +67,7 @@ func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	for _, cs := range cl {
 		p.SetColorStop(cs)
 	}
+    p.name = name
 	// p.fnc = LinearInterpol
 	return p
 }
@@ -136,10 +138,15 @@ func (p *GradientPalette) Color(t float64) (c ledcolor.LedColor) {
 	return c
 }
 
+func (p *GradientPalette) Name() string {
+    return p.name
+}
+
 // Palette mit 256 einzelnen dedizierten Farbwerten - kein Fading oder
 // sonstige Uebergaenge.
 type SlicePalette struct {
 	Colors []ledcolor.LedColor
+    name string
 }
 
 func NewSlicePalette(name string, cl ...ledcolor.LedColor) *SlicePalette {
@@ -148,6 +155,7 @@ func NewSlicePalette(name string, cl ...ledcolor.LedColor) *SlicePalette {
 	for i, c := range cl {
 		p.Colors[i] = c
 	}
+    p.name = name
 	return p
 }
 
@@ -159,17 +167,23 @@ func (p *SlicePalette) SetColor(idx int, c ledcolor.LedColor) {
 	p.Colors[idx] = c
 }
 
+func (p *SlicePalette) Name() string {
+    return p.name
+}
+
 // Damit auch einzelne Farben wie Paletten verwendet werden koennen,
 // existiert der Typ UniformPalette. Die Ueberlegungen dazu sind analog zum
 // Typ [image.Uniform].
 type UniformPalette struct {
 	Col ledcolor.LedColor
+    name string
 }
 
 // Erstellt eine neue einfarbige Farbquelle mit gegebenem namen.
 func NewUniformPalette(name string, color ledcolor.LedColor) *UniformPalette {
 	p := &UniformPalette{}
 	p.Col = color
+    p.name = name
 	return p
 }
 
@@ -177,6 +191,10 @@ func NewUniformPalette(name string, color ledcolor.LedColor) *UniformPalette {
 // bei dieser Farbquelle keine Bedeutung und wird ignoriert.
 func (p *UniformPalette) Color(v float64) ledcolor.LedColor {
 	return p.Col
+}
+
+func (p *UniformPalette) Name() string {
+    return p.name
 }
 
 func (p *UniformPalette) ColorModel() gocolor.Model {
@@ -187,7 +205,7 @@ func (p *UniformPalette) Bounds() image.Rectangle {
 	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
 }
 
-func (p *UniformPalette) At(x, y int) ledcolor.LedColor {
+func (p *UniformPalette) At(x, y int) gocolor.Color {
 	return p.Col
 }
 
@@ -220,4 +238,11 @@ func (p *PaletteFader) Color(v float64) (c ledcolor.LedColor) {
 		c = c.Interpolate(c2, p.T)
 	}
 	return c
+}
+
+func (p *PaletteFader) Name() string {
+    if p.T > 0 {
+        return p.Pals[1].Name()
+    }
+    return p.Pals[0].Name()
 }

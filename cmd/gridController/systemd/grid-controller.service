@@ -5,7 +5,7 @@ After=network-online.target remote-fs.target
 
 [Service]
 User=dietpi
-ExecStart=/usr/local/sbin/gridController -numpix 400
+ExecStart=/usr/local/sbin/gridController -width 40 -height 10
 KillSignal=INT
 
 [Install]

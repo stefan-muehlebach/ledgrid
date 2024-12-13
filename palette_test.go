@@ -61,5 +61,5 @@ func TestPaletteOverview(t *testing.T) {
 		}
 		gc.DrawStringAnchored(name, x, y+FieldHeight+Margin/2, 0.0, 1.0)
 	}
-	gc.SavePNG("paletteOverview.png")
+	gc.SavePNG("data/palOverview.png")
 }

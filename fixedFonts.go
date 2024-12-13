@@ -18,42 +18,40 @@ const (
 	numGlyphs = 95
 )
 
-var glyphRange = []basicfont.Range{
-	{'\u0020', '\u0030', 0},  // ' ' ! " # $ % & ' ( ) * + , - . /  (16 Glyphs)
-	{'\u0030', '\u003a', 16}, // '0'-'9'                            (10 Glyphs)
-	{'\u003a', '\u0041', 26}, // ':' ';' '<' '=' '>' '?' '@'        (7 Glyphs)
-	{'\u0041', '\u005b', 33}, // 'A'-'Z'                            (26 Glyphs)
-	{'\u005b', '\u0061', 59}, // '[' '\' ']' '^' '_' '`'            (6 Glyphs)
-	{'\u0061', '\u007b', 65}, // 'a'-'z'                            (26 Glyphs)
-	{'\u007b', '\u007f', 91}, // '{' '|' '}' '~'                    (4 Glyphs)
+// In this slice, we specify what glyphs the fonts contains data for.
+// Currently both base fonts (Pico3x5 and Fixed5x7) have data for alle
+// printable characters in the ascii table, i.e. from 0x20 (' ') up to
+// 0x7e ('~').
+var glyphRangeFull = []basicfont.Range{
+	// ' ' ! " # $ % & ' ( ) * + , - . /  (16 Glyphs)
+	{'\u0020', '\u0030', 0},
+	// '0'-'9'                            (10 Glyphs: the decimal digits)
+	{'\u0030', '\u003a', 16},
+	// ':' ';' '<' '=' '>' '?' '@'        (7 Glyphs)
+	{'\u003a', '\u0041', 26},
+	// 'A'-'Z'                            (26 Glyphs: lowercase characters)
+	{'\u0041', '\u005b', 33},
+	// '[' '\' ']' '^' '_' '`'            (6 Glyphs)
+	{'\u005b', '\u0061', 59},
+	// 'a'-'z'                            (26 Glyphs: uppercase characters)
+	{'\u0061', '\u007b', 65},
+	// '{' '|' '}' '~'                    (4 Glyphs)
+	{'\u007b', '\u007f', 91},
 }
 
-// Original Pico-8 font in the original size (3x5 Pixels!)
-var Pico3x5 = &basicfont.Face{
-	Advance: 4,
-	Width:   3,
-	Height:  8,
-	Ascent:  5,
-	Descent: 0,
-	Mask:    maskPico3x5,
-	Ranges:  glyphRange,
+var glyphRangeDigits = []basicfont.Range{
+	// '0'-'9'                            (10 Glyphs: the decimal digits)
+	{'\u0030', '\u003a', 0},
 }
 
-var Fixed5x7 = &basicfont.Face{
-	Advance: 6,
-	Width:   5, // Dies ist die Breite eines Buchstabens gem. Maske
-	Height:  9,
-	Ascent:  7, // Dies ist die Hoehe eines Buchstabens gem. Maske
-	Descent: 0,
-	Mask:    maskFixed5x7,
-	Ranges:  glyphRange,
-}
-
-func ScaleFace(face *basicfont.Face, factor int, newName string) {
+// This function can be used to produce a new fixed font by scaling an existing
+// fixed font. Scaling factors can only be positive integers. The new font
+// is
+func ScaleFixedFont(face *basicfont.Face, factor int, newName string) {
 	width := face.Width
 	height := face.Ascent
 	mask := face.Mask.(*image.Alpha)
-	fileName := fmt.Sprintf("mask%s.go", newName)
+	fileName := fmt.Sprintf("font%s.go", newName)
 	fh, err := os.Create(fileName)
 	if err != nil {
 		log.Fatalf("Couldn't create file: %v", err)
@@ -62,7 +60,17 @@ func ScaleFace(face *basicfont.Face, factor int, newName string) {
 	fmt.Fprintf(fh, "package ledgrid\n\n")
 	fmt.Fprintf(fh, "import (\n")
 	fmt.Fprintf(fh, "    \"image\"\n")
+	fmt.Fprintf(fh, "    \"golang.org/x/image/font/basicfont\"\n")
 	fmt.Fprintf(fh, ")\n\n")
+	fmt.Fprintf(fh, "var %s = &basicfont.Face{\n", newName)
+	fmt.Fprintf(fh, "    Advance: %d,\n", factor*face.Advance)
+	fmt.Fprintf(fh, "    Width:   %d,\n", factor*face.Width)
+	fmt.Fprintf(fh, "    Height:  %d,\n", factor*face.Height)
+	fmt.Fprintf(fh, "    Ascent:  %d,\n", factor*face.Ascent)
+	fmt.Fprintf(fh, "    Descent: %d,\n", factor*face.Descent)
+	fmt.Fprintf(fh, "    Mask:    mask%s,\n", newName)
+	fmt.Fprintf(fh, "    Ranges:  glyphRange,\n")
+	fmt.Fprintf(fh, "}\n\n")
 	fmt.Fprintf(fh, "var mask%s = &image.Alpha{\n", newName)
 	fmt.Fprintf(fh, "    Stride: %d,\n", factor*width)
 	fmt.Fprintf(fh, "    Rect:   image.Rectangle{Max: image.Point{%d, %d}},\n",

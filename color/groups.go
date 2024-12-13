@@ -7,14 +7,14 @@ import (
 type ColorGroup int
 
 const (
-	Browns ColorGroup = iota
+	Purples ColorGroup = iota
+	Pinks
+	Blues
 	Reds
+	Greens
 	Oranges
     Yellows
-	Greens
-	Blues
-	Purples
-	Pinks
+	Browns
 	Whites
 	Grays
 	NumColorGroups

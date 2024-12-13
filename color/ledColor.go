@@ -4,11 +4,25 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"strconv"
 )
 
 var (
 	Transparent = NewLedColorRGBA(0x00, 0x00, 0x00, 0x00)
+)
+
+var (
+	cm = []float64{
+		1, -0.5, -0.5,
+		0, math.Sqrt(3) / 2, -math.Sqrt(3) / 2,
+		math.Sqrt2 / 2, math.Sqrt2 / 2, math.Sqrt2 / 2,
+	}
+	// cm = []float64{
+	// 	math.Sqrt(6) / 3, -math.Sqrt(6) / 6, -math.Sqrt(6) / 6,
+	// 	0, math.Sqrt2 / 2, -math.Sqrt2 / 2,
+	// 	math.Sqrt(3) / 3, math.Sqrt(3) / 3, math.Sqrt(3) / 3,
+	// }
 )
 
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
@@ -20,11 +34,11 @@ type LedColor struct {
 }
 
 func NewLedColorRGB(r, g, b uint8) LedColor {
-	return LedColor{r, g, b, 0xff}
+	return LedColor{R: r, G: g, B: b, A: 0xff}
 }
 
 func NewLedColorRGBA(r, g, b, a uint8) LedColor {
-	return LedColor{r, g, b, a}
+	return LedColor{R: r, G: g, B: b, A: a}
 }
 
 func NewLedColorHex(hex uint32) LedColor {
@@ -61,6 +75,19 @@ func (c LedColor) RGBA() (r, g, b, a uint32) {
 // Dient dem schnelleren Zugriff auf das Trippel der drei Farbwerte.
 func (c LedColor) RGB() (r, g, b uint8) {
 	return c.R, c.G, c.B
+}
+
+func (c LedColor) HSL() (h, s, l float64) {
+	v1 := []float64{float64(c.R) / 255.0, float64(c.G) / 255.0, float64(c.B) / 255.0}
+	v2 := []float64{
+		cm[0]*v1[0] + cm[1]*v1[1] + cm[2]*v1[2],
+		cm[3]*v1[0] + cm[4]*v1[1] + cm[5]*v1[2],
+		cm[6]*v1[0] + cm[7]*v1[1] + cm[8]*v1[2],
+	}
+	h = 180.0 * math.Atan2(v2[1], v2[0]) / math.Pi
+	s = math.Hypot(v2[0], v2[1])
+	l = v2[2] * math.Sqrt2 / 3
+	return
 }
 
 // Berechnet eine RGB-Farbe, welche 'zwischen' den Farben c1 und c2 liegt,

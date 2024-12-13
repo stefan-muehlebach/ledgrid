@@ -27,6 +27,7 @@ type HistCamera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size        geom.Point
 	Rect             image.Rectangle
+	Color            *ledgrid.UniformPalette
 	dev              *device.Device
 	imgIdx, histLen  int
 	rawImg           *image.RGBA
@@ -39,11 +40,12 @@ type HistCamera struct {
 	cancel           context.CancelFunc
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
+func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistCamera {
 	var err error
 
 	c := &HistCamera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
+	c.Color = ledgrid.NewUniformPalette("Uniform", col)
 	dstRatio := size.X / size.Y
 	srcRatio := float64(camWidth) / float64(camHeight)
 	if dstRatio > srcRatio {
@@ -74,7 +76,7 @@ func NewHistCamera(pos, size geom.Point, histLen int) *HistCamera {
 	c.dstMask = image.NewAlpha(c.Rect)
 	c.scaler = draw.CatmullRom.NewScaler(c.Rect.Dx(), c.Rect.Dy(), c.srcRect.Dx(), c.srcRect.Dy())
 
-	ledgrid.AnimCtrl.Add(c)
+	ledgrid.AnimCtrl.Add(1, c)
 
 	c.dev, err = device.Open(
 		camDevName,
@@ -99,7 +101,7 @@ func (c *HistCamera) Duration() time.Duration {
 
 func (c *HistCamera) SetDuration(dur time.Duration) {}
 
-func (c *HistCamera) Start() {
+func (c *HistCamera) StartAt(t time.Time) {
 	var err error
 	var ctx context.Context
 
@@ -115,6 +117,9 @@ func (c *HistCamera) Start() {
 	go c.captureThread()
 	c.running = true
 }
+func (c *HistCamera) Start() {
+    c.StartAt(time.Now())
+}
 
 func (c *HistCamera) Suspend() {
 	if !c.running {
@@ -129,7 +134,7 @@ func (c *HistCamera) captureThread() {
 	var err error
 	var img image.Image
 	var srcMask, dstMask *image.Uniform
-	var srcVal uint8 = 0x10
+	var srcVal uint8 = 0x0f
 	var dstVal uint8 = 0xff
 
 	srcMask = image.NewUniform(gocolor.Alpha{srcVal})
@@ -202,9 +207,8 @@ func (c *HistCamera) Draw(canv *ledgrid.Canvas) {
 
 	// Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
 	// aus).
-	uniform := image.NewUniform(color.SkyBlue)
-	c.scaler.Scale(canv.Img, c.Rect, uniform, c.srcRect, draw.Over, &draw.Options{
-		SrcMask: c.srcMask,
-	})
-
+	c.scaler.Scale(canv.Img, c.Rect, c.Color, c.srcRect,
+		draw.Over, &draw.Options{
+			SrcMask: c.srcMask,
+		})
 }

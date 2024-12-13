@@ -7,16 +7,17 @@ import (
 
 // Eine Gruppe dient dazu, eine Anzahl von Animationen gleichzeitig zu starten.
 // Die Laufzeit der Gruppe ist gleich der laengsten Laufzeit ihrer Animationen
-// oder einer festen Dauer (je nach dem was groesser ist).
+// oder einer festen Dauer (je nachdem, welche Dauer groesser ist).
 // Die Animationen, welche ueber eine Gruppe gestartet werden, sollten keine
 // Endlos-Animationen sein, da sonst die Laufzeit der Gruppe ebenfalls
-// unendlich wird.
+// endlos wird.
 type Group struct {
 	DurationEmbed
 	// Gibt an, wie oft diese Gruppe wiederholt werden soll.
 	RepeatCount int
+	// Liste, der durch diese Gruppe gestarteten Tasks.
+	Tasks []Task
 
-	Tasks            []Task
 	start, stop, end time.Time
 	repeatsLeft      int
 	running          bool
@@ -28,32 +29,43 @@ type Group struct {
 func NewGroup(tasks ...Task) *Group {
 	a := &Group{}
 	a.Add(tasks...)
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
 }
 
 // Fuegt der Gruppe weitere Animationen hinzu.
 func (a *Group) Add(tasks ...Task) {
 	for _, task := range tasks {
-		if anim, ok := task.(TimedAnimation); ok {
-			a.duration = max(a.duration, anim.Duration())
-		}
 		a.Tasks = append(a.Tasks, task)
 	}
 }
 
+func (a *Group) updateDuration() {
+	a.duration = time.Duration(0)
+	for _, task := range a.Tasks {
+		if anim, ok := task.(TimedAnimation); ok {
+			a.duration = max(a.duration, anim.Duration())
+		}
+	}
+}
+
 // Startet die Gruppe.
-func (a *Group) Start() {
+func (a *Group) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.updateDuration()
+	a.start = t
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
 	for _, task := range a.Tasks {
-		task.Start()
+		task.StartAt(t)
 	}
+}
+
+func (a *Group) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Gruppe.
@@ -96,10 +108,11 @@ func (a *Group) Update(t time.Time) bool {
 		} else if a.repeatsLeft > 0 {
 			a.repeatsLeft--
 		}
+		a.updateDuration()
 		a.start = a.end
 		a.end = a.start.Add(a.duration)
 		for _, task := range a.Tasks {
-			task.Start()
+			task.StartAt(t)
 		}
 	}
 	return true
@@ -125,40 +138,52 @@ type Sequence struct {
 func NewSequence(tasks ...Task) *Sequence {
 	a := &Sequence{}
 	a.Add(tasks...)
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
+}
+
+func (a *Sequence) TimeInfo() (start, end time.Time) {
+	return a.start, a.end
 }
 
 // Fuegt der Sequenz weitere Animationen hinzu.
 func (a *Sequence) Add(tasks ...Task) {
 	for _, task := range tasks {
-		if anim, ok := task.(TimedAnimation); ok {
-			a.duration = a.duration + anim.Duration()
-		}
 		a.Tasks = append(a.Tasks, task)
 	}
 }
 
 func (a *Sequence) Put(tasks ...Task) {
 	for _, task := range tasks {
-		if anim, ok := task.(TimedAnimation); ok {
-			a.duration = a.duration + anim.Duration()
-		}
 		a.Tasks = append([]Task{task}, a.Tasks...)
 	}
 }
 
+func (a *Sequence) updateDuration() {
+	a.duration = time.Duration(0)
+	for _, task := range a.Tasks {
+		if anim, ok := task.(TimedAnimation); ok {
+			a.duration = a.duration + anim.Duration()
+		}
+	}
+}
+
 // Startet die Sequenz.
-func (a *Sequence) Start() {
+func (a *Sequence) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.updateDuration()
+	a.start = t
 	a.end = a.start.Add(a.duration)
 	a.activeTask = 0
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
-	a.Tasks[a.activeTask].Start()
+	a.Tasks[a.activeTask].StartAt(t)
+}
+
+func (a *Sequence) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
@@ -205,14 +230,15 @@ func (a *Sequence) Update(t time.Time) bool {
 			} else if a.repeatsLeft > 0 {
 				a.repeatsLeft--
 			}
+			a.updateDuration()
 			a.start = a.end
 			a.end = a.start.Add(a.duration)
 			a.activeTask = 0
-			a.Tasks[a.activeTask].Start()
+			a.Tasks[a.activeTask].StartAt(t)
 		}
 		return true
 	}
-	a.Tasks[a.activeTask].Start()
+	a.Tasks[a.activeTask].StartAt(t)
 	return true
 }
 
@@ -246,7 +272,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a := &Timeline{}
 	a.duration = d
 	a.Slots = make([]*TimelineSlot, 0)
-	AnimCtrl.Add(a)
+	AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -274,15 +300,19 @@ func (a *Timeline) Add(pit time.Duration, tasks ...Task) {
 }
 
 // Startet die Timeline.
-func (a *Timeline) Start() {
+func (a *Timeline) StartAt(t time.Time) {
 	if a.running {
 		return
 	}
-	a.start = AnimCtrl.Now()
+	a.start = t
 	a.end = a.start.Add(a.duration)
 	a.repeatsLeft = a.RepeatCount
 	a.nextSlot = 0
 	a.running = true
+}
+
+func (a *Timeline) Start() {
+    a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Timeline.
@@ -330,7 +360,7 @@ func (a *Timeline) Update(t time.Time) bool {
 	slot := a.Slots[a.nextSlot]
 	if t.Sub(a.start) >= slot.Duration {
 		for _, task := range slot.Tasks {
-			task.Start()
+			task.StartAt(t)
 		}
 		a.nextSlot++
 	}

@@ -130,21 +130,21 @@ func TestVerify(t *testing.T) {
     }
 
     t.Logf("Verify Custom Configuration (Tetris)")
-    modConf = TetrisTile
+    modConf = Load("data/tetris.json")
     err = modConf.Verify()
     if err != nil {
         t.Error(err)
     }
 
     t.Logf("Verify Custom Configuration (LowerCurve)")
-    modConf = LowerCurve
+    modConf = Load("data/lowerCurve.json")
     err = modConf.Verify()
     if err != nil {
         t.Error(err)
     }
 
     t.Logf("Verify Custom Configuration (SquareWithHole)")
-    modConf = SquareWithHole
+    modConf = Load("data/squareWithHole.json")
     err = modConf.Verify()
     if err != nil {
         t.Error(err)
@@ -186,23 +186,21 @@ func TestVerify(t *testing.T) {
     }
 }
 
-func TestSaveCustomConf(t *testing.T) {
-    t.Logf("Save custom configuration")
+// func TestSaveCustomConf(t *testing.T) {
+//     t.Logf("Save custom configuration")
 //     TetrisTile.Save("tetris.json")
 //     LowerCurve.Save("lowerCurve.json")
 //     SquareWithHole.Save("squareWithHole.json")
 //     SmallChessBoard.Save("chessBoardSmall.json")
 //     ChessBoard.Save("chessBoard.json")
-    CustomConf.Save("data/customConf.json")
-}
-
+//     CustomConf.Save("data/customConf.json")
+// }
 
 func TestLoadCustomConf(t *testing.T) {
     var conf ModuleConfig
 
     t.Logf("Load custom configuration")
-    conf.Load("data/squareWithHole.json")
-
+    conf = Load("data/tetris.json")
     t.Logf("%v", conf)
 }
 
