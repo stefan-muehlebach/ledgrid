@@ -191,6 +191,7 @@ func (p *GridServer) ModuleConfig() conf.ModuleConfig {
 }
 
 // Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
+/*
 func (p *GridServer) MaxBright() (r, g, b uint8) {
 	return p.maxValue[0], p.maxValue[1], p.maxValue[2]
 }
@@ -198,6 +199,7 @@ func (p *GridServer) MaxBright() (r, g, b uint8) {
 func (p *GridServer) SetMaxBright(r, g, b uint8) {
 	p.maxValue[0], p.maxValue[1], p.maxValue[2] = r, g, b
 }
+*/
 
 func (p *GridServer) SetPixelStatus(idx int, stat LedStatusType) {
 	p.Disp.SetPixelStatus(idx, stat)
@@ -322,6 +324,7 @@ func (p *GridServer) RPCSetGamma(arg GammaArg, reply *int) error {
 	return nil
 }
 
+/*
 type BrightArg struct {
 	RedVal, GreenVal, BlueVal uint8
 }
@@ -335,6 +338,7 @@ func (p *GridServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
 	p.SetMaxBright(arg.RedVal, arg.GreenVal, arg.BlueVal)
 	return nil
 }
+*/
 
 type ModuleConfigArg struct {
 	ModuleConfig conf.ModuleConfig

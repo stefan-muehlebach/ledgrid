@@ -5,6 +5,9 @@ import (
 	"math"
 	"math/rand/v2"
 	"time"
+    "bufio"
+    "os"
+    "log"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -84,6 +87,13 @@ func GlowingPixels(c *ledgrid.Canvas) {
 	dur := 3 * time.Second
 	numReps := 1
 
+    f, err := os.Open("Faust.txt")
+    if err != nil {
+        log.Fatal(err)
+    }
+    scanner := bufio.NewScanner(f)
+    scanner.Split(bufio.ScanWords)
+
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
 			pt := image.Point{x, y}
@@ -122,33 +132,25 @@ func GlowingPixels(c *ledgrid.Canvas) {
 		}
 	}
 
-	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "WEIT")
+	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "")
 	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+    txtNextWord := ledgrid.NewTask(func() {
+        if scanner.Scan() {
+            txt.SetText(scanner.Text())
+        }
+    })
 	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 3*time.Second)
 	txtColor := ledgrid.NewColorAnim(txt, color.White, 1*time.Second)
 	txtColor.AutoReverse = true
     txtColor.Cont = false
 	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 1*time.Second)
-	txtSeq := ledgrid.NewSequence(txtFadeIn, txtColor, txtFadeOut)
-
-	setText1 := ledgrid.NewTask(func() {
-		txt.SetText("WEIT")
-	})
-	setText2 := ledgrid.NewTask(func() {
-		txt.SetText("UEBER")
-	})
-	setText3 := ledgrid.NewTask(func() {
-		txt.SetText("DAS")
-	})
-	setText4 := ledgrid.NewTask(func() {
-		txt.SetText("LAND")
-	})
-	setText5 := ledgrid.NewTask(func() {
-		txt.SetText("GEREIST")
-	})
+	txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn, txtColor, txtFadeOut)
+    txtSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	c.Add(txt)
+    txtSeq.Start();
 
+/*
 	aTimel := ledgrid.NewTimeline(75 * time.Second)
 	aTimel.Add(3*time.Second, setText1, txtSeq)
 	aTimel.Add(18*time.Second, setText2, txtSeq)
@@ -158,6 +160,7 @@ func GlowingPixels(c *ledgrid.Canvas) {
 	aTimel.RepeatCount = ledgrid.AnimationRepeatForever
 
 	aTimel.Start()
+*/
 	aGrpLedColor.Start()
 }
 

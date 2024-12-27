@@ -1,4 +1,5 @@
 cmd/anim/anim
+cmd/anim/word4word
 cmd/anim/animation.log
 cmd/anim/canvas.log
 cmd/anim/imagesSave/

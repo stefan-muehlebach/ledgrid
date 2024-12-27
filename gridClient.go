@@ -24,8 +24,8 @@ type GridClient interface {
 	NumLeds() int
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
-	MaxBright() (r, g, b uint8)
-	SetMaxBright(r, g, b uint8)
+	//MaxBright() (r, g, b uint8)
+	//SetMaxBright(r, g, b uint8)
 	ModuleConfig() conf.ModuleConfig
 	Watch() *Stopwatch
 	Close()
@@ -106,6 +106,7 @@ func (p *NetGridClient) SetGamma(r, g, b float64) {
 	}
 }
 
+/*
 func (p *NetGridClient) MaxBright() (r, g, b uint8) {
 	var reply BrightArg
 	var err error
@@ -126,6 +127,7 @@ func (p *NetGridClient) SetMaxBright(r, g, b uint8) {
 		log.Fatal("SetMaxBright error:", err)
 	}
 }
+*/
 
 func (p *NetGridClient) ModuleConfig() conf.ModuleConfig {
 	var reply ModuleConfigArg
@@ -187,11 +189,13 @@ func (p *FileSaveClient) Gamma() (r, g, b float64) {
 
 func (p *FileSaveClient) SetGamma(r, g, b float64) {}
 
+/*
 func (p *FileSaveClient) MaxBright() (r, g, b uint8) {
 	return 0xff, 0xff, 0xff
 }
 
 func (p *FileSaveClient) SetMaxBright(r, g, b uint8) {}
+*/
 
 func (p *FileSaveClient) ModuleConfig() conf.ModuleConfig {
 	return p.modConf

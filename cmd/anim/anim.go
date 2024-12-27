@@ -175,7 +175,7 @@ func main() {
 			}
 			fmt.Printf("---------------------------------------\n")
 			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
-			fmt.Printf("   +/-: increase/decreases by 0.1\n")
+			fmt.Printf("    +/-: increase/decreases by 0.1\n")
 			fmt.Printf("---------------------------------------\n")
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
