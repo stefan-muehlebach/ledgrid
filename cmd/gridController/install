@@ -8,12 +8,17 @@ fi
 BIN_DIR=/usr/local/sbin
 ETC_DIR=/etc/systemd/system
 
+echo "Stopping old GridController..."
 systemctl stop grid-controller
 
+echo "Copy new files to system..."
 cp gridController $BIN_DIR
 cp systemd/grid-controller.service $ETC_DIR
 
+echo "Reload configuration files..."
 systemctl daemon-reload
+echo "Start new GridController..."
 systemctl start grid-controller
 
+echo "We are done!"
 
