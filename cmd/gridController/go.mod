@@ -6,7 +6,7 @@ replace github.com/stefan-muehlebach/ledgrid => ../..
 
 replace github.com/stefan-muehlebach/gg => ../../../gg
 
-require github.com/stefan-muehlebach/ledgrid v1.4.0
+require github.com/stefan-muehlebach/ledgrid v1.4.1
 
 require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect

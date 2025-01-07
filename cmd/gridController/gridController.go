@@ -18,9 +18,6 @@ import (
 )
 
 const (
-	defWidth  = 40
-	defHeight = 10
-
 	defMissingIDs = ""
 	defDefectIDs  = ""
 	defBaud       = 2_000_000
@@ -43,9 +40,6 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 			log.Printf("Current gamma values:")
 			r, g, b := gridServer.Gamma()
 			log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
-			log.Printf("Current settings for max values (brightness):")
-			br, bg, bb := gridServer.MaxBright()
-			log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
 			gridServer.RecvBytes = 0
 			gridServer.SentBytes = 0
 			gridServer.Watch().Reset()
@@ -104,8 +98,8 @@ func main() {
 	flag.StringVar(&inFile, "play", "", "Play the animation in this file instead of running as a daemon")
 
 	// Verarbeite als erstes die Kommandozeilen-Optionen
-	flag.IntVar(&width, "width", defWidth, "Width of panel")
-	flag.IntVar(&height, "height", defHeight, "Height of panel")
+	flag.IntVar(&width, "width", 0, "Width of panel")
+	flag.IntVar(&height, "height", 0, "Height of panel")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port (UPD as well as TCP)")
@@ -155,9 +149,10 @@ func main() {
 		}
 	}
 
+	gridServer.HandleEvents()
+
 	// Damit der Daemon kontrolliert beendet werden kann, installieren wir
 	// einen Handler fuer das INT-Signal, welches bspw. durch Ctrl-C erzeugt
 	// wird oder auch von systemd beim Stoppen eines Services verwendet wird.
-	gridServer.HandleEvents()
 	SignalHandler(gridServer)
 }
