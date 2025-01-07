@@ -1,11 +1,11 @@
 package ledgrid
 
 import (
-	"io"
 	"encoding/xml"
 	"image"
 	"image/color"
 	"image/draw"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,24 +17,23 @@ import (
 // nach Vorbild 'image/gif' implementiert und koennen zum Laden von
 // BlinkenLight-Animationen verwendet werden.
 type BLM struct {
-    Image []*image.RGBA
-    Delay []int
-    LoopCount int
-    Config image.Config
+	Image     []*image.RGBA
+	Delay     []int
+	LoopCount int
+	Config    image.Config
 }
 
 func Decode(r io.Reader) (image.Image, error) {
-    return nil, nil
+	return nil, nil
 }
 
 func DecodeConfig(r io.Reader) (image.Config, error) {
-    return image.Config{ColorModel: color.RGBAModel, Width: 0, Height: 0}, nil
+	return image.Config{ColorModel: color.RGBAModel, Width: 0, Height: 0}, nil
 }
 
 func DecodeAll(r io.Reader) (*BLM, error) {
-    return nil, nil
+	return nil, nil
 }
-
 
 // ---------------------------------------------------------------------------
 
@@ -126,9 +125,9 @@ func (b *BlinkenFile) Duration(idx int) time.Duration {
 }
 
 func (b *BlinkenFile) SetAllDuration(durMs int) {
-    for i := range b.Frames {
-        b.Frames[i].Duration = durMs
-    }
+	for i := range b.Frames {
+		b.Frames[i].Duration = durMs
+	}
 }
 
 // Hier schliesslich werden die Bilddaten des Frames mit Index idx decodiert

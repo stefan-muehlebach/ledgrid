@@ -65,7 +65,7 @@ func (a *Group) StartAt(t time.Time) {
 }
 
 func (a *Group) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Gruppe.
@@ -183,7 +183,7 @@ func (a *Sequence) StartAt(t time.Time) {
 }
 
 func (a *Sequence) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Sequenz.
@@ -312,7 +312,7 @@ func (a *Timeline) StartAt(t time.Time) {
 }
 
 func (a *Timeline) Start() {
-    a.StartAt(AnimCtrl.Now())
+	a.StartAt(AnimCtrl.Now())
 }
 
 // Unterbricht die Ausfuehrung der Timeline.

@@ -10,7 +10,7 @@ var (
 	gammaValue [3]float64
 	gamma      [3][256]byte
 	buffer     []byte
-    bufferSize = 3 * 40 * 10
+	bufferSize = 3 * 40 * 10
 )
 
 func init() {
@@ -24,7 +24,7 @@ func init() {
 }
 
 func randomizeBuffer() {
-    rand.Seed(123_456_789)
+	rand.Seed(123_456_789)
 	for i := range buffer {
 		buffer[i] = byte(rand.Intn(256))
 	}
@@ -45,8 +45,8 @@ func BenchmarkGammaByThree(b *testing.B) {
 
 // ... (wobei hier noch die Variante mit Subslices getestet wird)...
 func BenchmarkGammaByThreeSubSlice(b *testing.B) {
-    var dst, src []byte
-    var i, j int
+	var dst, src []byte
+	var i, j int
 
 	randomizeBuffer()
 	b.ResetTimer()

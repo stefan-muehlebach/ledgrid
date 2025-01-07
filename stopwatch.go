@@ -54,9 +54,9 @@ func (s *Stopwatch) Avg() time.Duration {
 }
 
 func (s *Stopwatch) Stats() (int, time.Duration, time.Duration) {
-    return s.Num(), s.Total(), s.Avg()
+	return s.Num(), s.Total(), s.Avg()
 }
 
 func (s *Stopwatch) String() string {
-    return fmt.Sprintf("%d calls; %v in total; %v per call", s.Num(), s.Total(), s.Avg())
+	return fmt.Sprintf("%d calls; %v in total; %v per call", s.Num(), s.Total(), s.Avg())
 }

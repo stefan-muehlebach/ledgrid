@@ -28,11 +28,11 @@ type LedGrid struct {
 	// dass sowohl AnimationController als auch Canvas(es) hier vermerkt
 	// sein muessen.
 	AnimCtrl *AnimationController
-    // Es koennen eine ganze Reihe von Canvas'es verwendet werden - so um bspw.
-    // mit mehreren Layern oder Ueberblendungen zu arbeiten. Die Canvas'es
-    // werden in einer dynamischen Liste verwaltet. Die Darstellung beginnt
-    // mit dem hintersten Canvas und stellt zuletzt (d.h. zuvorderst) das
-    // Canvas am Anfang der Liste dar.
+	// Es koennen eine ganze Reihe von Canvas'es verwendet werden - so um bspw.
+	// mit mehreren Layern oder Ueberblendungen zu arbeiten. Die Canvas'es
+	// werden in einer dynamischen Liste verwaltet. Die Darstellung beginnt
+	// mit dem hintersten Canvas und stellt zuletzt (d.h. zuvorderst) das
+	// Canvas am Anfang der Liste dar.
 	CanvasList *list.List
 	canvMutex  *sync.RWMutex
 

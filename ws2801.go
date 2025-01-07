@@ -31,7 +31,7 @@ func NewWS2801(spiDev string, baud int, modConf conf.ModuleConfig) *WS2801 {
 	p := &WS2801{}
 
 	p.DisplayEmbed.Init(p, len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
-    p.SetModuleConfig(modConf)
+	p.SetModuleConfig(modConf)
 	_, err = host.Init()
 	if err != nil {
 		log.Fatal(err)

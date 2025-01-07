@@ -68,7 +68,6 @@ var (
 `
 )
 
-
 var (
 	nameList = []string{
 		"almond",
@@ -137,9 +136,9 @@ func main() {
 
 	colorList := make([]TemplateData, len(colornames.Names))
 	for i, name := range colornames.Names {
-        capName := titleCase.String(name)
-        oldName := "colornames." + capName
-        newName := replacer.Replace(capName)
+		capName := titleCase.String(name)
+		oldName := "colornames." + capName
+		newName := replacer.Replace(capName)
 		colorList[i] = TemplateData{
 			newName,
 			oldName,
@@ -156,20 +155,6 @@ func main() {
 		log.Fatalf("executing template: %v", err)
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // func main() {
 //     fh, err := os.Create("color/names.go")

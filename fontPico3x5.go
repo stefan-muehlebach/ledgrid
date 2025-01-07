@@ -4,8 +4,8 @@
 package ledgrid
 
 import (
-	"image"
 	"golang.org/x/image/font/basicfont"
+	"image"
 )
 
 var Pico3x5 = &basicfont.Face{

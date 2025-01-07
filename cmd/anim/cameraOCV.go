@@ -69,7 +69,7 @@ func (c *Camera) Duration() time.Duration {
 
 func (c *Camera) SetDuration(dur time.Duration) {}
 
-func (c *Camera) Start() {
+func (c *Camera) StartAt(t time.Time) {
 	var err error
 
 	if c.running {
@@ -84,6 +84,10 @@ func (c *Camera) Start() {
 	c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
 	go c.captureThread(c.doneChan)
 	c.running = true
+}
+
+func (c *Camera) Start() {
+    c.StartAt(time.Now())
 }
 
 func (c *Camera) Suspend() {

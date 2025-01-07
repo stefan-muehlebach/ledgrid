@@ -4,7 +4,7 @@ package ledgrid
 
 import (
 	"errors"
-    "fmt"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -44,7 +44,7 @@ func (b ByteCount) String() string {
 // SPI angeschlossen ist oder allenfalls der Emulator laeuft.
 type GridServer struct {
 	Disp                 Displayer
-   RecvBytes, SentBytes ByteCount
+	RecvBytes, SentBytes ByteCount
 	udpAddr              *net.UDPAddr
 	udpConn              *net.UDPConn
 	tcpAddr              *net.TCPAddr
@@ -57,10 +57,11 @@ type GridServer struct {
 	sendWatch            *Stopwatch
 }
 
-// Damit wird eine neue Instanz eines GridServers erzeugt. Mit port wird
-// sowohl die UDP- als auch die TCP-Portnummer bezeichnet. spiDev enthaelt
-// das Device-File des SPI-Anschlusses und mit baud wird die Geschwindigkeit
-// des SPI-Interfaces in Baud bezeichnet.
+// Damit wird eine neue Instanz eines GridServers erzeugt. Mit dataPort wird
+// der Port sowohl fuer die UDP-, als auch fuer die TCP-Verbindung angegeben
+// mit mit rpcPort der Port fuer die RPC-Calls. Mit disp wird dem Server
+// ein konkretes, anzeigefaehiges Geraet (sog. Displayer) mitgegeben.
+//
 func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
 	var addrPort netip.AddrPort

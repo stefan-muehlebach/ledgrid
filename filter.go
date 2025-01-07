@@ -14,10 +14,10 @@ import (
 // }
 
 type Filter interface {
-    ColorModel() color.Model
-    Bounds() image.Rectangle
-    At(x, y int) color.Color
-    Set(x, y int, c color.Color)
+	ColorModel() color.Model
+	Bounds() image.Rectangle
+	At(x, y int) color.Color
+	Set(x, y int, c color.Color)
 	FF(x, y int) (int, int)
 }
 
@@ -32,7 +32,7 @@ type FilterBase struct {
 
 func (f *FilterBase) Extend(img draw.Image, flt FilterImpl) {
 	f.img = img
-    f.flt = flt
+	f.flt = flt
 }
 
 func (f *FilterBase) ColorModel() color.Model {
@@ -53,14 +53,14 @@ func (f *FilterBase) Set(x, y int, col color.Color) {
 	f.img.Set(x, y, col)
 }
 
-type FilterIdent struct{
-    FilterBase
+type FilterIdent struct {
+	FilterBase
 }
 
 func NewFilterIdent(img draw.Image) *FilterIdent {
-    f := &FilterIdent{}
-    f.FilterBase.Extend(img, f)
-    return f
+	f := &FilterIdent{}
+	f.FilterBase.Extend(img, f)
+	return f
 }
 
 func (f *FilterIdent) FF(x, y int) (int, int) {

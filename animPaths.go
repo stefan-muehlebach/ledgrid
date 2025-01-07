@@ -7,23 +7,23 @@ import (
 )
 
 var (
-    CirclePath = NewGeomPath(circlePathFunc, 0, 1)
-    LinearPath = NewGeomPath(linearPathFunc, 0, 1)
-    RectanglePath = NewGeomPath(rectPathFunc, 0, 1)
+	CirclePath    = NewGeomPath(circlePathFunc, 0, 1)
+	LinearPath    = NewGeomPath(linearPathFunc, 0, 1)
+	RectanglePath = NewGeomPath(rectPathFunc, 0, 1)
 )
 
 // Ein Pfad ist im Grunde nichts anderes, als eine Funktion der Form
 //   [0,1] -> (x,y)
 type Path interface {
-    Pos(t float64) geom.Point
+	Pos(t float64) geom.Point
 }
 
 // Geometrische Pfade heissen deshalb so, weil ihre Grundlage zum Punkte
 // bauen irgendwo in der Geometrie zu suchen ist.
 type GeomPath struct {
-    t0, l float64
-    p0 geom.Point
-    fnc PathFunctionType
+	t0, l float64
+	p0    geom.Point
+	fnc   PathFunctionType
 }
 
 // Alle geom. Pfade beruhen auf einer Pfad-Funktion (erster Parameter), der
@@ -31,33 +31,33 @@ type GeomPath struct {
 // kann der Startpunkt, bzw. die Laenge der Animation im Vergleich zur
 // gesamten Laenge von fnc bestimmt werden.
 func NewGeomPath(fnc PathFunctionType, t0, l float64) *GeomPath {
-    p := &GeomPath{t0: t0, l: l, p0: fnc(t0), fnc: fnc}
-    return p
+	p := &GeomPath{t0: t0, l: l, p0: fnc(t0), fnc: fnc}
+	return p
 }
 
 // Damit implementiert GeomPath das Interface Path... was die Absicht unseres
 // ganzen Planes ist.
 func (p *GeomPath) Pos(t float64) geom.Point {
-    t *= p.l
-    t += p.t0
-    if t > 1.0 {
-        t -= 1.0
-    }
-    return p.fnc(t).Sub(p.p0)
+	t *= p.l
+	t += p.t0
+	if t > 1.0 {
+		t -= 1.0
+	}
+	return p.fnc(t).Sub(p.p0)
 }
 
 // Baut aus dem geom. Pfad p einen neuen, indem der Anfangspunkt auf t0
 // verlegt wird.
 func (p *GeomPath) NewStart(t0 float64) *GeomPath {
-    q := NewGeomPath(p.fnc, t0, p.l)
-    return q
+	q := NewGeomPath(p.fnc, t0, p.l)
+	return q
 }
 
 // Baut aus dem geom. Pfad p einen neuen, indem der Anfangspunkt auf t0
 // und die totale Laenge des Pfades auf l gesetzt wird.
 func (p *GeomPath) NewStartLen(t0, l float64) *GeomPath {
-    q := NewGeomPath(p.fnc, t0, l)
-    return q
+	q := NewGeomPath(p.fnc, t0, l)
+	return q
 }
 
 // Im Folgenden sind einige Pfad-generierende Funktionen zusammengestellt, die
@@ -85,7 +85,7 @@ func linearPathFunc(t float64) geom.Point {
 // verlaeuft.
 func circlePathFunc(t float64) geom.Point {
 	phi := t * 2 * math.Pi
-	return geom.Point{0.5*math.Sin(phi), -0.5*math.Cos(phi)}
+	return geom.Point{0.5 * math.Sin(phi), -0.5 * math.Cos(phi)}
 }
 
 // Beschreibt ein Rechteck. Start ist links oben und der Verlauf ist im
@@ -97,9 +97,9 @@ func rectPathFunc(t float64) geom.Point {
 	case t < 2.0/4.0:
 		return geom.Point{1.0, 4.0 * (t - 1.0/4.0)}
 	case t < 3.0/4.0:
-		return geom.Point{1.0 - 4.0 * (t - 2.0/4.0), 1.0}
+		return geom.Point{1.0 - 4.0*(t-2.0/4.0), 1.0}
 	default:
-		return geom.Point{0.0, 1.0 - 4.0 * (t - 3.0/4.0)}
+		return geom.Point{0.0, 1.0 - 4.0*(t-3.0/4.0)}
 	}
 }
 
@@ -113,7 +113,7 @@ type PolygonPath struct {
 
 type polygonStop struct {
 	dist float64
-	pos geom.Point
+	pos  geom.Point
 }
 
 // Erstellt ein neues PolygonPath-Objekt und verwendet die Punkte in points

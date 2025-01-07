@@ -79,15 +79,15 @@ func (c *Canvas) Set(x, y int, col gocolor.Color) {
 }
 
 func (c *Canvas) Clear(col color.LedColor) {
-    draw.Draw(c.Img, c.Rect, image.NewUniform(col), image.Point{}, draw.Src)
+	draw.Draw(c.Img, c.Rect, image.NewUniform(col), image.Point{}, draw.Src)
 }
 
 // Loescht alle Objekte aus der Zeichenflaeche, setzt die Farbe des Canvas
 // auf c.BackColor und setzt die Maske zurueck auf Volltransparent.
 func (c *Canvas) Reset() {
-    c.Purge()
-    c.Clear(c.BackColor)
-    c.Mask = image.NewUniform(gocolor.Alpha{0xff})
+	c.Purge()
+	c.Clear(c.BackColor)
+	c.Mask = image.NewUniform(gocolor.Alpha{0xff})
 }
 
 // Fuegt der Zeichenflaeche weitere Objekte hinzu. Der Zufgriff auf den
@@ -893,7 +893,7 @@ func (f *Fire) StartAt(t time.Time) {
 }
 
 func (f *Fire) Start() {
-    f.StartAt(AnimCtrl.Now())
+	f.StartAt(AnimCtrl.Now())
 }
 
 func (f *Fire) Stop() {

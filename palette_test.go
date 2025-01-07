@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stefan-muehlebach/gg"
-	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg/fonts"
 )
 
 const (
@@ -19,8 +19,8 @@ const (
 )
 
 var (
-    NumCols          = 4
-    NumRows          = 15
+	NumCols         = 4
+	NumRows         = 15
 	Font            = fonts.GoBold
 	PaletteFileList = []string{
 		"palettes.json",
@@ -35,10 +35,10 @@ func TestReadJsonData(t *testing.T) {
 }
 
 func TestPaletteOverview(t *testing.T) {
-    NumRows = len(PaletteNames) / NumCols
-    if len(PaletteNames) % NumCols != 0 {
-        NumRows += 1
-    }
+	NumRows = len(PaletteNames) / NumCols
+	if len(PaletteNames)%NumCols != 0 {
+		NumRows += 1
+	}
 	face := fonts.NewFace(Font, FontSize)
 	gc := gg.NewContext(2*Margin+NumCols*(FieldWidth)+(NumCols-1)*ColorPaddingHori,
 		2*Margin+NumRows*FieldHeight+NumRows*ColorPaddingVert)

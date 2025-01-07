@@ -42,7 +42,7 @@ func ReadJsonData(fileName string) []JsonPalette {
 func InitGradientPalettes(fileName string) {
 	var jsonPaletteList []JsonPalette
 
-    jsonPaletteList = ReadJsonData(fileName)
+	jsonPaletteList = ReadJsonData(fileName)
 
 	for _, rec := range jsonPaletteList {
 		if len(rec.Colors) > 0 {
@@ -79,6 +79,6 @@ func InitUniformPalettes() {
 
 func init() {
 	InitGradientPalettes("palSlice.json")
-    InitGradientPalettes("palGradient.json")
+	InitGradientPalettes("palGradient.json")
 	InitUniformPalettes()
 }

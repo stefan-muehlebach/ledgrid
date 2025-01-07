@@ -3,8 +3,8 @@
 package ledgrid
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -39,7 +39,7 @@ func NewMessage(b []byte) *Message {
 }
 
 func HandleOPC(port uint) {
-    hostPort := fmt.Sprintf(":%d", port)
+	hostPort := fmt.Sprintf(":%d", port)
 	l, err := net.Listen("tcp", hostPort)
 	if err != nil {
 		log.Fatalf("Failed Listen(): %v", err)
