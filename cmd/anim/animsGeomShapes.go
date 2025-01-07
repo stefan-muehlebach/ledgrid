@@ -1,4 +1,3 @@
-// geomShapeAnims.go
 package main
 
 import (
