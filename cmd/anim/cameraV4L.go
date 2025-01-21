@@ -28,9 +28,9 @@ type Camera struct {
 	scaler    draw.Scaler
 	srcRect   image.Rectangle
 	// Mask      *image.Alpha
-	doneChan  chan bool
-	cancel    context.CancelFunc
-	running   bool
+	doneChan chan bool
+	cancel   context.CancelFunc
+	running  bool
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
@@ -98,7 +98,7 @@ func (c *Camera) StartAt(t time.Time) {
 	c.running = true
 }
 func (c *Camera) Start() {
-    c.StartAt(time.Now())
+	c.StartAt(time.Now())
 }
 
 func (c *Camera) Suspend() {

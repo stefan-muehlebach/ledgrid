@@ -10,19 +10,19 @@ const (
 	RandSeed      = 123_456
 )
 
-type Coord2Offset struct {
-	coord image.Point
-	idx   int
-}
+// type Coord2Offset struct {
+// 	coord image.Point
+// 	idx   int
+// }
 
 var (
 	idx       int
-	coordList = []Coord2Offset{
-		{image.Point{0, 0}, 0},
-		{image.Point{9, 0}, 3 * (ModuleDim.X*ModuleDim.Y - 1)},
-		{image.Point{10, 0}, 3 * (ModuleDim.X * ModuleDim.Y)},
-		{image.Point{10, 9}, 3 * (2*ModuleDim.X*ModuleDim.Y - 1)},
-	}
+	// coordList = []Coord2Offset{
+	// 	{image.Point{0, 0}, 0},
+	// 	{image.Point{9, 0}, 3 * (ModuleDim.X*ModuleDim.Y - 1)},
+	// 	{image.Point{10, 0}, 3 * (ModuleDim.X * ModuleDim.Y)},
+	// 	{image.Point{10, 9}, 3 * (2*ModuleDim.X*ModuleDim.Y - 1)},
+	// }
 
     ptList = []image.Point{
         image.Point{0, 0},

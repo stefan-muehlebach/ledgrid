@@ -8,13 +8,13 @@ import (
 )
 
 // The output device can be realized in several ways. For example a SPI bus
-// with a chain of WS2801 chips, driving combined LED's - this for sure is
-// the default. But think of development: there may be an emulation of this
-// (quite expensive) hardware. Every "thing" which can be used as a display
-// must implement this interface.
+// with a chain of NeoPixels, driven by WS2801 - this for sure is the default.
+// But think of development: there may be an emulation of this (quite
+// expensive) hardware. Every"thing" which can be used as a display must
+// implement this interface.
 type Displayer interface {
-	// Returns the number of addressable NeoPixels in this Implementation.
-	// Can be used by Client or Server to allocate memory for buffers.
+	// Returns the number of addressable NeoPixels in this implementation.
+	// Will be used by the Server to allocate memory for buffer.
 	NumLeds() int
 	// Returns a Rectangle enclosing the whole display. Because the
 	// configuration of the modules allow empty space within this
@@ -51,24 +51,23 @@ type Displayer interface {
 type LedStatusType byte
 
 const (
-	// This is the default state of a LED
+	// LedOK is the default state of a NeoPixel.
 	LedOK LedStatusType = iota
-	// NeoPixels with this status will be blacked out. This means that the
-	// sent color data for this NeoPixel will always be (0,0,0), i.e. black.
-	// This status can be used if a NeoPixel receives and transmits data as
-	// expected but is not able to display its own color.
+	// NeoPixels with status LedDefect will be blacked out. This means that
+    // the sent color data for this pixel will always be (0,0,0), i.e. black.
+	// This status can be used if a NeoPixel propagates data as expected
+    // but is not able to correctly display its own color.
 	LedDefect
-	// This status can be used, if a NeoPixel does not even transmit the data
-	// to the NeoPixels further down the chain. Such a pixel has to be cut out
+	// LedMissing can be used, if a NeoPixel does not even propagate data
+	// to NeoPixels further down the chain. Such a pixel has to be cut out
 	// of the chain and the wires need to be shortened. For the time till a
-	// replacement Pixel is organized and soldered in, this pixel must have
-	// status 'missing'.
+	// replacement pixel is organized and soldered in, the pixel must have
+	// status LedMissing.
 	LedMissing
 )
 
-// Each implementation of a Displayer can and should embed this embeddable.
-// It contains methods for getting the number of NeoPixels, the size of the
-// Displayer, for setting the status of individual NeoPixels and so on.
+// Each implementation of a Displayer should embed this embeddable. It
+// provides default implementations for a number of general methods.
 type DisplayEmbed struct {
 	ModConf    conf.ModuleConfig
 	impl       Displayer

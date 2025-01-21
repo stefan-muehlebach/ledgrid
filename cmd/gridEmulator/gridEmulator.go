@@ -35,8 +35,6 @@ func PrintStatistics(gridServer *ledgrid.GridServer) {
 	r, g, b := gridServer.Gamma()
 	log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
 	log.Printf("Current settings for max values (brightness):")
-	br, bg, bb := gridServer.MaxBright()
-	log.Printf("   R: %3d, G: %3d, B: %3d", br, bg, bb)
 }
 
 func ToggleTests(gridServer *ledgrid.GridServer) {

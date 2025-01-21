@@ -4,6 +4,7 @@ package main
 // Abschiedsgeschenk an Gery (RIP).
 
 import (
+	"context"
 	"image"
 	"math/rand/v2"
 	"time"
@@ -18,7 +19,7 @@ func init() {
 	programList.Add("Farewell Gery!", FarewellGery)
 }
 
-func FarewellGery(c *ledgrid.Canvas) {
+func FarewellGery(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpFadeIn := ledgrid.NewGroup()
 	aGrpPurple := ledgrid.NewGroup()
 	aGrpYellow := ledgrid.NewGroup()

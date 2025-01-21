@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -20,7 +21,7 @@ func init() {
 	programList.Add("Async multiple color fade", AsyncColorFade)
 }
 
-func AsyncColorFade(c *ledgrid.Canvas) {
+func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
 	var posList []geom.Point
 	var objList []*ledgrid.Rectangle
 	// var fadeList []*ledgrid.ColorAnimation
@@ -86,7 +87,7 @@ func AsyncColorFade(c *ledgrid.Canvas) {
 	// }()
 }
 
-func CirclingCircles(c *ledgrid.Canvas) {
+func CirclingCircles(ctx context.Context, c *ledgrid.Canvas) {
 	pos1 := geom.Point{1.5, 1.5}
 	pos2 := geom.Point{10.5, float64(height) - 1.5}
 	pos3 := geom.Point{19.5, 1.5}
@@ -139,7 +140,7 @@ func CirclingCircles(c *ledgrid.Canvas) {
 	aSeq.Start()
 }
 
-func ChasingCircles(c *ledgrid.Canvas) {
+func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 	c1Pos1 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
 	c1Size1 := geom.Point{9.0, 9.0}
 	c1Size2 := geom.Point{3.0, 3.0}
@@ -188,7 +189,7 @@ func ChasingCircles(c *ledgrid.Canvas) {
 	aGrp.Start()
 }
 
-func CircleAnimation(c *ledgrid.Canvas) {
+func CircleAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	c1Pos1 := geom.Point{2.0, float64(height) / 2.0}
 	c1Pos3 := geom.Point{float64(width) - 2.0, float64(height) / 2.0}
 
@@ -216,7 +217,7 @@ func CircleAnimation(c *ledgrid.Canvas) {
 	c1color.Start()
 }
 
-func PushingRectangles(c *ledgrid.Canvas) {
+func PushingRectangles(ctx context.Context, c *ledgrid.Canvas) {
 	r1Pos1 := geom.Point{1.0, float64(height) / 2.0}
 	r1Pos2 := geom.Point{0.5 + float64(width-3)/2.0, float64(height) / 2.0}
 
@@ -265,7 +266,7 @@ func PushingRectangles(c *ledgrid.Canvas) {
 	a2Color.Start()
 }
 
-func RegularPolygon(c *ledgrid.Canvas) {
+func RegularPolygon(ctx context.Context, c *ledgrid.Canvas) {
 	posList := []geom.Point{
 		geom.Point{-6.0, float64(height) / 2.0},
 		geom.Point{float64(width) + 5.0, float64(height) / 2.0},
@@ -298,7 +299,7 @@ func RegularPolygon(c *ledgrid.Canvas) {
 	aSeq.Start()
 }
 
-func FlyingRectangle(c *ledgrid.Canvas) {
+func FlyingRectangle(ctx context.Context, c *ledgrid.Canvas) {
 	r1Pos1 := geom.Point{4, float64(height) / 2.0}
 	r1Pos2 := geom.Point{float64(width) + 4.0, float64(height) / 2.0}
 	r1Size := geom.Point{3.0, 7.0}
@@ -358,7 +359,7 @@ func FlyingRectangle(c *ledgrid.Canvas) {
 	tl.Start()
 }
 
-func RectanglesJourney(c *ledgrid.Canvas) {
+func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 	var posList [3]geom.Point
 	var animList [3]*ledgrid.PathAnimation
 	var dotList [3]*ledgrid.Dot

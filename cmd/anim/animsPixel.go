@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"image"
 	"math"
 	"math/rand/v2"
@@ -34,7 +35,7 @@ var (
 	}
 )
 
-func MovingPixels(c *ledgrid.Canvas) {
+func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	mp := geom.Point{float64(width)/2 - 0.5, float64(height)/2 - 0.5}
 	aSeq := ledgrid.NewSequence()
 	for i := range 8 {
@@ -82,7 +83,7 @@ func MovingPixels(c *ledgrid.Canvas) {
 	aSeq.Start()
 }
 
-func GlowingPixels(c *ledgrid.Canvas) {
+func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 3 * time.Second
 	numReps := 1
@@ -132,19 +133,30 @@ func GlowingPixels(c *ledgrid.Canvas) {
 		}
 	}
 
-	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "")
-	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+	txt := ledgrid.NewFixedText(fixed.P(width+2, height/2), color.White, "")
+	txt.SetAlign(ledgrid.AlignLeft | ledgrid.AlignMiddle)
+
+    txtEnter := ledgrid.NewFixedPosAnim(txt, fixed.P(2, height/2), 2*time.Second)
+    txtEnter.Cont = false
+    txtEnter.Curve = ledgrid.AnimationEaseOut
+
+    txtLeave := ledgrid.NewFixedPosAnim(txt, fixed.P(-width, height/2), 2*time.Second)
+    txtLeave.Cont = true
+    txtLeave.Curve = ledgrid.AnimationEaseIn
+
     txtNextWord := ledgrid.NewTask(func() {
         if scanner.Scan() {
             txt.SetText(scanner.Text())
         }
     })
-	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 3*time.Second)
-	txtColor := ledgrid.NewColorAnim(txt, color.White, 1*time.Second)
-	txtColor.AutoReverse = true
-    txtColor.Cont = false
-	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 1*time.Second)
-	txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn, txtColor, txtFadeOut)
+
+	// txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 3*time.Second)
+	// txtColor := ledgrid.NewColorAnim(txt, color.White, 1*time.Second)
+	// txtColor.AutoReverse = true
+    // txtColor.Cont = false
+	// txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 1*time.Second)
+	// txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn, txtColor, txtFadeOut)
+    txtSeq := ledgrid.NewSequence(txtNextWord, txtEnter, ledgrid.NewDelay(500 * time.Millisecond), txtLeave)
     txtSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	c.Add(txt)
@@ -164,7 +176,7 @@ func GlowingPixels(c *ledgrid.Canvas) {
 	aGrpLedColor.Start()
 }
 
-func NamedColors(c *ledgrid.Canvas) {
+func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	var colName string
 	var nameList []string
 	var nameIdx int = 0
@@ -239,13 +251,13 @@ func NamedColors(c *ledgrid.Canvas) {
 	timeLine.Start()
 }
 
-func Fireplace(c *ledgrid.Canvas) {
+func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 	fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
 	c.Add(fire)
 	fire.Start()
 }
 
-func PaletteShader(c *ledgrid.Canvas) {
+func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	var xMin, yMax float64
 	var txt *ledgrid.FixedText
 	var palName string = "Hipster"
@@ -309,7 +321,7 @@ func PaletteShader(c *ledgrid.Canvas) {
 }
 
 // A color shader - the new thing people are talking about.
-func ColorShader(c *ledgrid.Canvas) {
+func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
 	var xMin, xMax, yMin, yMax, dx, dy float64
 
 	randomList = make([]float64, width*height)

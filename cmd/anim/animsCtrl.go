@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"math"
 	"time"
 
@@ -15,7 +16,7 @@ func init() {
 	programList.Add("Timeline test", TimelineTest)
 }
 
-func GroupTest(c *ledgrid.Canvas) {
+func GroupTest(ctx context.Context, c *ledgrid.Canvas) {
 	rPos1 := geom.Point{5.0, float64(height) / 2.0}
 	rPos2 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
 	rSize1 := geom.Point{7.0, 7.0}
@@ -41,7 +42,7 @@ func GroupTest(c *ledgrid.Canvas) {
 	aGroup.Start()
 }
 
-func SequenceTest(c *ledgrid.Canvas) {
+func SequenceTest(ctx context.Context, c *ledgrid.Canvas) {
 	rPos := geom.NewPointIMG(gridSize).Mul(0.5)
 	sizeList := [4]geom.Point{
 		geom.NewPointIMG(gridSize).SubXY(1, 1),
@@ -88,7 +89,7 @@ func SequenceTest(c *ledgrid.Canvas) {
 	aSeq.Start()
 }
 
-func TimelineTest(c *ledgrid.Canvas) {
+func TimelineTest(ctx context.Context, c *ledgrid.Canvas) {
 	r1Pos := geom.Point{4, float64(height) / 2.0}
 	r1Size := geom.Point{3.0, 7.0}
 	r3Pos := geom.Point{float64(width) - 4, float64(height) / 2.0}

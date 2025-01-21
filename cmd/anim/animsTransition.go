@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -13,7 +14,7 @@ func init() {
     programList.Add("Like at a theatre...", TheaterKulissen)
 }
 
-func FadeCanvases(c1 *ledgrid.Canvas) {
+func FadeCanvases(ctx context.Context, c1 *ledgrid.Canvas) {
 	c2, _ := ledGrid.NewCanvas()
 	c3, _ := ledGrid.NewCanvas()
 
@@ -44,7 +45,7 @@ func FadeCanvases(c1 *ledgrid.Canvas) {
 	fader3.Start()
 }
 
-func WipeTrans(c1 *ledgrid.Canvas) {
+func WipeTrans(ctx context.Context, c1 *ledgrid.Canvas) {
 	c2, _ := ledGrid.NewCanvas()
 
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
@@ -87,7 +88,7 @@ func WipeTrans(c1 *ledgrid.Canvas) {
 	seq.Start()
 }
 
-func TheaterKulissen(c1 *ledgrid.Canvas) {
+func TheaterKulissen(ctx context.Context, c1 *ledgrid.Canvas) {
 	c2, _ := ledGrid.NewCanvas()
 	c3, _ := ledGrid.NewCanvas()
 

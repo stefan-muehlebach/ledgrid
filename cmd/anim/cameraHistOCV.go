@@ -25,7 +25,7 @@ type HistCamera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size        geom.Point
 	Rect             image.Rectangle
-    Color            *ledgrid.UniformPalette
+	Color            *ledgrid.UniformPalette
 	dev              *gocv.VideoCapture
 	imgIdx, histLen  int
 	rawImg           *image.RGBA
@@ -44,7 +44,7 @@ type HistCamera struct {
 func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistCamera {
 	c := &HistCamera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
-    c.Color = ledgrid.NewUniformPalette("Uniform", col)
+	c.Color = ledgrid.NewUniformPalette("Uniform", col)
 	dstRatio := size.X / size.Y
 	srcRatio := float64(camWidth) / float64(camHeight)
 	if dstRatio > srcRatio {
@@ -111,7 +111,7 @@ func (c *HistCamera) StartAt(t time.Time) {
 }
 
 func (c *HistCamera) Start() {
-    c.StartAt(time.Now())
+	c.StartAt(time.Now())
 }
 
 func (c *HistCamera) Suspend() {
@@ -225,7 +225,7 @@ func (c *HistCamera) Draw(canv *ledgrid.Canvas) {
 	// Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
 	// aus).
 	c.scaler.Scale(canv.Img, c.Rect, c.Color, c.srcRect,
-        draw.Over, &draw.Options{
-		    SrcMask: c.srcMask,
-	    })
+		draw.Over, &draw.Options{
+			SrcMask: c.srcMask,
+		})
 }

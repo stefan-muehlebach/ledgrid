@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"image"
@@ -36,32 +37,43 @@ var (
 type ProgramList []LedGridProgram
 
 type ProgramFunc func(c *ledgrid.Canvas)
+type StartFunc func(ctx context.Context, c *ledgrid.Canvas)
 
-func (pl *ProgramList) Add(name string, runFunc ProgramFunc) {
-	prog := NewLedGridProgram(name, runFunc)
+func (pl *ProgramList) Add(name string, startFunc StartFunc) {
+	prog := NewLedGridProgram(name, startFunc)
 	*pl = append(*pl, prog)
 }
 
 type LedGridProgram interface {
 	Name() string
-	Run(c *ledgrid.Canvas)
+	Start(ctx context.Context, c *ledgrid.Canvas)
+	Stop()
 }
 
-func NewLedGridProgram(name string, runFunc ProgramFunc) LedGridProgram {
-	return &simpleProgram{name, runFunc}
+func NewLedGridProgram(name string, startFunc StartFunc) LedGridProgram {
+	return &simpleProgram{name: name, startFunc: startFunc}
 }
 
 type simpleProgram struct {
-	name    string
-	runFunc ProgramFunc
+	name      string
+	startFunc StartFunc
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 func (p *simpleProgram) Name() string {
 	return p.name
 }
 
-func (p *simpleProgram) Run(c *ledgrid.Canvas) {
-	p.runFunc(c)
+func (p *simpleProgram) Start(ctx context.Context, c *ledgrid.Canvas) {
+	p.ctx, p.cancel = context.WithCancel(ctx)
+	p.startFunc(p.ctx, c)
+}
+
+func (p *simpleProgram) Stop() {
+	fmt.Printf("Stop(): stopping context\n")
+	p.cancel()
+	fmt.Printf("Stop(): context is stopped\n")
 }
 
 // ---------------------------------------------------------------------------
@@ -92,7 +104,7 @@ func main() {
 	var network string
 	var input string
 	var ch byte
-	var progId int
+	var progId, prevProgId int
 	var runInteractive bool
 	var progList string
 	var gR, gG, gB float64
@@ -152,8 +164,8 @@ func main() {
 
 	ledGrid.StartRefresh()
 
+	progId, prevProgId = -1, -1
 	if runInteractive {
-		progId = -1
 		for {
 			fmt.Printf("---------------------------------------\n")
 			fmt.Printf("  Program\n")
@@ -189,25 +201,29 @@ func main() {
 			}
 
 			if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
-                if ch >= 'a' {
-				    progId = int(ch - 'a')
-                } else {
-                    progId = int(ch - 'A' + 26)
-                }
+				if ch >= 'a' {
+					progId = int(ch - 'a')
+				} else {
+					progId = int(ch - 'A' + 26)
+				}
 				if progId < 0 || progId >= len(programList) {
 					continue
 				}
-				// ledgrid.AnimCtrl.Stop()
+
 				fmt.Printf("Program statistics:\n")
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
 				fmt.Printf("  painting : %v\n", canvas.Watch())
 				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
 
+				if prevProgId != -1 {
+					programList[prevProgId].Stop()
+				}
 				ledGrid.Reset()
 				ledgrid.AnimCtrl.Watch().Reset()
 				canvas.Watch().Reset()
 				ledGrid.Client.Watch().Reset()
-				programList[progId].Run(canvas)
+				programList[progId].Start(context.Background(), canvas)
+				prevProgId = progId
 			}
 			// if ch == 'S' {
 			// 	ledgrid.AnimCtrl.Save("gobs/program01.gob")
@@ -259,11 +275,12 @@ func main() {
 		if ch >= 'a' && ch <= 'z' {
 			progId = int(ch - 'a')
 			if progId >= 0 && progId < len(programList) {
-				programList[progId].Run(canvas)
+				programList[progId].Start(context.Background(), canvas)
 			}
 		}
 		fmt.Printf("Quit by Ctrl-C\n")
 		SignalHandler(timeout)
+		programList[progId].Stop()
 	}
 
 	ledgrid.AnimCtrl.Suspend()

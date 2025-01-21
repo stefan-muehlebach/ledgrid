@@ -97,6 +97,10 @@ const (
 	ModRL
 )
 
+// Returns the index of a pixel within a certain type of module. pt is a
+// point with coordinates in the range of ModuleDim. The returned value
+// is a number in the interval [0,99] or -1 if the coordinates are outside
+// the module.
 func (m ModuleType) Index(pt image.Point) int {
 	idx := 0
 	if m == ModRL {
@@ -111,6 +115,10 @@ func (m ModuleType) Index(pt image.Point) int {
 	return idx
 }
 
+// Returns the coordinates of a pixel with index idx. idx must be a number
+// in the interval [0,99] and the returned coordinate is within a rectangle
+// of size ModuleDim. If idx is outside the valid interval, the returned
+// coordinates are (-1,-1).
 func (m ModuleType) Coord(idx int) image.Point {
 	col, row := 0, 0
 	x := idx / ModuleDim.Y
@@ -128,19 +136,19 @@ func (m ModuleType) Coord(idx int) image.Point {
 	return image.Point{col, row}
 }
 
-func (m ModuleType) String() (s string) {
+// Returns the correct description of the module ("LR" or "RL").
+func (m ModuleType) String() string {
 	switch m {
 	case ModLR:
-		s = "LR"
+		return "LR"
 	case ModRL:
-		s = "RL"
+		return "RL"
 	}
-	return
+	return "(unknown)"
 }
 
-// Die Set-Methode ist eigentlich etwas aus dem Setter-Interface des Packages
-// 'flag', wird hier aber verwendet um bestimmte Konfigurationen einfacher
-// verarbeiten zu koennen.
+// This method is used to set the type of a module according to a description
+// (a string) in a configuration file.
 func (m *ModuleType) Set(v string) error {
 	switch v {
 	case "LR":
@@ -162,18 +170,18 @@ const (
 	Rot270 RotationType = 270
 )
 
-func (r RotationType) String() (s string) {
+func (r RotationType) String() string {
 	switch r {
 	case Rot000:
-		s = "0"
+		return "0"
 	case Rot090:
-		s = "90"
+		return "90"
 	case Rot180:
-		s = "180"
+		return "180"
 	case Rot270:
-		s = "270"
+		return "270"
 	}
-	return
+	return "(unknown)"
 }
 
 func (r *RotationType) Set(v string) error {
@@ -190,8 +198,15 @@ func (r *RotationType) Set(v string) error {
 	return nil
 }
 
-// Because they are used quite frequently and there are 8 of them in total,
-// I decided to create constants for each of them.
+// This type denotes a specific implementation of module, consisting of a
+// module type and a rotation.
+type Module struct {
+	Type ModuleType
+	Rot  RotationType
+}
+
+// Given two module types and four rotations, there are 8 kind of modules
+// which can be used to form a LedGrid. There is a constant for each of them.
 var (
 	ModLR000 = Module{ModLR, Rot000}
 	ModLR090 = Module{ModLR, Rot090}
@@ -203,13 +218,9 @@ var (
 	ModRL270 = Module{ModRL, Rot270}
 )
 
-// With values of type Module, you describe a certain module type, rotated
-// by a specific angle.
-type Module struct {
-	Type ModuleType
-	Rot  RotationType
-}
-
+// Returns the index of a point pt within this module. If pt is outside the
+// range ModuleDim, the method returns -1. See [ModuleType.Index] for more
+// information.
 func (m Module) Index(pt image.Point) int {
 	switch m.Rot {
 	case Rot090:
@@ -222,6 +233,8 @@ func (m Module) Index(pt image.Point) int {
 	return m.Type.Index(pt)
 }
 
+// Returns the coordinate of a pixel given its index within the chain, forming
+// this module. See [ModuleType.Coord] for more information.
 func (m Module) Coord(idx int) image.Point {
 	pt := m.Type.Coord(idx)
 	switch m.Rot {
@@ -235,30 +248,35 @@ func (m Module) Coord(idx int) image.Point {
 	return pt
 }
 
-// Die textuelle Darstellung eines Moduls ist in der Einleitung am Anfang des
-// Packages zu sehen: Modul-Typ und Rotationsart werden mit Doppelpunkt
-// getrennt als zusammenhaengende Zeichenkette dargestell.
+// Since a module consists of a module type and a rotation, the string
+// representation of a module contains the type and the rotation, separated
+// by a colon, like in "RL:180" or "LR:000":.
 func (m Module) String() string {
 	return fmt.Sprintf("%v:%v", m.Type, m.Rot)
 }
 
-// Module implementiert das Scanner-Interface, ist also in der Lage, via
-// Funktion aus der Scanf-Familie eine konkrete Modul-Spezifikation zu lesen.
-func (m *Module) Scan(state fmt.ScanState, verb rune) error {
-	tok, err := state.Token(true, nil)
-	if err != nil {
-		return err
-	}
-	slc := strings.Split(string(tok), ":")
-	m.Type.Set(slc[0])
-	m.Rot.Set(slc[1])
-	return nil
-}
+// With this method, Module implements the Scanner interface of package fmt
+// and allows module configurations to be read with functions like Scan,
+// Scanf or Scanln.
+// func (m *Module) Scan(state fmt.ScanState, verb rune) error {
+// 	tok, err := state.Token(true, nil)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	slc := strings.Split(string(tok), ":")
+// 	m.Type.Set(slc[0])
+// 	m.Rot.Set(slc[1])
+// 	return nil
+// }
 
+// MarshalText implement the TextMarshaler interface of package encoding.
+// This allows to configure modules using JSON files.
 func (m Module) MarshalText() ([]byte, error) {
 	return []byte(m.String()), nil
 }
 
+// UnmarshalText implement the TextUnmarshaler interface of package encoding.
+// This allows to configure modules using JSON files.
 func (m *Module) UnmarshalText(text []byte) error {
 	slc := strings.Split(string(text), ":")
 	m.Type.Set(slc[0])
@@ -266,9 +284,11 @@ func (m *Module) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Mit diesem Typ wird festgehalten, welches Modul (Typ und Ausrichtung) sich
-// an welcher Stelle (Col, Row) innerhalb des gesamten Panels befindet und
-// welches LED (Index innerhalb der gesamten Kette) am Anfang des Moduls steht.
+// This type finally puts all information together: what module is placed at
+// column Col and row Row of the LedGrid. Col and Row denote the position of
+// the module (not a pixel) within the LedGrid. Idx finally is the index of
+// the first pixel of this module within the whole chain of pixels, therefore
+// this number must be a multiple of ModuleDim.X*ModuleDim.Y.
 type ModulePosition struct {
 	Col int    `json:"Col"`
 	Row int    `json:"Row"`
@@ -276,6 +296,8 @@ type ModulePosition struct {
 	Idx int    `json:"-"`
 }
 
+// Returns the enclosing rectangle of this module, specified in pixel
+// coordinates.
 func (m ModulePosition) Bounds() image.Rectangle {
 	x0, y0 := m.Col*ModuleDim.X, m.Row*ModuleDim.Y
 	x1, y1 := x0+ModuleDim.X, y0+ModuleDim.Y
@@ -303,7 +325,7 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 	var conf ModuleConfig
 	var mod Module
 
-	if size.X < ModuleDim.X || size.Y < ModuleDim.Y ||
+	if size.X <= 0 || size.Y <= 0 ||
 		size.X%ModuleDim.X != 0 || size.Y%ModuleDim.Y != 0 {
 		log.Fatalf("Requested size of LED-Grid '%v' does not match with size of a module '%v'", size, ModuleDim)
 	}
@@ -330,20 +352,9 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 //go:embed data/*.json
 var customFiles embed.FS
 
-// Speichert die Konfiguration in conf in der Datei fileName ab.
-func (conf ModuleConfig) Save(fileName string) {
-	data, err := json.MarshalIndent(conf, "", "    ")
-	if err != nil {
-		log.Fatalf("Couldn't encode data: %v", err)
-	}
-	err = os.WriteFile(fileName, data, 0644)
-	if err != nil {
-		log.Fatalf("Couldn't write to file: %v", err)
-	}
-}
-
 func Load(fileName string) ModuleConfig {
-    var conf ModuleConfig
+	var conf ModuleConfig
+
 	data, err := customFiles.ReadFile(fileName)
 	if err != nil {
 		log.Fatalf("Couldn't read file: %v", err)
@@ -355,7 +366,19 @@ func Load(fileName string) ModuleConfig {
 	for i := range conf {
 		conf[i].Idx = i * ModuleDim.X * ModuleDim.Y
 	}
-    return conf
+	return conf
+}
+
+// Speichert die Konfiguration in conf in der Datei fileName ab.
+func (conf ModuleConfig) Save(fileName string) {
+	data, err := json.MarshalIndent(conf, "", "    ")
+	if err != nil {
+		log.Fatalf("Couldn't encode data: %v", err)
+	}
+	err = os.WriteFile(fileName, data, 0644)
+	if err != nil {
+		log.Fatalf("Couldn't write to file: %v", err)
+	}
 }
 
 // Helps to build up a module configuration. Important: the Add's must

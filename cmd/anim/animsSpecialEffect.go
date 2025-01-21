@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"image"
 	gocolor "image/color"
 	"image/draw"
@@ -238,7 +240,12 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 	return nil
 }
 
-func EffectFaderTest(canv1 *ledgrid.Canvas) {
+var (
+	isRunning bool
+	doneChan  chan bool
+)
+
+func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
@@ -251,8 +258,10 @@ func EffectFaderTest(canv1 *ledgrid.Canvas) {
 	canv2.Add(cam)
 	cam.Start()
 
-	go func() {
+	backgroundTask := func(ctx0 context.Context) {
 		var src, dst geom.Point
+
+		fmt.Printf("backgroundTask(): starting...\n")
 		effectList := []EffectType{
 			{In2Outside, Forward, ExitOver},
 			{Out2Inside, Forward, ExitAway},
@@ -270,7 +279,9 @@ func EffectFaderTest(canv1 *ledgrid.Canvas) {
 			color.Gold,
 		}
 
+		fmt.Printf("backgroundTask(): enter loop...\n")
 		for {
+			fmt.Printf("backgroundTask(): do work...\n")
 			time.Sleep(1 * time.Second)
 			for i, effect := range effectList {
 				ledgrid.AnimCtrl.Purge(0)
@@ -316,5 +327,7 @@ func EffectFaderTest(canv1 *ledgrid.Canvas) {
 				draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
 			}
 		}
-	}()
+	}
+
+	go backgroundTask(ctx)
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
@@ -14,7 +15,7 @@ func init() {
 	programList.Add("Polygon path test", PolygonPathTest)
 }
 
-func PathTest(c *ledgrid.Canvas) {
+func PathTest(ctx context.Context, c *ledgrid.Canvas) {
 	duration := 4 * time.Second
 	pathA := ledgrid.CirclePath
 	pathB := ledgrid.CirclePath.NewStart(0.25)
@@ -48,7 +49,7 @@ func PathTest(c *ledgrid.Canvas) {
 	aGrp.Start()
 }
 
-func PolygonPathTest(c *ledgrid.Canvas) {
+func PolygonPathTest(ctx context.Context, c *ledgrid.Canvas) {
 
 	cPos := geom.Point{0, 0}
 

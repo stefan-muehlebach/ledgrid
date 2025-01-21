@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"image"
 	"math"
 	"time"
@@ -24,7 +25,7 @@ func p2p(x, y float64) fixed.Point26_6 {
 	return fixed.Point26_6{f2f(x), f2f(y)}
 }
 
-func ClockAnimation(c *ledgrid.Canvas) {
+func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	var clockText *ledgrid.FixedText
 	var colorFade *ledgrid.ColorAnimation
 	var binDigits [32]*ledgrid.Pixel
@@ -65,7 +66,7 @@ func ClockAnimation(c *ledgrid.Canvas) {
 	seq2.Start()
 }
 
-func MovingText(c *ledgrid.Canvas) {
+func MovingText(ctx context.Context, c *ledgrid.Canvas) {
 	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", color.LightSeaGreen)
 	t1.SetAlign(ledgrid.AlignLeft)
 	t2 := ledgrid.NewText(geom.Point{float64(width), float64(height) / 2.0}, "Beni", color.YellowGreen)

@@ -12,7 +12,7 @@ package main
 //
 // Die allgemeinen Konstanten sind:
 const (
-	camDevName    = "/dev/video0"
+	camDevName    = "/dev/video2"
 	camDevId      = 0
 	camWidth      = 320
 	camHeight     = 240

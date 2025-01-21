@@ -118,7 +118,7 @@ func (c *HistCamera) StartAt(t time.Time) {
 	c.running = true
 }
 func (c *HistCamera) Start() {
-    c.StartAt(time.Now())
+	c.StartAt(time.Now())
 }
 
 func (c *HistCamera) Suspend() {

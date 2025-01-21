@@ -1,8 +1,7 @@
 package main
 
 import (
-	"image"
-	gocolor "image/color"
+	"context"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -14,25 +13,16 @@ func init() {
 	programList.Add("Differential camera", DiffCamera)
 }
 
-func OrdinaryCamera(c1 *ledgrid.Canvas) {
-	c2, _ := ledGrid.NewCanvas()
+func OrdinaryCamera(ctx context.Context, canv *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
 	cam := NewCamera(pos, size)
-	c2.Add(cam)
-
-	mask := image.NewAlpha(c2.Rect)
-	for y := range c2.Rect.Dy() {
-		for x := range c2.Rect.Dx() / 2 {
-			mask.Set(x, y, gocolor.Alpha{0xff})
-		}
-	}
-	c2.Mask = mask
+	canv.Add(cam)
 	cam.Start()
 }
 
-func DiffCamera(c *ledgrid.Canvas) {
+func DiffCamera(ctx context.Context, c *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 

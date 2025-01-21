@@ -87,7 +87,7 @@ func (c *Camera) StartAt(t time.Time) {
 }
 
 func (c *Camera) Start() {
-    c.StartAt(time.Now())
+	c.StartAt(time.Now())
 }
 
 func (c *Camera) Suspend() {

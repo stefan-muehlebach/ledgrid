@@ -642,6 +642,10 @@ func (t *FixedText) SetText(text string) {
 	t.updateSize()
 }
 
+func (t *FixedText) Size() fixed.Rectangle26_6 {
+    return t.rect
+}
+
 func (t *FixedText) updateSize() {
 	rect, _ := font.BoundString(t.drawer.Face, t.text)
 	t.dp.X = (rect.Max.X - rect.Min.X).Mul(fixed.Int26_6(64 * t.ax))

@@ -267,6 +267,14 @@ func AnimationEaseOut(t float64) float64 {
 	return t * (2 - t)
 }
 
+func AnimationMiddleStop(t float64) float64 {
+    if t <= 0.5 {
+        return -2*(t-0.5)*(t-0.5) + 0.5
+    } else {
+        return 2*(t-0.5)*(t-0.5) + 0.5
+    }
+}
+
 // Anfang und Ende der Animation werden abgebremst
 // (quadratische Grundlage, stueckweise Funktion).
 func AnimationEaseInOut(t float64) float64 {

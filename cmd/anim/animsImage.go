@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"math"
 	"time"
 
@@ -14,7 +15,7 @@ func init() {
 	programList.Add("Align this lonely image!", SingleImageAlign)
 }
 
-func BlinkenAnimation(c *ledgrid.Canvas) {
+func BlinkenAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	posFlame1 := geom.Point{4.5, float64(height)}
 	posFlame2 := geom.Point{float64(width) - 4.5, float64(height)}
 	pos1Mario := geom.Point{5.0, float64(height)}
@@ -65,7 +66,7 @@ func BlinkenAnimation(c *ledgrid.Canvas) {
 	aGrp.Start()
 }
 
-func SlideShow(c *ledgrid.Canvas) {
+func SlideShow(ctx context.Context, c *ledgrid.Canvas) {
 	pos := geom.Point{float64(width / 2), float64(height / 2)}
 	files := []string{
 		"images/raster.png",
@@ -100,7 +101,7 @@ func SlideShow(c *ledgrid.Canvas) {
 	aTimeline.Start()
 }
 
-func SingleImageAlign(c *ledgrid.Canvas) {
+func SingleImageAlign(ctx context.Context, c *ledgrid.Canvas) {
 	imgPos := geom.Point{float64(width / 2), float64(height / 2)}
 	img := ledgrid.NewImage(imgPos, "images/skull.png")
 	img.Size = geom.Point{float64(width / 2), float64(height / 2)}
