@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/rpc"
 
-	"github.com/stefan-muehlebach/ledgrid/conf"
+    	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.

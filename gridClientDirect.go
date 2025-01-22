@@ -1,6 +1,8 @@
 package ledgrid
 
-import "github.com/stefan-muehlebach/ledgrid/conf"
+import (
+	"github.com/stefan-muehlebach/ledgrid/conf"
+)
 
 type DirectGridClient struct {
 	Disp      Displayer

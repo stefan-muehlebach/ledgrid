@@ -11,6 +11,7 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Animation Controllers")
 	programList.Add("Group test", GroupTest)
 	programList.Add("Sequence test", SequenceTest)
 	programList.Add("Timeline test", TimelineTest)

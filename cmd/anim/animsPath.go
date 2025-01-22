@@ -11,6 +11,7 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Path Animations")
 	programList.Add("Path test", PathTest)
 	programList.Add("Polygon path test", PolygonPathTest)
 }

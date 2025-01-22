@@ -1,6 +1,8 @@
 package ledgrid
 
-import "github.com/stefan-muehlebach/ledgrid/conf"
+import (
+	"github.com/stefan-muehlebach/ledgrid/conf"
+)
 
 // Um den clientseitigen Code so generisch wie moeglich zu halten, ist der
 // GridClient als Interface definiert. Aktuell stehen zwei Implementationen

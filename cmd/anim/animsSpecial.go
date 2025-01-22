@@ -16,6 +16,7 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Specials")
 	programList.Add("Farewell Gery!", FarewellGery)
 }
 

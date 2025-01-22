@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/stefan-muehlebach/ledgrid/conf"
+    	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // Dieser Client-Typ schreibt alle Bilddaten in eine Datei, welche im

@@ -12,6 +12,7 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Geometric Shapes")
 	programList.Add("Circling circles", CirclingCircles)
 	programList.Add("Chasing circles", ChasingCircles)
 	programList.Add("Circle animation", CircleAnimation)

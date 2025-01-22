@@ -40,8 +40,13 @@ type ProgramFunc func(c *ledgrid.Canvas)
 type StartFunc func(ctx context.Context, c *ledgrid.Canvas)
 
 func (pl *ProgramList) Add(name string, startFunc StartFunc) {
-	prog := NewLedGridProgram(name, startFunc)
+	prog := NewProgram(name, startFunc)
 	*pl = append(*pl, prog)
+}
+
+func (pl *ProgramList) AddTitle(name string) {
+	title := NewTitle(name)
+	*pl = append(*pl, title)
 }
 
 type LedGridProgram interface {
@@ -50,8 +55,12 @@ type LedGridProgram interface {
 	Stop()
 }
 
-func NewLedGridProgram(name string, startFunc StartFunc) LedGridProgram {
+func NewProgram(name string, startFunc StartFunc) LedGridProgram {
 	return &simpleProgram{name: name, startFunc: startFunc}
+}
+
+func NewTitle(name string) LedGridProgram {
+	return &groupTitle{name: name}
 }
 
 type simpleProgram struct {
@@ -75,6 +84,18 @@ func (p *simpleProgram) Stop() {
 	p.cancel()
 	fmt.Printf("Stop(): context is stopped\n")
 }
+
+type groupTitle struct {
+	name string
+}
+
+func (g *groupTitle) Name() string {
+	return g.name
+}
+
+func (g *groupTitle) Start(ctx context.Context, c *ledgrid.Canvas) {}
+
+func (g *groupTitle) Stop() {}
 
 // ---------------------------------------------------------------------------
 
@@ -114,12 +135,15 @@ func main() {
 
 	for i, prog := range programList {
 		var id byte
-		if i < 26 {
-			id = byte('a' + i)
-		} else {
-			id = byte('A' + (i - 26))
+		switch prog.(type) {
+		case *simpleProgram:
+			if i < 26 {
+				id = byte('a' + i)
+			} else {
+				id = byte('A' + (i - 26))
+			}
+			progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 		}
-		progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 	}
 
 	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
@@ -173,19 +197,25 @@ func main() {
 			for i, prog := range programList {
 				var id byte
 
-				if ch >= 'a' && ch <= 'z' && i == progId {
-					fmt.Printf("> ")
-				} else {
-					fmt.Printf("  ")
-				}
+				switch prog.(type) {
+				case *simpleProgram:
+					if ch >= 'a' && ch <= 'z' && i == progId {
+						fmt.Printf("> ")
+					} else {
+						fmt.Printf("  ")
+					}
 
-				if i < 26 {
-					id = byte('a' + i)
-				} else {
-					id = byte('A' + (i - 26))
-				}
+					if i < 26 {
+						id = byte('a' + i)
+					} else {
+						id = byte('A' + (i - 26))
+					}
 
-				fmt.Printf("[%c] %s\n", id, prog.Name())
+					fmt.Printf("[%c] %s\n", id, prog.Name())
+				case *groupTitle:
+					fmt.Printf("%s:\n", prog.Name())
+					fmt.Printf("---------------------------------------\n")
+				}
 			}
 			fmt.Printf("---------------------------------------\n")
 			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
@@ -201,14 +231,19 @@ func main() {
 			}
 
 			if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+				id := -1
 				if ch >= 'a' {
-					progId = int(ch - 'a')
+					id = int(ch - 'a')
 				} else {
-					progId = int(ch - 'A' + 26)
+					id = int(ch - 'A' + 26)
 				}
-				if progId < 0 || progId >= len(programList) {
+				if id < 0 || id >= len(programList) {
 					continue
 				}
+				if _, isTitle := programList[id].(*groupTitle); isTitle {
+					continue
+				}
+				progId = id
 
 				fmt.Printf("Program statistics:\n")
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())

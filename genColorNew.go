@@ -1,6 +1,6 @@
 //go:build ignore
 
-package main
+package ledgrid
 
 import (
 	"log"
@@ -16,7 +16,7 @@ import (
 const (
 	namesTemplate = `// Code generated  DO NOT EDIT.
 
-package color
+package ledgrid
 
 import (
     "image/color"

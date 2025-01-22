@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"image"
+	"log"
 	"math"
 	"math/rand/v2"
+	"os"
 	"time"
-    "bufio"
-    "os"
-    "log"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -17,9 +17,9 @@ import (
 )
 
 func init() {
-	programList.Add("Moving pixels", MovingPixels)
-	programList.Add("Glowing pixels with text", GlowingPixels)
-	programList.Add("Named colors", NamedColors)
+	programList.AddTitle("Pixel Animations")
+	// programList.Add("Moving pixels", MovingPixels)
+	programList.Add("Glowing pixels with changing text", GlowingPixels)
 	programList.Add("Fireplace", Fireplace)
 	programList.Add("Shader using palettes", PaletteShader)
 	programList.Add("Shader using colors", ColorShader)
@@ -88,12 +88,12 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	dur := 3 * time.Second
 	numReps := 1
 
-    f, err := os.Open("Faust.txt")
-    if err != nil {
-        log.Fatal(err)
-    }
-    scanner := bufio.NewScanner(f)
-    scanner.Split(bufio.ScanWords)
+	f, err := os.Open("Faust.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanWords)
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -133,46 +133,32 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 		}
 	}
 
-	txt := ledgrid.NewFixedText(fixed.P(width+2, height/2), color.White, "")
-	txt.SetAlign(ledgrid.AlignLeft | ledgrid.AlignMiddle)
+	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.White.Alpha(0.0), "")
+	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 
-    txtEnter := ledgrid.NewFixedPosAnim(txt, fixed.P(2, height/2), 2*time.Second)
-    txtEnter.Cont = false
-    txtEnter.Curve = ledgrid.AnimationEaseOut
+	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 100*time.Millisecond)
+	// txtColorIn := ledgrid.NewColorAnim(txt, color.White, 200*time.Millisecond)
+	txtColorOut := ledgrid.NewColorAnim(txt, color.Black, 2*time.Second)
+	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 2*time.Second)
 
-    txtLeave := ledgrid.NewFixedPosAnim(txt, fixed.P(-width, height/2), 2*time.Second)
-    txtLeave.Cont = true
-    txtLeave.Curve = ledgrid.AnimationEaseIn
+	// txtEnter := ledgrid.NewFixedPosAnim(txt, fixed.P(2, height/2), 2*time.Second)
+	// txtEnter.Cont = false
+	// txtEnter.Curve = ledgrid.AnimationEaseOut
 
-    txtNextWord := ledgrid.NewTask(func() {
-        if scanner.Scan() {
-            txt.SetText(scanner.Text())
-        }
-    })
+	// txtLeave := ledgrid.NewFixedPosAnim(txt, fixed.P(-width, height/2), 2*time.Second)
+	// txtLeave.Cont = true
+	// txtLeave.Curve = ledgrid.AnimationEaseIn
 
-	// txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 3*time.Second)
-	// txtColor := ledgrid.NewColorAnim(txt, color.White, 1*time.Second)
-	// txtColor.AutoReverse = true
-    // txtColor.Cont = false
-	// txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 1*time.Second)
-	// txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn, txtColor, txtFadeOut)
-    txtSeq := ledgrid.NewSequence(txtNextWord, txtEnter, ledgrid.NewDelay(500 * time.Millisecond), txtLeave)
-    txtSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	txtNextWord := ledgrid.NewTask(func() {
+		if scanner.Scan() {
+			txt.SetText(scanner.Text())
+		}
+	})
+	txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn, txtColorIn, txtColorOut, txtFadeOut)
+	txtSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	c.Add(txt)
-    txtSeq.Start();
-
-/*
-	aTimel := ledgrid.NewTimeline(75 * time.Second)
-	aTimel.Add(3*time.Second, setText1, txtSeq)
-	aTimel.Add(18*time.Second, setText2, txtSeq)
-	aTimel.Add(33*time.Second, setText3, txtSeq)
-	aTimel.Add(48*time.Second, setText4, txtSeq)
-	aTimel.Add(63*time.Second, setText5, txtSeq)
-	aTimel.RepeatCount = ledgrid.AnimationRepeatForever
-
-	aTimel.Start()
-*/
+	txtSeq.Start()
 	aGrpLedColor.Start()
 }
 

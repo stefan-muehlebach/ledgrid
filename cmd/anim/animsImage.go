@@ -10,6 +10,7 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Images and Sprites")
 	programList.Add("Blinken animation", BlinkenAnimation)
 	programList.Add("Slide show (rotating images)", SlideShow)
 	programList.Add("Align this lonely image!", SingleImageAlign)

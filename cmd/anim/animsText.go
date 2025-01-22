@@ -14,8 +14,10 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Text Animations")
 	programList.Add("Clock animation", ClockAnimation)
 	programList.Add("Moving text", MovingText)
+	programList.Add("Named colors", NamedColors)
 }
 
 func f2f(x float64) fixed.Int26_6 {

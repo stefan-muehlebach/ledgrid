@@ -9,8 +9,10 @@ import (
 )
 
 func init() {
+    programList.AddTitle("Camera Animations")
 	programList.Add("Ordinary camera", OrdinaryCamera)
 	programList.Add("Differential camera", DiffCamera)
+
 }
 
 func OrdinaryCamera(ctx context.Context, canv *ledgrid.Canvas) {

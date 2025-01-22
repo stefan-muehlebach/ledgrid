@@ -16,10 +16,6 @@ import (
 	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
-func init() {
-	programList.Add("Camera images with some nice fading effects", EffectFaderTest)
-}
-
 // The function Trace may be used in a range clause at the for statements.
 // It allows to iterate over all points between p1 and p2. Since p1 and p2
 // are of type image.Point, their coordinates are integers and the points
