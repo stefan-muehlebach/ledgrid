@@ -78,7 +78,7 @@ func InitUniformPalettes() {
 }
 
 func init() {
-	InitGradientPalettes("palSlice.json")
+	// InitGradientPalettes("palSlice.json")
 	InitGradientPalettes("palGradient.json")
 	InitUniformPalettes()
 }

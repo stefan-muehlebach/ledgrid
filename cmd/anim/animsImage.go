@@ -139,7 +139,7 @@ func SingleImageAlign(ctx context.Context, c *ledgrid.Canvas) {
 	)
 
 	aAngle := ledgrid.NewAngleAnim(img, 2*math.Pi, 4*time.Second)
-	aAngle.Curve = ledgrid.AnimationLazeInOut
+	aAngle.Curve = ledgrid.AnimationRealEaseInOut
 	aHoriSeq := ledgrid.NewSequence(
 		aAlignRight, aAngle,
 		aAlignCenter, aAngle,

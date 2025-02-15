@@ -12,7 +12,7 @@ import (
 
 // Dies ist die Implementation eines Displayers, welcher eine Lichterkette von
 // NeoPixeln mit WS2801 via SPI-Bus auf einem RaspberryPi ansteuert.
-type WS2801avr struct {
+type WS2801 struct {
 	DisplayEmbed
 	spi machine.SPI
 }
@@ -20,9 +20,9 @@ type WS2801avr struct {
 // Erstellt eine neue Instanz. spiDev ist das Device-File des SPI-Buses, baud
 // die Taktrate (in Bit pro Sekunde) und numLeds die Anzahl NeoPixel auf der
 // Lichterkette - ohne die entfernten NeoPixel zu beruecksichtigen.
-func NewWS2801avr(modConf conf.ModuleConfig) *WS2801avr {
+func NewWS2801(modConf conf.ModuleConfig) *WS2801 {
 	var err error
-	p := &WS2801avr{}
+	p := &WS2801{}
 
 	p.DisplayEmbed.Init(p, len(modConf)*conf.ModuleDim.X*conf.ModuleDim.Y)
 	p.SetModuleConfig(modConf)
@@ -41,20 +41,18 @@ func NewWS2801avr(modConf conf.ModuleConfig) *WS2801avr {
 
 // Diese Methode gehoert zum Displayer-Interface und retourniert die
 // empfohlenen Gamma-Werte fuer die drei Farbkanaele Rot, Gruen und Blau.
-func (p *WS2801avr) DefaultGamma() (r, g, b float64) {
+func (p *WS2801) DefaultGamma() (r, g, b float64) {
 	return 2.5, 2.5, 2.5
 }
 
 // Schliesst den Displayer, in diesem Fall den SPI-Port.
-func (p *WS2801avr) Close() {
-
-}
+func (p *WS2801) Close() {}
 
 // Sendet die Farbwerte in buffer via SPI-Bus zur NeoPixel Lichterkette. Die
 // Reihenfolge der Pixel muss bereits vorgaengig der effektiven Verkabelung
 // angepasst worden sein, ebenso die Farbwertkorrektur. Diese Methode wird
 // ueblicherweise vom DisplayEmbed und nicht von Benutzercode aufgerufen.
-func (p *WS2801avr) Send(buffer []byte) {
+func (p *WS2801) Send(buffer []byte) {
 	var err error
 
 	if err = p.spi.Tx(buffer, nil); err != nil {

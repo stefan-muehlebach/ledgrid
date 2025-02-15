@@ -133,28 +133,21 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 		}
 	}
 
-	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.White.Alpha(0.0), "")
+	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), "", color.White.Alpha(0))
 	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 
-	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 100*time.Millisecond)
-	// txtColorIn := ledgrid.NewColorAnim(txt, color.White, 200*time.Millisecond)
-	txtColorOut := ledgrid.NewColorAnim(txt, color.Black, 2*time.Second)
-	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 2*time.Second)
-
-	// txtEnter := ledgrid.NewFixedPosAnim(txt, fixed.P(2, height/2), 2*time.Second)
-	// txtEnter.Cont = false
-	// txtEnter.Curve = ledgrid.AnimationEaseOut
-
-	// txtLeave := ledgrid.NewFixedPosAnim(txt, fixed.P(-width, height/2), 2*time.Second)
-	// txtLeave.Cont = true
-	// txtLeave.Curve = ledgrid.AnimationEaseIn
+	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 1000*time.Millisecond)
+	txtColorOut := ledgrid.NewColorAnim(txt, color.Black, 1000*time.Millisecond)
+	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 3000*time.Millisecond)
 
 	txtNextWord := ledgrid.NewTask(func() {
 		if scanner.Scan() {
 			txt.SetText(scanner.Text())
 		}
+		txt.Color = color.White.Alpha(0)
 	})
-	txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn, txtColorIn, txtColorOut, txtFadeOut)
+	txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn,
+		ledgrid.NewDelay(time.Second), txtColorOut, txtFadeOut)
 	txtSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	c.Add(txt)
@@ -162,80 +155,6 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor.Start()
 }
 
-func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
-	var colName string
-	var nameList []string
-	var nameIdx int = 0
-
-	nameList = make([]string, len(color.Names))
-	copy(nameList, color.Names)
-	colName = nameList[0]
-
-	rectPos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
-	rectSize := geom.Point{float64(width), float64(height)}
-
-	rect := ledgrid.NewRectangle(rectPos, rectSize, color.Black)
-	rect.StrokeWidth = 0.0
-	rect.FillColor = color.Black
-
-	txtPos1 := fixed.P(width+1, height-1)
-	txtPos2 := fixed.P(1, height-1)
-	txtPos3 := fixed.P(1, -1)
-	// txtPos3 := fixed.P(-2*width, height-1)
-	txt := ledgrid.NewFixedText(txtPos1, color.Black, "")
-	// txt.SetFont(ledgrid.Fixed5x7)
-	c.Add(rect, txt)
-
-	posAnim1 := ledgrid.NewFixedPosAnim(txt, txtPos2, 3*time.Second/2)
-	posAnim1.Curve = ledgrid.AnimationEaseOut
-	posAnim2 := ledgrid.NewFixedPosAnim(txt, txtPos3, time.Second/2)
-	posAnim2.Curve = ledgrid.AnimationEaseIn
-
-	fadeIn := ledgrid.NewFillColorAnim(rect, color.Map[colName], 1*time.Second)
-	fadeIn.Curve = ledgrid.AnimationEaseOut
-	fadeOut := ledgrid.NewFillColorAnim(rect, color.Black, 1*time.Second)
-	fadeOut.Curve = ledgrid.AnimationEaseIn
-	txtTask := ledgrid.NewTask(func() {
-		var txtColor color.LedColor
-
-		col := color.Map[colName]
-		h, s, l := col.HSL()
-		switch {
-		case s == 0:
-			txtColor = color.Gray
-		case h >= 60:
-			txtColor = color.Red
-		case h >= -60:
-			txtColor = color.Blue
-		default:
-			txtColor = color.Green
-		}
-
-		if l > 0.4 {
-			txtColor = color.Gray.Dark(0.7)
-		} else {
-			txtColor = color.Gray.Bright(0.5)
-		}
-		txt.SetText(colName)
-		txt.Color = txtColor
-	})
-	colTask := ledgrid.NewTask(func() {
-		oldColor := color.Map[colName]
-		nameIdx = (nameIdx + 1) % len(nameList)
-		colName = nameList[nameIdx]
-		newColor := color.Map[colName]
-		fadeOut.Val2 = ledgrid.Const(oldColor.Interpolate(newColor, 0.5))
-		fadeIn.Val2 = ledgrid.Const(newColor)
-	})
-
-	timeLine := ledgrid.NewTimeline(3 * time.Second)
-	timeLine.Add(0*time.Second, txtTask, posAnim1, fadeIn)
-	timeLine.Add(1500*time.Millisecond, colTask)
-	timeLine.Add(2*time.Second, fadeOut, posAnim2)
-	timeLine.RepeatCount = ledgrid.AnimationRepeatForever
-
-	timeLine.Start()
-}
 
 func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 	fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
@@ -253,7 +172,7 @@ func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	ptStart = pt.Add(fixed.P(width, 0))
 	ptEnd = pt.Sub(fixed.P(width, 0))
 
-	txt = ledgrid.NewFixedText(pt, color.Gold, palName)
+	txt = ledgrid.NewFixedText(pt, palName, color.Gold)
 
 	pal := ledgrid.PaletteMap[palName]
 	fader := ledgrid.NewPaletteFader(pal)

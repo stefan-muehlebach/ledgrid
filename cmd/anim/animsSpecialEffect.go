@@ -296,7 +296,7 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 
 						aDur := 200*time.Millisecond + rand.N(300*time.Millisecond)
 						aFadeIn := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeIn, aDur)
-						aFadeIn.Curve = ledgrid.AnimationLazeIn
+						aFadeIn.Curve = ledgrid.AnimationRealEaseIn
 
 						aDur = time.Second + rand.N(time.Second)
 						aFadeOut := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeOut, 3*aDur/2)

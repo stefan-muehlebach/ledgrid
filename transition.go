@@ -22,6 +22,10 @@ type FadeTransition struct {
 	a0, a1, alpha uint8
 }
 
+// Creates a new fade transition on canvas c, varying the alpha value of that
+// canvas from a0 to a1 within duration d.
+// For a transition to another canvas, you have to use a second fade transition
+// on the other canvas, running from a1 to a0 within the same duration.
 func NewFadeTransition(c *Canvas, a0, a1 uint8, d time.Duration) *FadeTransition {
 	a := &FadeTransition{}
 	a.NormAnimationEmbed.Extend(a)
@@ -152,12 +156,3 @@ func (a *WipeTransition) Tick(t float64) {
 	a.lb = int(a.edgePos - (a.edgeWidth / 2.0))
 	a.ub = int(a.edgePos + (a.edgeWidth / 2.0))
 }
-
-// type TunnelTransition struct {
-//     NormAnimationEmbed
-//     rect image.Rectangle
-//     mp geom.Point
-//     edgeWidth, edgeStart, edgeEnd, edgePos float64
-//     lb, ub int
-//     alphaStep uint8
-// }

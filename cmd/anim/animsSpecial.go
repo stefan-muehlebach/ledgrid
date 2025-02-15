@@ -68,15 +68,15 @@ func FarewellGery(ctx context.Context, c *ledgrid.Canvas) {
 		}
 	}
 
-	txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.GreenYellow.Alpha(0.0), "LIEBER")
+	txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "LIEBER", color.GreenYellow.Alpha(0.0))
 	txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 1*time.Second)
 	aTxt1.AutoReverse = true
-	txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.DarkViolet.Alpha(0.0), "GERY")
+	txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "GERY", color.DarkViolet.Alpha(0.0))
 	txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
 	aTxt2.AutoReverse = true
-	txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.RoyalBlue.Alpha(0.0), "FAREWELL")
+	txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "FAREWELL", color.RoyalBlue.Alpha(0.0))
 	txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 5*time.Second)
 	aTxt3.AutoReverse = true

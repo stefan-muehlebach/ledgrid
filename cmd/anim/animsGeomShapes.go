@@ -20,6 +20,7 @@ func init() {
 	programList.Add("Regular polygons", RegularPolygon)
 	programList.Add("Rectangles journey", RectanglesJourney)
 	programList.Add("Async multiple color fade", AsyncColorFade)
+    programList.Add("Something with segments", AliningSegments)
 }
 
 func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
@@ -370,34 +371,11 @@ func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 	r1Pos3 := geom.Point{float64(width) - 4.0, float64(height) / 2.0}
 	r1Size := geom.Point{7.0, 3.0}
 
-	// c1Pos1 := geom.Point{2.0 * float64(width) / 3.0, float64(height) / 4.0}
-	// c1Pos2 := c1Pos1.SubXY(float64(width)+4, 0.0)
-	// c2Pos1 := geom.Point{float64(width) / 3.0, 3.0 * float64(height) / 4.0}
-	// c2Pos2 := c2Pos1.SubXY(float64(width)+4, 0.0)
-	// c3Pos1 := geom.Point{3.0 * float64(width) / 4.0, float64(height) / 2.0}
-	// c3Pos2 := c3Pos1.SubXY(float64(width)+4, 0.0)
-
-	// c4Pos1 := geom.Point{float64(width) + 2.0, float64(height) / 4.0}
-	// c4Pos2 := c4Pos1.SubXY(float64(width)+4, 0.0)
-
 	r1 := ledgrid.NewRectangle(r1Pos1, r1Size, color.GreenYellow)
 
-	// c1 := ledgrid.NewDot(c1Pos1, color.LightBlue)
-	// c2 := ledgrid.NewDot(c2Pos1, color.LightBlue)
-	// c3 := ledgrid.NewDot(c3Pos1, color.LightBlue)
 	dotList[0] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue)
 	dotList[1] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue.Dark(0.2))
 	dotList[2] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue.Dark(0.4))
-
-	// randTask := ledgrid.NewTask(func() {
-	// 	pos1 := geom.Point{float64(width) + 2.0, float64(height) * rand.Float64()}
-	// 	pos2 := pos1.SubXY(float64(width)+4.0, 0.0)
-	// 	dot := ledgrid.NewDot(pos1, color.LightBlue)
-	// 	c.Add(dot)
-	// 	posAnim := ledgrid.NewPositionAnim(dot, pos2, time.Second)
-	// 	posAnim.Curve = ledgrid.AnimationLinear
-	// 	posAnim.Start()
-	// })
 
 	c.Add(dotList[2], dotList[1], dotList[0], r1)
 
@@ -423,8 +401,6 @@ func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 	tl := ledgrid.NewTimeline(5 * time.Second)
 	tl.RepeatCount = 1
 
-	// tl.Add(1000*time.Millisecond, aPos2)
-	// tl.Add(2000*time.Millisecond, posAnim, aPos5, aPos6)
 	tl.Add(0000*time.Millisecond, animList[0])
 	tl.Add(1100*time.Millisecond, animList[0])
 	tl.Add(2500*time.Millisecond, animList[0])
@@ -435,69 +411,35 @@ func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 
 	tl.Add(200*time.Millisecond, animList[2])
 
-	// tl.Add(3500*time.Millisecond, randTask)
-	// tl.Add(4200*time.Millisecond, randTask)
-	// tl.Add(9000*time.Millisecond, aPos3)
-
 	seq := ledgrid.NewSequence(aPos2, tl, aPos3)
 
 	seq.Start()
 }
 
-//----------------------------------------------------------------------------
 
-// type BouncingEllipse struct {
-// 	ledgrid.Ellipse
-// 	Vel, Acc geom.Point
-// 	Field    geom.Rectangle
-// }
+func AliningSegments(ctx context.Context, c *ledgrid.Canvas) {
+    mp1 := geom.Point{float64(width)/4.0, float64(height)/2.0}
+    mp2 := geom.Point{float64(width)/2.0, float64(height)/2.0}
+    mp3 := geom.Point{3.0*float64(width)/4.0, float64(height)/2.0}
 
-// func NewBouncingEllipse(pos, size geom.Point, col color.LedColor) *BouncingEllipse {
-// 	b := &BouncingEllipse{}
-// 	b.Ellipse = *ledgrid.NewEllipse(pos, size, col)
-// 	b.Vel = geom.Point{}
-// 	b.Acc = geom.Point{}
-// 	return b
-// }
+    l1 := ledgrid.NewLine(mp1, 10, color.LightGreen)
+    l2 := ledgrid.NewLine(mp2, 20, color.Pink)
+    l3 := ledgrid.NewLine(mp3, 10, color.SkyBlue)
+    c.Add(l1, l2, l3)
 
-// func (b *BouncingEllipse) Update(pit time.Time) bool {
-// 	deltaVel := b.Acc.Mul(0.3)
-// 	b.Vel = b.Vel.Add(deltaVel)
-// 	b.Pos = b.Pos.Add(b.Vel)
-// 	if b.Pos.X < b.Field.Min.X || b.Pos.X >= b.Field.Max.X {
-// 		b.Vel.X = -b.Vel.X
-// 	}
-// 	if b.Pos.Y < b.Field.Min.Y || b.Pos.Y >= b.Field.Max.Y {
-// 		b.Vel.Y = -b.Vel.Y
-// 	}
-// 	return true
-// }
+    anim1 := ledgrid.NewAngleAnim(l1, 2*math.Pi, 4 * time.Second)
+    // anim1.AutoReverse = true
+    // anim1.RepeatCount = ledgrid.AnimationRepeatForever
+    anim2 := ledgrid.NewAngleAnim(l2, 2*math.Pi, 4 * time.Second)
+    // anim2.AutoReverse = true
+    // anim2.RepeatCount = ledgrid.AnimationRepeatForever
+    anim3 := ledgrid.NewAngleAnim(l3, 2*math.Pi, 4 * time.Second)
+    // anim3.AutoReverse = true
+    // anim3.RepeatCount = ledgrid.AnimationRepeatForever
 
-// func (b *BouncingEllipse) Duration() time.Duration {
-// 	return time.Duration(0)
-// }
-// func (b *BouncingEllipse) SetDuration(dur time.Duration) {}
-// func (b *BouncingEllipse) Start()                        {}
-// func (b *BouncingEllipse) Suspend()                      {}
-// func (b *BouncingEllipse) Continue()                     {}
-// func (b *BouncingEllipse) IsRunning() bool {
-// 	return true
-// }
+    seq := ledgrid.NewSequence(anim3, anim2, anim1)
+    seq.RepeatCount = ledgrid.AnimationRepeatForever
 
-// func BounceAround(c *ledgrid.Canvas) {
-// 	pos1 := geom.Point{2.0, 2.0}
-// 	pos2 := geom.Point{37.0, 7.0}
-// 	size := geom.Point{4.0, 4.0}
-// 	vel1 := geom.Point{0.15, 0.075}
-// 	vel2 := geom.Point{-0.35, -0.25}
+    seq.Start()
+}
 
-// 	obj1 := NewBouncingEllipse(pos1, size, color.GreenYellow)
-// 	obj1.Vel = vel1
-// 	obj1.Field = geom.NewRectangleIMG(c.Rect)
-// 	obj2 := NewBouncingEllipse(pos2, size, color.LightSeaGreen)
-// 	obj2.Vel = vel2
-// 	obj2.Field = geom.NewRectangleIMG(c.Rect)
-
-// 	c.Add(obj1, obj2)
-// 	ledgrid.AnimCtrl.Add(0, obj1, obj2)
-// }

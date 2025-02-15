@@ -398,19 +398,25 @@ func (p *RegularPolygon) Draw(c *Canvas) {
 // Fuer Geraden resp. Segmente ist dieser Datentyp vorgesehen, der von Pos nach
 // Pos + Size verlaeuft. Damit das funktioniert, duerfen bei diesem Typ
 // die Koordinaten von Size auch negativ sein.
+// Alternative Definition: ein Segment ist nur durch einen Positionspunkt
+// definiert (entspricht den Koordinaten des Mittelpunktes) plus einer Groesse
+// (Size - wobei nur die X-Koordinate beruecksichtigt wird) und einem Winkel
+// entspricht der Drehung des Segments um den Mittelpunkt.
 type Line struct {
 	CanvasObjectEmbed
 	PosEmbed
 	SizeEmbed
+    AngleEmbed
 	ColorEmbed
 	StrokeWidthEmbed
 	FadeEmbed
 }
 
-func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
+func NewLine(pos geom.Point, len float64, col color.LedColor) *Line {
 	l := &Line{}
-	l.Pos = pos1
-	l.Size = pos2.Sub(pos1)
+	l.Pos = pos
+	l.Size = geom.Point{len, 0.0}
+    l.Angle = 0.0
 	l.Color = col
 	l.StrokeWidth = 1.0
 	l.CanvasObjectEmbed.Extend(l)
@@ -419,9 +425,12 @@ func NewLine(pos1, pos2 geom.Point, col color.LedColor) *Line {
 }
 
 func (l *Line) Draw(c *Canvas) {
+    dp := geom.Point{math.Cos(l.Angle) * l.Size.X / 2.0, math.Sin(l.Angle) * l.Size.X / 2.0}
+    p1 := l.Pos.Add(dp)
+    p2 := l.Pos.Sub(dp)
 	c.GC.SetStrokeWidth(l.StrokeWidth)
 	c.GC.SetStrokeColor(l.Color)
-	c.GC.DrawLine(l.Pos.X, l.Pos.Y, l.Pos.X+l.Size.X, l.Pos.Y+l.Size.Y)
+	c.GC.DrawLine(p1.X, p1.Y, p2.X, p2.Y)
 	c.GC.Stroke()
 }
 
@@ -473,7 +482,6 @@ func NewDot(pos geom.Point, col color.LedColor) *Dot {
 }
 
 func (d *Dot) Draw(c *Canvas) {
-	// c.GC.DrawEllipse(d.Pos.X+0.5, d.Pos.Y+0.5, 0.5, 0.5)
 	c.GC.DrawEllipse(d.Pos.X+0.5, d.Pos.Y+0.5, math.Sqrt2/2.0, math.Sqrt2/2.0)
 	c.GC.SetFillColor(d.Color)
 	c.GC.Fill()
@@ -601,7 +609,6 @@ type FixedText struct {
 	CanvasObjectEmbed
 	AlignEmbed
 	FixedPosEmbed
-	// Pos fixed.Point26_6
 	ColorEmbed
 	FadeEmbed
 	text   string
@@ -610,7 +617,7 @@ type FixedText struct {
 	dp     fixed.Point26_6
 }
 
-func NewFixedText(pos fixed.Point26_6, col color.LedColor, text string) *FixedText {
+func NewFixedText(pos fixed.Point26_6, text string, col color.LedColor) *FixedText {
 	t := &FixedText{}
 	t.Pos = pos
 	t.Color = col
