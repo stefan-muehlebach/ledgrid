@@ -1,3 +1,5 @@
+//go:build !tinygo
+
 package conf
 
 import (
@@ -329,11 +331,3 @@ func (mod Module) DrawBorder(gc *gg.Context) {
 	gc.Stroke()
 }
 
-// Hilfsfunktioenchen (sogar generisch!)
-func abs[T ~int | ~float64](i T) T {
-	if i < 0 {
-		return -i
-	} else {
-		return i
-	}
-}

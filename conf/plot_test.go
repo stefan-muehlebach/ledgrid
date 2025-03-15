@@ -33,8 +33,8 @@ func TestPlotCustomConfig(t *testing.T) {
 	fileName = "plots/cup.png"
 	modConf.Plot(fileName)
 
-	modConf = Load("data/customConf.json")
-	fileName = "plots/customConf.png"
+	modConf = Load("data/customA.json")
+	fileName = "plots/customA.png"
 	modConf.Plot(fileName)
 
 	modConf = Load("data/tetris.json")

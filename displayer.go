@@ -35,7 +35,8 @@ type Displayer interface {
 	SetGamma(r, g, b float64)
 	// Display is used by a Server to show the image data in buffer. The bytes
 	// in buffer must already be in a suitable order for this specific device.
-	// The order of RGB has to be in device order as well.
+	// The order of RGB has to be in device order as well but the data hasn't
+    // to be gamma corrected.
 	Display(buffer []byte)
 	// Send is called by Display and must not be called from other parts of
 	// the software

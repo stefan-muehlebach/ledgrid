@@ -1,3 +1,5 @@
+//go:build tinygo
+
 package ledgrid
 
 import (
@@ -6,9 +8,7 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"net/netip"
-	"net/rpc"
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid/conf"
@@ -43,12 +43,9 @@ func (b ByteCount) String() string {
 type GridServer struct {
 	Disp                 Displayer
 	RecvBytes, SentBytes ByteCount
-	udpAddr              *net.UDPAddr
-	udpConn              *net.UDPConn
-	tcpAddr              *net.TCPAddr
-	tcpListener          *net.TCPListener
-	rpcAddr              *net.TCPAddr
-	rpcListener          *net.TCPListener
+	addr                 *net.TCPAddr
+	listener             net.Listener
+	conn                 net.Conn
 	bufferSize           int
 	maxValue             [3]uint8
 	drawTestPattern      bool
@@ -59,7 +56,6 @@ type GridServer struct {
 // der Port sowohl fuer die UDP-, als auch fuer die TCP-Verbindung angegeben
 // mit mit rpcPort der Port fuer die RPC-Calls. Mit disp wird dem Server
 // ein konkretes, anzeigefaehiges Geraet (sog. Displayer) mitgegeben.
-//
 func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
 	var addrPort netip.AddrPort
@@ -72,15 +68,20 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
-	if !addrPort.IsValid() {
-		log.Fatalf("Invalid address or port: %v", addrPort)
-	}
-	p.udpAddr = net.UDPAddrFromAddrPort(addrPort)
-	p.udpConn, err = net.ListenUDP("udp", p.udpAddr)
-	if err != nil {
-		log.Fatal("UDP listen error:", err)
-	}
+	// addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
+	// if !addrPort.IsValid() {
+	// log.Fatalf("Invalid address or port: %v", addrPort)
+	// }
+	// p.udpAddr = net.UDPAddrFromAddrPort(addrPort)
+	// p.udpListener, err = net.Listen("tcp", ":5333")
+	// if err != nil {
+	// 	log.Fatal("UDP listen error:", err)
+	// }
+	// println("Server is on address", p.udpListener.Addr().String())
+	// p.udpConn, err = p.udpListener.Accept()
+	// if err != nil {
+	// 	log.Fatal("UDP connection error:", err)
+	// }
 
 	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
@@ -88,36 +89,37 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	if !addrPort.IsValid() {
 		log.Fatalf("Invalid address or port: %v", addrPort)
 	}
-	p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
-	p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
+	p.addr = net.TCPAddrFromAddrPort(addrPort)
+	p.listener, err = net.Listen("tcp", ":5333")
+	// p.listener, err = net.ListenTCP("tcp", p.addr)
 	if err != nil {
 		log.Fatal("TCP listen error:", err)
 	}
 
 	// Anschliessend wird die RPC-Verbindung initiiert.
-	rpc.Register(p)
-	rpc.HandleHTTP()
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(rpcPort))
-	p.rpcAddr = net.TCPAddrFromAddrPort(addrPort)
-	p.rpcListener, err = net.ListenTCP("tcp", p.rpcAddr)
-	if err != nil {
-		log.Fatal("RPC listen error:", err)
-	}
+	// rpc.Register(p)
+	// rpc.HandleHTTP()
+	// addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(rpcPort))
+	// p.rpcAddr = net.TCPAddrFromAddrPort(addrPort)
+	// p.rpcListener, err = net.ListenTCP("tcp", p.rpcAddr)
+	// if err != nil {
+	// 	log.Fatal("RPC listen error:", err)
+	// }
 
 	return p
 }
 
 func (p *GridServer) HandleEvents() {
-	go p.HandleMessage(p.udpConn)
-	go p.HandleTCP(p.tcpListener)
-	go http.Serve(p.rpcListener, nil)
+	// p.HandleMessage(p.udpConn)
+	p.HandleTCP(p.listener)
+	// go http.Serve(p.rpcListener, nil)
 }
 
 // Schliesst die diversen Verbindungen.
 func (p *GridServer) Close() {
-	p.udpConn.Close()
-	p.tcpListener.Close()
-	p.rpcListener.Close()
+	// p.udpConn.Close()
+	p.listener.Close()
+	// p.rpcListener.Close()
 	p.Disp.Close()
 }
 
@@ -132,6 +134,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	var buffer []byte
 
 	buffer = make([]byte, p.bufferSize)
+    println("    >> start reading and processing data")
 	for {
 		bufferSize, err = conn.Read(buffer)
 		if err != nil {
@@ -146,6 +149,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 		p.SentBytes += ByteCount(bufferSize)
 		p.sendWatch.Stop()
 	}
+    println("    >> client has disconnected")
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
 	// damit das Panel dunkel wird.
@@ -157,19 +161,22 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 }
 
 // Damit werden Meldungen via TCP empfangen und verarbeitet.
-func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
+func (p *GridServer) HandleTCP(lsnr net.Listener) {
 	var conn net.Conn
 	var err error
 
 	for {
+        println(">> waiting for clients")
 		conn, err = lsnr.Accept()
+        println("  >> client has connected")
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				break
 			}
 			log.Fatalf("Failed TCP Accept(): %v", err)
 		}
-		go p.HandleMessage(conn)
+		p.HandleMessage(conn)
+        conn.Close()
 	}
 }
 
@@ -190,17 +197,6 @@ func (p *GridServer) SetGamma(r, g, b float64) {
 func (p *GridServer) ModuleConfig() conf.ModuleConfig {
 	return p.Disp.ModuleConfig()
 }
-
-// Setzt pro Farbe den maximal erlaubten Farbwert als uint8-Wert
-/*
-func (p *GridServer) MaxBright() (r, g, b uint8) {
-	return p.maxValue[0], p.maxValue[1], p.maxValue[2]
-}
-
-func (p *GridServer) SetMaxBright(r, g, b uint8) {
-	p.maxValue[0], p.maxValue[1], p.maxValue[2] = r, g, b
-}
-*/
 
 func (p *GridServer) SetPixelStatus(idx int, stat LedStatusType) {
 	p.Disp.SetPixelStatus(idx, stat)
@@ -304,26 +300,26 @@ func (p *GridServer) ToggleTestPattern() bool {
 }
 
 // Die folgenden Methoden koennen via RPC vom Client aufgerufen werden.
-type NumLedsArg int
+// type NumLedsArg int
 
-func (p *GridServer) RPCNumLeds(arg int, reply *NumLedsArg) error {
-	*reply = NumLedsArg(p.Disp.NumLeds())
-	return nil
-}
+// func (p *GridServer) RPCNumLeds(arg int, reply *NumLedsArg) error {
+// 	*reply = NumLedsArg(p.Disp.NumLeds())
+// 	return nil
+// }
 
-type GammaArg struct {
-	RedVal, GreenVal, BlueVal float64
-}
+// type GammaArg struct {
+// 	RedVal, GreenVal, BlueVal float64
+// }
 
-func (p *GridServer) RPCGamma(arg int, reply *GammaArg) error {
-	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
-	return nil
-}
+// func (p *GridServer) RPCGamma(arg int, reply *GammaArg) error {
+// 	reply.RedVal, reply.GreenVal, reply.BlueVal = p.Gamma()
+// 	return nil
+// }
 
-func (p *GridServer) RPCSetGamma(arg GammaArg, reply *int) error {
-	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
-	return nil
-}
+// func (p *GridServer) RPCSetGamma(arg GammaArg, reply *int) error {
+// 	p.SetGamma(arg.RedVal, arg.GreenVal, arg.BlueVal)
+// 	return nil
+// }
 
 /*
 type BrightArg struct {
@@ -341,11 +337,11 @@ func (p *GridServer) RPCSetMaxBright(arg BrightArg, reply *int) error {
 }
 */
 
-type ModuleConfigArg struct {
-	ModuleConfig conf.ModuleConfig
-}
+// type ModuleConfigArg struct {
+// 	ModuleConfig conf.ModuleConfig
+// }
 
-func (p *GridServer) RPCModuleConfig(arg int, reply *ModuleConfigArg) error {
-	reply.ModuleConfig = p.Disp.ModuleConfig()
-	return nil
-}
+// func (p *GridServer) RPCModuleConfig(arg int, reply *ModuleConfigArg) error {
+// 	reply.ModuleConfig = p.Disp.ModuleConfig()
+// 	return nil
+// }

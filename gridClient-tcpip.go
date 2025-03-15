@@ -4,18 +4,20 @@ package ledgrid
 
 import (
 	"fmt"
+	"image"
 	"log"
 	"net"
 	"net/rpc"
 
-    	"github.com/stefan-muehlebach/ledgrid/conf"
+	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type NetGridClient struct {
-	conn      net.Conn
-	rpcClient *rpc.Client
-	sendWatch *Stopwatch
+	conn        net.Conn
+	rpcDisabled bool
+	rpcClient   *rpc.Client
+	sendWatch   *Stopwatch
 }
 
 func NewNetGridClient(host string, network string, port, rpcPort uint) GridClient {
@@ -25,16 +27,18 @@ func NewNetGridClient(host string, network string, port, rpcPort uint) GridClien
 	p := &NetGridClient{}
 	hostPortData = fmt.Sprintf("%s:%d", host, port)
 	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
-
 	p.conn, err = net.Dial(network, hostPortData)
 	if err != nil {
 		log.Fatalf("Error in Dial(dataPort): %v", err)
 	}
 
-	p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
-	if err != nil {
-		log.Fatalf("Error in Dial(rpcPort): %v", err)
+	if rpcPort != 0 {
+		p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
+		if err != nil {
+			log.Fatalf("Error in Dial(rpcPort): %v", err)
+		}
 	}
+
 	p.sendWatch = NewStopwatch()
 
 	return p
@@ -58,6 +62,9 @@ func (p *NetGridClient) NumLeds() int {
 	var reply NumLedsArg
 	var err error
 
+	if p.rpcClient == nil {
+		return 400
+	}
 	err = p.rpcClient.Call("GridServer.RPCNumLeds", 0, &reply)
 	if err != nil {
 		log.Fatal("NumLeds error:", err)
@@ -69,6 +76,9 @@ func (p *NetGridClient) Gamma() (r, g, b float64) {
 	var reply GammaArg
 	var err error
 
+	if p.rpcClient == nil {
+		return 2.5, 2.5, 2.5
+	}
 	err = p.rpcClient.Call("GridServer.RPCGamma", 0, &reply)
 	if err != nil {
 		log.Fatal("Gamma error:", err)
@@ -80,6 +90,9 @@ func (p *NetGridClient) SetGamma(r, g, b float64) {
 	var reply int
 	var err error
 
+	if p.rpcClient == nil {
+		return
+	}
 	err = p.rpcClient.Call("GridServer.RPCSetGamma", GammaArg{r, g, b}, &reply)
 	if err != nil {
 		log.Fatal("SetGamma error:", err)
@@ -90,6 +103,9 @@ func (p *NetGridClient) ModuleConfig() conf.ModuleConfig {
 	var reply ModuleConfigArg
 	var err error
 
+	if p.rpcClient == nil {
+		return conf.DefaultModuleConfig(image.Point{40, 10})
+	}
 	err = p.rpcClient.Call("GridServer.RPCModuleConfig", 0, &reply)
 	if err != nil {
 		log.Fatal("ModuleConfig error:", err)

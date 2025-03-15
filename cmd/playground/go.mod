@@ -1,11 +1,12 @@
 module github.com/stefan-muehlebach/ledgrid/cmd/playground
 
-go 1.23.5
+go 1.24.1
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 
+replace github.com/stefan-muehlebach/gg => ../../../gg
+
 require (
-	github.com/fsnotify/fsnotify v1.8.0
 	github.com/stefan-muehlebach/gg v1.3.4
 	github.com/stefan-muehlebach/ledgrid v0.0.0-00010101000000-000000000000
 	golang.org/x/image v0.23.0

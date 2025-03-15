@@ -28,9 +28,7 @@ func NewWS2801(modConf conf.ModuleConfig) *WS2801 {
 	p.SetModuleConfig(modConf)
 
 	p.spi = machine.SPI0
-	if err = p.spi.Configure(machine.SPIConfig{
-		Frequency: 3 * machine.MHz,
-	}); err != nil {
+	if err = p.spi.Configure(machine.SPIConfig{}); err != nil {
 		println("Error configuring SPI:")
 		println(err.Error())
 		return nil
@@ -59,5 +57,5 @@ func (p *WS2801) Send(buffer []byte) {
 		println("Couldn't send data:", err.Error())
 		return
 	}
-	time.Sleep(20 * time.Microsecond)
+	time.Sleep(500 * time.Microsecond)
 }
