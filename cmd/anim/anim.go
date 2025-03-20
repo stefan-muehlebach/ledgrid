@@ -36,35 +36,39 @@ var (
 
 type ProgramList []LedGridProgram
 
-type ProgramFunc func(c *ledgrid.Canvas)
 type StartFunc func(ctx context.Context, c *ledgrid.Canvas)
 
-func (pl *ProgramList) Add(name string, startFunc StartFunc) {
-	prog := NewProgram(name, startFunc)
+func (pl *ProgramList) Add(name, group string, startFunc StartFunc) {
+	prog := NewProgram(name, group, startFunc)
 	*pl = append(*pl, prog)
 }
 
-func (pl *ProgramList) AddTitle(name string) {
-	title := NewTitle(name)
-	*pl = append(*pl, title)
-}
+// func (pl *ProgramList) AddTitle(name string) {
+// 	title := NewTitle(name)
+// 	*pl = append(*pl, title)
+// }
 
 type LedGridProgram interface {
 	Name() string
+    Group() string
 	Start(ctx context.Context, c *ledgrid.Canvas)
 	Stop()
 }
 
-func NewProgram(name string, startFunc StartFunc) LedGridProgram {
-	return &simpleProgram{name: name, startFunc: startFunc}
+func NewProgram(name, group string, startFunc StartFunc) LedGridProgram {
+	return &simpleProgram{
+        name: name,
+        group: group,
+        startFunc: startFunc,
+    }
 }
 
-func NewTitle(name string) LedGridProgram {
-	return &groupTitle{name: name}
-}
+// func NewTitle(name string) LedGridProgram {
+// 	return &groupTitle{name: name}
+// }
 
 type simpleProgram struct {
-	name      string
+	name, group string
 	startFunc StartFunc
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -72,6 +76,10 @@ type simpleProgram struct {
 
 func (p *simpleProgram) Name() string {
 	return p.name
+}
+
+func (p *simpleProgram) Group() string {
+	return p.group
 }
 
 func (p *simpleProgram) Start(ctx context.Context, c *ledgrid.Canvas) {
@@ -85,17 +93,17 @@ func (p *simpleProgram) Stop() {
 	fmt.Printf("Stop(): context is stopped\n")
 }
 
-type groupTitle struct {
-	name string
-}
+// type groupTitle struct {
+// 	name string
+// }
 
-func (g *groupTitle) Name() string {
-	return g.name
-}
+// func (g *groupTitle) Name() string {
+// 	return g.name
+// }
 
-func (g *groupTitle) Start(ctx context.Context, c *ledgrid.Canvas) {}
+// func (g *groupTitle) Start(ctx context.Context, c *ledgrid.Canvas) {}
 
-func (g *groupTitle) Stop() {}
+// func (g *groupTitle) Stop() {}
 
 // ---------------------------------------------------------------------------
 
@@ -191,36 +199,30 @@ func main() {
 	progId, prevProgId = -1, -1
 	if runInteractive {
 		for {
-			fmt.Printf("---------------------------------------\n")
+			fmt.Printf("---------------------------------------------------------------------\n")
 			fmt.Printf("  Program\n")
-			fmt.Printf("---------------------------------------\n")
+			fmt.Printf("---------------------------------------------------------------------\n")
 			for i, prog := range programList {
 				var id byte
 
-				switch prog.(type) {
-				case *simpleProgram:
-					if ch >= 'a' && ch <= 'z' && i == progId {
-						fmt.Printf("> ")
-					} else {
-						fmt.Printf("  ")
-					}
-
-					if i < 26 {
-						id = byte('a' + i)
-					} else {
-						id = byte('A' + (i - 26))
-					}
-
-					fmt.Printf("[%c] %s\n", id, prog.Name())
-				case *groupTitle:
-					fmt.Printf("%s:\n", prog.Name())
-					fmt.Printf("---------------------------------------\n")
+				if ch >= 'a' && ch <= 'z' && i == progId {
+					fmt.Printf("> ")
+				} else {
+					fmt.Printf("  ")
 				}
+
+				if i < 26 {
+					id = byte('a' + i)
+				} else {
+					id = byte('A' + (i - 26))
+				}
+
+				fmt.Printf("[%c] %s\n", id, prog.Name())
 			}
-			fmt.Printf("---------------------------------------\n")
+			fmt.Printf("---------------------------------------------------------------------\n")
 			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
-			fmt.Printf("    +/-: increase/decreases by 0.1\n")
-			fmt.Printf("---------------------------------------\n")
+			fmt.Printf("   +/-: increase/decreases by 0.1\n")
+			fmt.Printf("---------------------------------------------------------------------\n")
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
 
@@ -238,9 +240,6 @@ func main() {
 					id = int(ch - 'A' + 26)
 				}
 				if id < 0 || id >= len(programList) {
-					continue
-				}
-				if _, isTitle := programList[id].(*groupTitle); isTitle {
 					continue
 				}
 				progId = id
@@ -320,6 +319,7 @@ func main() {
 
 	ledgrid.AnimCtrl.Suspend()
 	ledGrid.Clear(color.Black)
+    ledGrid.Show()
 	ledGrid.Close()
 
 	fmt.Printf("Program statistics:\n")

@@ -11,10 +11,10 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Animation Controllers")
-	programList.Add("Group test", GroupTest)
-	programList.Add("Sequence test", SequenceTest)
-	programList.Add("Timeline test", TimelineTest)
+	// programList.AddTitle("Animation Controllers")
+	programList.Add("Group test", "Controllers", GroupTest)
+	programList.Add("Sequence test", "Controllers", SequenceTest)
+	programList.Add("Timeline test", "Controllers", TimelineTest)
 }
 
 func GroupTest(ctx context.Context, c *ledgrid.Canvas) {

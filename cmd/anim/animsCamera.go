@@ -9,9 +9,9 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Camera Animations")
-	programList.Add("Ordinary camera", OrdinaryCamera)
-	programList.Add("Differential camera", DiffCamera)
+    // programList.AddTitle("Camera Animations")
+	programList.Add("Ordinary camera", "Camera", OrdinaryCamera)
+	programList.Add("Differential camera", "Camera", DiffCamera)
 
 }
 

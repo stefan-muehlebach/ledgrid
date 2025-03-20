@@ -9,11 +9,11 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Transitions")
-	programList.Add("Fade between three canvases", FadeCanvases)
-	programList.Add("Show the different wipe transitions", WipeTrans)
-    programList.Add("Like at a theatre...", TheaterKulissen)
-	programList.Add("Camera images with some nice fading effects", EffectFaderTest)
+    // programList.AddTitle("Transitions")
+	programList.Add("Fade between three canvases", "Transitions", FadeCanvases)
+	programList.Add("Show the different wipe transitions", "Transitions", WipeTrans)
+    programList.Add("Like at a theatre...", "Transitions", TheaterKulissen)
+	programList.Add("Camera images with some nice fading effects", "Transitions", EffectFaderTest)
 }
 
 func FadeCanvases(ctx context.Context, c1 *ledgrid.Canvas) {

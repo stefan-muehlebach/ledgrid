@@ -47,8 +47,8 @@ type Displayer interface {
 }
 
 // This type has been introduced in order to mark some NeoPixels on the chain
-// as 'ok' (the default), 'defect' or 'missing' (see constants PixelOK,
-// PixelDefect or PixelMissing for more information).
+// as 'ok' (the default), 'defect' or 'missing' (see constants LedOK,
+// LedDefect or LedMissing for more information).
 type LedStatusType byte
 
 const (

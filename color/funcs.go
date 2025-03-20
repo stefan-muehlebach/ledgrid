@@ -1,8 +1,7 @@
-
 package color
 
 import (
-    "math/rand/v2"
+	"math/rand/v2"
 )
 
 // Mit RandColor kann zufällig eine aus dem gesamten Sortiment der hier

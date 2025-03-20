@@ -8,16 +8,17 @@ import (
 
 	"golang.org/x/image/math/fixed"
 
+	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/color"
 )
 
 func init() {
-	programList.AddTitle("Text Animations")
-	programList.Add("Rotating, Floating Words", MovingText)
-	programList.Add("All Named Colors", NamedColors)
-	programList.Add("Clock animation", ClockAnimation)
+	// programList.AddTitle("Text Animations")
+	programList.Add("Rotating, Floating Words", "Text", MovingText)
+	programList.Add("All Named Colors", "Text", NamedColors)
+	programList.Add("Clock animation", "Text", ClockAnimation)
 }
 
 func f2f(x float64) fixed.Int26_6 {
@@ -144,7 +145,7 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	// txt.SetFont(ledgrid.Fixed5x7)
 	txt := ledgrid.NewText(txtPos1, "", color.Black)
 	txt.SetAlign(ledgrid.AlignLeft | ledgrid.AlignBottom)
-	// txt.SetFont(fonts.GoBold, 10.0)
+	txt.SetFont(fonts.GoBold, 10.0)
 
 	c.Add(rect, txt)
 

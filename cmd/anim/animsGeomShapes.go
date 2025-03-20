@@ -12,15 +12,15 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Geometric Shapes")
-	programList.Add("Circling circles", CirclingCircles)
-	programList.Add("Chasing circles", ChasingCircles)
-	programList.Add("Circle animation", CircleAnimation)
-	programList.Add("Pushing rectangles", PushingRectangles)
-	programList.Add("Regular polygons", RegularPolygon)
-	programList.Add("Rectangles journey", RectanglesJourney)
-	programList.Add("Async multiple color fade", AsyncColorFade)
-    programList.Add("Something with segments", AliningSegments)
+	// programList.AddTitle("Geometric Shapes")
+	programList.Add("Circling circles", "Shapes", CirclingCircles)
+	programList.Add("Chasing circles", "Shapes", ChasingCircles)
+	programList.Add("Circle animation", "Shapes", CircleAnimation)
+	programList.Add("Pushing rectangles", "Shapes", PushingRectangles)
+	programList.Add("Regular polygons", "Shapes", RegularPolygon)
+	programList.Add("Rectangles journey", "Shapes", RectanglesJourney)
+	programList.Add("Async multiple color fade", "Shapes", AsyncColorFade)
+	programList.Add("Something with segments", "Shapes", AliningSegments)
 }
 
 func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
@@ -416,30 +416,28 @@ func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 	seq.Start()
 }
 
-
 func AliningSegments(ctx context.Context, c *ledgrid.Canvas) {
-    mp1 := geom.Point{float64(width)/4.0, float64(height)/2.0}
-    mp2 := geom.Point{float64(width)/2.0, float64(height)/2.0}
-    mp3 := geom.Point{3.0*float64(width)/4.0, float64(height)/2.0}
+	mp1 := geom.Point{float64(width) / 4.0, float64(height) / 2.0}
+	mp2 := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+	mp3 := geom.Point{3.0 * float64(width) / 4.0, float64(height) / 2.0}
 
-    l1 := ledgrid.NewLine(mp1, 10, color.LightGreen)
-    l2 := ledgrid.NewLine(mp2, 20, color.Pink)
-    l3 := ledgrid.NewLine(mp3, 10, color.SkyBlue)
-    c.Add(l1, l2, l3)
+	l1 := ledgrid.NewLine(mp1, 10, color.LightGreen)
+	l2 := ledgrid.NewLine(mp2, 20, color.Pink)
+	l3 := ledgrid.NewLine(mp3, 10, color.SkyBlue)
+	c.Add(l1, l2, l3)
 
-    anim1 := ledgrid.NewAngleAnim(l1, 2*math.Pi, 4 * time.Second)
-    // anim1.AutoReverse = true
-    // anim1.RepeatCount = ledgrid.AnimationRepeatForever
-    anim2 := ledgrid.NewAngleAnim(l2, 2*math.Pi, 4 * time.Second)
-    // anim2.AutoReverse = true
-    // anim2.RepeatCount = ledgrid.AnimationRepeatForever
-    anim3 := ledgrid.NewAngleAnim(l3, 2*math.Pi, 4 * time.Second)
-    // anim3.AutoReverse = true
-    // anim3.RepeatCount = ledgrid.AnimationRepeatForever
+	anim1 := ledgrid.NewAngleAnim(l1, 2*math.Pi, 4*time.Second)
+	// anim1.AutoReverse = true
+	// anim1.RepeatCount = ledgrid.AnimationRepeatForever
+	anim2 := ledgrid.NewAngleAnim(l2, 2*math.Pi, 4*time.Second)
+	// anim2.AutoReverse = true
+	// anim2.RepeatCount = ledgrid.AnimationRepeatForever
+	anim3 := ledgrid.NewAngleAnim(l3, 2*math.Pi, 4*time.Second)
+	// anim3.AutoReverse = true
+	// anim3.RepeatCount = ledgrid.AnimationRepeatForever
 
-    seq := ledgrid.NewSequence(anim3, anim2, anim1)
-    seq.RepeatCount = ledgrid.AnimationRepeatForever
+	seq := ledgrid.NewSequence(anim3, anim2, anim1)
+	seq.RepeatCount = ledgrid.AnimationRepeatForever
 
-    seq.Start()
+	seq.Start()
 }
-

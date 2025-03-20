@@ -11,9 +11,9 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Path Animations")
-	programList.Add("Path test", PathTest)
-	programList.Add("Polygon path test", PolygonPathTest)
+    // programList.AddTitle("Path Animations")
+	programList.Add("Path test", "Path", PathTest)
+	programList.Add("Polygon path test", "Path", PolygonPathTest)
 }
 
 func PathTest(ctx context.Context, c *ledgrid.Canvas) {

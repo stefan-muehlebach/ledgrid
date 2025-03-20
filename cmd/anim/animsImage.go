@@ -10,10 +10,10 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Images and Sprites")
-	programList.Add("Blinken animation", BlinkenAnimation)
-	programList.Add("Slide show (rotating images)", SlideShow)
-	programList.Add("Align this lonely image!", SingleImageAlign)
+    // programList.AddTitle("Images and Sprites")
+	programList.Add("Blinken animation", "Images", BlinkenAnimation)
+	programList.Add("Slide show (rotating images)", "Images", SlideShow)
+	programList.Add("Align this lonely image!", "Images", SingleImageAlign)
 }
 
 func BlinkenAnimation(ctx context.Context, c *ledgrid.Canvas) {

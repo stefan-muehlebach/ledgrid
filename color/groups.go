@@ -13,7 +13,7 @@ const (
 	Reds
 	Greens
 	Oranges
-    Yellows
+	Yellows
 	Browns
 	Whites
 	Grays

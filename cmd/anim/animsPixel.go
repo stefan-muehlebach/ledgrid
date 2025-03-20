@@ -17,12 +17,12 @@ import (
 )
 
 func init() {
-	programList.AddTitle("Pixel Animations")
+	// programList.AddTitle("Pixel Animations")
 	// programList.Add("Moving pixels", MovingPixels)
-	programList.Add("Glowing pixels with changing text", GlowingPixels)
-	programList.Add("Fireplace", Fireplace)
-	programList.Add("Shader using palettes", PaletteShader)
-	programList.Add("Shader using colors", ColorShader)
+	programList.Add("Glowing pixels with changing text", "Pixel", GlowingPixels)
+	programList.Add("Fireplace", "Pixel", Fireplace)
+	programList.Add("Shader using palettes", "Pixel", PaletteShader)
+	programList.Add("Shader using colors", "Pixel", ColorShader)
 }
 
 var (
@@ -154,7 +154,6 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	txtSeq.Start()
 	aGrpLedColor.Start()
 }
-
 
 func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 	fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})

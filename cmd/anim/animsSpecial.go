@@ -16,8 +16,8 @@ import (
 )
 
 func init() {
-    programList.AddTitle("Specials")
-	programList.Add("Farewell Gery!", FarewellGery)
+    // programList.AddTitle("Specials")
+	programList.Add("Farewell Gery!", "Specials", FarewellGery)
 }
 
 func FarewellGery(ctx context.Context, c *ledgrid.Canvas) {
