@@ -27,11 +27,11 @@ func init() {
 
 var (
 	colorList = [][]color.LedColor{
-		{color.NewLedColorHex(0xb9b90a), color.NewLedColorHex(0x0a5853)}, // Yellow to LightBlue
-		{color.NewLedColorHex(0xa60c5f), color.NewLedColorHex(0x000080)}, // DeepPink to DarkBlue
-		{color.NewLedColorHex(0x959500), color.NewLedColorHex(0x710e00)}, // Yellow to OrangeRed
-		{color.NewLedColorHex(0x007400), color.NewLedColorHex(0x9a2222)}, // DarkGreen to DarkRed
-		{color.NewLedColorHex(0x814124), color.NewLedColorHex(0x4c8baa)}, // Salmon to LightBlue
+		{color.LedColor{0xb9, 0xb9, 0x0a, 0xff}, color.LedColor{0x0a, 0x58, 0x53, 0xff}}, // Yellow to LightBlue
+		{color.LedColor{0xa6, 0x0c, 0x5f, 0xff}, color.LedColor{0x00, 0x00, 0x80, 0xff}}, // DeepPink to DarkBlue
+		{color.LedColor{0x95, 0x95, 0x00, 0xff}, color.LedColor{0x71, 0x0e, 0x00, 0xff}}, // Yellow to OrangeRed
+		{color.LedColor{0x00, 0x74, 0x00, 0xff}, color.LedColor{0x9a, 0x22, 0x22, 0xff}}, // DarkGreen to DarkRed
+		{color.LedColor{0x81, 0x41, 0x24, 0xff}, color.LedColor{0x4c, 0x8b, 0xaa, 0xff}}, // Salmon to LightBlue
 	}
 )
 
@@ -164,7 +164,7 @@ func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	var xMin, yMax float64
 	var txt *ledgrid.FixedText
-	var palName string = "Hipster"
+	var palName string = ledgrid.PaletteNames[0]
 	var ptStart, pt, ptEnd fixed.Point26_6
 
 	pt = fixed.P(1, height-1)
@@ -402,9 +402,9 @@ var (
 	}
 
 	PlasmaShaderFunc = func(t, x, y float64) float64 {
-		v1 := f1(t, x, y, 10)       // old param: 1.2
-		v2 := f2(t, x, y, 10, 2, 3) // old param: 1.6, 3.0, 1.5
-		v3 := f3(t, x, y, 5, 3)     // old param: 5.0, 5.0
+		v1 := f1(t, x, y, 5.0)           // old param: 1.2
+		v2 := f2(t, x, y, 6.0, 2.0, 3.0) // old param: 1.6, 3.0, 1.5
+		v3 := f3(t, x, y, 5.0, 5.0)      // old param: 5.0, 5.0
 		v := (v1+v2+v3)/6.0 + 0.5
 		return v
 	}

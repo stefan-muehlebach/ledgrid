@@ -3,6 +3,7 @@
 package ledgrid
 
 import (
+	"slices"
 	"embed"
 	"encoding/json"
 	"log"
@@ -65,6 +66,7 @@ func InitGradientPalettes(fileName string) {
 			log.Printf("Palette '%s' has no colors", rec.Name)
 		}
 	}
+    slices.Sort(PaletteNames)
 }
 
 func InitUniformPalettes() {
@@ -77,10 +79,12 @@ func InitUniformPalettes() {
 	ColorNames = append(ColorNames, colorName)
 	pal := NewUniformPalette(colorName, color.Transparent)
 	ColorMap[colorName] = pal
+
+    slices.Sort(ColorNames)
 }
 
 func init() {
-	// InitGradientPalettes("palSlice.json")
 	InitGradientPalettes("palGradient.json")
+	InitGradientPalettes("palSlice.json")
 	InitUniformPalettes()
 }

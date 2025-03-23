@@ -20,7 +20,7 @@ type Path interface {
 	Pos(t float64) geom.Point
 }
 
-// Geometrische Pfade heissen deshalb so, weil ihre Grundlage zum Punkte
+// Geometrische Pfade heissen deshalb so, weil ihre Grundlage um Punkte zu
 // bauen irgendwo in der Geometrie zu suchen ist.
 type GeomPath struct {
 	t0, l float64

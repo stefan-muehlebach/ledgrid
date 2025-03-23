@@ -106,7 +106,7 @@ func (g *LedGrid) LedColorAt(x, y int) ledcolor.LedColor {
 		return ledcolor.Black
 	}
 	src := g.Pix[idx : idx+3 : idx+3]
-	return ledcolor.NewLedColorRGB(src[0], src[1], src[2])
+	return ledcolor.LedColor{src[0], src[1], src[2], 0xff}
 }
 
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.

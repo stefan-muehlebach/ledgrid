@@ -50,17 +50,17 @@ func (pl *ProgramList) Add(name, group string, startFunc StartFunc) {
 
 type LedGridProgram interface {
 	Name() string
-    Group() string
+	Group() string
 	Start(ctx context.Context, c *ledgrid.Canvas)
 	Stop()
 }
 
 func NewProgram(name, group string, startFunc StartFunc) LedGridProgram {
 	return &simpleProgram{
-        name: name,
-        group: group,
-        startFunc: startFunc,
-    }
+		name:      name,
+		group:     group,
+		startFunc: startFunc,
+	}
 }
 
 // func NewTitle(name string) LedGridProgram {
@@ -69,9 +69,9 @@ func NewProgram(name, group string, startFunc StartFunc) LedGridProgram {
 
 type simpleProgram struct {
 	name, group string
-	startFunc StartFunc
-	ctx       context.Context
-	cancel    context.CancelFunc
+	startFunc   StartFunc
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
 func (p *simpleProgram) Name() string {
@@ -319,7 +319,7 @@ func main() {
 
 	ledgrid.AnimCtrl.Suspend()
 	ledGrid.Clear(color.Black)
-    ledGrid.Show()
+	ledGrid.Show()
 	ledGrid.Close()
 
 	fmt.Printf("Program statistics:\n")

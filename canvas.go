@@ -850,15 +850,15 @@ func (i *Sprite) Tick(t float64) {
 
 var (
 	fireGradient = []ColorStop{
-		{0.00, color.NewLedColorHexA(0x00000000)},
-		{0.10, color.NewLedColorHexA(0x5f080900)},
-		{0.14, color.NewLedColorHexA(0x5f080980)},
-		{0.29, color.NewLedColorHexA(0xbe101380)},
-		{0.43, color.NewLedColorHexA(0xd2300880)},
-		{0.57, color.NewLedColorHexA(0xe45323cf)},
-		{0.71, color.NewLedColorHexA(0xee771ccf)},
-		{0.86, color.NewLedColorHexA(0xf6960ecf)},
-		{1.00, color.NewLedColorHexA(0xffcd06cf)},
+		{0.00, color.LedColor{0x00, 0x00, 0x00, 0x00}},
+		{0.10, color.LedColor{0x5f, 0x08, 0x09, 0x00}},
+		{0.14, color.LedColor{0x5f, 0x08, 0x09, 0x80}},
+		{0.29, color.LedColor{0xbe, 0x10, 0x13, 0x80}},
+		{0.43, color.LedColor{0xd2, 0x30, 0x08, 0x80}},
+		{0.57, color.LedColor{0xe4, 0x53, 0x23, 0xcf}},
+		{0.71, color.LedColor{0xee, 0x77, 0x1c, 0xcf}},
+		{0.86, color.LedColor{0xf6, 0x96, 0x0e, 0xcf}},
+		{1.00, color.LedColor{0xff, 0xcd, 0x06, 0xcf}},
 	}
 
 	fireYScaling    = 10

@@ -2,61 +2,87 @@ package ledgrid
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
-// Dieser Typ dient der Zeitmessung.
+// Simple way to measure the number and duration of events, simply by enclose
+// the code to be measured by Start() and Stop().
 type Stopwatch struct {
-	t time.Time
-	d time.Duration
-	n int
+	Num             int
+	Total, Max, Min time.Duration
+	t               time.Time
 }
 
 func NewStopwatch() *Stopwatch {
-	return &Stopwatch{}
+	s := &Stopwatch{}
+	s.Max = math.MinInt64
+	s.Min = math.MaxInt64
+	return s
 }
 
-// Mit Start wird eine neue Messung begonnen.
+// Starts the stopwatch. If the stopwatch is already running, the previous
+// starting time is cancelled.
 func (s *Stopwatch) Start() {
 	s.t = time.Now()
 }
 
-// Stop beendet die Messung und aktualisiert die Variablen, welche die totale
-// Messdauer als auch die Anzahl Messungen enthalten.
+// Stops the stopwatch and updates the internal variables. If the stopwatch is
+// stopped, this method has no effect.
 func (s *Stopwatch) Stop() {
-	s.d += time.Since(s.t)
-	s.n += 1
+	d := time.Since(s.t)
+	if d > s.Max {
+		s.Max = d
+	}
+	if d < s.Min {
+		s.Min = d
+	}
+	s.Total += d
+	s.Num += 1
 }
 
 // Setzt die gemessene Dauer auf 0 und die Anzahl Messungen ebenfalls.
 func (s *Stopwatch) Reset() {
-	s.d = 0
-	s.n = 0
+	s.Total = 0
+	s.Max = math.MinInt64
+	s.Min = math.MaxInt64
+	s.Num = 0
 }
 
 // Retourniert die Anzahl Messungen.
-func (s *Stopwatch) Num() int {
-	return s.n
-}
+// func (s *Stopwatch) Num() int {
+// 	return s.Num
+// }
 
 // Retourniert die totale Messdauer.
-func (s *Stopwatch) Total() time.Duration {
-	return s.d
-}
+// func (s *Stopwatch) Total() time.Duration {
+// 	return s.Total
+// }
+
+// Retourniert die totale Messdauer.
+// func (s *Stopwatch) Min() time.Duration {
+// 	return s.Min
+// }
+
+// Retourniert die totale Messdauer.
+// func (s *Stopwatch) Max() time.Duration {
+// 	return s.Max
+// }
 
 // Berechnet die durchschnittliche Messdauer (also den Quotienten von
 // Total() / Num()).
 func (s *Stopwatch) Avg() time.Duration {
-	if s.n == 0 {
+	if s.Num == 0 {
 		return 0
 	}
-	return s.d / time.Duration(s.n)
+	return s.Total / time.Duration(s.Num)
 }
 
-func (s *Stopwatch) Stats() (int, time.Duration, time.Duration) {
-	return s.Num(), s.Total(), s.Avg()
-}
+// func (s *Stopwatch) Stats() (int, time.Duration, time.Duration) {
+// 	return s.Num, s.Total, s.Avg()
+// }
 
 func (s *Stopwatch) String() string {
-	return fmt.Sprintf("%d calls; %v in total; %v per call", s.Num(), s.Total(), s.Avg())
+	return fmt.Sprintf("%d calls; %v in total; %v per call, min: %v, max: %v",
+		s.Num, s.Total, s.Avg(), s.Min, s.Max)
 }

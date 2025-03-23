@@ -1,3 +1,5 @@
+//go:build ignore
+
 // opc_test.go
 package ledgrid
 

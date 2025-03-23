@@ -3,7 +3,6 @@
 package ledgrid
 
 import (
-	"encoding/gob"
 	"image"
 	"math"
 	"math/rand/v2"
@@ -155,12 +154,14 @@ func (a *AnimationController) IsRunning() bool {
 // vorgenommen werden. Davon ist in jedem Programm nur eine Instanz vorhanden
 // AnimationController's koennte es grundsaetzlich mehrere geben.
 func (a *AnimationController) backgroundThread() {
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
+	cond := sync.NewCond(&sync.Mutex{})
 
 	startChan := make(chan int)
 
-	for range a.numThreads {
-		go a.animationUpdater(startChan, &wg)
+	for id := range a.numThreads {
+		go a.animationUpdater(id, cond, wg)
+		// go a.animationUpdater(startChan, wg)
 	}
 
 	for pit := range a.ticker.C {
@@ -171,9 +172,10 @@ func (a *AnimationController) backgroundThread() {
 
 		a.animWatch.Start()
 		wg.Add(a.numThreads)
-		for id := range a.numThreads {
-			startChan <- id
-		}
+		cond.Broadcast()
+		// for id := range a.numThreads {
+		// 	startChan <- id
+		// }
 		wg.Wait()
 		a.animWatch.Stop()
 
@@ -186,8 +188,12 @@ func (a *AnimationController) backgroundThread() {
 // Von dieser Funktion werden pro Core eine Go-Routine gestartet. Sie werden
 // durch eine Message ueber den Kanal statChan aktiviert und uebernehmen die
 // Aktualisierung ihrer Animationen.
-func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.WaitGroup) {
-	for id := range startChan {
+func (a *AnimationController) animationUpdater(id int, cond *sync.Cond, wg *sync.WaitGroup) {
+	// for id := range startChan {
+	for {
+		cond.L.Lock()
+		cond.Wait()
+		cond.L.Unlock()
 		for listIdx := range a.AnimList {
 			a.animMutex[listIdx].RLock()
 			for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
@@ -205,43 +211,12 @@ func (a *AnimationController) animationUpdater(startChan <-chan int, wg *sync.Wa
 	}
 }
 
-// func (a *AnimationController) Save(fileName string) {
-// 	fh, err := os.Create(fileName)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't create file: %v", err)
-// 	}
-// 	defer fh.Close()
-// 	gobEncoder := gob.NewEncoder(fh)
-// 	err = gobEncoder.Encode(a)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't encode data: %v", err)
-// 	}
-// }
-
-// func (a *AnimationController) Load(fileName string) {
-// 	fh, err := os.Open(fileName)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't create file: %v", err)
-// 	}
-// 	defer fh.Close()
-// 	gobDecoder := gob.NewDecoder(fh)
-// 	err = gobDecoder.Decode(a)
-// 	if err != nil {
-// 		log.Fatalf("Couldn't decode data: %v", err)
-// 	}
-// }
-
 func (a *AnimationController) Watch() *Stopwatch {
 	return a.animWatch
 }
 
 func (a *AnimationController) Now() time.Time {
 	return a.animPit
-	// delay := a.delay
-	// if !a.running {
-	// 	delay += time.Since(a.stop)
-	// }
-	// return time.Now().Add(delay)
 }
 
 // Mit dem Funktionstyp [AnimationCurve] kann der Verlauf einer Animation
@@ -279,11 +254,11 @@ func AnimationEaseInOut(t float64) float64 {
 }
 
 func AnimationMiddleStop(t float64) float64 {
-    if t <= 0.5 {
-        return -2*(t-0.5)*(t-0.5) + 0.5
-    } else {
-        return 2*(t-0.5)*(t-0.5) + 0.5
-    }
+	if t <= 0.5 {
+		return -2*(t-0.5)*(t-0.5) + 0.5
+	} else {
+		return 2*(t-0.5)*(t-0.5) + 0.5
+	}
 }
 
 // Beginnt langsam und nimmt immer mehr an Fahrt auf.
@@ -465,32 +440,6 @@ func (d *DurationEmbed) Duration() time.Duration {
 
 func (d *DurationEmbed) SetDuration(dur time.Duration) {
 	d.duration = dur
-}
-
-// Animationen werden nur selten direkt dem AnimationController hinzugefuegt.
-// Meistens stehen Animationen in einer Beziehung zu weiteren Animationen
-// bspw. wenn eine Gruppe von Animationen gleichzeitig oder direkt
-// hintereinander gestartet werden sollen. Die Typen 'Group', 'Sequence' und
-// 'Timeline' sind solche Steuer-Animationen, implementieren jedoch alle
-// das Animation-Interface und koennen somit ineinander verschachtelt werden.
-
-func init() {
-	gob.Register(&Group{})
-	gob.Register(&Sequence{})
-	gob.Register(&Timeline{})
-	gob.Register(&SimpleTask{})
-	gob.Register(&HideShowAnimation{})
-	// gob.Register(&StartStopAnimation{})
-	gob.Register(&FadeAnimation{})
-	gob.Register(&ColorAnimation{})
-	gob.Register(&PaletteAnimation{})
-	gob.Register(&PaletteFadeAnimation{})
-	gob.Register(&FloatAnimation{})
-	// gob.Register(&PathAnimation{})
-	gob.Register(&FixedPosAnimation{})
-	gob.Register(&IntegerPosAnimation{})
-	gob.Register(&ShaderAnimation{})
-	gob.Register(&NormAnimationEmbed{})
 }
 
 // Mit einem Task koennen beliebige Funktionsaufrufe in die
@@ -687,10 +636,6 @@ func (a *NormAnimationEmbed) Continue() {
 func (a *NormAnimationEmbed) IsRunning() bool {
 	return a.running
 }
-
-// func (a *NormAnimationEmbed) SetAnimPos(r float64) {
-// 	a.startPos = r
-// }
 
 // Diese Methode ist fuer die korrekte Abwicklung (Beachtung von Reverse und
 // RepeatCount, etc) einer Animation zustaendig. Wenn die Animation zu Ende
@@ -1069,13 +1014,6 @@ func NewIntegerPosAnim(obj IntegerPositionable, val2 image.Point, dur time.Durat
 	a.NormAnimationEmbed.Extend(a)
 	return a
 }
-
-// func NewIntegerPosAnimation(valPtr *image.Point, val2 image.Point, dur time.Duration) *IntegerPosAnimation {
-// 	a := &IntegerPosAnimation{}
-// 	a.InitAnim(valPtr, val2, dur)
-// 	a.NormAnimationEmbed.Extend(a)
-// 	return a
-// }
 
 func (a *IntegerPosAnimation) Tick(t float64) {
 	v1 := geom.NewPointIMG(a.val1)

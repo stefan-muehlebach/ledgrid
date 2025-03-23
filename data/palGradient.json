@@ -1,5 +1,18 @@
 [
   {
+    "ID": 1,
+    "Title": "RGB",
+    "IsCyclic": true,
+    "Colors": [
+        "FF0000",
+        "FFFF00",
+        "00FF00",
+        "00FFFF",
+        "0000FF",
+        "FF00FF"
+    ]
+  },
+  {
     "ID": 9,
     "Title": "Accent",
     "Colors": [
@@ -43,7 +56,7 @@
   },
   {
     "ID": 10,
-    "Title": "Dark",
+    "Title": "DarkSide",
     "Colors": [
         "666666",
         "A6761D",

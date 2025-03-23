@@ -30,9 +30,9 @@ func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
 	// var seqList []*ledgrid.Sequence
 	var numObjs int = 10
 
-	color1 := color.NewLedColorRGB(0x0e, 0x4f, 0x92)
-	color2 := color.NewLedColorRGB(0xff, 0x00, 0xff)
-	color3 := color.NewLedColorRGB(0xab, 0xff, 0x5e)
+	color1 := color.LedColor{0x0e, 0x4f, 0x92, 0xff}
+	color2 := color.LedColor{0xff, 0x00, 0xff, 0xff}
+	color3 := color.LedColor{0xab, 0xff, 0x5e, 0xff}
 
 	posList = make([]geom.Point, numObjs)
 	posList[0] = geom.Point{1.5, float64(height) / 2.0}
@@ -67,26 +67,24 @@ func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
 		seq := ledgrid.NewSequence(fade1, fade2)
 		seq.RepeatCount = ledgrid.AnimationRepeatForever
 
+		// stats := ledgrid.NewTask(func() {
+		// 	timeFmt := "15:04:05.0000"
+		// 	sStart, sEnd := seq.TimeInfo()
+		// 	fStart, fEnd, fTotal := fade1.TimeInfo()
+		// 	fmt.Printf("[%d]\n", i)
+		// 	fmt.Printf("  Duration: %v\n", seq.Duration())
+		// 	fmt.Printf("  Sequence Start: %s; End: %s\n",
+		// 		sStart.Format(timeFmt), sEnd.Format(timeFmt))
+		// 	fmt.Printf("  Fader    Start: %v; End: %v\n",
+		// 		fStart.Format(timeFmt), fEnd.Format(timeFmt))
+		// 	fmt.Printf("  Total: %f\n", fTotal)
+		// })
+		// seq.Add(stats)
+
 		// seqList[i] = seq
 		animGrp.Add(seq)
 	}
 	animGrp.Start()
-
-	// ticker := time.NewTicker(30 * time.Second)
-	// go func() {
-	// 	for range ticker.C {
-	// 		fmt.Printf("\nList of sequences:\n")
-	// 		for i, seq := range seqList {
-	// 			sStart, sEnd := seq.TimeInfo()
-	// 			fStart, fEnd, fTotal := fadeList[i].TimeInfo()
-	// 			fmt.Printf("[%d]\n", i)
-	// 			fmt.Printf("  Duration: %v\n", seq.Duration())
-	// 			fmt.Printf("  Start: %v; End: %v\n", sStart, sEnd)
-	// 			fmt.Printf("  Start: %v; End: %v\n", fStart, fEnd)
-	// 			fmt.Printf("  Total: %f\n", fTotal)
-	// 		}
-	// 	}
-	// }()
 }
 
 func CirclingCircles(ctx context.Context, c *ledgrid.Canvas) {
