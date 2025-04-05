@@ -18,7 +18,7 @@ import (
 	"golang.org/x/term"
 
 	// gc "github.com/rthornton128/goncurses"
-	"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"golang.org/x/image/math/fixed"
@@ -283,7 +283,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: 0.0,
-	// 	Color: color.Teal,
+	// 	Color: colors.Teal,
 	// 	Width: 5.0,
 	// }
 	// obj2 := &ledgrid.RotatingLine{
@@ -291,7 +291,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: -math.Pi / 2.0,
-	// 	Color: color.Crimson,
+	// 	Color: colors.Crimson,
 	// 	Width: 5.0,
 	// }
 	// obj3 := &ledgrid.RotatingLine{
@@ -299,7 +299,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: math.Pi,
-	// 	Color: color.YellowGreen,
+	// 	Color: colors.YellowGreen,
 	// 	Width: 5.0,
 	// }
 	// obj4 := &ledgrid.RotatingLine{
@@ -307,7 +307,7 @@ func main() {
 	// 	Len:   50.0,
 	// 	Speed: 1.0,
 	// 	Angle: math.Pi / 2.0,
-	// 	Color: color.Purple,
+	// 	Color: colors.Purple,
 	// 	Width: 5.0,
 	// }
 	obj5 := &ledgrid.GlowingCircle{
@@ -315,8 +315,8 @@ func main() {
 		Dir:         geom.Point{0.0, 0.0},
 		Speed:       1.0,
 		Radius:      []float64{0.0, 75.0},
-		FillColor:   []color.Color{color.Transparent, color.Transparent},
-		StrokeColor: []color.Color{color.Crimson, color.LemonChiffon},
+		FillColor:   []colors.Color{colors.Transparent, colors.Transparent},
+		StrokeColor: []colors.Color{colors.Crimson, colors.LemonChiffon},
 		StrokeWidth: []float64{10.0, 10.0},
 		GlowPeriod:  10 * time.Second,
 	}
@@ -325,8 +325,8 @@ func main() {
 	// 	Dir:         geom.Point{0.3, 0.6},
 	// 	Speed:       1.0,
 	// 	Radius:      []float64{10.0, 15.0},
-	// 	FillColor:   []color.Color{color.GreenYellow, color.Aquamarine},
-	// 	StrokeColor: []color.Color{color.Crimson, color.Black},
+	// 	FillColor:   []colors.Color{colors.GreenYellow, colors.Aquamarine},
+	// 	StrokeColor: []colors.Color{colors.Crimson, colors.Black},
 	// 	StrokeWidth: []float64{5.0, 0.0},
 	// 	GlowPeriod:  3 * time.Second,
 	// }

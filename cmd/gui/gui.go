@@ -3,8 +3,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"image"
+	"math/rand"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,300 +18,241 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stefan-muehlebach/ledgrid"
+	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/ledgrid/conf"
+	"golang.org/x/image/math/fixed"
 )
 
 const (
-	Margin    = 10.0
-	AppWidth  = 512.0
-	AppHeight = 1024.0
+	Margin         = 10.0
+	AppWidth       = 512.0
+	AppHeight      = 1024.0
+	defHost        = "raspi-3"
+	defWidth       = 40
+	defHeight      = 10
+	defPaletteName = "BackPinkBlue"
+	defTextColor   = "White"
 )
 
+// Global variables, most of them related to the GUI and the LEDGrid.
 var (
-	AppSize = fyne.NewSize(AppWidth, AppHeight)
+	App           fyne.App
+	Win           fyne.Window
+	AppSize       = fyne.NewSize(AppWidth, AppHeight)
+	width, height int
+	gridSize      image.Point
+	gridClient    ledgrid.GridClient
+	ledGrid       *ledgrid.LedGrid
+	animCtrl      *ledgrid.AnimationController
+	canvas        *ledgrid.Canvas
 )
 
+// Global variables associated with the (only) animation function [ColorWaves].
 var (
-	width              = 40
-	height             = 10
-	gridSize           = image.Point{width, height}
-	defLocal           = false
-	defDummy           = false
-	defHost            = "raspi-3"
-	defPort       uint = 5333
-	blinkenFiles       = []string{
-		"blinken/pixelFlames.bml",
-		"blinken/flatter.bml",
-		"blinken/torus.bml",
-		"blinken/cube.bml",
-		"blinken/kreise.bml",
-		"blinken/benedictus.bml",
-		"blinken/lemming.bml",
-		"blinken/marioWalkRight.bml",
-		"blinken/marioRunRight.bml",
-	}
-	gradientImageFile = "gradient.png"
-
-	App fyne.App
-	Win fyne.Window
+	palFader = ledgrid.NewPaletteFader(ledgrid.PaletteMap[defPaletteName])
+	txtColor = colors.Map[defTextColor]
+	wordList []string
+	wordIdx  int
+	animTime = 3 * time.Second
 )
 
-func Quit() {
-	dialog.ShowConfirm("Quit", "Wollen sie die Applikation beenden?", func(b bool) {
-		if b {
-			App.Quit()
+// The animation function - so far the only one taken over from the [anim]
+// CLI program.
+func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
+	aGrpLedColor := ledgrid.NewGroup()
+
+	for y := range c.Rect.Dy() {
+		// ty := float64(y) / float64(c.Rect.Dy()-1)
+		for x := range c.Rect.Dx() {
+			// tx := float64(x) / float64(c.Rect.Dx()-1)
+			pt := image.Point{x, y}
+			pix := ledgrid.NewPixel(pt, colors.Black)
+
+			c.Add(pix)
+
+			aColorPal := ledgrid.NewPaletteAnim(pix, palFader, animTime)
+			aColorPal.AutoReverse = true
+			aColorPal.RepeatCount = ledgrid.AnimationRepeatForever
+			aColorPal.Curve = ledgrid.AnimationLinear
+			aColorPal.Pos = rand.Float64()
+			aGrpLedColor.Add(aColorPal)
 		}
-	}, Win)
+	}
+
+	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), "", txtColor.Alpha(0))
+	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+
+	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 500*time.Millisecond)
+	txtColorOut := ledgrid.NewColorAnim(txt, colors.Black, 1000*time.Millisecond)
+	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 2000*time.Millisecond)
+
+	txtNextWord := ledgrid.NewTask(func() {
+		if len(wordList) == 0 {
+			return
+		}
+		txt.SetText(wordList[wordIdx])
+		wordIdx = (wordIdx + 1) % len(wordList)
+		txt.Color = txtColor.Alpha(0)
+	})
+	txtSeq := ledgrid.NewSequence(txtNextWord, txtFadeIn,
+		ledgrid.NewDelay(time.Second), txtColorOut, txtFadeOut)
+	txtSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	c.Add(txt)
+
+	txtSeq.Start()
+	aGrpLedColor.Start()
 }
 
+// The function called when the user quits the program.
+func Quit() {
+	dialog.ShowConfirm("Quit", "Do you really want to quit the application?",
+		func(b bool) {
+			if b {
+				App.Quit()
+			}
+		}, Win)
+}
+
+// ----------------------------------------------------------------------------
 func main() {
-	var local, dummy bool
 	var host string
-	var port uint
-	var gammaValue, maxBrightValue, fadeTime ledgrid.FloatParameter
+	var dataPort, rpcPort uint
+	var useTCP bool
+	var network string
+	var gR, gG, gB float64
+	var modConf conf.ModuleConfig
 
-	var pixCtrl ledgrid.PixelClient
-	var pixGrid *ledgrid.LedGrid
-	var pixAnim *ledgrid.Animator
-
-	var bgList, fgList []ledgrid.Visual
-	var bgNameList, fgNameList []string
-	// var paletteNameList, colorNameList []string
-
-	var blinken *ledgrid.BlinkenFile
-	var blinkenAnim *ledgrid.ImageAnimation
-
-	var bgTypeSelect, fgTypeSelect *widget.Select
-
-	var bgParamForm, fgParamForm *fyne.Container
-
-	flag.BoolVar(&local, "local", defLocal, "PixelController is local")
-	flag.BoolVar(&dummy, "dummy", defDummy, "Use dummy PixelController")
+	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
+	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&port, "port", defPort, "Controller port")
+	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
+	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.Parse()
 
-	if dummy {
-		pixCtrl = ledgrid.NewDummyPixelClient()
+	if useTCP {
+		network = "tcp"
 	} else {
-		pixCtrl = ledgrid.NewNetPixelClient(host, port)
+		network = "udp"
 	}
-	pixGrid = ledgrid.NewLedGrid(gridSize, nil)
-	pixAnim = ledgrid.NewAnimator(pixGrid, pixCtrl)
+	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+	modConf = gridClient.ModuleConfig()
+	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
+	gR, gG, gB = gridClient.Gamma()
 
-    redGamma, _, _ := pixCtrl.Gamma()
-	gammaValue = ledgrid.NewFloatParameter("Gamma", redGamma, 1.0, 5.0, 0.1)
-	gammaValue.SetCallback(func(p ledgrid.Parameter) {
-		v := gammaValue.Val()
-		pixCtrl.SetGamma(v, v, v)
-	})
-	maxBrightValue = ledgrid.NewFloatParameter("Brightness", 255, 1, 255, 1)
-	maxBrightValue.SetCallback(func(p ledgrid.Parameter) {
-		v := uint8(maxBrightValue.Val())
-		pixCtrl.SetMaxBright(v, v, v)
-	})
+	gridSize = ledGrid.Rect.Size()
+	width = gridSize.X
+	height = gridSize.Y
 
-	fadeTime = ledgrid.NewFloatParameter("Fade Time", 2.0, 0.0, 5.0, 0.1)
-
-	transpVisual := ledgrid.NewUniform(pixGrid, ledgrid.ColorMap["Transparent"])
-	transpVisual.SetName("Uniform Color")
-
-	bgList = []ledgrid.Visual{
-		transpVisual,
-		ledgrid.NewShader(pixGrid, ledgrid.ExperimentalShader, ledgrid.PaletteMap["Hipster"]),
-		ledgrid.NewShader(pixGrid, ledgrid.PlasmaShader, ledgrid.PaletteMap["Nightspell"]),
-		ledgrid.NewShader(pixGrid, ledgrid.CircleShader, ledgrid.PaletteMap["Hipster"]),
-		ledgrid.NewShader(pixGrid, ledgrid.KaroShader, ledgrid.PaletteMap["Hipster"]),
-		ledgrid.NewShader(pixGrid, ledgrid.LinearShader, ledgrid.PaletteMap["Hipster"]),
-		ledgrid.NewFire(pixGrid),
-		ledgrid.NewCamera(pixGrid),
-	}
-	bgNameList = make([]string, len(bgList))
-	for i, anim := range bgList {
-		bgNameList[i] = anim.Name()
-	}
-
-	fgList = []ledgrid.Visual{
-		transpVisual,
-		//ledgrid.NewTextNative(pixGrid, "Beni und Stefan haben Ferien", ledgrid.ColorMap["GreenYellow"]),
-		ledgrid.NewTextFreeType(pixGrid, "Benedict", ledgrid.ColorMap["SkyBlue"]),
-		ledgrid.NewImageFromFile(pixGrid, "image.png"),
-		ledgrid.NewImageFromFile(pixGrid, "gradient.png"),
-	}
-
-	for _, fileName := range blinkenFiles {
-		blinken = ledgrid.ReadBlinkenFile(fileName)
-		blinkenAnim = blinken.NewImageAnimation(pixGrid)
-		fgList = append(fgList, blinkenAnim)
-	}
-
-	fgNameList = make([]string, len(fgList))
-	for i, anim := range fgList {
-		fgNameList[i] = anim.Name()
-	}
-
-	// paletteNameList = ledgrid.PaletteNames
-	// paletteNameList = make([]string, len(ledgrid.PaletteList))
-	// for i, palette := range ledgrid.PaletteList {
-	// 	paletteNameList[i] = palette.Name()
-	// }
-
-	// colorNameList = ledgrid.ColorNames
-	// colorNameList = make([]string, len(ledgrid.ColorList))
-	// for i, palette := range ledgrid.ColorList {
-	// 	colorNameList[i] = palette.Name()
-	// }
+	canvas = ledGrid.Canvas(0)
+	animCtrl = ledGrid.AnimCtrl
 
 	//------------------------------------------------------------------------
 	//
-	// Ab dieser Stelle wird das GUI aufgebaut
+	// Create the Fyne.io gui elements.
 	//
-	ShowParameter := func(vis ledgrid.Visual, form *fyne.Container) {
-		for _, obj := range form.Objects {
-			switch o := obj.(type) {
-			case *widget.Label:
-				o.Unbind()
-			case *widget.Slider:
-				o.Unbind()
-			}
-		}
-		form.RemoveAll()
-		if obj, ok := vis.(ledgrid.Paintable); ok {
-			var selection *widget.Select
-			var pal ledgrid.ColorSource
-
-			palParam := obj.PaletteParam()
-			label := widget.NewLabel(palParam.Name())
-			label.Alignment = fyne.TextAlignTrailing
-			label.TextStyle.Bold = true
-			if p, ok := palParam.Val().(*ledgrid.PaletteFader); ok {
-				pal = p.Pals[0]
-			}
-			switch pal.(type) {
-			case *ledgrid.UniformPalette:
-				selection = widget.NewSelect(ledgrid.ColorNames, func(s string) {
-					pal := ledgrid.ColorMap[s]
-					obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
-				})
-			default:
-				selection = widget.NewSelect(ledgrid.PaletteNames, func(s string) {
-					pal := ledgrid.PaletteMap[s]
-					obj.SetPalette(pal, time.Duration(fadeTime.Val()*float64(time.Second)))
-				})
-			}
-			selection.Selected = palParam.Val().Name()
-			form.Add(label)
-			form.Add(selection)
-		}
-		if obj, ok := vis.(ledgrid.Parametrizable); ok {
-			for _, p := range obj.ParamList() {
-				switch param := p.(type) {
-				case ledgrid.FloatParameter:
-					label := widget.NewLabelWithData(binding.FloatToStringWithFormat(param, param.Name()+" (%.1f)"))
-					label.Alignment = fyne.TextAlignTrailing
-					label.TextStyle.Bold = true
-					slider := widget.NewSliderWithData(param.Min(), param.Max(), param)
-					slider.Step = param.Step()
-					slider.SetValue(param.Val())
-					form.Add(label)
-					form.Add(slider)
-
-				case ledgrid.StringParameter:
-					label := widget.NewLabel(param.Name())
-					label.Alignment = fyne.TextAlignTrailing
-					label.TextStyle.Bold = true
-					entry := widget.NewEntry()
-					entry.Text = param.Val()
-					button := widget.NewButton("Apply", func() {
-						param.SetVal(entry.Text)
-					})
-					form.Add(label)
-					form.Add(entry)
-					form.Add(layout.NewSpacer())
-					form.Add(button)
-				}
-			}
-		}
-	}
-
 	App = app.New()
-	App.SetIcon(resourceIconIco)
+	App.SetIcon(resourceIcon)
 	Win = App.NewWindow("LedGrid GUI")
 
-	bgTypeSelect = widget.NewSelect(bgNameList, func(s string) {
-		newBg := bgList[bgTypeSelect.SelectedIndex()]
-		pixAnim.SetBackground(newBg, time.Duration(fadeTime.Val()*float64(time.Second)))
-		ShowParameter(newBg, bgParamForm)
-	})
-
-	fgTypeSelect = widget.NewSelect(fgNameList, func(s string) {
-		newFg := fgList[fgTypeSelect.SelectedIndex()]
-		pixAnim.SetForeground(newFg, time.Duration(fadeTime.Val()*float64(time.Second)))
-		ShowParameter(newFg, fgParamForm)
-	})
-
-	visualForm := &widget.Form{
-		Items: []*widget.FormItem{
-			{Text: "Background", Widget: bgTypeSelect},
-			{Text: "Foreground", Widget: fgTypeSelect},
-		},
+	//------------------------------------------------------------------------
+	//
+	// BEGIN of the GUI creation.
+	//
+	// This should be moved to a separate function in order to keep the
+	// main function small and handy.
+	//
+	// Create the application form for displaying animations.
+	//
+	txtLabel := widget.NewLabel("Text")
+	txtLabel.TextStyle.Bold = true
+	txtEntry := widget.NewEntry()
+	txtEntry.TextStyle.Monospace = true
+	txtEntry.OnSubmitted = func(s string) {
+		wordList = strings.Split(s, " ")
+		wordIdx = 0
 	}
 
-	gammaLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaValue, gammaValue.Name()+" (%.1f)"))
-	gammaLabel.Alignment = fyne.TextAlignTrailing
-	gammaLabel.TextStyle.Bold = true
-	gammaSlider := widget.NewSliderWithData(gammaValue.Min(), gammaValue.Max(), gammaValue)
-	gammaSlider.Step = gammaValue.Step()
-	gammaSlider.SetValue(gammaValue.Val())
+	colorLabel := widget.NewLabel("Text Color")
+	colorLabel.TextStyle.Bold = true
+	colorSelect := widget.NewSelect(colors.Names, func(colorName string) {
+		txtColor = colors.Map[colorName]
+	})
+	colorSelect.SetSelected(defTextColor)
 
-	maxBrightLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(maxBrightValue, maxBrightValue.Name()+" (%.0f)"))
-	maxBrightLabel.Alignment = fyne.TextAlignTrailing
-	maxBrightLabel.TextStyle.Bold = true
-	maxBrightSlider := widget.NewSliderWithData(maxBrightValue.Min(), maxBrightValue.Max(), maxBrightValue)
-	maxBrightSlider.Step = maxBrightValue.Step()
-	maxBrightSlider.SetValue(maxBrightValue.Val())
+	backLabel := widget.NewLabel("Background Palette")
+	backLabel.TextStyle.Bold = true
+	backSelect := widget.NewSelect(ledgrid.PaletteNames, func(backName string) {
+		backAnim := ledgrid.NewPaletteFadeAnimation(palFader,
+			ledgrid.PaletteMap[backName], animTime)
+		backAnim.Start()
+	})
+	backSelect.SetSelected(defPaletteName)
 
-	fadeTimeLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(fadeTime, fadeTime.Name()+" (%.1f)"))
-	fadeTimeLabel.Alignment = fyne.TextAlignTrailing
-	fadeTimeLabel.TextStyle.Bold = true
-	fadeTimeSlider := widget.NewSliderWithData(fadeTime.Min(), fadeTime.Max(), fadeTime)
-	fadeTimeSlider.Step = fadeTime.Step()
-	fadeTimeSlider.SetValue(fadeTime.Val())
+	animForm := container.New(
+		layout.NewFormLayout(),
+		txtLabel, txtEntry,
+		colorLabel, colorSelect,
+		backLabel, backSelect,
+	)
+	animCard := widget.NewCard("Animations", "On this form, you specify which animation you want to run.", animForm)
+	animTab := container.NewVBox(
+		animCard,
+	)
+
+	// Create the application form for preferences.
+	//
+	gammaRed := binding.BindFloat(&gR)
+	gammaRedLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaRed,
+		"Red (%.1f)"))
+	// gammaRedLabel.Alignment = fyne.TextAlignTrailing
+	gammaRedLabel.TextStyle.Bold = true
+	gammaRedSlider := widget.NewSliderWithData(1.0, 3.0, gammaRed)
+	gammaRedSlider.Step = 0.1
+	gammaRedSlider.OnChangeEnded = func(v float64) {
+		gR = v
+		gridClient.SetGamma(gR, gG, gB)
+	}
+
+	gammaGreen := binding.BindFloat(&gG)
+	gammaGreenLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaGreen,
+		"Green (%.1f)"))
+	// gammaGreenLabel.Alignment = fyne.TextAlignTrailing
+	gammaGreenLabel.TextStyle.Bold = true
+	gammaGreenSlider := widget.NewSliderWithData(1.0, 3.0, gammaGreen)
+	gammaGreenSlider.Step = 0.1
+	gammaGreenSlider.OnChangeEnded = func(v float64) {
+		gG = v
+		gridClient.SetGamma(gR, gG, gB)
+	}
+
+	gammaBlue := binding.BindFloat(&gB)
+	gammaBlueLabel := widget.NewLabelWithData(binding.FloatToStringWithFormat(gammaBlue,
+		"Blue (%.1f)"))
+	// gammaBlueLabel.Alignment = fyne.TextAlignTrailing
+	gammaBlueLabel.TextStyle.Bold = true
+	gammaBlueSlider := widget.NewSliderWithData(1.0, 3.0, gammaBlue)
+	gammaBlueSlider.Step = 0.1
+	gammaBlueSlider.OnChangeEnded = func(v float64) {
+		gB = v
+		gridClient.SetGamma(gR, gG, gB)
+	}
 
 	prefForm := container.New(
 		layout.NewFormLayout(),
-		gammaLabel, gammaSlider,
-		maxBrightLabel, maxBrightSlider,
-		fadeTimeLabel, fadeTimeSlider,
+		gammaRedLabel, gammaRedSlider,
+		gammaGreenLabel, gammaGreenSlider,
+		gammaBlueLabel, gammaBlueSlider,
 	)
-	prefCard := widget.NewCard("Preferences", "", prefForm)
+	prefCard := widget.NewCard("Preferences", "Here you find all the settings for configuring the LEDGrid.", prefForm)
 	prefTab := container.NewVBox(
 		prefCard,
 	)
 
-	visualCard := widget.NewCard("Visuals", "There can be one background and one foreground", visualForm)
-
-	bgParamForm = container.New(
-		layout.NewFormLayout(),
-	)
-	bgParamCard := widget.NewCard("Background Parameters", "", bgParamForm)
-	fgParamForm = container.New(
-		layout.NewFormLayout(),
-	)
-	fgParamCard := widget.NewCard("Foreground Parameters", "", fgParamForm)
-
-	effectTab := container.NewVBox(
-		visualCard,
-		bgParamCard,
-		fgParamCard,
-	)
-
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Visuals", effectTab),
+		container.NewTabItem("Animations", animTab),
 		container.NewTabItem("Preferences", prefTab),
 	)
-
-	bgTypeSelect.SetSelectedIndex(0)
-	fgTypeSelect.SetSelectedIndex(0)
 
 	quitBtn := widget.NewButton("Quit", Quit)
 	btnBox := container.NewHBox(layout.NewSpacer(), quitBtn)
@@ -319,6 +263,9 @@ func main() {
 		btnBox,
 	)
 
+	// END of the GUI creation.
+	//------------------------------------------------------------------------
+
 	Win.Canvas().SetOnTypedKey(func(evt *fyne.KeyEvent) {
 		switch evt.Name {
 		case fyne.KeyEscape, fyne.KeyQ:
@@ -326,12 +273,15 @@ func main() {
 		}
 	})
 
+	ledGrid.StartRefresh()
+	ColorWaves(context.Background(), canvas)
+
 	Win.SetContent(root)
 	Win.Resize(AppSize)
 	Win.ShowAndRun()
 
-	pixAnim.Stop()
-	pixGrid.Clear(ledgrid.Black)
-	pixCtrl.Send(pixGrid)
-	pixCtrl.Close()
+	ledgrid.AnimCtrl.Suspend()
+	ledGrid.Clear(colors.Black)
+	ledGrid.Show()
+	ledGrid.Close()
 }

@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"context"
 	"image"
-	gocolor "image/color"
+	"image/color"
 	"log"
 	"math"
 	"sync"
@@ -19,7 +19,7 @@ import (
 	// "github.com/korandiz/v4l/fmt/mjpeg"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 	"golang.org/x/image/draw"
 )
 
@@ -40,7 +40,7 @@ type HistCamera struct {
 	cancel           context.CancelFunc
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistCamera {
+func NewHistCamera(pos, size geom.Point, histLen int, col colors.LedColor) *HistCamera {
 	var err error
 
 	c := &HistCamera{Pos: pos, Size: size}
@@ -76,7 +76,7 @@ func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistC
 	c.dstMask = image.NewAlpha(c.Rect)
 	c.scaler = draw.CatmullRom.NewScaler(c.Rect.Dx(), c.Rect.Dy(), c.srcRect.Dx(), c.srcRect.Dy())
 
-	ledgrid.AnimCtrl.Add(1, c)
+	ledgrid.AnimCtrl.Add(c)
 
 	c.dev, err = device.Open(
 		camDevName,
@@ -137,8 +137,8 @@ func (c *HistCamera) captureThread() {
 	var srcVal uint8 = 0x0f
 	var dstVal uint8 = 0xff
 
-	srcMask = image.NewUniform(gocolor.Alpha{srcVal})
-	dstMask = image.NewUniform(gocolor.Alpha{dstVal})
+	srcMask = image.NewUniform(color.Alpha{srcVal})
+	dstMask = image.NewUniform(color.Alpha{dstVal})
 
 	for frame := range c.dev.GetOutput() {
 		if len(frame) == 0 {

@@ -1,4 +1,4 @@
-package color
+package colors
 
 import (
 	"fmt"
@@ -99,7 +99,7 @@ func (c LedColor) String() string {
 }
 
 func (c *LedColor) UnmarshalText(text []byte) error {
-	hexStr := string(text)
+	hexStr := string(text[2:])
 	hexVal, err := strconv.ParseUint(hexStr, 16, 32)
 	if err != nil {
 		log.Fatal(err)

@@ -10,7 +10,7 @@ import (
 	"golang.org/x/image/font"
 
 	"github.com/stefan-muehlebach/gg"
-	"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 )
@@ -29,35 +29,35 @@ var (
 
 	AxesTextFont   = fonts.GoRegular
 	AxesTextSize   = 12.0 * scaleFactor
-	AxesTextColor  = color.Black
+	AxesTextColor  = colors.Black
 	AxesTickSep    = 5.0 * scaleFactor
 	AxesTickHeight = 20.0 * scaleFactor
 	AxesTickWidth  = 1.0 * scaleFactor
-	AxesTickColor  = color.Black
+	AxesTickColor  = colors.Black
 
 	ModuleSize        = 400.0 * scaleFactor
 	ModuleBorderWidth = 2.0 * scaleFactor
-	ModuleBorderColor = color.Black
-	ModuleFillColor   = color.AntiqueWhite
+	ModuleBorderColor = colors.Black
+	ModuleFillColor   = colors.AntiqueWhite
 	ModuleTextFont    = fonts.GoBold
 	ModuleTextSize    = 220.0 * scaleFactor
-	ModuleTextColor   = color.DarkSlateGray
+	ModuleTextColor   = colors.DarkSlateGray
 
 	LedFieldSize      = ModuleSize / float64(ModuleDim.X)
 	LedSize           = LedFieldSize - 2.0
 	LedBorderWidth    = 1.0 * scaleFactor
-	LedBorderColor    = color.Black
-	LedFillColor      = color.White.Alpha(0.7)
-	LedStartFillColor = color.DarkGreen.Alpha(0.8)
-	LedEndFillColor   = color.FireBrick.Alpha(0.8)
+	LedBorderColor    = colors.Black
+	LedFillColor      = colors.White.Alpha(0.7)
+	LedStartFillColor = colors.DarkGreen.Alpha(0.8)
+	LedEndFillColor   = colors.FireBrick.Alpha(0.8)
 	LedTextFont       = fonts.GoRegular
 	LedTextSize       = 16.0 * scaleFactor
-	LedTextColor      = color.Black
-	LedTextColorInv   = color.White
+	LedTextColor      = colors.Black
+	LedTextColorInv   = colors.White
 
 	// Trace is...
 	TraceWidth     = 15.0 * scaleFactor
-	TraceColor     = color.DarkSlateGray
+	TraceColor     = colors.DarkSlateGray
 	TraceBezierPos = 0.8
 
 	sizeFact = 0.8
@@ -94,7 +94,7 @@ func (conf ModuleConfig) Plot(fileName string) {
 	size := conf.Size()
 	gc := gg.NewContext(size.X*int(LedFieldSize)+int(MarginLeft+MarginRight),
 		size.Y*int(LedFieldSize)+int(MarginTop+MarginBottom))
-	gc.SetFillColor(color.White)
+	gc.SetFillColor(colors.White)
 	gc.Clear()
 
 	conf.Draw(gc)

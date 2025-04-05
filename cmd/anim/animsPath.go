@@ -7,7 +7,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 func init() {
@@ -27,10 +27,10 @@ func PathTest(ctx context.Context, c *ledgrid.Canvas) {
 	pos4 := geom.Point{2.0, float64(height) / 2.0}
 	cSize := geom.Point{3.0, 3.0}
 
-	c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)
-	c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
-	c3 := ledgrid.NewEllipse(pos3, cSize, color.SkyBlue)
-	c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
+	c1 := ledgrid.NewEllipse(pos1, cSize, colors.OrangeRed)
+	c2 := ledgrid.NewEllipse(pos2, cSize, colors.MediumSeaGreen)
+	c3 := ledgrid.NewEllipse(pos3, cSize, colors.SkyBlue)
+	c4 := ledgrid.NewEllipse(pos4, cSize, colors.Gold)
 	c.Add(c1, c2, c3, c4)
 
 	c1Path := ledgrid.NewPathAnim(c1, pathA, geom.Point{float64(width) / 3.0, float64(height - 4)}, duration)
@@ -109,7 +109,7 @@ func PolygonPathTest(ctx context.Context, c *ledgrid.Canvas) {
 	}
 	polyPath3 := ledgrid.NewPolygonPath(ptList...)
 
-	c1 := ledgrid.NewDot(cPos, color.GreenYellow)
+	c1 := ledgrid.NewDot(cPos, colors.GreenYellow)
 	c.Add(c1)
 
 	aPath1 := ledgrid.NewPolyPathAnim(c1, polyPath1, 14*time.Second)

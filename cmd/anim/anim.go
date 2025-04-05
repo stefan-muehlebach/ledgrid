@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -244,18 +244,17 @@ func main() {
 				}
 				progId = id
 
-				fmt.Printf("Program statistics:\n")
-				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
-				fmt.Printf("  painting : %v\n", canvas.Watch())
-				fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
-
 				if prevProgId != -1 {
+					fmt.Printf("Program statistics:\n")
+					fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
+					fmt.Printf("  painting : %v\n", canvas.Stopwatch())
+					fmt.Printf("  sending  : %v\n", ledGrid.Client.Stopwatch())
 					programList[prevProgId].Stop()
 				}
 				ledGrid.Reset()
-				ledgrid.AnimCtrl.Watch().Reset()
-				canvas.Watch().Reset()
-				ledGrid.Client.Watch().Reset()
+				ledgrid.AnimCtrl.Stopwatch().Reset()
+				canvas.Stopwatch().Reset()
+				ledGrid.Client.Stopwatch().Reset()
 				programList[progId].Start(context.Background(), canvas)
 				prevProgId = progId
 			}
@@ -318,12 +317,12 @@ func main() {
 	}
 
 	ledgrid.AnimCtrl.Suspend()
-	ledGrid.Clear(color.Black)
+	ledGrid.Clear(colors.Black)
 	ledGrid.Show()
 	ledGrid.Close()
 
 	fmt.Printf("Program statistics:\n")
-	fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Watch())
-	fmt.Printf("  painting : %v\n", canvas.Watch())
-	fmt.Printf("  sending  : %v\n", ledGrid.Client.Watch())
+	fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
+	fmt.Printf("  painting : %v\n", canvas.Stopwatch())
+	fmt.Printf("  sending  : %v\n", ledGrid.Client.Stopwatch())
 }

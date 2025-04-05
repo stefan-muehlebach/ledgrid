@@ -13,7 +13,7 @@ import (
 type FileSaveClient struct {
 	fh        *os.File
 	modConf   conf.ModuleConfig
-	sendWatch *Stopwatch
+	stopwatch *Stopwatch
 }
 
 func NewFileSaveClient(fileName string, modConf conf.ModuleConfig) GridClient {
@@ -26,7 +26,7 @@ func NewFileSaveClient(fileName string, modConf conf.ModuleConfig) GridClient {
 		log.Fatalf("Couldn't create file: %v", err)
 	}
 	p.modConf = modConf
-	p.sendWatch = NewStopwatch()
+	p.stopwatch = NewStopwatch()
 
 	return p
 }
@@ -59,8 +59,8 @@ func (p *FileSaveClient) ModuleConfig() conf.ModuleConfig {
 	return p.modConf
 }
 
-func (p *FileSaveClient) Watch() *Stopwatch {
-	return p.sendWatch
+func (p *FileSaveClient) Stopwatch() *Stopwatch {
+	return p.stopwatch
 }
 
 func (p *FileSaveClient) Close() {

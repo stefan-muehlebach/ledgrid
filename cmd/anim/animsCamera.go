@@ -5,7 +5,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 func init() {
@@ -28,7 +28,7 @@ func DiffCamera(ctx context.Context, c *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
-	cam := NewHistCamera(pos, size, 100, color.SkyBlue)
+	cam := NewHistCamera(pos, size, 100, colors.SkyBlue)
 	c.Add(cam)
 	cam.Start()
 }

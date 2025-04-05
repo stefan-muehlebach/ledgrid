@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"log"
 
@@ -43,7 +42,9 @@ func NewWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *Wind
 	e.ModConf = modConf
 	e.size = e.ModConf.Size()
 
-	e.Win, err = sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(e.size.X)*int32(pixelSize), int32(e.size.Y)*int32(pixelSize), sdl.WINDOW_SHOWN)
+	e.Win, err = sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
+		sdl.WINDOWPOS_UNDEFINED, int32(e.size.X)*int32(pixelSize),
+		int32(e.size.Y)*int32(pixelSize), sdl.WINDOW_SHOWN)
 	if err != nil {
 		log.Fatalf("Failed to create window: %s\n", err)
 	}
@@ -89,11 +90,11 @@ func (e *Window) HandleEvents() {
 				case sdl.K_ESCAPE, sdl.K_q:
 					return
 
-                case sdl.K_h:
-                    fmt.Printf("Key commands\n")
-                    fmt.Printf("-----------------\n")
-                    fmt.Printf("h     : This help\n")
-                    fmt.Printf("q/ESC : Quit\n")
+				case sdl.K_h:
+					println("Key commands\n")
+					println("-----------------\n")
+					println("h     : This help\n")
+					println("q/ESC : Quit\n")
 				}
 
 			case *sdl.MouseMotionEvent:
@@ -217,22 +218,22 @@ func (c *Circle) Draw(r *sdl.Renderer) {
 	}
 }
 
-func DrawCircle(r *sdl.Renderer, xm, ym, radius int32) {
+func (c *Circle) Draw2(r *sdl.Renderer) {
 	var diameter, x, y, tx, ty, err int32
 
-	diameter = 2 * radius
-	x, y = (radius - 1), 0
+	diameter = 2 * c.rad
+	x, y = (c.rad - 1), 0
 	tx, ty = 1, 1
 	err = (tx - diameter)
 	for x >= y {
-		r.DrawPoint(xm+x, ym-y)
-		r.DrawPoint(xm+x, ym+y)
-		r.DrawPoint(xm-x, ym-y)
-		r.DrawPoint(xm-x, ym+y)
-		r.DrawPoint(xm+y, ym-x)
-		r.DrawPoint(xm+y, ym+x)
-		r.DrawPoint(xm-y, ym-x)
-		r.DrawPoint(xm-y, ym+x)
+		r.DrawPoint(c.xm+x, c.ym-y)
+		r.DrawPoint(c.xm+x, c.ym+y)
+		r.DrawPoint(c.xm-x, c.ym-y)
+		r.DrawPoint(c.xm-x, c.ym+y)
+		r.DrawPoint(c.xm+y, c.ym-x)
+		r.DrawPoint(c.xm+y, c.ym+x)
+		r.DrawPoint(c.xm-y, c.ym-x)
+		r.DrawPoint(c.xm-y, c.ym+x)
 
 		if err <= 0 {
 			y++

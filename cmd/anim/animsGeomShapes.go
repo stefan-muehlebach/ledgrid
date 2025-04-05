@@ -8,7 +8,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 func init() {
@@ -30,9 +30,9 @@ func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
 	// var seqList []*ledgrid.Sequence
 	var numObjs int = 10
 
-	color1 := color.LedColor{0x0e, 0x4f, 0x92, 0xff}
-	color2 := color.LedColor{0xff, 0x00, 0xff, 0xff}
-	color3 := color.LedColor{0xab, 0xff, 0x5e, 0xff}
+	color1 := colors.LedColor{0x0e, 0x4f, 0x92, 0xff}
+	color2 := colors.LedColor{0xff, 0x00, 0xff, 0xff}
+	color3 := colors.LedColor{0xab, 0xff, 0x5e, 0xff}
 
 	posList = make([]geom.Point, numObjs)
 	posList[0] = geom.Point{1.5, float64(height) / 2.0}
@@ -95,11 +95,11 @@ func CirclingCircles(ctx context.Context, c *ledgrid.Canvas) {
 	pos5 := geom.Point{float64(width) - 1.5, 1.5}
 	cSize := geom.Point{2.0, 2.0}
 
-	c1 := ledgrid.NewEllipse(pos1, cSize, color.OrangeRed)
-	c2 := ledgrid.NewEllipse(pos2, cSize, color.MediumSeaGreen)
-	c3 := ledgrid.NewEllipse(pos3, cSize, color.SkyBlue)
-	c4 := ledgrid.NewEllipse(pos4, cSize, color.Gold)
-	c5 := ledgrid.NewEllipse(pos5, cSize, color.YellowGreen)
+	c1 := ledgrid.NewEllipse(pos1, cSize, colors.OrangeRed)
+	c2 := ledgrid.NewEllipse(pos2, cSize, colors.MediumSeaGreen)
+	c3 := ledgrid.NewEllipse(pos3, cSize, colors.SkyBlue)
+	c4 := ledgrid.NewEllipse(pos4, cSize, colors.Gold)
+	c5 := ledgrid.NewEllipse(pos5, cSize, colors.YellowGreen)
 
 	stepRD := geom.Point{18.0, 2.0 * (float64(height) - 3.0)}
 	stepLU := stepRD.Neg()
@@ -153,13 +153,13 @@ func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 	aGrp := ledgrid.NewGroup()
 
 	pal := ledgrid.NewGradientPaletteByList("Palette", true,
-		color.DeepSkyBlue,
-		color.Lime,
-		color.Teal,
-		color.SkyBlue,
+		colors.DeepSkyBlue,
+		colors.Lime,
+		colors.Teal,
+		colors.SkyBlue,
 	)
 
-	c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, color.Gold)
+	c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, colors.Gold)
 
 	path := ledgrid.CirclePath.NewStart(0.25)
 
@@ -169,10 +169,10 @@ func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 	c1size := ledgrid.NewSizeAnim(c1, c1Size2, time.Second)
 	c1size.AutoReverse = true
 
-	c1bcolor := ledgrid.NewColorAnim(c1, color.OrangeRed, time.Second)
-	c1bcolor.AutoReverse = true
+	c1color := ledgrid.NewColorAnim(c1, colors.OrangeRed, time.Second)
+	c1color.AutoReverse = true
 
-	c2 := ledgrid.NewEllipse(c2Pos, c2Size1, color.Lime)
+	c2 := ledgrid.NewEllipse(c2Pos, c2Size1, colors.Lime)
 
 	c2pos := ledgrid.NewPathAnim(c2, path, c2PosSize, 4*time.Second)
 	c2pos.Curve = ledgrid.AnimationLinear
@@ -182,7 +182,7 @@ func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 
 	c2color := ledgrid.NewPaletteAnim(c2, pal, 2*time.Second)
 
-	aGrp.Add(c1pos, c1size, c1bcolor, c2pos, c2size, c2color)
+	aGrp.Add(c1pos, c1size, c1color, c2pos, c2size, c2color)
 	aGrp.RepeatCount = ledgrid.AnimationRepeatForever
 
 	c.Add(c1, c2)
@@ -196,7 +196,7 @@ func CircleAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	c1Size1 := geom.Point{3.0, 3.0}
 	c1Size2 := geom.Point{9.0, 9.0}
 
-	c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, color.OrangeRed)
+	c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, colors.OrangeRed)
 
 	c1pos := ledgrid.NewPositionAnim(c1, c1Pos3, 2*time.Second)
 	c1pos.AutoReverse = true
@@ -206,7 +206,7 @@ func CircleAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	c1radius.AutoReverse = true
 	c1radius.RepeatCount = ledgrid.AnimationRepeatForever
 
-	c1color := ledgrid.NewColorAnim(c1, color.Gold, 4*time.Second)
+	c1color := ledgrid.NewColorAnim(c1, colors.Gold, 4*time.Second)
 	c1color.AutoReverse = true
 	c1color.RepeatCount = ledgrid.AnimationRepeatForever
 
@@ -229,7 +229,7 @@ func PushingRectangles(ctx context.Context, c *ledgrid.Canvas) {
 
 	duration := 2 * time.Second
 
-	r1 := ledgrid.NewRectangle(r1Pos1, rSize2, color.Crimson)
+	r1 := ledgrid.NewRectangle(r1Pos1, rSize2, colors.Crimson)
 
 	a1Pos := ledgrid.NewPositionAnim(r1, r1Pos2, duration)
 	a1Pos.AutoReverse = true
@@ -239,11 +239,11 @@ func PushingRectangles(ctx context.Context, c *ledgrid.Canvas) {
 	a1Size.AutoReverse = true
 	a1Size.RepeatCount = ledgrid.AnimationRepeatForever
 
-	a1Color := ledgrid.NewColorAnim(r1, color.GreenYellow, duration)
+	a1Color := ledgrid.NewColorAnim(r1, colors.GreenYellow, duration)
 	a1Color.AutoReverse = true
 	a1Color.RepeatCount = ledgrid.AnimationRepeatForever
 
-	r2 := ledgrid.NewRectangle(r2Pos2, rSize1, color.SkyBlue)
+	r2 := ledgrid.NewRectangle(r2Pos2, rSize1, colors.SkyBlue)
 
 	a2Pos := ledgrid.NewPositionAnim(r2, r2Pos1, duration)
 	a2Pos.AutoReverse = true
@@ -253,7 +253,7 @@ func PushingRectangles(ctx context.Context, c *ledgrid.Canvas) {
 	a2Size.AutoReverse = true
 	a2Size.RepeatCount = ledgrid.AnimationRepeatForever
 
-	a2Color := ledgrid.NewColorAnim(r2, color.Crimson, duration)
+	a2Color := ledgrid.NewColorAnim(r2, colors.Crimson, duration)
 	a2Color.AutoReverse = true
 	a2Color.RepeatCount = ledgrid.AnimationRepeatForever
 
@@ -279,7 +279,7 @@ func RegularPolygon(ctx context.Context, c *ledgrid.Canvas) {
 
 	aSeq := ledgrid.NewSequence()
 	for n := 3; n <= 6; n++ {
-		col := color.RandColor()
+		col := colors.RandColor()
 		polyList[n] = ledgrid.NewRegularPolygon(n, posList[n%2], smallSize, col)
 		c.Add(polyList[n])
 		dur := 2*time.Second + rand.N(time.Second)
@@ -288,7 +288,7 @@ func RegularPolygon(ctx context.Context, c *ledgrid.Canvas) {
 		animPos := ledgrid.NewPositionAnim(polyList[n], posCenter, dur)
 		animAngle := ledgrid.NewAngleAnim(polyList[n], angle, dur)
 		animSize := ledgrid.NewSizeAnim(polyList[n], largeSize, 4*time.Second)
-		animFade := ledgrid.NewColorAnim(polyList[n], color.Black, 4*time.Second)
+		animFade := ledgrid.NewColorAnim(polyList[n], colors.Black, 4*time.Second)
 
 		aGrpIn := ledgrid.NewGroup(animPos, animAngle)
 		aGrpOut := ledgrid.NewGroup(animSize, animFade)
@@ -311,18 +311,18 @@ func FlyingRectangle(ctx context.Context, c *ledgrid.Canvas) {
 	r4Size1 := geom.Point{3.0, 7.0}
 	r4Size2 := geom.Point{7.0, 9.0}
 
-	r1 := ledgrid.NewRectangle(r1Pos1, r1Size, color.GreenYellow)
+	r1 := ledgrid.NewRectangle(r1Pos1, r1Size, colors.GreenYellow)
 
-	r2 := ledgrid.NewEllipse(r2Pos, r2Size1, color.Gold)
-	r4 := ledgrid.NewEllipse(r4Pos, r4Size1, color.Gold)
+	r2 := ledgrid.NewEllipse(r2Pos, r2Size1, colors.Gold)
+	r4 := ledgrid.NewEllipse(r4Pos, r4Size1, colors.Gold)
 	c.Add(r1, r2, r4)
 
 	aAngle1 := ledgrid.NewAngleAnim(r1, 0.5*math.Pi, time.Second)
 	aAngle2 := ledgrid.NewAngleAnim(r1, 0.0, time.Second)
 
-	aColor1 := ledgrid.NewColorAnim(r1, color.OrangeRed, time.Second)
-	aColor2 := ledgrid.NewColorAnim(r1, color.Purple, 500*time.Millisecond)
-	aColor3 := ledgrid.NewColorAnim(r1, color.GreenYellow, 500*time.Millisecond)
+	aColor1 := ledgrid.NewColorAnim(r1, colors.OrangeRed, time.Second)
+	aColor2 := ledgrid.NewColorAnim(r1, colors.Purple, 500*time.Millisecond)
+	aColor3 := ledgrid.NewColorAnim(r1, colors.GreenYellow, 500*time.Millisecond)
 
 	aPos1 := ledgrid.NewPositionAnim(r1, r1Pos2, 1000*time.Millisecond)
 	aPos1.AutoReverse = true
@@ -334,7 +334,7 @@ func FlyingRectangle(ctx context.Context, c *ledgrid.Canvas) {
 	// aSize3.Cont = true
 	aSize2.AutoReverse = true
 
-	// aColor8 := ledgrid.NewColorAnim(r4, color.Cornsilk, 500*time.Millisecond)
+	// aColor8 := ledgrid.NewColorAnim(r4, colors.Cornsilk, 500*time.Millisecond)
 	// aColor8.AutoReverse = true
 	aBorder2 := ledgrid.NewStrokeWidthAnim(r4, 2.0, 300*time.Millisecond)
 	aBorder2.AutoReverse = true
@@ -369,11 +369,11 @@ func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 	r1Pos3 := geom.Point{float64(width) - 4.0, float64(height) / 2.0}
 	r1Size := geom.Point{7.0, 3.0}
 
-	r1 := ledgrid.NewRectangle(r1Pos1, r1Size, color.GreenYellow)
+	r1 := ledgrid.NewRectangle(r1Pos1, r1Size, colors.GreenYellow)
 
-	dotList[0] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue)
-	dotList[1] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue.Dark(0.2))
-	dotList[2] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, color.LightBlue.Dark(0.4))
+	dotList[0] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, colors.LightBlue)
+	dotList[1] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, colors.LightBlue.Dark(0.2))
+	dotList[2] = ledgrid.NewDot(geom.Point{float64(width + 2), 0.0}, colors.LightBlue.Dark(0.4))
 
 	c.Add(dotList[2], dotList[1], dotList[0], r1)
 
@@ -419,9 +419,9 @@ func AliningSegments(ctx context.Context, c *ledgrid.Canvas) {
 	mp2 := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	mp3 := geom.Point{3.0 * float64(width) / 4.0, float64(height) / 2.0}
 
-	l1 := ledgrid.NewLine(mp1, 10, color.LightGreen)
-	l2 := ledgrid.NewLine(mp2, 20, color.Pink)
-	l3 := ledgrid.NewLine(mp3, 10, color.SkyBlue)
+	l1 := ledgrid.NewLine(mp1, 10, colors.LightGreen)
+	l2 := ledgrid.NewLine(mp2, 20, colors.Pink)
+	l3 := ledgrid.NewLine(mp3, 10, colors.SkyBlue)
 	c.Add(l1, l2, l3)
 
 	anim1 := ledgrid.NewAngleAnim(l1, 2*math.Pi, 4*time.Second)

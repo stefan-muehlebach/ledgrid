@@ -18,7 +18,7 @@ type Camera struct {
 func NewCamera(pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
-	ledgrid.AnimCtrl.Add(0, c)
+	ledgrid.AnimCtrl.Add(c)
 	return c
 }
 

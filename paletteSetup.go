@@ -9,7 +9,7 @@ import (
 	"log"
 	"path"
 
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 //go:embed data/*.json
@@ -20,7 +20,7 @@ type JsonPalette struct {
 	Name     string `json:"Title"`
 	IsCyclic bool
 	IsSlice  bool
-	Colors   []color.LedColor
+	Colors   []colors.LedColor
 	Stops    []ColorStop
 }
 
@@ -70,14 +70,14 @@ func InitGradientPalettes(fileName string) {
 }
 
 func InitUniformPalettes() {
-	for _, colorName := range color.Names {
+	for _, colorName := range colors.Names {
 		ColorNames = append(ColorNames, colorName)
-		pal := NewUniformPalette(colorName, color.Map[colorName])
+		pal := NewUniformPalette(colorName, colors.Map[colorName])
 		ColorMap[colorName] = pal
 	}
 	colorName := "Transparent"
 	ColorNames = append(ColorNames, colorName)
-	pal := NewUniformPalette(colorName, color.Transparent)
+	pal := NewUniformPalette(colorName, colors.Transparent)
 	ColorMap[colorName] = pal
 
     slices.Sort(ColorNames)

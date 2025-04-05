@@ -31,7 +31,7 @@ type Group struct {
 func NewGroup(tasks ...Task) *Group {
 	a := &Group{}
 	a.Add(tasks...)
-	AnimCtrl.Add(0, a)
+	// AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -64,6 +64,7 @@ func (a *Group) StartAt(t time.Time) {
 	for _, task := range a.Tasks {
 		task.StartAt(t)
 	}
+	AnimCtrl.Add(a)
 }
 
 func (a *Group) Start() {
@@ -140,7 +141,7 @@ type Sequence struct {
 func NewSequence(tasks ...Task) *Sequence {
 	a := &Sequence{}
 	a.Add(tasks...)
-	AnimCtrl.Add(0, a)
+	// AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -182,6 +183,7 @@ func (a *Sequence) StartAt(t time.Time) {
 	a.repeatsLeft = a.RepeatCount
 	a.running = true
 	a.Tasks[a.activeTask].StartAt(t)
+	AnimCtrl.Add(a)
 }
 
 func (a *Sequence) Start() {
@@ -274,7 +276,7 @@ func NewTimeline(d time.Duration) *Timeline {
 	a := &Timeline{}
 	a.duration = d
 	a.Slots = make([]*TimelineSlot, 0)
-	AnimCtrl.Add(0, a)
+	// AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -311,6 +313,7 @@ func (a *Timeline) StartAt(t time.Time) {
 	a.repeatsLeft = a.RepeatCount
 	a.nextSlot = 0
 	a.running = true
+	AnimCtrl.Add(a)
 }
 
 func (a *Timeline) Start() {

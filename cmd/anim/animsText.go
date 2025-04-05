@@ -11,7 +11,7 @@ import (
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 func init() {
@@ -34,12 +34,12 @@ func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	var binDigits [32]*ledgrid.Pixel
 
 	pos1 := p2p(5.0, 6.0)
-	clockText = ledgrid.NewFixedText(pos1, "00:00:00", color.Blue.Dark(0.3))
+	clockText = ledgrid.NewFixedText(pos1, "00:00:00", colors.Blue.Dark(0.3))
 	c.Add(clockText)
 
 	pos2 := image.Point{4, 8}
 	for i := range binDigits {
-		binDigits[31-i] = ledgrid.NewPixel(pos2.Add(image.Point{i, 0}), color.Red.Dark(0.3))
+		binDigits[31-i] = ledgrid.NewPixel(pos2.Add(image.Point{i, 0}), colors.Red.Dark(0.3))
 		c.Add(binDigits[31-i])
 	}
 
@@ -58,7 +58,7 @@ func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 		}
 	}))
 
-	// digitColor := color.Blue
+	// digitColor := colors.Blue
 	// colorFade = ledgrid.NewColorAnim(clockText, digitColor, 2*time.Second)
 	// colorFade.Val2 = ledgrid.RandColor(true)
 
@@ -70,16 +70,16 @@ func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 func MovingText(ctx context.Context, c *ledgrid.Canvas) {
-	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", color.LightSeaGreen)
+	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", colors.LightSeaGreen)
 	t1.SetAlign(ledgrid.AlignLeft)
-	t2 := ledgrid.NewText(geom.Point{float64(width), float64(height) / 2.0}, "Beni", color.YellowGreen)
+	t2 := ledgrid.NewText(geom.Point{float64(width), float64(height) / 2.0}, "Beni", colors.YellowGreen)
 	t2.SetAlign(ledgrid.AlignRight)
 
-	t4 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "werden", color.Gold)
-	t5 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "immer", color.Gold)
-	t6 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "im", color.Gold)
-	t7 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "Lochbach", color.Gold)
-	t8 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "wohnen", color.Gold)
+	t4 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "werden", colors.Gold)
+	t5 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "immer", colors.Gold)
+	t6 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "im", colors.Gold)
+	t7 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "Lochbach", colors.Gold)
+	t8 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "wohnen", colors.Gold)
 
 	c.Add(t1, t2, t4, t5, t6, t7, t8)
 
@@ -123,16 +123,16 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	var nameList []string
 	var nameIdx int = 0
 
-	nameList = make([]string, len(color.Names))
-	copy(nameList, color.Names)
+	nameList = make([]string, len(colors.Names))
+	copy(nameList, colors.Names)
 	colName = nameList[0]
 
 	rectPos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	rectSize := geom.Point{float64(width), float64(height)}
 
-	rect := ledgrid.NewRectangle(rectPos, rectSize, color.Black)
+	rect := ledgrid.NewRectangle(rectPos, rectSize, colors.Black)
 	rect.StrokeWidth = 0.0
-	rect.FillColor = color.Black
+	rect.FillColor = colors.Black
 
 	txtPos1 := geom.Point{float64(width + 1), float64(height - 1)}
 	txtPos2 := geom.Point{1.5, float64(height - 1)}
@@ -141,9 +141,9 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	// txtPos2 := fixed.P(1, height-1)
 	// txtPos3 := fixed.P(1, -1)
 	// txtPos3 := fixed.P(-2*width, height-1)
-	// txt := ledgrid.NewFixedText(txtPos1, "", color.Black)
+	// txt := ledgrid.NewFixedText(txtPos1, "", colors.Black)
 	// txt.SetFont(ledgrid.Fixed5x7)
-	txt := ledgrid.NewText(txtPos1, "", color.Black)
+	txt := ledgrid.NewText(txtPos1, "", colors.Black)
 	txt.SetAlign(ledgrid.AlignLeft | ledgrid.AlignBottom)
 	txt.SetFont(fonts.GoBold, 10.0)
 
@@ -155,39 +155,39 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	posAnim2 := ledgrid.NewPositionAnim(txt, txtPos3, time.Second/2)
 	posAnim2.Curve = ledgrid.AnimationEaseIn
 
-	fadeIn := ledgrid.NewFillColorAnim(rect, color.Map[colName], 1*time.Second)
+	fadeIn := ledgrid.NewFillColorAnim(rect, colors.Map[colName], 1*time.Second)
 	fadeIn.Curve = ledgrid.AnimationEaseOut
-	fadeOut := ledgrid.NewFillColorAnim(rect, color.Black, 1*time.Second)
+	fadeOut := ledgrid.NewFillColorAnim(rect, colors.Black, 1*time.Second)
 	fadeOut.Curve = ledgrid.AnimationEaseIn
 	txtTask := ledgrid.NewTask(func() {
-		var txtColor color.LedColor
+		var txtColor colors.LedColor
 
-		col := color.Map[colName]
+		col := colors.Map[colName]
 		h, s, l := col.HSL()
 		switch {
 		case s == 0:
-			txtColor = color.Gray
+			txtColor = colors.Gray
 		case h >= 60:
-			txtColor = color.Red
+			txtColor = colors.Red
 		case h >= -60:
-			txtColor = color.Blue
+			txtColor = colors.Blue
 		default:
-			txtColor = color.Green
+			txtColor = colors.Green
 		}
 
 		if l > 0.4 {
-			txtColor = color.Gray.Dark(0.7)
+			txtColor = colors.Gray.Dark(0.7)
 		} else {
-			txtColor = color.Gray.Bright(0.5)
+			txtColor = colors.Gray.Bright(0.5)
 		}
 		txt.Text = colName
 		txt.Color = txtColor
 	})
 	colTask := ledgrid.NewTask(func() {
-		oldColor := color.Map[colName]
+		oldColor := colors.Map[colName]
 		nameIdx = (nameIdx + 1) % len(nameList)
 		colName = nameList[nameIdx]
-		newColor := color.Map[colName]
+		newColor := colors.Map[colName]
 		fadeOut.Val2 = ledgrid.Const(oldColor.Interpolate(newColor, 0.5))
 		fadeIn.Val2 = ledgrid.Const(newColor)
 	})

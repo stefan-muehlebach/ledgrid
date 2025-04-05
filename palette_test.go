@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stefan-muehlebach/gg"
-	"github.com/stefan-muehlebach/gg/color"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/fonts"
 )
 
@@ -24,7 +24,7 @@ const (
 
 var (
 	NumCols         = 4
-	NumRows         = 15
+	NumRows         = 20
 	Font            = fonts.GoBold
 	PaletteFileList = []string{
 		"palGradient.json",
@@ -47,8 +47,8 @@ func TestPaletteOverview(t *testing.T) {
 	gc := gg.NewContext(2*Margin+NumCols*(FieldWidth)+(NumCols-1)*ColorPaddingHori,
 		2*Margin+NumRows*FieldHeight+NumRows*(ColorPaddingVert+FontSize))
 	gc.SetFontFace(face)
-	gc.SetTextColor(color.Black)
-	gc.SetFillColor(color.WhiteSmoke)
+	gc.SetTextColor(colors.Black)
+	gc.SetFillColor(colors.WhiteSmoke)
 	gc.SetStrokeWidth(0.0)
 	gc.Clear()
 	for i, name := range PaletteNames {

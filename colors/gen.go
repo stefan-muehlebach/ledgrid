@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/stefan-muehlebach/gg/color"
-	ledcolor "github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/gg/colors"
+	ledcolors "github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 func main() {
@@ -18,22 +18,23 @@ func main() {
 	}
 	defer fh.Close()
 
+	fmt.Fprintf(fh, "// Code generated  DO NOT EDIT.\n")
 	fmt.Fprintf(fh, "// Dieses File wird automatisch durch gen.go erstellt!\n")
 	fmt.Fprintf(fh, "// Manuelle Aenderungen werden bei der naechsten Ausfuehrung\n")
 	fmt.Fprintf(fh, "// automatisch ueberschrieben.\n\n")
-	fmt.Fprintf(fh, "package color\n\n")
+	fmt.Fprintf(fh, "package colors\n\n")
 	fmt.Fprintf(fh, "var (\n")
-	for _, name := range color.Names {
-		ledColor := ledcolor.LedColorModel.Convert(color.Map[name]).(ledcolor.LedColor)
-		fmt.Fprintf(fh, "    %s = LedColor%+v\n", name, ledColor)
+	for _, name := range colors.Names {
+		ledColor := ledcolors.LedColorModel.Convert(colors.Map[name]).(ledcolors.LedColor)
+		fmt.Fprintf(fh, "    %-20s = LedColor%+v\n", name, ledColor)
 	}
 	fmt.Fprintf(fh, "\n    Map = map[string]LedColor {\n")
-	for _, name := range color.Names {
+	for _, name := range colors.Names {
 		fmt.Fprintf(fh, "        \"%[1]s\": %[1]s,\n", name)
 	}
 	fmt.Fprintf(fh, "    }\n\n")
 	fmt.Fprintf(fh, "    Names = []string{\n")
-	for _, name := range color.Names {
+	for _, name := range colors.Names {
 		fmt.Fprintf(fh, "        \"%s\",\n", name)
 	}
 	fmt.Fprintf(fh, "    }\n\n")

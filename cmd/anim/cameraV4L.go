@@ -56,7 +56,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 	// for i := range c.Mask.Pix {
 	// 	c.Mask.Pix[i] = 0xff
 	// }
-	ledgrid.AnimCtrl.Add(1, c)
+	ledgrid.AnimCtrl.Add(c)
 	return c
 }
 

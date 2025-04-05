@@ -10,9 +10,10 @@ import (
 	"os"
 	"strconv"
 
-	gc "github.com/rthornton128/goncurses"
+	gc "github.com/gbin/goncurses"
+	// gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -46,6 +47,38 @@ func between(x, a, b int) bool {
 	return x >= a && x <= b
 }
 
+func LogMouseEvent(log *os.File, event *gc.MouseEvent) {
+	fmt.Fprintf(log, "Mouse event (state: %032b) ", event.State)
+	switch {
+
+	case event.State&gc.M_B1_CLICKED != 0:
+		fmt.Fprintf(log, "B1 clicked\n")
+	case event.State&gc.M_B1_DBL_CLICKED != 0:
+		fmt.Fprintf(log, "B1 double clicked\n")
+	case event.State&gc.M_B1_TPL_CLICKED != 0:
+		fmt.Fprintf(log, "B1 tripple clicked\n")
+	case event.State&gc.M_B1_PRESSED != 0:
+		fmt.Fprintf(log, "B1 pressed\n")
+	case event.State&gc.M_B1_RELEASED != 0:
+		fmt.Fprintf(log, "B1 released\n")
+
+	case event.State&gc.M_B2_CLICKED != 0:
+		fmt.Fprintf(log, "B2 clicked\n")
+	case event.State&gc.M_B2_DBL_CLICKED != 0:
+		fmt.Fprintf(log, "B2 double clicked\n")
+	case event.State&gc.M_B2_TPL_CLICKED != 0:
+		fmt.Fprintf(log, "B2 tripple clicked\n")
+	case event.State&gc.M_B2_PRESSED != 0:
+		fmt.Fprintf(log, "B2 pressed\n")
+	case event.State&gc.M_B2_RELEASED != 0:
+		fmt.Fprintf(log, "B2 released\n")
+
+	default:
+		fmt.Fprintf(log, "\n")
+	}
+	fmt.Fprintf(log, "  at (%d,%d)\n", event.X, event.Y)
+}
+
 func main() {
 	var host string = "raspi-3"
 	var width, height int
@@ -59,27 +92,29 @@ func main() {
 	var ch gc.Key
 	var curRow, selRow, curCol, selCol int
 	var curColor int
+
 	var err error
 	var gridClient ledgrid.GridClient
 	var ledGrid *ledgrid.LedGrid
-	var ledColor color.LedColor
+	var ledColor colors.LedColor
 	var palMode bool
 	var palIdx int
 	var curColorChanged bool
 	var redrawGrid bool
 	var cursorMoved bool
-	var colors []uint8
+	var colorValues []uint8
 	var incr uint8
 	var newColorValue uint8
 	var enterNewValue bool
 	var newValueDigit int
 	var gammaValues [3]float64
-	var gridWidth, gridHeight int
+	var gridXMin, gridYMin, gridWidth, gridHeight int
+	var helpXMin, helpYMin, helpWidth, helpHeight int
 	var termWidth, termHeight int
 	var gridSize image.Point
 	var selRect image.Rectangle
 	var clipRect image.Rectangle
-	var clipData []color.LedColor
+	var clipData []colors.LedColor
 	var modConf conf.ModuleConfig
 
 	flag.StringVar(&host, "host", host, "Controller hostname")
@@ -102,10 +137,19 @@ func main() {
 	width = gridSize.X
 	height = gridSize.Y
 
-    // gridWidth und gridHeight sind die nCurses Abmessungen des Fensters,
-    // welches die Farbwerte des Grids enthaelt.
+	// gridWidth und gridHeight sind die nCurses Abmessungen des Fensters,
+	// welches die Farbwerte des Grids enthaelt.
+	gridXMin, gridYMin = 4, 2
 	gridWidth = 7*width + 10
 	gridHeight = height + 8
+
+	helpXMin, helpYMin = 4, height+10
+	helpWidth = 70
+	helpHeight = 22
+
+	// helpHeight, helpWidth := 22, 70
+	// y, x := height+10, 4
+
 	termWidth = gridWidth + 10
 	termHeight = gridHeight + 40
 
@@ -130,11 +174,11 @@ func main() {
 	}
 	defer gc.End()
 
-    termHeight, termWidth = stdscr.MaxYX()
-    fmt.Fprintf(logFile, "window size: %d, %d\n", termWidth, termHeight)
+	termHeight, termWidth = stdscr.MaxYX()
+	fmt.Fprintf(logFile, "window size: %d, %d\n", termWidth, termHeight)
 
-    gridWidth = min(gridWidth, termWidth-8)
-    // gridHeight = min(gridHeight, termHeight-40)
+	gridWidth = min(gridWidth, termWidth-8)
+	// gridHeight = min(gridHeight, termHeight-40)
 
 	// err = gc.ResizeTerm(termHeight, termWidth)
 	// if err != nil {
@@ -149,44 +193,110 @@ func main() {
 
 	stdscr.Keypad(true)
 
-	gc.InitPair(1, gc.C_RED, gc.C_BLACK)
-	gc.InitPair(2, gc.C_RED, gc.C_BLACK)
-	gc.InitPair(3, gc.C_GREEN, gc.C_BLACK)
-	gc.InitPair(4, gc.C_GREEN, gc.C_BLACK)
-	gc.InitPair(5, gc.C_BLUE, gc.C_WHITE)
-	gc.InitPair(6, gc.C_BLUE, gc.C_BLACK)
+	black := int16(0)
+	red := int16(1)
+	green := int16(2)
+	// yellow := int16(3)
+	blue := int16(4)
+	// magenta := int16(5)
+	// cyan := int16(6)
+	white := int16(7)
 
-	y, x := 2, 4
+	toM := func(v uint8) int16 { return int16(float64(v) * 1000.0 / 255.0) }
 
-	winGrid, err = gc.NewWindow(gridHeight, gridWidth, y, x)
+	// Setup dark colors (R, G, B)
+	dark := func(colIdx int16) int16 { return 16 + colIdx }
+	gc.InitColor(dark(red), toM(192), toM(28), toM(40))
+	gc.InitColor(dark(green), 149, 635, 412)
+	gc.InitColor(dark(blue), 71, 282, 545)
+
+	// Setup bright colors
+	bright := func(colIdx int16) int16 { return 20 + colIdx }
+	gc.InitColor(bright(red), 1000, 110, 157)
+	gc.InitColor(bright(green), 86, 894, 455)
+	gc.InitColor(bright(blue), toM(41), toM(173), toM(255))
+	// gc.InitColor(bright(blue), 184, 506, 1000)
+
+	// Setup light colors
+	light := func(colIdx int16) int16 { return 24 + colIdx }
+	gc.InitColor(light(red), 918, 424, 459)
+	gc.InitColor(light(green), 353, 847, 619)
+	gc.InitColor(light(blue), 255, 545, 902)
+
+	gc.InitPair(1, gc.C_WHITE, gc.C_BLACK)
+
+	comb := func(fg, bg int16) int16 { return 2 + (fg - 16) + 16*bg }
+	InitPair := func(fg, bg int16) { gc.InitPair(comb(fg, bg), fg, bg) }
+	InitPair(dark(red), black)
+	InitPair(dark(green), black)
+	InitPair(dark(blue), black)
+	InitPair(bright(red), black)
+	InitPair(bright(green), black)
+	InitPair(bright(blue), black)
+	InitPair(light(red), black)
+	InitPair(light(green), black)
+	InitPair(light(blue), black)
+
+	InitPair(dark(red), white)
+	InitPair(dark(green), white)
+	InitPair(dark(blue), white)
+	InitPair(bright(red), white)
+	InitPair(bright(green), white)
+	InitPair(bright(blue), white)
+	InitPair(light(red), white)
+	InitPair(light(green), white)
+	InitPair(light(blue), white)
+
+	InitPair(black, dark(red))
+	InitPair(black, dark(green))
+	InitPair(black, dark(blue))
+	InitPair(black, bright(red))
+	InitPair(black, bright(green))
+	InitPair(black, bright(blue))
+	InitPair(black, light(red))
+	InitPair(black, light(green))
+	InitPair(black, light(blue))
+
+	InitPair(white, dark(red))
+	InitPair(white, dark(green))
+	InitPair(white, dark(blue))
+	InitPair(white, bright(red))
+	InitPair(white, bright(green))
+	InitPair(white, bright(blue))
+	InitPair(white, light(red))
+	InitPair(white, light(green))
+	InitPair(white, light(blue))
+
+	// gc.MouseInterval(50)
+	gc.MouseMask(gc.M_ALL, nil)
+
+	// y, x := gridY0, gridX0
+
+	winGrid, err = gc.NewWindow(gridHeight, gridWidth, gridYMin, gridXMin)
 	if err != nil {
 		log.Fatalf("Couldn't create window: %v", err)
 	}
 	winGrid.Keypad(true)
 	winGrid.Box(0, 0)
 
-	helpHeight, helpWidth := 22, 70
-	y, x = height+10, 4
-
-	winHelp, err = gc.NewWindow(helpHeight, helpWidth, y, x)
+	winHelp, err = gc.NewWindow(helpHeight, helpWidth, helpYMin, helpXMin)
 	if err != nil {
 		log.Fatalf("Couldn't create window: %v", err)
 	}
-	// winHelp.Box(0, 0)
+	winHelp.Box(0, 0)
 
 	winHelp.MovePrintf(1, 2, "|   R   |    G   |    B   |")
 	winHelp.MovePrintf(2, 2, "+-------+--------+--------+")
-	winHelp.MovePrintf(3, 2, "| [Ins] | [Home] | [PgUp] | increase color value by 1")
-	winHelp.MovePrintf(4, 2, "| [Del] | [End]  | [PgDn] | decrease color value by 1")
-	winHelp.MovePrintf(5, 2, "[Alt]-(above)   : inc/dec by 10")
+	winHelp.MovePrintf(3, 2, "| [Ins] | [Home] | [PgUp] | increase value by 1 ([Alt]: by 10)")
+	winHelp.MovePrintf(4, 2, "| [Del] | [End]  | [PgDn] | decrease value by 1 ([Alt]: by 10)")
 	winHelp.MovePrintf(6, 2, "[Cursor]        : Move selector")
 	winHelp.MovePrintf(7, 2, "[Alt]-Left/Right: Move color selector")
 	winHelp.MovePrintf(8, 2, "[Shift]-[Cursor]: Select range")
 	winHelp.MovePrintf(9, 2, "[Ctrl]-a        : Select all pixels")
-	winHelp.MovePrintf(10, 2, "[Ctrl]-c/x/v    : Copy/Cut/Paste selected color values")
+	winHelp.MovePrintf(10, 2, "[Ctrl]-c/x/v    : Copy/Cut/Paste selected pixels")
 	winHelp.MovePrintf(11, 2, "[Backspace]     : Clear selected pixels")
-	winHelp.MovePrintf(12, 2, "F               : Interpolate colors")
-	winHelp.MovePrintf(13, 2, "0-9a-f          : Enter new hex value for selected pixels")
+	winHelp.MovePrintf(12, 2, "F               : Interpolate over selected range")
+	winHelp.MovePrintf(13, 2, "0-9a-f          : Enter new hex value for selected pixel")
 	winHelp.MovePrintf(14, 2, "g/G             : Decrease/increase gamma values by 0.1")
 	winHelp.MovePrintf(15, 2, "i               : Invert selected pixels")
 	winHelp.MovePrintf(16, 2, "+/-             : Darken/Brighten selected pixels")
@@ -201,6 +311,9 @@ func main() {
 
 main:
 	for {
+		// Draw the upper part of the TUI (the big grid with the pixel values.
+		//
+		// The column headers.
 		for col := 0; col < ledGrid.Rect.Dx(); col++ {
 			if col == curCol {
 				winGrid.AttrOn(gc.A_BOLD)
@@ -208,9 +321,11 @@ main:
 			winGrid.MovePrintf(1, 10+col*7, "[%02x]", col)
 			winGrid.AttrOff(gc.A_BOLD)
 		}
+		// The line after the column headers.
 		winGrid.MoveAddChar(2, 0, gc.ACS_LTEE)
 		winGrid.HLine(2, 1, gc.ACS_HLINE, gridWidth-2)
 		winGrid.MoveAddChar(2, gridWidth-1, gc.ACS_RTEE)
+		// The row 'headers' on the left side.
 		for row := 0; row < ledGrid.Rect.Dy(); row++ {
 			if row == curRow {
 				winGrid.AttrOn(gc.A_BOLD)
@@ -218,57 +333,59 @@ main:
 			winGrid.MovePrintf(3+row, 2, "[%02x]", row)
 			winGrid.AttrOff(gc.A_BOLD)
 		}
-
+		// The separation line on the left side.
 		row := height + 3
 		winGrid.MoveAddChar(row, 0, gc.ACS_LTEE)
 		winGrid.HLine(row, 1, gc.ACS_HLINE, gridWidth-2)
 		winGrid.MoveAddChar(row, gridWidth-1, gc.ACS_RTEE)
-
+		// The bottom separation line.
 		winGrid.VLine(1, 7, gc.ACS_VLINE, height+2)
 		winGrid.MoveAddChar(0, 7, gc.ACS_TTEE)
 		winGrid.MoveAddChar(height+3, 7, gc.ACS_BTEE)
 		winGrid.MoveAddChar(2, 7, gc.ACS_PLUS)
 
+		// Draw now all the pixel values.
 		for row := 0; row < ledGrid.Rect.Dy(); row++ {
 			for col := 0; col < ledGrid.Rect.Dx(); col++ {
 				pt := image.Point{col, row}
-				if pt.In(selRect) {
-					if !enterNewValue {
-						winGrid.AttrOn(gc.A_REVERSE)
-					} else {
-						winGrid.AttrOn(gc.A_BOLD)
-					}
-				}
 				ledColor = ledGrid.LedColorAt(col, row)
-				colors = []uint8{ledColor.R, ledColor.G, ledColor.B}
-				for k := 0; k < 3; k++ {
-					if (row == curRow) && (col == curCol) && (k == curColor) {
-						if !enterNewValue {
-							winGrid.ColorOn(int16(2*k + 1))
+				colorValues = []uint8{ledColor.R, ledColor.G, ledColor.B}
+				winGrid.Move(3+row, 9+(col*7))
+				for id, colorIdx := range []int16{red, green, blue} {
+					if (row == curRow) && (col == curCol) {
+						winGrid.AttrOn(gc.A_REVERSE)
+						if id == curColor {
+							winGrid.AttrOn(gc.A_BOLD)
+							winGrid.ColorOn(comb(bright(colorIdx), black))
 						} else {
-							winGrid.ColorOn(int16(2*k + 2))
+							winGrid.ColorOn(comb(dark(colorIdx), white))
 						}
+					} else if pt.In(selRect) {
+						winGrid.ColorOn(comb(light(colorIdx), white))
+					} else {
+						winGrid.ColorOn(comb(light(colorIdx), black))
 					}
-					winGrid.MovePrintf(3+row, 9+(col*7)+(k*2), "%02x", colors[k])
-					winGrid.ColorOff(int16(2*k + 1))
-					winGrid.ColorOff(int16(2*k + 2))
+					winGrid.Printf("%02X", colorValues[id])
+					winGrid.AttrOff(gc.A_REVERSE)
+					winGrid.AttrOff(gc.A_BOLD)
 				}
-				winGrid.AttrOff(gc.A_REVERSE)
-				winGrid.AttrOff(gc.A_BOLD)
 			}
 		}
 
+		winGrid.ColorOn(1)
 		winGrid.MovePrintf(row+1, 2, "New hex value for this color: ")
 		if enterNewValue {
 			winGrid.AttrOn(gc.A_REVERSE)
 		}
 		winGrid.Printf("%02x", newColorValue)
 		winGrid.AttrOff(gc.A_REVERSE)
-		winGrid.MovePrintf(row+2, 2, "Current gamma values        : %.2f, %.2f, %.2f",
+		winGrid.MovePrintf(row+2, 2, "Gamma values (R,G,B)        : %.2f, %.2f, %.2f",
 			gammaValues[0], gammaValues[1], gammaValues[2])
 		if palMode {
-			winGrid.MovePrintf(row+3, 2, "Current palette shown       : %-20s",
-				ledgrid.PaletteNames[palIdx])
+			winGrid.MovePrintf(row+3, 2, "Current palette shown       : ")
+			winGrid.AttrOn(gc.A_BOLD)
+			winGrid.Printf("%-20s", ledgrid.PaletteNames[palIdx])
+			winGrid.AttrOff(gc.A_BOLD)
 		} else {
 			winGrid.MovePrintf(row+3, 2, "                                               ")
 		}
@@ -320,8 +437,30 @@ main:
 
 		switch ch {
 
+		case gc.KEY_MOUSE:
+			rowOff, colOff := 3, 9
+
+			me := gc.GetMouse()
+			// LogMouseEvent(logFile, me)
+			if me.State&gc.M_B1_CLICKED != 0 {
+				if !between(me.Y, gridYMin+rowOff, gridYMin+rowOff+10-1) ||
+					!between(me.X, gridXMin+colOff, gridXMin+colOff+40*7-2) {
+					break
+				}
+				dy, dx := me.Y-(gridYMin+rowOff), me.X-(gridXMin+colOff)
+				row, col, field := dy, dx/7, (dx%7)/2
+				if field > 2 {
+					break
+				}
+				fmt.Fprintf(logFile, "col: %d, row: %d, field: %d\n", col, row, field)
+				curCol, selCol = col, col
+				curRow, selRow = row, row
+				curColor = field
+				cursorMoved = true
+			}
+
 		case 'C':
-			ledGrid.Clear(color.Transparent)
+			ledGrid.Clear(colors.Transparent)
 			curCol, selCol = 0, 0
 			curRow, selRow = 0, 0
 			redrawGrid = true
@@ -412,7 +551,7 @@ main:
 
 		case Ctrl('c'), Ctrl('x'):
 			clipRect = selRect
-			clipData = make([]color.LedColor, clipRect.Dx()*clipRect.Dy())
+			clipData = make([]colors.LedColor, clipRect.Dx()*clipRect.Dy())
 			for y := range clipRect.Dy() {
 				row := clipRect.Min.Y + y
 				for x := range clipRect.Dx() {
@@ -424,7 +563,7 @@ main:
 			if ch == Ctrl('x') {
 				for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
 					for col := selRect.Min.X; col < selRect.Max.X; col++ {
-						ledGrid.SetLedColor(col, row, color.Transparent)
+						ledGrid.SetLedColor(col, row, colors.Transparent)
 					}
 				}
 				redrawGrid = true
@@ -477,14 +616,16 @@ main:
 		case gc.KEY_BACKSPACE:
 			for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
 				for col := selRect.Min.X; col < selRect.Max.X; col++ {
-					ledGrid.SetLedColor(col, row, color.Transparent)
+					ledGrid.SetLedColor(col, row, colors.Transparent)
 				}
 			}
 			redrawGrid = true
 
 		case gc.KEY_LEFT:
 			if palMode {
-				palIdx = (palIdx - 1 + len(ledgrid.PaletteNames)) % len(ledgrid.PaletteNames)
+				if palIdx > 0 {
+					palIdx--
+				}
 			} else {
 				if curCol > 0 {
 					curCol -= 1
@@ -495,7 +636,9 @@ main:
 			}
 		case gc.KEY_RIGHT:
 			if palMode {
-				palIdx = (palIdx + 1) % len(ledgrid.PaletteNames)
+				if palIdx < len(ledgrid.PaletteNames)-1 {
+					palIdx++
+				}
 			} else {
 				if curCol < ledGrid.Rect.Dx()-1 {
 					curCol += 1

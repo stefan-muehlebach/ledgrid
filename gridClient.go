@@ -19,6 +19,6 @@ type GridClient interface {
 	Gamma() (r, g, b float64)
 	SetGamma(r, g, b float64)
 	ModuleConfig() conf.ModuleConfig
-	Watch() *Stopwatch
+	Stopwatch() *Stopwatch
 	Close()
 }

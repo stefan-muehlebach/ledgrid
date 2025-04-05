@@ -21,14 +21,14 @@ const (
 )
 
 func ResetStatistics(gridServer *ledgrid.GridServer) {
-	gridServer.Watch().Reset()
+	gridServer.Stopwatch().Reset()
 	gridServer.RecvBytes = 0
 	gridServer.SentBytes = 0
 }
 
 func PrintStatistics(gridServer *ledgrid.GridServer) {
 	log.Printf("Emulator statistics:")
-	log.Printf("   %v", gridServer.Watch())
+	log.Printf("   %v", gridServer.Stopwatch())
 	log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
 	log.Printf("   %d bytes sent by the controller", gridServer.SentBytes)
 	log.Printf("Current gamma values:")
@@ -84,5 +84,4 @@ func main() {
 
     gridServer.HandleEvents()
     gridWindow.HandleEvents()
-
 }

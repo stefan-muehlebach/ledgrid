@@ -12,7 +12,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/stefan-muehlebach/gg/geom"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 var (
@@ -36,16 +36,16 @@ const (
 // Anschluss, dass alle darstellbaren Objekte neu gezeichnet werden und sendet
 // das Bild schliesslich dem PixelController (oder dem PixelEmulator).
 type AnimationController struct {
-	AnimList   [NumLayers][]Animation
-	animMutex  [NumLayers]*sync.RWMutex
+	AnimList   []Animation
+	animMutex  *sync.RWMutex
 	ticker     *time.Ticker
 	quit       bool
 	animPit    time.Time
-	animWatch  *Stopwatch
+	stopwatch  *Stopwatch
 	numThreads int
 	stop       time.Time
 	delay      time.Duration
-	running    bool
+	isRunning  bool
 	syncChan   chan bool
 }
 
@@ -54,12 +54,12 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 		return AnimCtrl
 	}
 	a := &AnimationController{}
-	for i := range NumLayers {
-		a.AnimList[i] = make([]Animation, 0)
-		a.animMutex[i] = &sync.RWMutex{}
-	}
+	// for i := range NumLayers {
+	a.AnimList = make([]Animation, 0)
+	a.animMutex = &sync.RWMutex{}
+	// }
 	a.ticker = time.NewTicker(refreshRate)
-	a.animWatch = NewStopwatch()
+	a.stopwatch = NewStopwatch()
 	a.numThreads = 1
 	// a.numThreads = runtime.NumCPU()
 	a.delay = time.Duration(0)
@@ -67,7 +67,7 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 
 	AnimCtrl = a
 	go a.backgroundThread()
-	a.running = true
+	a.isRunning = true
 
 	return a
 }
@@ -75,58 +75,58 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 // Fuegt weitere Animationen hinzu. Der Zugriff auf den entsprechenden Slice
 // wird synchronisiert, da die Bearbeitung der Animationen durch den
 // Background-Thread ebenfalls relativ haeufig auf den Slice zugreift.
-func (a *AnimationController) Add(layer int, anims ...Animation) {
-	a.animMutex[layer].Lock()
-	a.AnimList[layer] = append(a.AnimList[layer], anims...)
-	a.animMutex[layer].Unlock()
+func (a *AnimationController) Add(anims ...Animation) {
+	a.animMutex.Lock()
+	a.AnimList = append(a.AnimList, anims...)
+	a.animMutex.Unlock()
 }
 
 // Loescht eine einzelne Animation.
-func (a *AnimationController) Del(layer int, anim Animation) {
-	a.animMutex[layer].Lock()
-	defer a.animMutex[layer].Unlock()
-	for idx, obj := range a.AnimList[layer] {
+func (a *AnimationController) Del(anim Animation) {
+	a.animMutex.Lock()
+	defer a.animMutex.Unlock()
+	for idx, obj := range a.AnimList {
 		if obj == anim {
 			obj.Suspend()
-			a.AnimList[layer][idx] = nil
+			a.AnimList[idx] = nil
 			return
 		}
 	}
 }
 
-func (a *AnimationController) DelAt(layer int, idx int) {
-	a.animMutex[layer].Lock()
-	a.AnimList[layer][idx].Suspend()
-	a.AnimList[layer][idx] = nil
-	a.animMutex[layer].Unlock()
+func (a *AnimationController) DelAt(idx int) {
+	a.animMutex.Lock()
+	a.AnimList[idx].Suspend()
+	a.AnimList[idx] = nil
+	a.animMutex.Unlock()
 }
 
 // Loescht alle Animationen.
-func (a *AnimationController) Purge(layer int) {
-	a.animMutex[layer].Lock()
-	for _, anim := range a.AnimList[layer] {
+func (a *AnimationController) Purge() {
+	a.animMutex.Lock()
+	for _, anim := range a.AnimList {
 		if anim == nil {
 			continue
 		}
 		anim.Suspend()
 	}
-	a.AnimList[layer] = a.AnimList[layer][:0]
-	a.animMutex[layer].Unlock()
+	a.AnimList = a.AnimList[:0]
+	a.animMutex.Unlock()
 }
 
-func (a *AnimationController) PurgeAll() {
-	for layer := range NumLayers {
-		a.Purge(layer)
-	}
-}
+// func (a *AnimationController) PurgeAll() {
+// 	for layer := range NumLayers {
+// 		a.Purge(layer)
+// 	}
+// }
 
 // Mit Stop koennen die Animationen und die Darstellung auf der Hardware
 // unterbunden werden.
 func (a *AnimationController) Suspend() {
-	if !a.running {
+	if !a.isRunning {
 		return
 	}
-	a.running = false
+	a.isRunning = false
 	a.ticker.Stop()
 	a.stop = time.Now()
 }
@@ -136,16 +136,16 @@ func (a *AnimationController) Suspend() {
 // Im Moment tut es das nicht - man muesste sich bei den Methoden und Ideen
 // von AnimationEmbed bedienen.
 func (a *AnimationController) Continue() {
-	if a.running {
+	if a.isRunning {
 		return
 	}
 	a.delay += time.Since(a.stop)
 	a.ticker.Reset(refreshRate)
-	a.running = true
+	a.isRunning = true
 }
 
 func (a *AnimationController) IsRunning() bool {
-	return a.running
+	return a.isRunning
 }
 
 // Diese Funktion wird im Hintergrund gestartet und ist fuer die Koordination
@@ -154,15 +154,14 @@ func (a *AnimationController) IsRunning() bool {
 // vorgenommen werden. Davon ist in jedem Programm nur eine Instanz vorhanden
 // AnimationController's koennte es grundsaetzlich mehrere geben.
 func (a *AnimationController) backgroundThread() {
-	wg := &sync.WaitGroup{}
-	cond := sync.NewCond(&sync.Mutex{})
+	// wg := &sync.WaitGroup{}
+	// cond := sync.NewCond(&sync.Mutex{})
 
-	startChan := make(chan int)
+	// startChan := make(chan int)
 
-	for id := range a.numThreads {
-		go a.animationUpdater(id, cond, wg)
-		// go a.animationUpdater(startChan, wg)
-	}
+	// for id := range a.numThreads {
+	// 	go a.animationUpdater(id, cond, wg)
+	// }
 
 	for pit := range a.ticker.C {
 		if a.quit {
@@ -170,49 +169,50 @@ func (a *AnimationController) backgroundThread() {
 		}
 		a.animPit = pit.Add(-a.delay)
 
-		a.animWatch.Start()
-		wg.Add(a.numThreads)
-		cond.Broadcast()
-		// for id := range a.numThreads {
-		// 	startChan <- id
-		// }
-		wg.Wait()
-		a.animWatch.Stop()
+		a.stopwatch.Start()
+		a.animationUpdater(0)
+		// wg.Add(a.numThreads)
+		// cond.Broadcast()
+		// wg.Wait()
+		a.stopwatch.Stop()
 
 		a.syncChan <- true
 		<-a.syncChan
 	}
-	close(startChan)
+	// close(startChan)
 }
 
 // Von dieser Funktion werden pro Core eine Go-Routine gestartet. Sie werden
 // durch eine Message ueber den Kanal statChan aktiviert und uebernehmen die
 // Aktualisierung ihrer Animationen.
-func (a *AnimationController) animationUpdater(id int, cond *sync.Cond, wg *sync.WaitGroup) {
+func (a *AnimationController) animationUpdater(id int) {
 	// for id := range startChan {
-	for {
-		cond.L.Lock()
-		cond.Wait()
-		cond.L.Unlock()
-		for listIdx := range a.AnimList {
-			a.animMutex[listIdx].RLock()
-			for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
-				anim := a.AnimList[listIdx][i]
-				if anim == nil || !anim.IsRunning() {
-					continue
-				}
-				if !anim.Update(a.animPit) {
-					// a.AnimList[0][i] = nil
-				}
-			}
-			a.animMutex[listIdx].RUnlock()
+	// for {
+	// 	cond.L.Lock()
+	// 	cond.Wait()
+	// 	cond.L.Unlock()
+	// for listIdx, animList := range a.AnimList {
+	a.animMutex.RLock()
+	for id, anim := range a.AnimList {
+		// for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
+		// anim := a.AnimList[listIdx][i]
+		if anim == nil || !anim.IsRunning() {
+			continue
 		}
-		wg.Done()
+		a.animMutex.RUnlock()
+		if !anim.Update(a.animPit) {
+			a.AnimList[id] = nil
+		}
+		a.animMutex.RLock()
 	}
+	a.animMutex.RUnlock()
+	// }
+	// wg.Done()
+	// }
 }
 
-func (a *AnimationController) Watch() *Stopwatch {
-	return a.animWatch
+func (a *AnimationController) Stopwatch() *Stopwatch {
+	return a.stopwatch
 }
 
 func (a *AnimationController) Now() time.Time {
@@ -232,55 +232,51 @@ func AnimationLinear(t float64) float64 {
 	return t
 }
 
-// Beginnt langsam und nimmt immer mehr an Fahrt auf
-// (quadratische Grundlage).
-func AnimationEaseIn(t float64) float64 {
-	return t * t
+// Die folgenden Funktionen dienen als Basis fuer eine ganze Schar von
+// Animationskurven. Es sind im Grunde parametrisierbare Parabeln; mit dem
+// Parameter (einem Fliesskommawert in [0,8]) wird der Exponent bestimmt.
+// Man kann also Parabeln 1.25-ter oder 0.65-ter Ordnung erstellen.
+// Die Namen (...In, ...Out, ...InOut) bezeichnen, an welcher Stelle der
+// Animation (Anfang, Ende, Anfang-und-Ende) eine Verzoegerung erzeugt wird.
+type genericCurve func(t, a float64) float64
+
+func genericIn(t, a float64) float64 {
+	return math.Pow(t, a)
 }
 
-// Beginnt schnell und bremst zum Ende immer mehr ab
-// (quadratische Grundlage).
-func AnimationEaseOut(t float64) float64 {
-	return t * (2 - t)
+func genericOut(t, a float64) float64 {
+	return -math.Pow(1-t, a) + 1
 }
 
-// Anfang und Ende der Animation werden abgebremst
-// (quadratische Grundlage, stueckweise Funktion).
-func AnimationEaseInOut(t float64) float64 {
-	if t <= 0.5 {
-		return 2 * t * t
-	}
-	return (4-2*t)*t - 1
-}
-
-func AnimationMiddleStop(t float64) float64 {
-	if t <= 0.5 {
-		return -2*(t-0.5)*(t-0.5) + 0.5
+func genericInOut(t, a float64) float64 {
+	if t < 0.5 {
+		return genericIn(2*t, a) / 2
 	} else {
-		return 2*(t-0.5)*(t-0.5) + 0.5
+		return (genericOut(2*t-1, a) + 1) / 2
 	}
 }
 
-// Beginnt langsam und nimmt immer mehr an Fahrt auf.
-// (kubische Grundlage).
-func AnimationRealEaseIn(t float64) float64 {
-	return t * t * t
-}
-
-// Beginnt langsam und nimmt immer mehr an Fahrt auf.
-// (kubische Grundlage).
-func AnimationRealEaseOut(t float64) float64 {
-	return t * (t*(t-3) + 3)
-}
-
-// Anfang und Ende der Animation werden abgebremst.
-// (kubische Grundlage, stueckweise Funktion).
-func AnimationRealEaseInOut(t float64) float64 {
-	if t <= 0.5 {
-		return 4 * t * t * t
+// Mit dieser Methode schliesslich, werden konkrete Animationskurven erstellt.
+// Der erste Parameter bezeichnet eine der generischen Funktionen und mit
+// dem Parameter a wird der gewuenschte Exponent fix hinterlegt. Das Resultat
+// ist eine Funktion des Typs [AnimationCurve], der im Feld [Curve] einer
+// Animation hinterlegt werden kann.
+func NewAnimationCurve(fnc genericCurve, a float64) AnimationCurve {
+	return func(t float64) float64 {
+		return fnc(t, a)
 	}
-	return 4*(t-1)*(t-1)*(t-1) + 1
 }
+
+var (
+	// Die Animationskurven, welche auf quadratischen und kubischen Parabeln
+	// basieren, sind bereits vorgefertigt.
+	AnimationEaseIn     = NewAnimationCurve(genericIn, 2.0)
+	AnimationEaseOut    = NewAnimationCurve(genericOut, 2.0)
+	AnimationEaseInOut  = NewAnimationCurve(genericInOut, 2.0)
+	AnimationCubicIn    = NewAnimationCurve(genericIn, 3.0)
+	AnimationCubicOut   = NewAnimationCurve(genericOut, 3.0)
+	AnimationCubicInOut = NewAnimationCurve(genericInOut, 3.0)
+)
 
 // Dies ist ein etwas unbeholfener Versuch, die Zielwerte bestimmter
 // Animationen dynamisch berechnen zu lassen. Alle XXXFuncType sind
@@ -309,22 +305,22 @@ func RandPalette() PaletteFuncType {
 }
 
 var (
-	randColor, randGroupColor color.LedColor
+	randColor, randGroupColor colors.LedColor
 )
 
-func RandColor(new bool) AnimValueFunc[color.LedColor] {
-	return func() color.LedColor {
+func RandColor(new bool) AnimValueFunc[colors.LedColor] {
+	return func() colors.LedColor {
 		if new {
-			randColor = color.RandColor()
+			randColor = colors.RandColor()
 		}
 		return randColor
 	}
 }
 
-func RandGroupColor(group color.ColorGroup, new bool) AnimValueFunc[color.LedColor] {
-	return func() color.LedColor {
+func RandGroupColor(group colors.ColorGroup, new bool) AnimValueFunc[colors.LedColor] {
+	return func() colors.LedColor {
 		if new {
-			randGroupColor = color.RandGroupColor(group)
+			randGroupColor = colors.RandGroupColor(group)
 		}
 		return randGroupColor
 	}
@@ -464,55 +460,55 @@ func (a *SimpleTask) Start() {
 // Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
 // CanvasObjekten beeinflusst werden. Mit jedem Aufruf wird dieser Switch
 // umgestellt (also Hidden -> Shown -> Hidden -> etc.).
-type HideShowAnimation struct {
-	obj CanvasObject
-}
+// type HideShowAnimation struct {
+// 	obj CanvasObject
+// }
 
-func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
-	a := &HideShowAnimation{obj: obj}
-	return a
-}
+// func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
+// 	a := &HideShowAnimation{obj: obj}
+// 	return a
+// }
 
-func (a *HideShowAnimation) StartAt(t time.Time) {
-	if a.obj.IsVisible() {
-		a.obj.Hide()
-	} else {
-		a.obj.Show()
-	}
-}
-func (a *HideShowAnimation) Start() {
-	a.StartAt(AnimCtrl.Now())
-}
+// func (a *HideShowAnimation) StartAt(t time.Time) {
+// 	if a.obj.IsVisible() {
+// 		a.obj.Hide()
+// 	} else {
+// 		a.obj.Show()
+// 	}
+// }
+// func (a *HideShowAnimation) Start() {
+// 	a.StartAt(AnimCtrl.Now())
+// }
 
-func (a *HideShowAnimation) IsRunning() bool {
-	return false
-}
+// func (a *HideShowAnimation) IsRunning() bool {
+// 	return false
+// }
 
 // Analog zu HideShowAnimation dient SuspContAnimation dazu, die Eigenschaft
 // IsRunning von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
 // Animation wechselt die Eigenschaft (Stopped -> Started -> Stopped -> etc.)
-type SuspContAnimation struct {
-	anim Animation
-}
+// type SuspContAnimation struct {
+// 	anim Animation
+// }
 
-func NewSuspContAnimation(anim Animation) *SuspContAnimation {
-	a := &SuspContAnimation{anim: anim}
-	return a
-}
-func (a *SuspContAnimation) StartAt(t time.Time) {
-	if a.anim.IsRunning() {
-		a.anim.Suspend()
-	} else {
-		a.anim.Continue()
-	}
-}
-func (a *SuspContAnimation) Start() {
-	a.StartAt(AnimCtrl.Now())
-}
+// func NewSuspContAnimation(anim Animation) *SuspContAnimation {
+// 	a := &SuspContAnimation{anim: anim}
+// 	return a
+// }
+// func (a *SuspContAnimation) StartAt(t time.Time) {
+// 	if a.anim.IsRunning() {
+// 		a.anim.Suspend()
+// 	} else {
+// 		a.anim.Continue()
+// 	}
+// }
+// func (a *SuspContAnimation) Start() {
+// 	a.StartAt(AnimCtrl.Now())
+// }
 
-func (a *SuspContAnimation) IsRunning() bool {
-	return false
-}
+// func (a *SuspContAnimation) IsRunning() bool {
+// 	return false
+// }
 
 // Dieses Embeddable wird von allen Animationen verwendet, welche eine
 // Animation implementieren, die folgende Kriterien aufweist:
@@ -531,7 +527,9 @@ type NormAnimationEmbed struct {
 	// Ueber dieses Embeddable werden Variablen und Methdoden zum Setzen und
 	// Abfragen der Laufzeit importiert.
 	DurationEmbed
-
+	// Falls die Animation nicht am Anfang starten soll, sondern zu einem
+	// beliebigen Punkt, setzt man dieses Feld auf einen Wert zwischen 0 und
+	// 1.
 	Pos float64
 
 	wrapper          NormAnimation
@@ -547,7 +545,6 @@ type NormAnimationEmbed struct {
 func (a *NormAnimationEmbed) Extend(wrapper NormAnimation) {
 	a.wrapper = wrapper
 	a.Curve = AnimationEaseInOut
-	AnimCtrl.Add(0, a.wrapper)
 }
 
 // Mit Duration wird die gesamte Laufzeit der Animation (als inkl. Umkehrungen
@@ -574,6 +571,9 @@ func (a *NormAnimationEmbed) Duration() time.Duration {
 	return time.Duration(factor)*a.duration - startDiff
 }
 
+// Retourniert einige Werte, welche das Timing der Animation betreffen. Wird
+// wohl eher fuer Debugging verwendet. Ausserdem ist der Zugriff nicht
+// synchronisiert! Passt man nicht auf, kriegt man inkonsistente Angaben.
 func (a *NormAnimationEmbed) TimeInfo() (start, end time.Time, total float64) {
 	return a.start, a.end, a.total
 }
@@ -603,6 +603,7 @@ func (a *NormAnimationEmbed) StartAt(t time.Time) {
 	a.repeatsLeft = a.RepeatCount
 	a.wrapper.Init()
 	a.running = true
+	AnimCtrl.Add(a.wrapper)
 }
 
 func (a *NormAnimationEmbed) Start() {
@@ -683,8 +684,6 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 	return true
 }
 
-// ---------------------------------------------------------------------------
-
 // Ein Delay kann als ganz normale Animation ueberall dort eingefuegt werden,
 // wo ein unmittelbares Fortfahren der Animationen nicht gewuenscht ist und
 // wo der Einsatz der Timeline zu aufwaendig ist.
@@ -702,8 +701,13 @@ func NewDelay(d time.Duration) *Delay {
 func (a *Delay) Init()          {}
 func (a *Delay) Tick(t float64) {}
 
+// ---------------------------------------------------------------------------
+
 // Folgende Datentypen lassen sich 'animieren', d.h. ueber einen bestimmten
-// Zeitraum von einem Wert A zu einem zweiten Wert B interpolieren.
+// Zeitraum von einem Wert A zu einem zweiten Wert B interpolieren. Mit
+// dieser Sammlung von Typen und Funktionen habe ich wohl mein Gesellenstueck
+// in Go geschrieben. Als besonderes Schmankerl ist das ganze auch noch
+// generisch umgesetzt.
 type AnimNumbers interface {
 	~float64 | ~uint8 | ~int
 }
@@ -711,7 +715,7 @@ type AnimPoints interface {
 	geom.Point | image.Point | fixed.Point26_6
 }
 type AnimColors interface {
-	color.LedColor
+	colors.LedColor
 }
 type AnimValue interface {
 	AnimNumbers | AnimPoints | AnimColors
@@ -731,9 +735,10 @@ type GenericAnimation[T AnimValue] struct {
 	// NormAnimationEmbed wird eingebunden, um Methoden wie Start(), Suspend(),
 	// Continue() nur einmal implementiern zu muessen.
 	NormAnimationEmbed
-	// ValPtr zeigt auf jenes Feld eines Record, welches durch diese Animation
-	// veraendert werden soll. Die Animation kenn also den Grund-Typ (Rectangle,
-	// Circle, Pixel, etc) nicht, sondern nur den zu animierenden Wert.
+	// ValPtr zeigt auf jenes Feld eines Objektes, welches durch diese
+    // Animation veraendert werden soll. Die Animation kenn also den
+    // Grund-Typ (Rectangle, Circle, Pixel, etc) nicht, sondern nur die zu
+    // animierende Eigenschaft.
 	ValPtr *T
 	// Val1 und Val2 enthalten Funktionen, mit welchen der Start-, resp. End-
 	// wert einer Animation zum Startzeitpunkt ermittelt werden. Damit lassen
@@ -776,10 +781,10 @@ type Fadable interface {
 }
 
 type FadeEmbed struct {
-	colPtr *color.LedColor
+	colPtr *colors.LedColor
 }
 
-func (e *FadeEmbed) Init(c *color.LedColor) {
+func (e *FadeEmbed) Init(c *colors.LedColor) {
 	e.colPtr = c
 }
 func (e *FadeEmbed) AlphaPtr() *uint8 {
@@ -851,31 +856,31 @@ func (a *FloatAnimation) Tick(t float64) {
 }
 
 type Colorable interface {
-	ColorPtr() *color.LedColor
+	ColorPtr() *colors.LedColor
 }
 
 type ColorFillable interface {
 	Colorable
-	FillColorPtr() *color.LedColor
+	FillColorPtr() *colors.LedColor
 }
 
 // type ColorStrokable interface {
-//     StrokeColorPtr() *color.LedColor
+//     StrokeColorPtr() *colors.LedColor
 // }
 
 // Animation fuer einen Verlauf zwischen zwei Farben.
 type ColorAnimation struct {
-	GenericAnimation[color.LedColor]
+	GenericAnimation[colors.LedColor]
 }
 
-func NewColorAnim(obj Colorable, val2 color.LedColor, dur time.Duration) *ColorAnimation {
+func NewColorAnim(obj Colorable, val2 colors.LedColor, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
 	a.InitAnim(obj.ColorPtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
 	return a
 }
 
-func NewFillColorAnim(obj ColorFillable, val2 color.LedColor, dur time.Duration) *ColorAnimation {
+func NewFillColorAnim(obj ColorFillable, val2 colors.LedColor, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
 	a.InitAnim(obj.FillColorPtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
@@ -886,6 +891,61 @@ func (a *ColorAnimation) Tick(t float64) {
 	alpha := (*a.ValPtr).A
 	*a.ValPtr = a.val1.Interpolate(a.val2, t)
 	(*a.ValPtr).A = alpha
+}
+
+// Animation fuer einen Farbverlauf ueber die Farben einer Palette.
+type PaletteAnimation struct {
+	GenericAnimation[colors.LedColor]
+	pal ColorSource
+}
+
+func NewPaletteAnim(obj Colorable, pal ColorSource, dur time.Duration) *PaletteAnimation {
+	a := &PaletteAnimation{}
+	a.InitAnim(obj.ColorPtr(), colors.Black, dur)
+	a.NormAnimationEmbed.Extend(a)
+	a.Curve = AnimationLinear
+	a.pal = pal
+	return a
+}
+
+func (a *PaletteAnimation) Tick(t float64) {
+	*a.ValPtr = a.pal.Color(t)
+}
+
+// Dies schliesslich ist eine Animation, bei welcher stufenlos von einer
+// Palette auf eine andere umgestellt wird.
+type PaletteFadeAnimation struct {
+	NormAnimationEmbed
+	Fader   *PaletteFader
+	Val2    ColorSource
+	ValFunc PaletteFuncType
+}
+
+func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
+	a := &PaletteFadeAnimation{}
+	a.NormAnimationEmbed.Extend(a)
+	a.SetDuration(dur)
+	a.Fader = fader
+	a.Val2 = pal2
+	return a
+}
+
+func (a *PaletteFadeAnimation) Init() {
+	a.Fader.T = 0.0
+	if a.ValFunc != nil {
+		a.Fader.Pals[1] = a.ValFunc()
+	} else {
+		a.Fader.Pals[1] = a.Val2
+	}
+}
+
+func (a *PaletteFadeAnimation) Tick(t float64) {
+	if t == 1.0 {
+		a.Fader.Pals[0], a.Fader.Pals[1] = a.Fader.Pals[1], a.Fader.Pals[0]
+		a.Fader.T = 0.0
+	} else {
+		a.Fader.T = t
+	}
 }
 
 // Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
@@ -1022,68 +1082,13 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 	*a.ValPtr = np.Int()
 }
 
-// Animation fuer einen Farbverlauf ueber die Farben einer Palette.
-type PaletteAnimation struct {
-	GenericAnimation[color.LedColor]
-	pal ColorSource
-}
-
-func NewPaletteAnim(obj Colorable, pal ColorSource, dur time.Duration) *PaletteAnimation {
-	a := &PaletteAnimation{}
-	a.InitAnim(obj.ColorPtr(), color.Black, dur)
-	a.NormAnimationEmbed.Extend(a)
-	a.Curve = AnimationLinear
-	a.pal = pal
-	return a
-}
-
-func (a *PaletteAnimation) Tick(t float64) {
-	*a.ValPtr = a.pal.Color(t)
-}
-
-// Dies schliesslich ist eine Animation, bei welcher stufenlos von einer
-// Palette auf eine andere umgestellt wird.
-type PaletteFadeAnimation struct {
-	NormAnimationEmbed
-	Fader   *PaletteFader
-	Val2    ColorSource
-	ValFunc PaletteFuncType
-}
-
-func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
-	a := &PaletteFadeAnimation{}
-	a.NormAnimationEmbed.Extend(a)
-	a.SetDuration(dur)
-	a.Fader = fader
-	a.Val2 = pal2
-	return a
-}
-
-func (a *PaletteFadeAnimation) Init() {
-	a.Fader.T = 0.0
-	if a.ValFunc != nil {
-		a.Fader.Pals[1] = a.ValFunc()
-	} else {
-		a.Fader.Pals[1] = a.Val2
-	}
-}
-
-func (a *PaletteFadeAnimation) Tick(t float64) {
-	if t == 1.0 {
-		a.Fader.Pals[0], a.Fader.Pals[1] = a.Fader.Pals[1], a.Fader.Pals[0]
-		a.Fader.T = 0.0
-	} else {
-		a.Fader.T = t
-	}
-}
-
 // Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
 type Shader TimedAnimation
 
-type ColorShaderFunc func(t, x, y, z float64, idx, nPix int) color.LedColor
+type ColorShaderFunc func(t, x, y, z float64, idx, nPix int) colors.LedColor
 
 type ColorShaderAnim struct {
-	ValPtr      *color.LedColor
+	ValPtr      *colors.LedColor
 	X, Y, Z     float64
 	Idx, NPix   int
 	Fnc         ColorShaderFunc
@@ -1098,7 +1103,7 @@ func NewColorShaderAnim(obj Colorable, x, y, z float64, idx, nPix int, fnc Color
 	a.Idx = idx
 	a.NPix = nPix
 	a.Fnc = fnc
-	AnimCtrl.Add(0, a)
+	// AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -1115,6 +1120,7 @@ func (a *ColorShaderAnim) StartAt(t time.Time) {
 	}
 	a.start = t
 	a.running = true
+	AnimCtrl.Add(a)
 }
 
 func (a *ColorShaderAnim) Start() {
@@ -1153,7 +1159,7 @@ func (a *ColorShaderAnim) Update(t time.Time) bool {
 type NormShaderFunc func(t, x, y float64) float64
 
 type ShaderAnimation struct {
-	ValPtr      *color.LedColor
+	ValPtr      *colors.LedColor
 	Pal         ColorSource
 	X, Y        float64
 	Fnc         NormShaderFunc
@@ -1168,7 +1174,7 @@ func NewShaderAnim(obj Colorable, pal ColorSource, x, y float64,
 	a.Pal = pal
 	a.X, a.Y = x, y
 	a.Fnc = fnc
-	AnimCtrl.Add(0, a)
+	// AnimCtrl.Add(0, a)
 	return a
 }
 
@@ -1185,6 +1191,7 @@ func (a *ShaderAnimation) StartAt(t time.Time) {
 	}
 	a.start = t
 	a.running = true
+	AnimCtrl.Add(a)
 }
 
 func (a *ShaderAnimation) Start() {

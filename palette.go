@@ -4,12 +4,12 @@ package ledgrid
 
 import (
 	"image"
-	gocolor "image/color"
+	"image/color"
 	"log"
 	"math"
 	"slices"
 
-	ledcolor "github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 // Alles, was im Sinne einer Farbpalette Farben erzeugen kann, implementiert
@@ -19,7 +19,7 @@ type ColorSource interface {
 	// zurueck. v kann vielfaeltig verwendet, resp. interpretiert werden,
 	// bsp. als Parameter im Intervall [0,1], als Index (natuerliche Zahl)
 	// einer Farbenliste oder gar nicht, wenn die Farbquelle einfarbig ist.
-	Color(v float64) ledcolor.LedColor
+	Color(v float64) colors.LedColor
 	// Da alle Paletten noch einen Namen haben, der bspw. in einem GUI- oder
 	// TUI-Element dargestellt werden kann, existiert diese Methode.
 	Name() string
@@ -52,7 +52,7 @@ type GradientPalette struct {
 // [0,1] mit einer Farbe zu assoziieren.
 type ColorStop struct {
 	Pos   float64
-	Color ledcolor.LedColor
+	Color colors.LedColor
 }
 
 // Erzeugt eine neue Palette unter Verwendung der Stuetzwerte in cl. Die
@@ -62,8 +62,8 @@ type ColorStop struct {
 func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 	p := &GradientPalette{}
 	p.stops = []ColorStop{
-		{0.0, ledcolor.LedColor{0x00, 0x00, 0x00, 0xff}},
-		{1.0, ledcolor.LedColor{0xff, 0xff, 0xff, 0xff}},
+		{0.0, colors.LedColor{0x00, 0x00, 0x00, 0xff}},
+		{1.0, colors.LedColor{0xff, 0xff, 0xff, 0xff}},
 	}
 	for _, cs := range cl {
 		p.SetColorStop(cs)
@@ -77,7 +77,7 @@ func NewGradientPalette(name string, cl ...ColorStop) *GradientPalette {
 // wobei die Farben aequidistant ueber das Interval [0,1] verteilt werden.
 // Ist cycle true, dann wird die erste Farbe in cl auch als letzte Farbe
 // verwendet.
-func NewGradientPaletteByList(name string, cycle bool, cl ...ledcolor.LedColor) *GradientPalette {
+func NewGradientPaletteByList(name string, cycle bool, cl ...colors.LedColor) *GradientPalette {
 	if len(cl) < 2 {
 		log.Fatalf("At least two colors are required!")
 	}
@@ -87,9 +87,9 @@ func NewGradientPaletteByList(name string, cycle bool, cl ...ledcolor.LedColor) 
 	stops := make([]ColorStop, len(cl))
 	posStep := 1.0 / (float64(len(cl) - 1))
 	for i, c := range cl[:len(cl)-1] {
-		stops[i] = ColorStop{float64(i) * posStep, ledcolor.LedColorModel.Convert(c).(ledcolor.LedColor)}
+		stops[i] = ColorStop{float64(i) * posStep, colors.LedColorModel.Convert(c).(colors.LedColor)}
 	}
-	stops[len(cl)-1] = ColorStop{1.0, ledcolor.LedColorModel.Convert(cl[len(cl)-1]).(ledcolor.LedColor)}
+	stops[len(cl)-1] = ColorStop{1.0, colors.LedColorModel.Convert(cl[len(cl)-1]).(colors.LedColor)}
 	return NewGradientPalette(name, stops...)
 }
 
@@ -120,9 +120,27 @@ func (p *GradientPalette) ColorStops() []ColorStop {
 	return p.stops
 }
 
+func intA(t float64) float64 {
+    return t
+}
+
+func intB(t float64) float64 {
+    return 3.0*t*t - 2.0*t*t*t
+}
+
+func intC(t float64) float64 {
+    a := 1.4
+    t1 := math.Pow(2, a-1.0)
+    if t <= 0.5 {
+        return t1 * math.Pow(t, a)
+    } else {
+        return 1.0 - t1 * math.Pow(1.0 - t, a)
+    }
+}
+
 // Hier nun spielt die Musik: aufgrund des Wertes t (muss im Intervall [0,1]
 // liegen) wird eine neue Farbe interpoliert.
-func (p *GradientPalette) Color(t float64) (c ledcolor.LedColor) {
+func (p *GradientPalette) Color(t float64) (c colors.LedColor) {
 	var i int
 	var stop ColorStop
 
@@ -135,9 +153,7 @@ func (p *GradientPalette) Color(t float64) (c ledcolor.LedColor) {
 		}
 	}
 	t = (t - p.stops[i].Pos) / (p.stops[i+1].Pos - p.stops[i].Pos)
-	t2 := t * t
-	t = 3*t2 - 2*t2*t
-	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, t)
+	c = p.stops[i].Color.Interpolate(p.stops[i+1].Color, intC(t))
 	return c
 }
 
@@ -148,13 +164,13 @@ func (p *GradientPalette) Name() string {
 // Palette mit 256 einzelnen dedizierten Farbwerten - kein Fading oder
 // sonstige Uebergaenge.
 type SlicePalette struct {
-	Colors []ledcolor.LedColor
+	Colors []colors.LedColor
 	name   string
 }
 
-func NewSlicePalette(name string, cl ...ledcolor.LedColor) *SlicePalette {
+func NewSlicePalette(name string, cl ...colors.LedColor) *SlicePalette {
 	p := &SlicePalette{}
-	p.Colors = make([]ledcolor.LedColor, 256)
+	p.Colors = make([]colors.LedColor, 256)
 	for i, c := range cl {
 		p.Colors[i] = c
 	}
@@ -162,11 +178,11 @@ func NewSlicePalette(name string, cl ...ledcolor.LedColor) *SlicePalette {
 	return p
 }
 
-func (p *SlicePalette) Color(v float64) ledcolor.LedColor {
+func (p *SlicePalette) Color(v float64) colors.LedColor {
 	return p.Colors[int(v)]
 }
 
-func (p *SlicePalette) SetColor(idx int, c ledcolor.LedColor) {
+func (p *SlicePalette) SetColor(idx int, c colors.LedColor) {
 	p.Colors[idx] = c
 }
 
@@ -178,12 +194,12 @@ func (p *SlicePalette) Name() string {
 // existiert der Typ UniformPalette. Die Ueberlegungen dazu sind analog zum
 // Typ [image.Uniform].
 type UniformPalette struct {
-	color  ledcolor.LedColor
+	color  colors.LedColor
 	name string
 }
 
 // Erstellt eine neue einfarbige Farbquelle mit gegebenem namen.
-func NewUniformPalette(name string, color ledcolor.LedColor) *UniformPalette {
+func NewUniformPalette(name string, color colors.LedColor) *UniformPalette {
 	p := &UniformPalette{}
 	p.color = color
 	p.name = name
@@ -192,7 +208,7 @@ func NewUniformPalette(name string, color ledcolor.LedColor) *UniformPalette {
 
 // Damit wird das ColorSource-Interface implementiert. Der Parameter [v] hat
 // bei dieser Farbquelle keine Bedeutung und wird ignoriert.
-func (p *UniformPalette) Color(v float64) ledcolor.LedColor {
+func (p *UniformPalette) Color(v float64) colors.LedColor {
 	return p.color
 }
 
@@ -200,19 +216,19 @@ func (p *UniformPalette) Name() string {
 	return p.name
 }
 
-func (p *UniformPalette) ColorModel() gocolor.Model {
-	return ledcolor.LedColorModel
+func (p *UniformPalette) ColorModel() color.Model {
+	return colors.LedColorModel
 }
 
 func (p *UniformPalette) Bounds() image.Rectangle {
 	return image.Rect(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt)
 }
 
-func (p *UniformPalette) At(x, y int) gocolor.Color {
+func (p *UniformPalette) At(x, y int) color.Color {
 	return p.color
 }
 
-func (p *UniformPalette) Set(x, y int, c ledcolor.LedColor) {}
+func (p *UniformPalette) Set(x, y int, c colors.LedColor) {}
 
 // Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
 // anderen realisiert werden.
@@ -234,7 +250,7 @@ func NewPaletteFader(pal ColorSource) *PaletteFader {
 // Mit dieser Methode wird der aktuelle Farbwert retourniert. Damit
 // implementiert der Fader das ColorSource-Interface und kann als Farbquelle
 // verwendet werden - genau wie anderen Paletten-, resp. Farbtypen.
-func (p *PaletteFader) Color(v float64) (c ledcolor.LedColor) {
+func (p *PaletteFader) Color(v float64) (c colors.LedColor) {
 	c = p.Pals[0].Color(v)
 	if p.T > 0 {
 		c2 := p.Pals[1].Color(v)

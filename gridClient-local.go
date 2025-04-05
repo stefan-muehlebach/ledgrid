@@ -6,14 +6,14 @@ import (
 
 type DirectGridClient struct {
 	Disp      Displayer
-	sendWatch *Stopwatch
+	stopwatch *Stopwatch
 }
 
 func NewDirectGridClient(Disp Displayer) GridClient {
 	c := &DirectGridClient{}
 
 	c.Disp = Disp
-	c.sendWatch = NewStopwatch()
+	c.stopwatch = NewStopwatch()
 	return c
 }
 
@@ -37,8 +37,8 @@ func (c *DirectGridClient) ModuleConfig() conf.ModuleConfig {
 	return c.Disp.ModuleConfig()
 }
 
-func (c *DirectGridClient) Watch() *Stopwatch {
-	return c.sendWatch
+func (c *DirectGridClient) Stopwatch() *Stopwatch {
+	return c.stopwatch
 }
 
 func (c *DirectGridClient) Close() {

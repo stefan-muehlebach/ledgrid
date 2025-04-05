@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image"
-	gocolor "image/color"
+	"image/color"
 	"image/draw"
 	"iter"
 	"math/rand/v2"
@@ -13,7 +12,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 // The function Trace may be used in a range clause at the for statements.
@@ -90,9 +89,8 @@ func abs[T ~int | ~float64](i T) T {
 
 // ---------------------------------------------------------------------------
 
+// With ScanDir, the direction of a moving effect can be specified.
 type ScanDir int
-type LineDir int
-type ExitDir int
 
 const (
 	Top2Bottom ScanDir = iota
@@ -101,13 +99,20 @@ const (
 	Right2Left
 	Out2Inside
 	In2Outside
+)
 
+// With LineDir, the direction of the effect on a given row or column is
+// specified.
+type LineDir int
+
+const (
 	Forward LineDir = iota
-	CW
 	Backward
-	CCW
-	Alternate
+)
 
+type ExitDir int
+
+const (
 	ExitAway ExitDir = iota
 	ExitOver
 )
@@ -119,7 +124,7 @@ type EffectType struct {
 }
 
 type PointPair struct {
-	src, dst image.Point
+	Src, Dst image.Point
 }
 
 func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
@@ -219,6 +224,9 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 					if typ.lineDir == Backward {
 						dDst = dDst.Mul(-1)
 					}
+					if typ.exitDir == ExitAway {
+						dDst = dDst.Mul(-1)
+					}
 					for _, src := range TraceIntPoint(p0, p1) {
 						dst := src.Add(dDst)
 						pts = append(pts, PointPair{src, dst})
@@ -236,18 +244,13 @@ func EffectFader(typ EffectType) iter.Seq2[int, []PointPair] {
 	return nil
 }
 
-var (
-	isRunning bool
-	doneChan  chan bool
-)
-
 func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
 	canv2, _ := ledGrid.NewCanvas()
 	mask := image.NewAlpha(canv2.Rect)
-	draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
+	draw.Draw(mask, canv2.Rect, image.NewUniform(color.Alpha{0xff}), image.Point{}, draw.Src)
 	canv2.Mask = mask
 
 	cam := NewCamera(pos, size)
@@ -257,46 +260,48 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 	backgroundTask := func(ctx0 context.Context) {
 		var src, dst geom.Point
 
-		fmt.Printf("backgroundTask(): starting...\n")
 		effectList := []EffectType{
+			{In2Outside, Backward, ExitOver},
 			{In2Outside, Forward, ExitOver},
-			{Out2Inside, Forward, ExitAway},
+			// {In2Outside, Backward, ExitAway},
+			// {In2Outside, Forward, ExitAway},
 			{Top2Bottom, Forward, ExitOver},
-			{Bottom2Top, Forward, ExitAway},
-			{Left2Right, Backward, ExitAway},
-			{Right2Left, Forward, ExitOver},
+			{Bottom2Top, Backward, ExitAway},
+			{Left2Right, Forward, ExitAway},
+			{Right2Left, Backward, ExitOver},
 		}
-		colorList := []color.LedColor{
-			color.BlueViolet,
-			color.SkyBlue,
-			color.Lime,
-			color.YellowGreen,
-			color.Teal,
-			color.Gold,
+		colorList := []colors.LedColor{
+			colors.OrangeRed,
+			colors.Crimson,
+			colors.FireBrick,
+			colors.Gold,
+			colors.BlueViolet,
+			colors.SkyBlue,
+			colors.Lime,
+			colors.YellowGreen,
+			colors.Teal,
 		}
 
-		fmt.Printf("backgroundTask(): enter loop...\n")
 		for {
-			fmt.Printf("backgroundTask(): do work...\n")
 			time.Sleep(1 * time.Second)
 			for i, effect := range effectList {
-				ledgrid.AnimCtrl.Purge(0)
+				ledgrid.AnimCtrl.Purge()
 				canv1.Purge()
 				for _, pts := range EffectFader(effect) {
 					for _, pp := range pts {
-						p0, p1 := pp.src, pp.dst
+						p0, p1 := pp.Src, pp.Dst
 						src = geom.NewPointIMG(p0)
 						dst = geom.NewPointIMG(p1)
 						pixAway := ledgrid.NewDot(src, colorList[i].Alpha(0.0))
 						canv1.Add(pixAway)
 
 						aMask := ledgrid.NewTask(func() {
-							mask.Set(p0.X, p0.Y, gocolor.Alpha{0x00})
+							mask.Set(p0.X, p0.Y, color.Alpha{0x00})
 						})
 
 						aDur := 200*time.Millisecond + rand.N(300*time.Millisecond)
 						aFadeIn := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeIn, aDur)
-						aFadeIn.Curve = ledgrid.AnimationRealEaseIn
+						aFadeIn.Curve = ledgrid.AnimationCubicIn
 
 						aDur = time.Second + rand.N(time.Second)
 						aFadeOut := ledgrid.NewFadeAnim(pixAway, ledgrid.FadeOut, 3*aDur/2)
@@ -307,20 +312,23 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 							ledgrid.NewGroup(aMask, aFadeOut, aPos),
 						)
 						aSeq.Start()
-						if i%2 == 1 {
-							time.Sleep(20 * time.Millisecond)
-						}
+						time.Sleep(20 * time.Millisecond)
 					}
-					if i%2 == 0 {
-						if effect.scanDir == Left2Right || effect.scanDir == Right2Left {
-							time.Sleep(250 * time.Millisecond)
-						} else {
-							time.Sleep(900 * time.Millisecond)
-						}
+					select {
+					case <-ctx0.Done():
+						return
+					default:
 					}
+					// if i%2 == 0 {
+					// 	if effect.scanDir == Left2Right || effect.scanDir == Right2Left {
+					time.Sleep(250 * time.Millisecond)
+					// } else {
+					// 	time.Sleep(900 * time.Millisecond)
+					// }
+					// }
 				}
 				time.Sleep(3 * time.Second)
-				draw.Draw(mask, canv2.Rect, image.NewUniform(gocolor.Alpha{0xff}), image.Point{}, draw.Src)
+				draw.Draw(mask, canv2.Rect, image.NewUniform(color.Alpha{0xff}), image.Point{}, draw.Src)
 			}
 		}
 	}

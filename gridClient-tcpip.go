@@ -17,7 +17,7 @@ type NetGridClient struct {
 	conn        net.Conn
 	rpcDisabled bool
 	rpcClient   *rpc.Client
-	sendWatch   *Stopwatch
+	stopwatch   *Stopwatch
 }
 
 func NewNetGridClient(host string, network string, port, rpcPort uint) GridClient {
@@ -39,7 +39,7 @@ func NewNetGridClient(host string, network string, port, rpcPort uint) GridClien
 		}
 	}
 
-	p.sendWatch = NewStopwatch()
+	p.stopwatch = NewStopwatch()
 
 	return p
 }
@@ -48,12 +48,12 @@ func NewNetGridClient(host string, network string, port, rpcPort uint) GridClien
 func (p *NetGridClient) Send(buffer []byte) {
 	var err error
 
-	p.sendWatch.Start()
+	p.stopwatch.Start()
 	_, err = p.conn.Write(buffer)
 	if err != nil {
 		log.Fatal(err)
 	}
-	p.sendWatch.Stop()
+	p.stopwatch.Stop()
 }
 
 // Die folgenden Methoden verpacken die entsprechenden RPC-Calls zum
@@ -113,8 +113,8 @@ func (p *NetGridClient) ModuleConfig() conf.ModuleConfig {
 	return reply.ModuleConfig
 }
 
-func (p *NetGridClient) Watch() *Stopwatch {
-	return p.sendWatch
+func (p *NetGridClient) Stopwatch() *Stopwatch {
+	return p.stopwatch
 }
 
 // Schliesst die Verbindung zum Controller.

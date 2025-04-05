@@ -40,11 +40,6 @@ func (t myTheme) Size(name fyne.ThemeSizeName) float32 {
 	return theme.DefaultTheme().Size(name)
 }
 
-// var (
-// 	App fyne.App
-// 	Win fyne.Window
-// )
-
 // This is the essential part of the gridEmulator: GridWindow, which
 // implements the ledgrid.Displayer interface and can be used by GridServer
 // as an output object. Sadly, I wasn't able to implement it as a fyne object

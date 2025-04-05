@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"context"
 	"math"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 )
 
 func init() {
@@ -22,8 +23,8 @@ func GroupTest(ctx context.Context, c *ledgrid.Canvas) {
 	rPos2 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
 	rSize1 := geom.Point{7.0, 7.0}
 	rSize2 := geom.Point{1.0, 1.0}
-	rColor1 := color.SkyBlue
-	rColor2 := color.GreenYellow
+	rColor1 := colors.SkyBlue
+	rColor2 := colors.GreenYellow
 
 	r := ledgrid.NewRectangle(rPos1, rSize1, rColor1)
 	c.Add(r)
@@ -40,7 +41,9 @@ func GroupTest(ctx context.Context, c *ledgrid.Canvas) {
 	aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
 	aGroup.RepeatCount = ledgrid.AnimationRepeatForever
 
+    fmt.Printf("About to start the group...\n")
 	aGroup.Start()
+    fmt.Printf("Group started\n")
 }
 
 func SequenceTest(ctx context.Context, c *ledgrid.Canvas) {
@@ -51,11 +54,11 @@ func SequenceTest(ctx context.Context, c *ledgrid.Canvas) {
 		geom.NewPoint(5.0, 3.0),
 		geom.NewPoint(float64(gridSize.X-1), 3.0),
 	}
-	colorList := [4]color.LedColor{
-		color.SkyBlue,
-		color.OrangeRed,
-		color.Gold,
-		color.MediumOrchid,
+	colorList := [4]colors.LedColor{
+		colors.SkyBlue,
+		colors.OrangeRed,
+		colors.Gold,
+		colors.MediumOrchid,
 	}
 	sizeAnims := [4]*ledgrid.SizeAnimation{}
 	colorAnims := [4]*ledgrid.ColorAnimation{}
@@ -103,21 +106,21 @@ func TimelineTest(ctx context.Context, c *ledgrid.Canvas) {
 	r4Size1 := geom.Point{3.0, 7.0}
 	r4Size2 := geom.Point{7.0, 9.0}
 
-	r1 := ledgrid.NewRectangle(r1Pos, r1Size, color.GreenYellow)
-	r3 := ledgrid.NewRectangle(r3Pos, r3Size, color.SkyBlue)
+	r1 := ledgrid.NewRectangle(r1Pos, r1Size, colors.GreenYellow)
+	r3 := ledgrid.NewRectangle(r3Pos, r3Size, colors.SkyBlue)
 
-	r2 := ledgrid.NewEllipse(r2Pos, r2Size1, color.Gold)
-	r4 := ledgrid.NewEllipse(r4Pos, r4Size1, color.Gold)
+	r2 := ledgrid.NewEllipse(r2Pos, r2Size1, colors.Gold)
+	r4 := ledgrid.NewEllipse(r4Pos, r4Size1, colors.Gold)
 	c.Add(r1, r3, r2, r4)
 
 	aAngle1 := ledgrid.NewAngleAnim(r1, 0.5*math.Pi, time.Second)
 	aAngle2 := ledgrid.NewAngleAnim(r1, 0.0, time.Second)
 
-	aColor1 := ledgrid.NewColorAnim(r1, color.OrangeRed, 200*time.Millisecond)
+	aColor1 := ledgrid.NewColorAnim(r1, colors.OrangeRed, 200*time.Millisecond)
 	aColor1.AutoReverse = true
 	aColor1.RepeatCount = 3
-	aColor2 := ledgrid.NewColorAnim(r1, color.Purple, 500*time.Millisecond)
-	aColor3 := ledgrid.NewColorAnim(r1, color.GreenYellow, 500*time.Millisecond)
+	aColor2 := ledgrid.NewColorAnim(r1, colors.Purple, 500*time.Millisecond)
+	aColor3 := ledgrid.NewColorAnim(r1, colors.GreenYellow, 500*time.Millisecond)
 
 	aPos1 := ledgrid.NewPositionAnim(r1, r2.Pos.SubXY(r2Size1.X/2.0, 0.0), 500*time.Millisecond)
 	aPos1.AutoReverse = true
@@ -125,23 +128,23 @@ func TimelineTest(ctx context.Context, c *ledgrid.Canvas) {
 	aAngle3 := ledgrid.NewAngleAnim(r3, -0.5*math.Pi, time.Second)
 	aAngle4 := ledgrid.NewAngleAnim(r3, 0.0, time.Second)
 
-	aColor4 := ledgrid.NewColorAnim(r3, color.DarkOrange, 200*time.Millisecond)
+	aColor4 := ledgrid.NewColorAnim(r3, colors.DarkOrange, 200*time.Millisecond)
 	aColor4.AutoReverse = true
 	aColor4.RepeatCount = 3
-	aColor5 := ledgrid.NewColorAnim(r3, color.Purple, 500*time.Millisecond)
-	aColor6 := ledgrid.NewColorAnim(r3, color.SkyBlue, 500*time.Millisecond)
+	aColor5 := ledgrid.NewColorAnim(r3, colors.Purple, 500*time.Millisecond)
+	aColor6 := ledgrid.NewColorAnim(r3, colors.SkyBlue, 500*time.Millisecond)
 
 	aPos2 := ledgrid.NewPositionAnim(r3, r4.Pos.AddXY(r4Size1.X/2.0, 0.0), 500*time.Millisecond)
 	aPos2.AutoReverse = true
 
-	aColor7 := ledgrid.NewColorAnim(r2, color.Cornsilk, 500*time.Millisecond)
+	aColor7 := ledgrid.NewColorAnim(r2, colors.Cornsilk, 500*time.Millisecond)
 	aColor7.AutoReverse = true
 	aBorder1 := ledgrid.NewStrokeWidthAnim(r2, 2.0, 500*time.Millisecond)
 	aBorder1.AutoReverse = true
 	aSize2 := ledgrid.NewSizeAnim(r2, r2Size2, 500*time.Millisecond)
 	aSize2.AutoReverse = true
 
-	aColor8 := ledgrid.NewColorAnim(r4, color.Cornsilk, 500*time.Millisecond)
+	aColor8 := ledgrid.NewColorAnim(r4, colors.Cornsilk, 500*time.Millisecond)
 	aColor8.AutoReverse = true
 	aBorder2 := ledgrid.NewStrokeWidthAnim(r4, 2.0, 500*time.Millisecond)
 	aBorder2.AutoReverse = true

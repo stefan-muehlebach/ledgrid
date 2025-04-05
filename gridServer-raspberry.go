@@ -54,7 +54,7 @@ type GridServer struct {
 	bufferSize           int
 	maxValue             [3]uint8
 	drawTestPattern      bool
-	sendWatch            *Stopwatch
+	stopwatch            *Stopwatch
 }
 
 // Damit wird eine neue Instanz eines GridServers erzeugt. Mit dataPort wird
@@ -70,7 +70,7 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	p.bufferSize = 3 * disp.NumLeds()
 	p.maxValue = [3]uint8{255, 255, 255}
 
-	p.sendWatch = NewStopwatch()
+	p.stopwatch = NewStopwatch()
 
 	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
@@ -143,10 +143,10 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 			log.Fatalf("Failed Read(): %v", err)
 		}
 		p.RecvBytes += ByteCount(bufferSize)
-		p.sendWatch.Start()
+		p.stopwatch.Start()
 		p.Disp.Display(buffer)
 		p.SentBytes += ByteCount(bufferSize)
-		p.sendWatch.Stop()
+		p.stopwatch.Stop()
 	}
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
@@ -175,8 +175,8 @@ func (p *GridServer) HandleTCP(lsnr *net.TCPListener) {
 	}
 }
 
-func (p *GridServer) Watch() *Stopwatch {
-	return p.sendWatch
+func (p *GridServer) Stopwatch() *Stopwatch {
+	return p.stopwatch
 }
 
 // Retourniert die Gamma-Werte fuer die drei Farben.
@@ -289,17 +289,17 @@ func (p *GridServer) ToggleTestPattern() bool {
 				colorValue = 0x00
 				colorMode = (colorMode + 1) % NumColorModes
 			}
-			p.sendWatch.Start()
+			p.stopwatch.Start()
 			p.Disp.Send(buffer)
-			p.sendWatch.Stop()
+			p.stopwatch.Stop()
 			time.Sleep(300 * time.Millisecond)
 		}
 		for i := range testBufferSize {
 			buffer[i] = 0x00
 		}
-		p.sendWatch.Start()
+		p.stopwatch.Start()
 		p.Disp.Send(buffer)
-		p.sendWatch.Stop()
+		p.stopwatch.Stop()
 	}()
 
 	return true

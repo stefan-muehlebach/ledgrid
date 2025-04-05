@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+
+if [[ $# -ne 1 ]]; then
+    echo "usage: $(basename $0) hex" >&2
+    exit 1
+fi
+
+INPUT=${1%%[\"\,]}
+INPUT=${INPUT##[\"\,]}
+
+if [[ ! $INPUT =~ 0x(..)(..)(..) ]]; then
+    echo "'$INPUT' is not a hex number" >&2
+    exit 1
+fi
+
+RED="0x${BASH_REMATCH[1]}"
+GREEN="0x${BASH_REMATCH[2]}"
+BLUE="0x${BASH_REMATCH[3]}"
+
+RED=$(( 0xFF - $RED ))
+GREEN=$(( 0xFF - $GREEN ))
+BLUE=$(( 0xFF - $BLUE ))
+
+echo "            \"0x$(printf %02x%02x%02x $RED $GREEN $BLUE)\","
+

@@ -11,7 +11,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -35,7 +35,7 @@ func FarewellGery(ctx context.Context, c *ledgrid.Canvas) {
 			pt := image.Point{x, y}
 			pos := geom.NewPointIMG(pt)
 			t := rand.Float64()
-			col := color.Black
+			col := colors.Black
 			pix := ledgrid.NewDot(pos, col)
 			c.Add(pix)
 
@@ -45,38 +45,38 @@ func FarewellGery(ctx context.Context, c *ledgrid.Canvas) {
 			aAlpha.RepeatCount = ledgrid.AnimationRepeatForever
 			aAlpha.Start()
 
-			aColor := ledgrid.NewColorAnim(pix, (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t), 9*time.Second)
+			aColor := ledgrid.NewColorAnim(pix, (colors.DimGray.Dark(0.5)).Interpolate((colors.DarkGrey.Dark(0.5)), t), 9*time.Second)
 			aGrpFadeIn.Add(aColor)
 
-			aColor = ledgrid.NewColorAnim(pix, (color.DimGray.Dark(0.5)).Interpolate((color.DarkGrey.Dark(0.5)), t), 1*time.Second)
+			aColor = ledgrid.NewColorAnim(pix, (colors.DimGray.Dark(0.5)).Interpolate((colors.DarkGrey.Dark(0.5)), t), 1*time.Second)
 			aGrpGrey.Add(aColor)
 
-			aColor = ledgrid.NewColorAnim(pix, color.MediumPurple.Interpolate(color.Fuchsia, t), 4*time.Second)
+			aColor = ledgrid.NewColorAnim(pix, colors.MediumPurple.Interpolate(colors.Fuchsia, t), 4*time.Second)
 			aGrpPurple.Add(aColor)
 
-			aColor = ledgrid.NewColorAnim(pix, color.Gold.Interpolate(color.LemonChiffon, t), 4*time.Second)
+			aColor = ledgrid.NewColorAnim(pix, colors.Gold.Interpolate(colors.LemonChiffon, t), 4*time.Second)
 			aGrpYellow.Add(aColor)
 
-			aColor = ledgrid.NewColorAnim(pix, color.Crimson.Interpolate(color.Orange, t), 4*time.Second)
+			aColor = ledgrid.NewColorAnim(pix, colors.Crimson.Interpolate(colors.Orange, t), 4*time.Second)
 			aGrpRed.Add(aColor)
 
-			aColor = ledgrid.NewColorAnim(pix, color.LightSeaGreen.Interpolate(color.GreenYellow, t), 500*time.Millisecond)
+			aColor = ledgrid.NewColorAnim(pix, colors.LightSeaGreen.Interpolate(colors.GreenYellow, t), 500*time.Millisecond)
 			aGrpGreen.Add(aColor)
 
-			aColor = ledgrid.NewColorAnim(pix, color.Black, 2*time.Second)
+			aColor = ledgrid.NewColorAnim(pix, colors.Black, 2*time.Second)
 			aGrpBlack.Add(aColor)
 		}
 	}
 
-	txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "LIEBER", color.GreenYellow.Alpha(0.0))
+	txt1 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "LIEBER", colors.GreenYellow.Alpha(0.0))
 	txt1.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	aTxt1 := ledgrid.NewFadeAnim(txt1, ledgrid.FadeIn, 1*time.Second)
 	aTxt1.AutoReverse = true
-	txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "GERY", color.DarkViolet.Alpha(0.0))
+	txt2 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "GERY", colors.DarkViolet.Alpha(0.0))
 	txt2.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	aTxt2 := ledgrid.NewFadeAnim(txt2, ledgrid.FadeIn, 2*time.Second)
 	aTxt2.AutoReverse = true
-	txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "FAREWELL", color.RoyalBlue.Alpha(0.0))
+	txt3 := ledgrid.NewFixedText(fixed.P(width/2, height/2), "FAREWELL", colors.RoyalBlue.Alpha(0.0))
 	txt3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	aTxt3 := ledgrid.NewFadeAnim(txt3, ledgrid.FadeIn, 5*time.Second)
 	aTxt3.AutoReverse = true

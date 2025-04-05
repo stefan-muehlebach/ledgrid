@@ -93,9 +93,21 @@ func SlideShow(ctx context.Context, c *ledgrid.Canvas) {
 		t0 := time.Duration(4*i+1) * time.Second
 		t1 := t0 + 300*time.Millisecond
 		t2 := t1 + 3300*time.Millisecond
-		aTimeline.Add(t0, ledgrid.NewHideShowAnimation(img))
+		aTimeline.Add(t0, ledgrid.NewTask(func () {
+            if img.IsVisible() {
+                img.Hide()
+            } else {
+                img.Show()
+            }
+        }))
 		aTimeline.Add(t1, ledgrid.NewAngleAnim(img, 6*math.Pi, 3*time.Second))
-		aTimeline.Add(t2, ledgrid.NewHideShowAnimation(img))
+		aTimeline.Add(t2, ledgrid.NewTask(func () {
+            if img.IsVisible() {
+                img.Hide()
+            } else {
+                img.Show()
+            }
+        }))
 		c.Add(img)
 	}
 	aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
@@ -139,7 +151,8 @@ func SingleImageAlign(ctx context.Context, c *ledgrid.Canvas) {
 	)
 
 	aAngle := ledgrid.NewAngleAnim(img, 2*math.Pi, 4*time.Second)
-	aAngle.Curve = ledgrid.AnimationRealEaseInOut
+    aAngle.Cont = false
+	aAngle.Curve = ledgrid.AnimationCubicInOut
 	aHoriSeq := ledgrid.NewSequence(
 		aAlignRight, aAngle,
 		aAlignCenter, aAngle,
