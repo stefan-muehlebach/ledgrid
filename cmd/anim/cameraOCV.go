@@ -59,7 +59,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c.matIdx = -1
 	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
-	ledgrid.AnimCtrl.Add(1, c)
+	ledgrid.AnimCtrl.Add(c)
 	return c
 }
 

@@ -4,7 +4,7 @@ package main
 
 import (
 	"image"
-	gocolor "image/color"
+	"image/color"
 	"log"
 	"math"
 	"sync"
@@ -41,7 +41,7 @@ type HistCamera struct {
 	doneChan         chan bool
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistCamera {
+func NewHistCamera(pos, size geom.Point, histLen int, col colors.LedColor) *HistCamera {
 	c := &HistCamera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
 	c.Color = ledgrid.NewUniformPalette("Uniform", col)
@@ -83,7 +83,7 @@ func NewHistCamera(pos, size geom.Point, histLen int, col color.LedColor) *HistC
 
 	c.doneChan = make(chan bool)
 
-	ledgrid.AnimCtrl.Add(1, c)
+	ledgrid.AnimCtrl.Add(c)
 	return c
 }
 
@@ -136,8 +136,8 @@ func (c *HistCamera) captureThread(done <-chan bool) {
 	var srcVal uint8 = 0x10
 	var dstVal uint8 = 0xff
 
-	srcMask = image.NewUniform(gocolor.Alpha{srcVal})
-	dstMask = image.NewUniform(gocolor.Alpha{dstVal})
+	srcMask = image.NewUniform(color.Alpha{srcVal})
+	dstMask = image.NewUniform(color.Alpha{dstVal})
 
 	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
 ML:
