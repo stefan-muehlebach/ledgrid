@@ -306,7 +306,7 @@ func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
 		for col := range c.Rect.Dx() {
 			pix := ledgrid.NewPixel(image.Point{col, row}, colors.Black)
 			c.Add(pix)
-			anim := ledgrid.NewColorShaderAnim(pix, x, 0.0, y, idx, nPix, RandomShader)
+			anim := ledgrid.NewColorShaderAnim(pix, x, 0.0, y, idx, nPix, NyanCatShader)
 			idx += 1
 			aGrp.Add(anim)
 			x += dx
