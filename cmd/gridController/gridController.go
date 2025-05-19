@@ -34,7 +34,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 
 		case syscall.SIGUSR1:
 			log.Printf("Server statistics:")
-			log.Printf("   %v", gridServer.Watch())
+			log.Printf("   %v", gridServer.Stopwatch())
 			log.Printf("   %v bytes received by the controller", gridServer.RecvBytes)
 			log.Printf("   %v bytes sent by the controller", gridServer.SentBytes)
 			log.Printf("Current gamma values:")
@@ -42,7 +42,7 @@ func SignalHandler(gridServer *ledgrid.GridServer) {
 			log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
 			gridServer.RecvBytes = 0
 			gridServer.SentBytes = 0
-			gridServer.Watch().Reset()
+			gridServer.Stopwatch().Reset()
 
 		case syscall.SIGUSR2:
 			if gridServer.ToggleTestPattern() {
