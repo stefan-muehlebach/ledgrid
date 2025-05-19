@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"image"
 	"math"
 	"time"
@@ -19,7 +19,8 @@ func init() {
 	// programList.AddTitle("Text Animations")
 	programList.Add("Rotating, Floating Words", "Text", MovingText)
 	programList.Add("All Named Colors", "Text", NamedColors)
-	programList.Add("Clock animation", "Text", ClockAnimation)
+	programList.Add("Clock Animation", "Text", ClockAnimation)
+	programList.Add("The Great Countdown", "Text", CountdownLochbach)
 }
 
 func f2f(x float64) fixed.Int26_6 {
@@ -72,30 +73,24 @@ func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 
 func CountdownLochbach(ctx context.Context, c *ledgrid.Canvas) {
 	var clockText *ledgrid.FixedText
-    var pit time.Time
+	var pit time.Time
 
-	pos1 := p2p(2.0, 8.0)
-	clockText = ledgrid.NewFixedText(pos1, "000000000", colors.Red.Dark(0.3))
+	pit, _ = time.Parse("02.01.2006", "29.06.2025")
+
+	pos1 := p2p(1.0, 8.0)
+	clockText = ledgrid.NewFixedText(pos1, "0", colors.Indigo.Dark(0.3))
 	c.Add(clockText)
 
 	timeLine1 := ledgrid.NewTimeline(10 * time.Millisecond)
 	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
 	timeLine1.Add(0, ledgrid.NewTask(func() {
-		txt := fmt.Sprintf("%9d", counter)
+		duration := time.Until(pit)
+		txt := fmt.Sprintf("%10.1f", duration.Seconds())
 		clockText.SetText(txt)
-		secSinceEpoc := time.Now().Unix()
-		for i := range 32 {
-			if secSinceEpoc&(1<<i) != 0 {
-				binDigits[i].Show()
-			} else {
-				binDigits[i].Hide()
-			}
-		}
 	}))
 
 	timeLine1.Start()
 }
-
 
 func MovingText(ctx context.Context, c *ledgrid.Canvas) {
 	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", colors.LightSeaGreen)
