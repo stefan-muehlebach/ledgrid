@@ -8,9 +8,6 @@ import (
 
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
-
-	// "fyne.io/fyne/v2"
-	// _ "fyne.io/fyne/v2/driver/desktop"
 )
 
 const (

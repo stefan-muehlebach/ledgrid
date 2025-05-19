@@ -205,7 +205,7 @@ func main() {
 			for i, prog := range programList {
 				var id byte
 
-				if ch >= 'a' && ch <= 'z' && i == progId {
+				if i == progId {
 					fmt.Printf("> ")
 				} else {
 					fmt.Printf("  ")
@@ -258,37 +258,6 @@ func main() {
 				programList[progId].Start(context.Background(), canvas)
 				prevProgId = progId
 			}
-			// if ch == 'S' {
-			// 	ledgrid.AnimCtrl.Save("gobs/program01.gob")
-			// }
-			// if ch == 'L' {
-			// 	ledgrid.AnimCtrl.Suspend()
-			// 	ledgrid.AnimCtrl.PurgeAll()
-			// 	ledgrid.AnimCtrl.Watch().Reset()
-			// 	canvas.PurgeAll()
-			// 	canvas.Watch().Reset()
-			// 	time.Sleep(60 * time.Millisecond)
-			// 	ledgrid.AnimCtrl.Load("gobs/program01.gob")
-			// 	ledgrid.AnimCtrl.Continue()
-			// 	// fmt.Printf("canvas  >>> %+v\n", canvas)
-			// 	// for i, obj := range canvas.ObjList {
-			// 	i := 0
-			// 	for ele := canvas.ObjList[0].Front(); ele != nil; ele = ele.Next() {
-			// 		obj := ele.Value.(ledgrid.CanvasObject)
-			// 		if obj == nil {
-			// 			continue
-			// 		}
-			// 		fmt.Printf(">>> obj[%d] : %[2]T %+[2]v\n", i, obj)
-			// 		i++
-			// 	}
-			// 	// fmt.Printf("animCtrl>>> %+v\n", ledgrid.AnimCtrl)
-			// 	for i, anim := range ledgrid.AnimCtrl.AnimList {
-			// 		if anim == nil {
-			// 			continue
-			// 		}
-			// 		fmt.Printf(">>> anim[%d]: %[2]T %+[2]v\n", i, anim)
-			// 	}
-			// }
 			if ch == '+' {
 				gR += 0.1
 				gG += 0.1
@@ -305,11 +274,19 @@ func main() {
 			}
 		}
 	} else {
-		if ch >= 'a' && ch <= 'z' {
-			progId = int(ch - 'a')
-			if progId >= 0 && progId < len(programList) {
-				programList[progId].Start(context.Background(), canvas)
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+			id := -1
+			if ch >= 'a' {
+				id = int(ch - 'a')
+			} else {
+				id = int(ch - 'A' + 26)
 			}
+			if id < 0 || id >= len(programList) {
+				return
+			}
+			progId = id
+			ledGrid.Reset()
+			programList[progId].Start(context.Background(), canvas)
 		}
 		fmt.Printf("Quit by Ctrl-C\n")
 		SignalHandler(timeout)

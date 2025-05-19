@@ -9,6 +9,14 @@
     },
     {
         "ID": 2,
+        "Title": "DarkYellowBlue",
+        "Colors": [
+            "0x595905",
+            "0x063833"
+        ]
+    },
+    {
+        "ID": 3,
         "Title": "BackPinkBlue",
         "Colors": [
             "0xA60C5F",
@@ -16,7 +24,7 @@
         ]
     },
     {
-        "ID": 3,
+        "ID": 4,
         "Title": "BackYellowOrange",
         "Colors": [
             "0xA8A800",
@@ -24,7 +32,7 @@
         ]
     },
     {
-        "ID": 4,
+        "ID": 5,
         "Title": "BackDGreenDRed",
         "Colors": [
             "0x007400",
@@ -32,7 +40,7 @@
         ]
     },
     {
-        "ID": 4,
+        "ID": 6,
         "Title": "BackSalmonBlue",
         "Colors": [
             "0x814124",
@@ -40,7 +48,7 @@
         ]
     },
     {
-        "ID": 8,
+        "ID": 7,
         "Title": "RGB",
         "IsCyclic": true,
         "Colors": [
@@ -53,7 +61,7 @@
         ]
     },
     {
-        "ID": 9,
+        "ID": 8,
         "Title": "Accent",
         "Colors": [
             "0x666666",

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"math/rand/v2"
 	"time"
 
 	"golang.org/x/image/math/fixed"
@@ -21,6 +22,7 @@ func init() {
 	programList.Add("All Named Colors", "Text", NamedColors)
 	programList.Add("Clock Animation", "Text", ClockAnimation)
 	programList.Add("The Great Countdown", "Text", CountdownLochbach)
+	programList.Add("Countdown", "Text", Countdown)
 }
 
 func f2f(x float64) fixed.Int26_6 {
@@ -72,24 +74,91 @@ func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 func CountdownLochbach(ctx context.Context, c *ledgrid.Canvas) {
-	var clockText *ledgrid.FixedText
-	var pit time.Time
+	dur1 := 10 * time.Second
+	dur2 := 7 * time.Second
+	pal1 := ledgrid.PaletteMap["BackPinkBlue"]
+	pal2 := ledgrid.PaletteMap["BackYellowBlue"]
+	rectPos := geom.Point{float64(width) / 2, float64(height)/2 - 0.5}
+	rectSize := geom.Point{float64(width) - 1, float64(height) - 2}
 
-	pit, _ = time.Parse("02.01.2006", "29.06.2025")
+    textPos := p2p(3.0, 7.0)
+	pit, _ := time.Parse("02.01.2006", "29.06.2025")
 
-	pos1 := p2p(1.0, 8.0)
-	clockText = ledgrid.NewFixedText(pos1, "0", colors.Indigo.Dark(0.3))
-	c.Add(clockText)
+	rect := ledgrid.NewRectangle(rectPos, rectSize, colors.Indigo)
+	clockText := ledgrid.NewFixedText(textPos, "0", colors.Indigo)
+	c.Add(rect, clockText)
+
+	pal1Anim := ledgrid.NewPaletteAnim(rect, pal1, dur1)
+	pal1Anim.AutoReverse = true
+	pal1Anim.Curve = ledgrid.AnimationLinear
+	pal1Seq := ledgrid.NewSequence(pal1Anim)
+	pal1Seq.RepeatCount = ledgrid.AnimationRepeatForever
+
+	pal2Anim := ledgrid.NewPaletteAnim(clockText, pal2, dur2)
+	pal2Anim.AutoReverse = true
+	pal2Anim.Curve = ledgrid.AnimationLinear
+	pal2Seq := ledgrid.NewSequence(pal2Anim)
+	pal2Seq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	timeLine1 := ledgrid.NewTimeline(10 * time.Millisecond)
 	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
 	timeLine1.Add(0, ledgrid.NewTask(func() {
 		duration := time.Until(pit)
-		txt := fmt.Sprintf("%10.1f", duration.Seconds())
+		txt := fmt.Sprintf("%9.1f", duration.Seconds())
 		clockText.SetText(txt)
 	}))
 
+	pal1Seq.Start()
+	pal2Seq.Start()
 	timeLine1.Start()
+}
+
+func Countdown(ctx context.Context, c *ledgrid.Canvas) {
+	aGrpLedColor := ledgrid.NewGroup()
+	dur := 2 * time.Second
+	backPal := ledgrid.PaletteMap["DarkYellowBlue"]
+    	// textPal := ledgrid.PaletteMap["B&G"]
+    textPos := p2p(3.0, 8.0)
+	pit, _ := time.Parse("02.01.2006", "29.06.2025")
+
+	for y := range c.Rect.Dy() {
+		for x := range c.Rect.Dx() {
+			pt := image.Point{x, y}
+			pix := ledgrid.NewPixel(pt, colorList[0][0])
+
+			c.Add(pix)
+
+			aColorPal := ledgrid.NewPaletteAnim(pix, backPal, dur)
+			aColorPal.AutoReverse = true
+			aColorPal.Curve = ledgrid.AnimationLinear
+			aColorPal.Pos = rand.Float64()
+
+			aColorSeq := ledgrid.NewSequence(aColorPal)
+			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			aGrpLedColor.Add(aColorSeq)
+		}
+	}
+
+    	clockText := ledgrid.NewFixedText(textPos, "0", colors.Gray)
+	c.Add(clockText)
+
+	// textPalAnim := ledgrid.NewPaletteAnim(clockText, textPal, dur)
+	// textPalAnim.AutoReverse = true
+	// textPalAnim.Curve = ledgrid.AnimationLinear
+	// textPalSeq := ledgrid.NewSequence(textPalAnim)
+	// textPalSeq.RepeatCount = ledgrid.AnimationRepeatForever
+
+	timeLine := ledgrid.NewTimeline(10 * time.Millisecond)
+	timeLine.RepeatCount = ledgrid.AnimationRepeatForever
+	timeLine.Add(0, ledgrid.NewTask(func() {
+		duration := time.Until(pit)
+		txt := fmt.Sprintf("%9.1f", duration.Seconds())
+		clockText.SetText(txt)
+	}))
+
+	// textPalSeq.Start()
+	timeLine.Start()
+	aGrpLedColor.Start()
 }
 
 func MovingText(ctx context.Context, c *ledgrid.Canvas) {
