@@ -166,6 +166,9 @@ func main() {
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
 
+	StartProfiling()
+	defer StopProfiling()
+
 	if len(input) > 0 {
 		runInteractive = false
 		ch = input[0]

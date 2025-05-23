@@ -12,8 +12,7 @@ func RandColor() LedColor {
 	return Map[name]
 }
 
-// Mit RandGroupColor kann der Zufall eine bestimmte Farbgruppe beschraenkt
-// werden.
+// Mit RandGroupColor wird der Zufall auf eine bestimmte Farbgruppe beschraenkt.
 func RandGroupColor(group ColorGroup) LedColor {
 	nameList, ok := Groups[group]
 	if !ok {

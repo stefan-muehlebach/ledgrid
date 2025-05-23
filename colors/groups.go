@@ -4,6 +4,8 @@ import (
 	"errors"
 )
 
+// Die in diesem Package definierten Farben lassen sich in 10 Gruppen
+// unterteilen
 type ColorGroup int
 
 const (
@@ -17,9 +19,10 @@ const (
 	Browns
 	Whites
 	Grays
-	NumColorGroups
+	numColorGroups
 )
 
+// Implementation des fmt.Stringer-Interfaces.
 func (g ColorGroup) String() string {
 	switch g {
 	case Purples:
@@ -47,6 +50,9 @@ func (g ColorGroup) String() string {
 	}
 }
 
+// Mit String() zusammen implementiert ColorGroup das flag.Value Interface.
+// Damit koennen Farbgruppen bspw. auf der Befehlszeile als Flags angegeben
+// werden.
 func (g *ColorGroup) Set(str string) error {
 	switch str {
 	case "Purples":
@@ -75,8 +81,9 @@ func (g *ColorGroup) Set(str string) error {
 	return nil
 }
 
-// In diesem File werden die Farben aus colornames.go nach Farbton in
-// verschiedene Gruppen unterteilt.
+// Groups ist ein Map, der fuer jede Farbgruppe einen Array von zugehoerigen
+// Farbnamen enthaelt. Mit diesen Namen lassen sich ueber die Variable Map
+// die eigentlichen Farben ermitteln.
 var Groups = map[ColorGroup][]string{
 	Browns: {
 		"Cornsilk",

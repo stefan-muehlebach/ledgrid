@@ -1,3 +1,9 @@
+// Das Package colors enthaelt einerseits einen eigenen Farbtyp fuer die
+// darstellbaren Farben eines eines LEDs (resp. NeoPixel). Im wesentlichen
+// ist dies eine Kopie von color.NRGBA mit zusaetzlichen Methoden um bspw.
+// zwischen zwei Farben zu interpolieren oder um Farben aufzuhellen, resp.
+// abzudunkeln.
+
 package colors
 
 import (
@@ -9,26 +15,20 @@ import (
 )
 
 var (
+    // Transparent ist ein komplett durchsichtiges Schwarz.
 	Transparent = LedColor{0x00, 0x00, 0x00, 0x00}
 )
 
-var (
-	cm = []float64{
-		1, -0.5, -0.5,
-		0, math.Sqrt(3) / 2, -math.Sqrt(3) / 2,
-		math.Sqrt2 / 2, math.Sqrt2 / 2, math.Sqrt2 / 2,
-	}
-)
-
 // Dieser Typ wird fuer die Farbwerte verwendet, welche via SPI zu den LED's
-// gesendet werden. Die Daten sind _nicht_ gamma-korrigiert, dies wird erst
-// auf dem Panel-Empfaenger gemacht (pixelcontroller-slave). LedColor
-// implementiert das color.Color Interface.
+// gesendet werden. Die Daten sind _nicht_ gamma-korrigiert (dies wird erst
+// auf dem Panel-Empfaenger gemacht) und entsprechen dem Typ color.NRGBA
+// von Go. LedColor implementiert das color.Color Interface.
 type LedColor struct {
     R, G, B, A uint8
 }
 
-// RGBA ist Teil des color.Color Interfaces.
+// RGBA ist Teil des color.Color Interfaces und retourniert die Farbwerte
+// als Alpha-korrigierte uint16-Werte.
 func (c LedColor) RGBA() (r, g, b, a uint32) {
 	r, g, b, a = uint32(c.R), uint32(c.G), uint32(c.B), uint32(c.A)
 	r |= r << 8
@@ -49,6 +49,17 @@ func (c LedColor) RGB() (r, g, b uint8) {
 	return c.R, c.G, c.B
 }
 
+// Hilfsvariable fuer die Methode HSL.
+var (
+	cm = []float64{
+		1, -0.5, -0.5,
+		0, math.Sqrt(3) / 2, -math.Sqrt(3) / 2,
+		math.Sqrt2 / 2, math.Sqrt2 / 2, math.Sqrt2 / 2,
+	}
+)
+
+// Mit HSL() koennen die Werte fuer Hue [0, 360], Saturation [0, 1] und
+// Lightness [0, 1] aus dem gleichnamigen Farbmodell ermittelt werden.
 func (c LedColor) HSL() (h, s, l float64) {
 	v1 := []float64{float64(c.R) / 255.0, float64(c.G) / 255.0, float64(c.B) / 255.0}
 	v2 := []float64{
@@ -73,41 +84,77 @@ func (c1 LedColor) Interpolate(c2 LedColor, t float64) LedColor {
 	if t == 1.0 {
 		return c2
 	}
-	r := (1.0-t)*float64(c1.R) + t*float64(c2.R)
-	g := (1.0-t)*float64(c1.G) + t*float64(c2.G)
-	b := (1.0-t)*float64(c1.B) + t*float64(c2.B)
-	a := (1.0-t)*float64(c1.A) + t*float64(c2.A)
+    u := 1.0 - t
+	r := u*float64(c1.R) + t*float64(c2.R)
+	g := u*float64(c1.G) + t*float64(c2.G)
+	b := u*float64(c1.B) + t*float64(c2.B)
+	a := u*float64(c1.A) + t*float64(c2.A)
 	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
 }
 
+// Auch wenn man es fast nicht glauben mag: die Variante mit den float64 Werten
+// ist im Benchmark schneller als die unten auskommentierte Variante mit uint32
+// oder uint16 Werten.
+// func (c1 LedColor) Interpolate(c2 LedColor, t float64) LedColor {
+//     t = max(min(t, 1.0), 0.0)
+//
+//     T := uint32(t * 255.0)
+// 	if T == 0x00 {
+// 		return c1
+// 	}
+// 	if T == 0xFF {
+// 		return c2
+// 	}
+//
+//     U := 0xFF - T
+// 	r := U*uint32(c1.R)/0xFF + T*uint32(c2.R)/0xFF
+// 	g := U*uint32(c1.G)/0xFF + T*uint32(c2.G)/0xFF
+// 	b := U*uint32(c1.B)/0xFF + T*uint32(c2.B)/0xFF
+// 	a := U*uint32(c1.A)/0xFF + T*uint32(c2.A)/0xFF
+// 	return LedColor{uint8(r), uint8(g), uint8(b), uint8(a)}
+// }
+
+// Retourniert eine neue Farbe, basierend auf c, jedoch mit dem hier
+// angegebenen Alpha-Wert (als Fliesskommazahl in [0, 1]).
 func (c LedColor) Alpha(a float64) LedColor {
+	a = max(min(a, 1.0), 0.0)
 	return LedColor{c.R, c.G, c.B, uint8(255.0*a)}
 }
 
+// Retourniert eine neue Farbe, welche eine Interpolation zwischen c und Weiss
+// ist. t ist ein Wert in [0, 1] und bestimmt die Position der Interpolation.
+// t=0 retourniert c, t=1 retourniert Weiss.
 func (c LedColor) Bright(t float64) LedColor {
 	t = max(min(t, 1.0), 0.0)
 	return c.Interpolate(White, t)
 }
 
+// Retourniert eine neue Farbe, welche eine Interpolation zwischen c und
+// Schwarz ist. t ist ein Wert in [0, 1] und bestimmt die Position der
+// Interpolation. t=0 retourniert c, t=1 retourniert Schwarz.
 func (c LedColor) Dark(t float64) LedColor {
 	t = max(min(t, 1.0), 0.0)
 	return c.Interpolate(Black, t)
 }
 
+// Erzeugt eine druckbare Variante der Farbe. Im Wesentlichen werden die Werte
+// fuer Rot, Gruen, Blau und Alpha als Hex-Zahlen ausgegeben.
 func (c LedColor) String() string {
 	return fmt.Sprintf("{0x%02X, 0x%02X, 0x%02X, 0x%02X}", c.R, c.G, c.B, c.A)
 }
 
+// Damit koennen Farbwerte im Format 0xRRGGBB eingelesen werden, wie sie bspw.
+// in JSON-Files verwendet werden.
 func (c *LedColor) UnmarshalText(text []byte) error {
 	hexStr := string(text[2:])
 	hexVal, err := strconv.ParseUint(hexStr, 16, 32)
 	if err != nil {
 		log.Fatal(err)
 	}
-	c.R = uint8((hexVal & 0xff0000) >> 16)
-	c.G = uint8((hexVal & 0x00ff00) >> 8)
-	c.B = uint8((hexVal & 0x0000ff))
-	c.A = 0xff
+	c.R = uint8((hexVal & 0xFF0000) >> 16)
+	c.G = uint8((hexVal & 0x00FF00) >> 8)
+	c.B = uint8((hexVal & 0x0000FF))
+	c.A = 0xFF
 	return nil
 }
 
@@ -131,9 +178,7 @@ const (
 )
 
 // Mischt die Farben c (Vordergrundfarbe) und bg (Hintergrundfarbe) nach einem
-// Verfahren, welches in typ spezifiziert ist. Aktuell stehen 'Blend' (Ueber-
-// blendung von bg durch c anhand des Alpha-Wertes von c) und 'Add' (nimm
-// jeweils das Maximum pro Farbwert von c und bg) zur Verfuegung.
+// Verfahren, welches in mix spezifiziert ist. Siehe auch ColorMixType.
 func (c LedColor) Mix(bg LedColor, mix ColorMixType) LedColor {
 	switch mix {
 	case Replace:
@@ -182,14 +227,11 @@ func ledColorModel(c color.Color) color.Color {
 	if _, ok := c.(LedColor); ok {
 		return c
 	}
-
-	// return LedColor{color.NRGBAModel.Convert(c).(color.NRGBA)}
-
 	r, g, b, a := c.RGBA()
 	if a == 0xFFFF {
 		return LedColor{uint8(r>>8), uint8(g>>8), uint8(b>>8), 0xff}
 	}
-	if a == 0 {
+	if a == 0x0000 {
 		return LedColor{}
 	}
 	r = (r * 0xFFFF) / a

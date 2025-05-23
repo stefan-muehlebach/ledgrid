@@ -106,7 +106,7 @@ func RectangleCountdown(ctx context.Context, c *ledgrid.Canvas) {
 func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 2 * time.Second
-	backPal := ledgrid.PaletteMap["DarkYellowBlue"]
+	backPal := ledgrid.PaletteMap["BackYellowBlue"]
 	textPos := p2p(3.0, 8.0)
 	pit, _ := time.Parse("02.01.2006", "29.06.2025")
 
@@ -128,7 +128,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 		}
 	}
 
-	clockText := ledgrid.NewFixedText(textPos, "0", colors.Gray)
+	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
 	c.Add(clockText)
 
 	timeLine := ledgrid.NewTimeline(10 * time.Millisecond)
