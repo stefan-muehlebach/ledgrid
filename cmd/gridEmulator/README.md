@@ -1,3 +1,5 @@
+# gridEmulator
+
 With gridEmulator you can emulate arbitrary compositions of NeoPixel-Panels
 as described in the conf directory.
 

@@ -1,27 +1,7 @@
 [
-    {
-        "Col": 0,
-        "Row": 1,
-        "Mod": "RL:0"
-    },
-    {
-        "Col": 0,
-        "Row": 0,
-        "Mod": "RL:180"
-    },
-    {
-        "Col": 1,
-        "Row": 0,
-        "Mod": "RL:180"
-    },
-    {
-        "Col": 2,
-        "Row": 0,
-        "Mod": "RL:180"
-    },
-    {
-        "Col": 2,
-        "Row": 1,
-        "Mod": "RL:0"
-    }
+    {"Col": 0, "Row": 1, "Mod": "RL:0"  },
+    {"Col": 0, "Row": 0, "Mod": "RL:180"},
+    {"Col": 1, "Row": 0, "Mod": "RL:180"},
+    {"Col": 2, "Row": 0, "Mod": "RL:180"},
+    {"Col": 2, "Row": 1, "Mod": "RL:0"  }
 ]

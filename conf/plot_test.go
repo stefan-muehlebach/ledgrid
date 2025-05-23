@@ -21,39 +21,35 @@ func TestPlotDefaultConfig(t *testing.T) {
     }
 }
 
+var (
+    customList = []string{
+        "LR-000",
+        "LR-090",
+        "LR-180",
+        "LR-270",
+        "RL-000",
+        "RL-090",
+        "RL-180",
+        "RL-270",
+        "cap",
+        "cup",
+        "customA",
+        "tetris",
+        "squareWithHole",
+        "lowerCurve",
+        "chessBoard",
+        "chessBoardSmall",
+    }
+)
+
 func TestPlotCustomConfig(t *testing.T) {
     var modConf ModuleConfig
-    var fileName string
+    var confFileName, pngFileName string
 
-	modConf = Load("data/cap.json")
-	fileName = "plots/cap.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/cup.json")
-	fileName = "plots/cup.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/customA.json")
-	fileName = "plots/customA.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/tetris.json")
-	fileName = "plots/tetris.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/squareWithHole.json")
-	fileName = "plots/squareWithHole.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/lowerCurve.json")
-	fileName = "plots/lowerCurve.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/chessBoardSmall.json")
-	fileName = "plots/chessBoardSmall.png"
-	modConf.Plot(fileName)
-
-	modConf = Load("data/chessBoard.json")
-	fileName = "plots/chessBoard.png"
-	modConf.Plot(fileName)
+    for _, customName := range customList {
+        confFileName = "data/" + customName + ".json"
+        pngFileName = "plots/" + customName + ".png"
+	    modConf = Load(confFileName)
+        modConf.Plot(pngFileName)
+    }
 }
