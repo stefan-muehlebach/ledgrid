@@ -1,4 +1,3 @@
-// Einheitliche Flags und Funktionen fuer das Profiling von Programmen.
 package main
 
 import (
