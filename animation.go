@@ -54,14 +54,11 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 		return AnimCtrl
 	}
 	a := &AnimationController{}
-	// for i := range NumLayers {
 	a.AnimList = make([]Animation, 0)
 	a.animMutex = &sync.RWMutex{}
-	// }
 	a.ticker = time.NewTicker(refreshRate)
 	a.stopwatch = NewStopwatch()
 	a.numThreads = 1
-	// a.numThreads = runtime.NumCPU()
 	a.delay = time.Duration(0)
 	a.syncChan = syncChan
 
@@ -114,13 +111,7 @@ func (a *AnimationController) Purge() {
 	a.animMutex.Unlock()
 }
 
-// func (a *AnimationController) PurgeAll() {
-// 	for layer := range NumLayers {
-// 		a.Purge(layer)
-// 	}
-// }
-
-// Mit Stop koennen die Animationen und die Darstellung auf der Hardware
+// Mit Suspend koennen die Animationen und die Darstellung auf der Hardware
 // unterbunden werden.
 func (a *AnimationController) Suspend() {
 	if !a.isRunning {
@@ -154,15 +145,6 @@ func (a *AnimationController) IsRunning() bool {
 // vorgenommen werden. Davon ist in jedem Programm nur eine Instanz vorhanden
 // AnimationController's koennte es grundsaetzlich mehrere geben.
 func (a *AnimationController) backgroundThread() {
-	// wg := &sync.WaitGroup{}
-	// cond := sync.NewCond(&sync.Mutex{})
-
-	// startChan := make(chan int)
-
-	// for id := range a.numThreads {
-	// 	go a.animationUpdater(id, cond, wg)
-	// }
-
 	for pit := range a.ticker.C {
 		if a.quit {
 			break
@@ -171,31 +153,19 @@ func (a *AnimationController) backgroundThread() {
 
 		a.stopwatch.Start()
 		a.animationUpdater(0)
-		// wg.Add(a.numThreads)
-		// cond.Broadcast()
-		// wg.Wait()
 		a.stopwatch.Stop()
 
 		a.syncChan <- true
 		<-a.syncChan
 	}
-	// close(startChan)
 }
 
 // Von dieser Funktion werden pro Core eine Go-Routine gestartet. Sie werden
 // durch eine Message ueber den Kanal statChan aktiviert und uebernehmen die
 // Aktualisierung ihrer Animationen.
 func (a *AnimationController) animationUpdater(id int) {
-	// for id := range startChan {
-	// for {
-	// 	cond.L.Lock()
-	// 	cond.Wait()
-	// 	cond.L.Unlock()
-	// for listIdx, animList := range a.AnimList {
 	a.animMutex.RLock()
 	for id, anim := range a.AnimList {
-		// for i := id; i < len(a.AnimList[listIdx]); i += a.numThreads {
-		// anim := a.AnimList[listIdx][i]
 		if anim == nil || !anim.IsRunning() {
 			continue
 		}
@@ -206,9 +176,6 @@ func (a *AnimationController) animationUpdater(id int) {
 		a.animMutex.RLock()
 	}
 	a.animMutex.RUnlock()
-	// }
-	// wg.Done()
-	// }
 }
 
 func (a *AnimationController) Stopwatch() *Stopwatch {
@@ -457,59 +424,6 @@ func (a *SimpleTask) Start() {
 	a.StartAt(AnimCtrl.Now())
 }
 
-// Mit einer ShowHideAnimation kann die Eigenschaft IsHidden von
-// CanvasObjekten beeinflusst werden. Mit jedem Aufruf wird dieser Switch
-// umgestellt (also Hidden -> Shown -> Hidden -> etc.).
-// type HideShowAnimation struct {
-// 	obj CanvasObject
-// }
-
-// func NewHideShowAnimation(obj CanvasObject) *HideShowAnimation {
-// 	a := &HideShowAnimation{obj: obj}
-// 	return a
-// }
-
-// func (a *HideShowAnimation) StartAt(t time.Time) {
-// 	if a.obj.IsVisible() {
-// 		a.obj.Hide()
-// 	} else {
-// 		a.obj.Show()
-// 	}
-// }
-// func (a *HideShowAnimation) Start() {
-// 	a.StartAt(AnimCtrl.Now())
-// }
-
-// func (a *HideShowAnimation) IsRunning() bool {
-// 	return false
-// }
-
-// Analog zu HideShowAnimation dient SuspContAnimation dazu, die Eigenschaft
-// IsRunning von Animation-Objekten zu beeinflussen. Jeder Aufruf dieser
-// Animation wechselt die Eigenschaft (Stopped -> Started -> Stopped -> etc.)
-// type SuspContAnimation struct {
-// 	anim Animation
-// }
-
-// func NewSuspContAnimation(anim Animation) *SuspContAnimation {
-// 	a := &SuspContAnimation{anim: anim}
-// 	return a
-// }
-// func (a *SuspContAnimation) StartAt(t time.Time) {
-// 	if a.anim.IsRunning() {
-// 		a.anim.Suspend()
-// 	} else {
-// 		a.anim.Continue()
-// 	}
-// }
-// func (a *SuspContAnimation) Start() {
-// 	a.StartAt(AnimCtrl.Now())
-// }
-
-// func (a *SuspContAnimation) IsRunning() bool {
-// 	return false
-// }
-
 // Dieses Embeddable wird von allen Animationen verwendet, welche eine
 // Animation implementieren, die folgende Kriterien aufweist:
 //   - sie hat eine begrenzte Laufzeit (ohne Beruecksichtiung von Umkehrungen
@@ -708,21 +622,31 @@ func (a *Delay) Tick(t float64) {}
 // dieser Sammlung von Typen und Funktionen habe ich wohl mein Gesellenstueck
 // in Go geschrieben. Als besonderes Schmankerl ist das ganze auch noch
 // generisch umgesetzt.
+
+// Dies sind die animierbaren skalaren Datentypen.
 type AnimNumbers interface {
 	~float64 | ~uint8 | ~int
 }
+// AnimPoints sind die animierbaren 2D-Vektoren von denen es 3 Typen gibt.
 type AnimPoints interface {
 	geom.Point | image.Point | fixed.Point26_6
 }
+// AnimColors enthaelt bloss einen Datentyp fuer animierbare Farben.
 type AnimColors interface {
 	colors.LedColor
 }
+// AnimValue schliesslich ist der Zusammenschluss aller animierbaren Typen.
 type AnimValue interface {
 	AnimNumbers | AnimPoints | AnimColors
 }
-
+// Die eigentliche Arbeit erbringen Funktionen vom Typ AnimValueFunc, welche
+// ohne Parameter aufgerufen werden und als Rueckgabewert einen Wert des
+// Typs AnimValue haben.
 type AnimValueFunc[T AnimValue] func() T
 
+// Nicht alles muss immer animiert werden, soll sich aber dem Interface
+// moeglichst anpassen. Dazu kann mit der Funktion Const eine AnimValueFunc
+// erzeugt werden, die bei jedem Aufruf den selben Wert zurueckliefert.
 func Const[T AnimValue](v T) AnimValueFunc[T] {
 	return func() T { return v }
 }
@@ -733,10 +657,10 @@ func Const[T AnimValue](v T) AnimValueFunc[T] {
 // erfolgt ueber einen der Datenypen, welche in AnimValue zusammengefasst sind.
 type GenericAnimation[T AnimValue] struct {
 	// NormAnimationEmbed wird eingebunden, um Methoden wie Start(), Suspend(),
-	// Continue() nur einmal implementiern zu muessen.
+	// Continue() nur einmal implementieren zu muessen.
 	NormAnimationEmbed
 	// ValPtr zeigt auf jenes Feld eines Objektes, welches durch diese
-    // Animation veraendert werden soll. Die Animation kenn also den
+    // Animation veraendert werden soll. Die Animation kennt also den
     // Grund-Typ (Rectangle, Circle, Pixel, etc) nicht, sondern nur die zu
     // animierende Eigenschaft.
 	ValPtr *T

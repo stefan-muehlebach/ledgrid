@@ -185,14 +185,10 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 3 * time.Second
-	// numReps := 3
-
 	pal := ledgrid.PaletteMap["Nightspell"]
 
 	for y := range c.Rect.Dy() {
-		// ty := float64(y) / float64(c.Rect.Dy()-1)
 		for x := range c.Rect.Dx() {
-			// tx := float64(x) / float64(c.Rect.Dx()-1)
 			pt := image.Point{x, y}
 			pix := ledgrid.NewPixel(pt, colorList[0][0])
 
@@ -200,7 +196,6 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 
 			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
 			aColorPal.AutoReverse = true
-			// aColorPal.RepeatCount = numReps
 			aColorPal.Curve = ledgrid.AnimationLinear
 			aColorPal.Pos = rand.Float64() / 4.0
 

@@ -286,9 +286,14 @@ func main() {
 			}
 			progId = id
 			ledGrid.Reset()
+			ledgrid.AnimCtrl.Stopwatch().Reset()
+			canvas.Stopwatch().Reset()
+			ledGrid.Client.Stopwatch().Reset()
 			programList[progId].Start(context.Background(), canvas)
 		}
 		fmt.Printf("Quit by Ctrl-C\n")
+		fmt.Scanf("%s\n", &input)
+		fmt.Printf("Zu weit...\n")
 		SignalHandler(timeout)
 		programList[progId].Stop()
 	}
