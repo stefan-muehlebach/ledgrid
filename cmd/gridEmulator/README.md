@@ -34,4 +34,30 @@ Supported flags are:
 Without any flags, a 40x10 grid will be created with LEDs of 40 pixel in
 diameter. This will look like in the picture below:
 
-![](emulator40x10.png)
+![](default40x10.png)
+
+With the help of the custom configuration file `chessBoard.json`, containing
+the following panel configuration:
+
+```
+[
+    {"Col": 1, "Row": 0, "Mod": "RL:180"},
+    {"Col": 2, "Row": 1, "Mod": "LR:0"  },
+    {"Col": 3, "Row": 0, "Mod": "RL:180"},
+    {"Col": 4, "Row": 1, "Mod": "RL:90" },
+    {"Col": 3, "Row": 2, "Mod": "LR:270"},
+    {"Col": 4, "Row": 3, "Mod": "RL:90" },
+    {"Col": 3, "Row": 4, "Mod": "RL:0"  },
+    {"Col": 2, "Row": 3, "Mod": "LR:180"},
+    {"Col": 1, "Row": 4, "Mod": "RL:0"  },
+    {"Col": 0, "Row": 3, "Mod": "RL:270"},
+    {"Col": 1, "Row": 2, "Mod": "LR:90" },
+    {"Col": 0, "Row": 1, "Mod": "RL:270"}
+]
+```
+and a smaller size of the circles for the LEDs, you the the following output:
+```
+./gridEmulator -custom chessBoard -size 20
+```
+
+![](chessBoard.png)
