@@ -6,7 +6,7 @@ organized in a square of 10 by 10 pixels is the smallest building block, I
 call it a _module_. In the picture below, you'll see how the 100 pixels are
 organized in such a module.
 
-![LR:000](plots/LR_000.png)
+![LR:000](plots/LR-000.png)
 
 This particular module is called **LR:000** (more on this name later).
 
