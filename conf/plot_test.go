@@ -12,6 +12,7 @@ func TestPlotDefaultConfig(t *testing.T) {
         {40, 10},
         {10, 40},
         {40, 40},
+        {80, 60},
     }
 
     for _, dim := range dimList {

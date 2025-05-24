@@ -102,3 +102,17 @@ You can event arrange the modules in a circle around a square hole.
         {"Col": 0, "Row": 1, "Mod": "RL:270"}
     ]
 
+## Big walls and the Default configuration
+
+In most cases, you just want a seamingless configuration, without holes and
+irregularities. In this case, a default configuration can be choosen, which
+automaticaly places the modules in order to fill the specified area.
+
+The final size of the grid must (of course) be a multiple of 10.
+The grids below are all automatically generated.
+
+![](plots/default40x10.png)
+
+![](plots/default40x40.png)
+
+![](plots/default80x60.png)
