@@ -44,21 +44,26 @@ as you respect the following _golden rule_:
 > The red end circle of one module must be in the same corner as the green
 > start circle of the following module.
 
-400 pixels, mounted on 4 modules can be arranged in the following orders
+400 pixels, mounted on 4 modules can be arranged in the following orders.
+For each example, the content of it's configuration file is also shown.
+The syntax of the configuration files will be explained right afterwards.
 
 ### Adjacent
 
-| Visual | Configuration |
-|--------|---------------|
-|![](plots/sample01.png)|```[
-    {"Col": 0, "Row": 0, "Mod": "LR:0"  },
-    {"Col": 1, "Row": 0, "Mod": "LR:0"  },
-    {"Col": 2, "Row": 0, "Mod": "LR:0"  },
-    {"Col": 3, "Row": 0, "Mod": "LR:0"  }
-]```|
+The simplest configuration: just one module after the other.
 
+![](plots/sample01.png)
+
+    [
+        {"Col": 0, "Row": 0, "Mod": "LR:0"  },
+        {"Col": 1, "Row": 0, "Mod": "LR:0"  },
+        {"Col": 2, "Row": 0, "Mod": "LR:0"  },
+        {"Col": 3, "Row": 0, "Mod": "LR:0"  }
+    ]
 
 ### Even-Odd
+
+
 
 ![](plots/sample02.png)
 
