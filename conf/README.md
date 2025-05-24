@@ -63,14 +63,42 @@ The simplest configuration: just one module after the other.
 
 ### Even-Odd
 
-
+A configuration with a lot of space between the modules.
+Note that the _golden rule_ is still valid: red and green circles meet in one
+corner.
 
 ![](plots/sample02.png)
 
+    [
+        {"Col": 0, "Row": 1, "Mod": "LR:0"  },
+        {"Col": 1, "Row": 0, "Mod": "RL:180"},
+        {"Col": 2, "Row": 1, "Mod": "LR:0"  },
+        {"Col": 3, "Row": 0, "Mod": "RL:180"}
+    ]
+
 ### Odd-Even
+
+Same as above - but different ;-)
 
 ![](plots/sample03.png)
 
+    [
+        {"Col": 0, "Row": 0, "Mod": "RL:180"},
+        {"Col": 1, "Row": 1, "Mod": "LR:0"  },
+        {"Col": 2, "Row": 0, "Mod": "RL:180"},
+        {"Col": 3, "Row": 1, "Mod": "LR:0"  }
+    ]
+
 ### A Hole
 
+You can event arrange the modules in a circle around a square hole.
+
 ![](plots/sample04.png)
+
+    [
+        {"Col": 1, "Row": 0, "Mod": "RL:180"},
+        {"Col": 2, "Row": 1, "Mod": "RL:90" },
+        {"Col": 1, "Row": 2, "Mod": "RL:0"  },
+        {"Col": 0, "Row": 1, "Mod": "RL:270"}
+    ]
+
