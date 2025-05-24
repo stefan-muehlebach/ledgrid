@@ -19,6 +19,7 @@ import (
 func init() {
 	// programList.AddTitle("Pixel Animations")
 	programList.Add("Moving pixels", "Pixel", MovingPixels)
+	programList.Add("Pixel im Stau", "Pixel", CrowdedPixels)
 	programList.Add("Glowing pixels with changing text", "Pixel", GlowingPixels)
 	programList.Add("Waves of colors", "Pixel", ColorWaves)
 	programList.Add("Fireplace", "Pixel", Fireplace)
@@ -26,9 +27,40 @@ func init() {
 	programList.Add("Shader using colors", "Pixel", ColorShader)
 }
 
+func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
+	mainSeq := ledgrid.NewSequence()
+	grp := ledgrid.NewGroup()
+
+	posList := make([]geom.Point, 0)
+	for y := 0; y < height; y++ {
+		for x := 0; x < width/2; x++ {
+			posList = append(posList, geom.Point{float64(x), float64(y)})
+		}
+	}
+	permList := rand.Perm(len(posList))
+
+	min := geom.Point{0, 0}
+    max := geom.Point{float64(width/2), float64(height)}
+    dp := geom.Point{20, 0}
+	for i, pos := range posList {
+		pixSeq := ledgrid.NewSequence()
+        t1 := pos.Distance(min)/22.5
+        t2 := pos.Distance(max)/22.5
+		dest := posList[permList[i]].Add(dp)
+		dot := ledgrid.NewDot(pos, colors.LedColor{uint8(255*t1*t2), uint8(255*(1-t1)), uint8(255*(1-t2)), 0xFF})
+		c.Add(dot)
+		posAnim1 := ledgrid.NewPositionAnim(dot, dest, time.Second+rand.N(time.Second))
+		posAnim2 := ledgrid.NewPositionAnim(dot, pos, time.Second+rand.N(time.Second))
+		pixSeq.Add(posAnim1, ledgrid.NewDelay(1*time.Second), posAnim2)
+		grp.Add(pixSeq)
+	}
+	mainSeq.Add(ledgrid.NewDelay(time.Second), grp)
+	mainSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	mainSeq.Start()
+}
+
 func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
-	// mp := geom.Point{float64(width)/2 - 0.5, float64(height)/2 - 0.5}
-	aSeq := ledgrid.NewSequence()
+	mainSeq := ledgrid.NewSequence()
 	grp := ledgrid.NewGroup()
 
 	xMin, xMax := float64(0), float64(width/2-1)
@@ -38,19 +70,19 @@ func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	// erstellt. Als erstes die horizontalen, d.h. obere und untere Seite.
 	colorList := [][]colors.LedColor{
 		{colors.RandGroupColor(colors.Blues).Dark(0.1),
-			colors.RandGroupColor(colors.Blues).Dark(0.1)},
-		{colors.RandGroupColor(colors.Pinks).Dark(0.1),
+			colors.RandGroupColor(colors.Greens).Dark(0.1)},
+		{colors.RandGroupColor(colors.Reds).Dark(0.1),
 			colors.RandGroupColor(colors.Pinks).Dark(0.1)},
 	}
-	posList := [][]geom.Point{
+	edgeList := [][]geom.Point{
 		{geom.Point{0.0, yMin},
 			geom.Point{0.0, yMax}},
 		{geom.Point{xMin, 0.0},
 			geom.Point{xMax, 0.0}},
 	}
 
-	makePoint := func(id, side int, v float64) geom.Point {
-		pos := posList[id][side]
+	newPos := func(id, side int, v float64) geom.Point {
+		pos := edgeList[id][side]
 		if id == 0 {
 			pos.X = v
 		} else {
@@ -59,43 +91,55 @@ func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 		return pos
 	}
 
-    dp := geom.Point{20, 0}
+	dp := geom.Point{20, 0}
+
+	posList := make([]geom.Point, 0)
 
 	// Zuerst werden die horizontalen, d.h. die obere und untere Seite
-    // erstellt.
-	for x := xMin + 1; x <= xMax-1; x++ {
-		for j := range 2 {
+	// erstellt.
+	for j := range 2 {
+		posList = posList[:0]
+		for x := xMin + 1; x <= xMax-1; x++ {
+			posList = append(posList, newPos(0, j, float64(x)))
+		}
+		posPerm := rand.Perm(len(posList))
+
+		for i, pos := range posList {
 			pixSeq := ledgrid.NewSequence()
-			pos := makePoint(0, j, float64(x))
-			dest := makePoint(0, (j+1)%2, pos.X).Add(dp)
+			dest := newPos(0, (j+1)%2, posList[posPerm[i]].X).Add(dp)
 			pix := ledgrid.NewDot(pos, colorList[0][j])
 			c.Add(pix)
-			aPos1 := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
-			aPos2 := ledgrid.NewPositionAnim(pix, pos, time.Second+rand.N(time.Second))
-			pixSeq.Add(aPos1, ledgrid.NewDelay(2*time.Second), aPos2)
+			posAnim1 := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
+			posAnim2 := ledgrid.NewPositionAnim(pix, pos, time.Second+rand.N(time.Second))
+			pixSeq.Add(posAnim1, ledgrid.NewDelay(2*time.Second), posAnim2)
 			grp.Add(pixSeq)
 		}
 	}
 
-	// Anschliessend werdedn die vertikalen, d.h. linke und rechte Seite
+	// Anschliessend werden die vertikalen, d.h. linke und rechte Seite
 	// erstellt.
-	for y := yMin + 1; y <= yMax-1; y++ {
-		for j := range 2 {
+	for j := range 2 {
+		posList = posList[:0]
+		for y := yMin + 1; y <= yMax-1; y++ {
+			posList = append(posList, newPos(1, j, float64(y)))
+		}
+		posPerm := rand.Perm(len(posList))
+
+		for i, pos := range posList {
 			pixSeq := ledgrid.NewSequence()
-			pos := makePoint(1, j, float64(y))
-			dest := pos.Add(dp)
+			dest := posList[posPerm[i]].Add(dp)
 			pix := ledgrid.NewDot(pos, colorList[1][j])
 			c.Add(pix)
-			aPos1 := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
-			aPos2 := ledgrid.NewPositionAnim(pix, pos, time.Second+rand.N(time.Second))
-			pixSeq.Add(aPos1, ledgrid.NewDelay(2*time.Second), aPos2)
+			posAnim1 := ledgrid.NewPositionAnim(pix, dest, time.Second+rand.N(time.Second))
+			posAnim2 := ledgrid.NewPositionAnim(pix, pos, time.Second+rand.N(time.Second))
+			pixSeq.Add(posAnim1, ledgrid.NewDelay(2*time.Second), posAnim2)
 			grp.Add(pixSeq)
 		}
 	}
 
-	aSeq.Add(grp, ledgrid.NewDelay(time.Second))
-	aSeq.RepeatCount = ledgrid.AnimationRepeatForever
-	aSeq.Start()
+	mainSeq.Add(grp, ledgrid.NewDelay(time.Second))
+	mainSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	mainSeq.Start()
 }
 
 var (

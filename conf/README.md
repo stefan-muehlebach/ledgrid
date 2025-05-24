@@ -38,17 +38,25 @@ gives a total of 8 modules
 ## Chaining the modules
 
 With this set of 8 modules you can start and build your LED-wall. There is no
-limit in size and you dont't have to place the modules seamingless. As long
+limit in size and you dont't have to place the modules seamingless - as long
 as you respect the following _golden rule_:
 
-> The red end of one module must be in the same corner as the green start
-> of the following module.
+> The red end circle of one module must be in the same corner as the green
+> start circle of the following module.
 
 400 pixels, mounted on 4 modules can be arranged in the following orders
 
 ### Adjacent
 
-![](plots/sample01.png)
+| Visual | Configuration |
+|--------|---------------|
+|![](plots/sample01.png)|```[
+    {"Col": 0, "Row": 0, "Mod": "LR:0"  },
+    {"Col": 1, "Row": 0, "Mod": "LR:0"  },
+    {"Col": 2, "Row": 0, "Mod": "LR:0"  },
+    {"Col": 3, "Row": 0, "Mod": "LR:0"  }
+]```|
+
 
 ### Even-Odd
 

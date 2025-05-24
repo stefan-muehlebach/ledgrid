@@ -482,7 +482,7 @@ func NewDot(pos geom.Point, col colors.LedColor) *Dot {
 }
 
 func (d *Dot) Draw(c *Canvas) {
-	c.GC.DrawPoint(d.Pos.X+0.5, d.Pos.Y+0.5, math.Sqrt2/2.0)
+	c.GC.DrawPoint(d.Pos.X+0.5, d.Pos.Y+0.5, 0.5 /*math.Sqrt2/2.0*/)
 	c.GC.SetFillColor(d.Color)
 	c.GC.Fill()
 }

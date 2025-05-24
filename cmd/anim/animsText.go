@@ -108,7 +108,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	dur := 2 * time.Second
 	backPal := ledgrid.PaletteMap["BackYellowBlue"]
 	textPos := p2p(3.0, 8.0)
-	pit, _ := time.Parse("02.01.2006", "29.06.2025")
+	pit, _ := time.Parse("02.01.2006 15:04:05", "28.06.2025 12:00:00")
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -129,18 +129,28 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	}
 
 	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
-	c.Add(clockText)
+	alertText := ledgrid.NewFixedText(textPos, "! HILFE !", colors.Crimson.Alpha(0.0))
+	c.Add(clockText, alertText)
 
-	timeLine := ledgrid.NewTimeline(10 * time.Millisecond)
-	timeLine.RepeatCount = ledgrid.AnimationRepeatForever
-	timeLine.Add(0, ledgrid.NewTask(func() {
+	clockOut := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut, 2*time.Second)
+	alertIn := ledgrid.NewFadeAnim(alertText, ledgrid.FadeIn, time.Second)
+	alertOut := ledgrid.NewFadeAnim(alertText, ledgrid.FadeOut, time.Second)
+	clockIn := ledgrid.NewFadeAnim(clockText, ledgrid.FadeIn, 2*time.Second)
+    fadeSeq := ledgrid.NewSequence(ledgrid.NewDelay(4*time.Second), clockOut, alertIn, alertOut, clockIn)
+    fadeSeq.RepeatCount = ledgrid.AnimationRepeatForever
+
+	countTimeLine := ledgrid.NewTimeline(10 * time.Millisecond)
+	countTimeLine.RepeatCount = ledgrid.AnimationRepeatForever
+	countTimeLine.Add(0, ledgrid.NewTask(func() {
 		duration := time.Until(pit)
 		txt := fmt.Sprintf("%9.1f", duration.Seconds())
 		clockText.SetText(txt)
 	}))
 
-	timeLine.Start()
+	countTimeLine.Start()
 	aGrpLedColor.Start()
+    fadeSeq.Start()
+
 }
 
 func MovingText(ctx context.Context, c *ledgrid.Canvas) {
