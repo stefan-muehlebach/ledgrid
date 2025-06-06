@@ -111,8 +111,21 @@ automaticaly places the modules in order to fill the specified area.
 The final size of the grid must (of course) be a multiple of 10.
 The grids below are all automatically generated.
 
+### 40 x 10 pixels
+
+400 pixels, the length of the wire from first to last led is 40m
+
 ![](plots/default40x10.png)
 
+### 40 x 40 pixels
+
+1600 pixels, the length of the wire from first to last led is 160m
+
 ![](plots/default40x40.png)
+
+### 80 x 60 pixels
+
+4800 pixels, the length of the wire from first to last led is 480m - and
+probably just a dream.
 
 ![](plots/default80x60.png)

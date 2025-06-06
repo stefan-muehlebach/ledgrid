@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/stefan-muehlebach/gg/fonts"
 	"bufio"
 	"context"
 	"image"
@@ -8,6 +9,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -18,6 +20,7 @@ import (
 
 func init() {
 	// programList.AddTitle("Pixel Animations")
+	programList.Add("Zollweg Biel", "Pixel", ZollwegBiel)
 	programList.Add("Moving pixels", "Pixel", MovingPixels)
 	programList.Add("Pixel im Stau", "Pixel", CrowdedPixels)
 	programList.Add("Glowing pixels with changing text", "Pixel", GlowingPixels)
@@ -25,6 +28,62 @@ func init() {
 	programList.Add("Fireplace", "Pixel", Fireplace)
 	programList.Add("Shader using palettes", "Pixel", PaletteShader)
 	programList.Add("Shader using colors", "Pixel", ColorShader)
+}
+
+var (
+	message = "Stefan und Benedict haben sich entschieden"
+)
+
+func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
+	aGrpLedColor := ledgrid.NewGroup()
+    	dur := 3 * time.Second
+	pal := ledgrid.PaletteMap["BackYellowBlue"]
+
+	wordList := strings.Split(message, " ")
+	wordIndex := 0
+
+	for y := range c.Rect.Dy() {
+		for x := range c.Rect.Dx() {
+			pt := image.Point{x, y}
+			pix := ledgrid.NewPixel(pt, colorList[0][0])
+
+			c.Add(pix)
+
+			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
+			aColorPal.AutoReverse = true
+			aColorPal.Curve = ledgrid.AnimationLinear
+			aColorPal.Pos = rand.Float64() / 2.0
+
+			aColorSeq := ledgrid.NewSequence(aColorPal)
+			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			aGrpLedColor.Add(aColorSeq)
+		}
+	}
+
+	pt := geom.Point{float64(width)/2, float64(height)-1.0}
+	ptStart := pt.Add(geom.Point{float64(width), 0})
+	ptEnd := pt.Sub(geom.Point{float64(width), 0})
+
+	txt := ledgrid.NewText(pt, "", colors.FireBrick)
+    txt.SetFont(fonts.SeafordBold, 10.5)
+    txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignBottom)
+	c.Add(txt)
+
+	txtLeave := ledgrid.NewPositionAnim(txt, ptEnd, 2*time.Second)
+	txtLeave.Curve = ledgrid.AnimationEaseIn
+	txtEnter := ledgrid.NewPositionAnim(txt, pt, 2*time.Second)
+	txtEnter.Curve = ledgrid.AnimationEaseOut
+	txtNewText := ledgrid.NewTask(func() {
+		txt.Text = wordList[wordIndex]
+    		wordIndex = (wordIndex + 1) % len(wordList)
+		txt.Pos = ptStart
+	})
+	txtChange := ledgrid.NewSequence(/*ledgrid.NewDelay(50 * time.Millisecond),*/
+        txtLeave, txtNewText, txtEnter)
+    txtChange.RepeatCount = ledgrid.AnimationRepeatForever
+
+	txtChange.Start()
+	aGrpLedColor.Start()
 }
 
 func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
@@ -40,14 +99,14 @@ func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 	permList := rand.Perm(len(posList))
 
 	min := geom.Point{0, 0}
-    max := geom.Point{float64(width/2), float64(height)}
-    dp := geom.Point{20, 0}
+	max := geom.Point{float64(width / 2), float64(height)}
+	dp := geom.Point{20, 0}
 	for i, pos := range posList {
 		pixSeq := ledgrid.NewSequence()
-        t1 := pos.Distance(min)/22.5
-        t2 := pos.Distance(max)/22.5
+		t1 := pos.Distance(min) / 22.5
+		t2 := pos.Distance(max) / 22.5
 		dest := posList[permList[i]].Add(dp)
-		dot := ledgrid.NewDot(pos, colors.LedColor{uint8(255*t1*t2), uint8(255*(1-t1)), uint8(255*(1-t2)), 0xFF})
+		dot := ledgrid.NewDot(pos, colors.LedColor{uint8(255 * t1 * t2), uint8(255 * (1 - t1)), uint8(255 * (1 - t2)), 0xFF})
 		c.Add(dot)
 		posAnim1 := ledgrid.NewPositionAnim(dot, dest, time.Second+rand.N(time.Second))
 		posAnim2 := ledgrid.NewPositionAnim(dot, pos, time.Second+rand.N(time.Second))
@@ -229,7 +288,7 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 3 * time.Second
-	pal := ledgrid.PaletteMap["Nightspell"]
+	pal := ledgrid.PaletteMap["Viridis"]
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -335,6 +394,7 @@ func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
 	yMax = h / 2
 	dx = (xMax - xMin) / float64(width)
 	dy = (yMax - yMin) / float64(height)
+	i := 3 // rand.IntN(len(ColorShaderList))
 
 	aGrp := ledgrid.NewGroup()
 	nPix := c.Rect.Dx() * c.Rect.Dy()
@@ -345,7 +405,7 @@ func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
 		for col := range c.Rect.Dx() {
 			pix := ledgrid.NewPixel(image.Point{col, row}, colors.Black)
 			c.Add(pix)
-			anim := ledgrid.NewColorShaderAnim(pix, x, 0.0, y, idx, nPix, NyanCatShader)
+			anim := ledgrid.NewColorShaderAnim(pix, x, y, y, idx, nPix, ColorShaderList[i])
 			idx += 1
 			aGrp.Add(anim)
 			x += dx
@@ -360,6 +420,13 @@ var (
 
 	// Einer der Shader (oder dort: color functions) aus den Testprogrammen
 	// von OpenPixelController.
+
+	ColorShaderList = []ledgrid.ColorShaderFunc{
+		NyanCatShader,
+		LavaLampShader,
+		RandomShader,
+		QuasicrystalShader,
+	}
 
 	NyanCatShader = func(t, x, y, z float64, idx, nPix int) colors.LedColor {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
@@ -504,33 +571,111 @@ var (
 		v := (v1+v2+v3)/6.0 + 0.5
 		return v
 	}
+
+	wrap = func(x float64) float64 {
+		return math.Abs(math.Mod(x, 2.0) - 1.0)
+	}
+
+	wave = func(p geom.Point, angle float64) float64 {
+		dir := geom.Point{math.Cos(angle), math.Sin(angle)}
+		return math.Cos(p.X*dir.X + p.Y*dir.Y)
+	}
+
+	QuasicrystalShader = func(t, x, y, z float64, idx, nPix int) colors.LedColor {
+		p := geom.Point{x, y}.Mul(2.0)
+		bright := 0.0
+		for i := 1.0; i <= 11.0; i += 1.0 {
+			bright += wave(p, t/i)
+		}
+		bright = wrap(bright)
+		return colors.LedColor{uint8(255 * bright), uint8(255 * bright), uint8(255 * bright), 0xFF}
+	}
 )
 
-// ---------------------------------------------------------------------------
+/*
+// Quasicristal
 
-// type ColorSampler struct {
-// 	ledgrid.CanvasObjectEmbed
-// 	colGrp colors.ColorGroup
-// }
+precision mediump float;
 
-// func NewColorSampler(colGrp colors.ColorGroup) *ColorSampler {
-// 	c := &ColorSampler{}
-// 	c.CanvasObjectEmbed.Extend(c)
-// 	c.colGrp = colGrp
-// 	return c
-// }
+varying vec2 position;
+uniform float time;
 
-// func (c *ColorSampler) Draw(canv *ledgrid.Canvas) {
-// 	for i, colorName := range colors.Groups[c.colGrp] {
-// 		col := colors.Map[colorName]
-// 		for j := range 2 {
-// 			x := 2*i + j
-// 			if x >= width {
-// 				return
-// 			}
-// 			for y := range height {
-// 				canv.GC.SetPixel(x, y, col)
-// 			}
-// 		}
-// 	}
-// }
+float wave(vec2 p, float angle) {
+  vec2 direction = vec2(cos(angle), sin(angle));
+  return cos(dot(p, direction));
+}
+
+float wrap(float x) {
+  return abs(mod(x, 2.)-1.);
+}
+
+void main() {
+  vec2 p = (position - 0.5) * 50.;
+
+  float brightness = 0.;
+  for (float i = 1.; i <= 11.; i++) {
+    brightness += wave(p, time / i);
+  }
+
+  brightness = wrap(brightness);
+
+  gl_FragColor.rgb = vec3(brightness);
+  gl_FragColor.a = 1.;
+}
+
+*/
+
+/*
+// Noise
+
+precision mediump float;
+
+varying vec2 position;
+uniform float time;
+
+float random(float p) {
+  return fract(sin(p)*10000.);
+}
+
+float noise(vec2 p) {
+  return random(p.x + p.y*10000.);
+}
+
+vec2 sw(vec2 p) {return vec2( floor(p.x) , floor(p.y) );}
+vec2 se(vec2 p) {return vec2( ceil(p.x)  , floor(p.y) );}
+vec2 nw(vec2 p) {return vec2( floor(p.x) , ceil(p.y)  );}
+vec2 ne(vec2 p) {return vec2( ceil(p.x)  , ceil(p.y)  );}
+
+float smoothNoise(vec2 p) {
+  vec2 inter = smoothstep(0., 1., fract(p));
+  float s = mix(noise(sw(p)), noise(se(p)), inter.x);
+  float n = mix(noise(nw(p)), noise(ne(p)), inter.x);
+  return mix(s, n, inter.y);
+  return noise(nw(p));
+}
+
+float movingNoise(vec2 p) {
+  float total = 0.0;
+  total += smoothNoise(p     - time);
+  total += smoothNoise(p*2.  + time) / 2.;
+  total += smoothNoise(p*4.  - time) / 4.;
+  total += smoothNoise(p*8.  + time) / 8.;
+  total += smoothNoise(p*16. - time) / 16.;
+  total /= 1. + 1./2. + 1./4. + 1./8. + 1./16.;
+  return total;
+}
+
+float nestedNoise(vec2 p) {
+  float x = movingNoise(p);
+  float y = movingNoise(p + 100.);
+  return movingNoise(p + vec2(x, y));
+}
+
+void main() {
+  vec2 p = position * 6.;
+  float brightness = nestedNoise(p);
+  gl_FragColor.rgb = vec3(brightness);
+  gl_FragColor.a = 1.;
+}
+
+*/

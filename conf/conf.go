@@ -352,6 +352,14 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 //go:embed data/*.json
 var customFiles embed.FS
 
+func AllCustomFiles() (fileList []string) {
+    entryList, _ := customFiles.ReadDir("data")
+    for _, entry := range entryList {
+        fileList = append(fileList, entry.Name())
+    }
+    return fileList
+}
+
 func Load(fileName string) ModuleConfig {
 	var conf ModuleConfig
 

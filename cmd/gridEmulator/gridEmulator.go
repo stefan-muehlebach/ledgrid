@@ -14,7 +14,6 @@ const (
 	defWidth           = 40
 	defHeight          = 10
 	defPixelSize       = 40.0
-	// defUseCustomLayout = false
 )
 
 func ResetStatistics(gridServer *ledgrid.GridServer) {
@@ -42,13 +41,14 @@ func ToggleTests(gridServer *ledgrid.GridServer) {
 	}
 }
 
+var (
+    gridServer *ledgrid.GridServer
+)
+
 func main() {
 	var width, height int
 	var dataPort, rpcPort uint
-	// var appWidth, appHeight float32
 	var pixelSize float64
-	// var appSize fyne.Size
-	var gridServer *ledgrid.GridServer
 	var gridWindow *Window
 	var customConfName string
 	var gridSize image.Point
@@ -58,7 +58,7 @@ func main() {
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
-	flag.Float64Var(&pixelSize, "size", defPixelSize, "Diameter of one LED in Pixel")
+	flag.Float64Var(&pixelSize, "size", defPixelSize, "Diameter of one LED in pixels")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.Parse()
 

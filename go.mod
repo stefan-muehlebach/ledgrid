@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid
 
-go 1.24.3
+go 1.24.4
 
 replace github.com/stefan-muehlebach/gg => ../gg
 
@@ -8,7 +8,7 @@ require (
 	fyne.io/fyne/v2 v2.6.1
 	github.com/stefan-muehlebach/gg v1.4.1
 	github.com/veandco/go-sdl2 v0.4.40
-	golang.org/x/image v0.27.0
+	golang.org/x/image v0.28.0
 	periph.io/x/conn/v3 v3.7.2
 	periph.io/x/host/v3 v3.8.5
 )
@@ -44,6 +44,6 @@ require (
 	github.com/yuin/goldmark v1.7.8 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

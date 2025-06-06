@@ -119,11 +119,11 @@ func (e *Window) HandleEvents() {
 			fmt.Printf("  t   Start test pattern, press 't' again to stop\n")
 			fmt.Printf("  q   Quit the program\n")
 			fmt.Printf(" ESC  Same as 'q'\n")
-		// case fyne.KeyS:
-		// 	PrintStatistics(gridServer)
-		// 	ResetStatistics(gridServer)
-		// case fyne.KeyT:
-		// 	ToggleTests(gridServer)
+		case fyne.KeyS:
+		 	PrintStatistics(gridServer)
+		 	ResetStatistics(gridServer)
+		case fyne.KeyT:
+		  	ToggleTests(gridServer)
 		case fyne.KeyEscape, fyne.KeyQ:
 			e.App.Quit()
 		}
@@ -169,6 +169,6 @@ func (e *Window) Send(buffer []byte) {
 		e.field[coord.X][coord.Y].FillColor = newColor
 	}
 	if needsRefresh {
-		e.Grid.Refresh()
+		fyne.DoAndWait(e.Grid.Refresh)
 	}
 }

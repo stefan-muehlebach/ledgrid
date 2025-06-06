@@ -11,19 +11,19 @@ import (
 )
 
 var (
-	cpuprofile, memprofile, tracefile string
+	cpuProfFile, memProfFile, traceFile string
 	fhCpu, fhTrace             *os.File
 )
 
 func init() {
-	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to 'file'")
-	flag.StringVar(&memprofile, "memprofile", "", "write memory profile to 'file'")
-	flag.StringVar(&tracefile, "trace", "", "write trace data to 'file'")
+	flag.StringVar(&cpuProfFile, "cpuprofile", "", "write cpu profile to 'file'")
+	flag.StringVar(&memProfFile, "memprofile", "", "write memory profile to 'file'")
+	flag.StringVar(&traceFile, "trace", "", "write trace data to 'file'")
 }
 
 func StartProfiling() {
-	if cpuprofile != "" {
-		fhCpu, err := os.Create(cpuprofile)
+	if cpuProfFile != "" {
+		fhCpu, err := os.Create(cpuProfFile)
 		if err != nil {
 			log.Fatal("couldn't create cpu profile: ", err)
 		}
@@ -32,8 +32,8 @@ func StartProfiling() {
 		}
 	}
 
-	if tracefile != "" {
-		fhTrace, err := os.Create(tracefile)
+	if traceFile != "" {
+		fhTrace, err := os.Create(traceFile)
 		if err != nil {
 			log.Fatal("couldn't create tracefile: ", err)
 		}
@@ -44,13 +44,13 @@ func StartProfiling() {
 }
 
 func StopProfiling() {
-	if cpuprofile != "" {
+	if cpuProfFile != "" {
 		pprof.StopCPUProfile()
 		fhCpu.Close()
 	}
 
-	if memprofile != "" {
-		fh, err := os.Create(memprofile)
+	if memProfFile != "" {
+		fh, err := os.Create(memProfFile)
 		if err != nil {
 			log.Fatal("couldn't create memory profile: ", err)
 		}
@@ -61,7 +61,7 @@ func StopProfiling() {
 		}
 	}
 
-	if tracefile != "" {
+	if traceFile != "" {
 		trace.Stop()
 		fhTrace.Close()
 	}

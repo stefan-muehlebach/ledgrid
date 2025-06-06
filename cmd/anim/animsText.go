@@ -22,6 +22,7 @@ func init() {
 	programList.Add("Clock Animation", "Text", ClockAnimation)
 	programList.Add("Countdown (Rectangle)", "Text", RectangleCountdown)
 	programList.Add("Countdown (Glowing)", "Text", GlowingCountdown)
+	// programList.Add("Zollweg Biel", "Text", ZollwegBiel)
 }
 
 func f2f(x float64) fixed.Int26_6 {
@@ -108,7 +109,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	dur := 2 * time.Second
 	backPal := ledgrid.PaletteMap["BackYellowBlue"]
 	textPos := p2p(3.0, 8.0)
-	pit, _ := time.Parse("02.01.2006 15:04:05", "28.06.2025 12:00:00")
+	pit, _ := time.Parse("02.01.2006 15:04:05", "28.06.2025 10:00:00")
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -118,8 +119,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 			c.Add(pix)
 
 			aColorPal := ledgrid.NewPaletteAnim(pix, backPal, dur)
-			aColorPal.AutoReverse = true
-			aColorPal.Curve = ledgrid.AnimationLinear
+			//aColorPal.AutoReverse = true
 			aColorPal.Pos = rand.Float64()
 
 			aColorSeq := ledgrid.NewSequence(aColorPal)
@@ -129,15 +129,15 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	}
 
 	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
-	alertText := ledgrid.NewFixedText(textPos, "! HILFE !", colors.Crimson.Alpha(0.0))
-	c.Add(clockText, alertText)
+	//alertText := ledgrid.NewFixedText(textPos, "! HILFE !", colors.Crimson.Alpha(0.0))
+	c.Add(clockText /*, alertText*/)
 
-	clockOut := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut, 2*time.Second)
-	alertIn := ledgrid.NewFadeAnim(alertText, ledgrid.FadeIn, time.Second)
-	alertOut := ledgrid.NewFadeAnim(alertText, ledgrid.FadeOut, time.Second)
-	clockIn := ledgrid.NewFadeAnim(clockText, ledgrid.FadeIn, 2*time.Second)
-    fadeSeq := ledgrid.NewSequence(ledgrid.NewDelay(4*time.Second), clockOut, alertIn, alertOut, clockIn)
-    fadeSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	// clockOut := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut, 2*time.Second)
+	// alertIn := ledgrid.NewFadeAnim(alertText, ledgrid.FadeIn, time.Second)
+	// alertOut := ledgrid.NewFadeAnim(alertText, ledgrid.FadeOut, time.Second)
+	// clockIn := ledgrid.NewFadeAnim(clockText, ledgrid.FadeIn, 2*time.Second)
+	//    fadeSeq := ledgrid.NewSequence(ledgrid.NewDelay(4*time.Second), clockOut, alertIn, alertOut, clockIn)
+	//    fadeSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	countTimeLine := ledgrid.NewTimeline(10 * time.Millisecond)
 	countTimeLine.RepeatCount = ledgrid.AnimationRepeatForever
@@ -149,9 +149,40 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 
 	countTimeLine.Start()
 	aGrpLedColor.Start()
-    fadeSeq.Start()
+	// fadeSeq.Start()
 
 }
+
+// var (
+// 	wordList = []string{
+// 		"Stefan", "und", "Beni", "haben", "sich", "entschieden",
+// 	}
+// )
+
+// func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
+// 	wordIndex := 0
+// 	txt := ledgrid.NewText(geom.Point{float64(width)/2.0, float64(height)/2.0},
+//         wordList[wordIndex], colors.Crimson)
+// 	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+// 	// txt.Angle = math.Pi
+
+// 	c.Add(txt)
+
+// 	angleAnim := ledgrid.NewAngleAnim(txt, -2*math.Pi, 5*time.Second)
+//     // angleAnim.Cont = false
+// 	angleAnim.Curve = ledgrid.AnimationLinear
+
+// 	animSeq := ledgrid.NewSequence(
+// 		angleAnim,
+// 		ledgrid.NewTask(func() {
+// 			wordIndex = (wordIndex + 1) % len(wordList)
+// 			txt.Text = wordList[wordIndex]
+// 		}),
+// 	)
+// 	animSeq.RepeatCount = ledgrid.AnimationRepeatForever
+
+// 	animSeq.Start()
+// }
 
 func MovingText(ctx context.Context, c *ledgrid.Canvas) {
 	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", colors.LightSeaGreen)

@@ -100,7 +100,9 @@ func SlideShow(ctx context.Context, c *ledgrid.Canvas) {
                 img.Show()
             }
         }))
-		aTimeline.Add(t1, ledgrid.NewAngleAnim(img, 6*math.Pi, 3*time.Second))
+        angleAnim := ledgrid.NewAngleAnim(img, 4*math.Pi, 3*time.Second)
+        angleAnim.Cont = false
+		aTimeline.Add(t1, angleAnim)
 		aTimeline.Add(t2, ledgrid.NewTask(func () {
             if img.IsVisible() {
                 img.Hide()

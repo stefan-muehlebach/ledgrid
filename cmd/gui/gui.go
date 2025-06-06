@@ -180,7 +180,7 @@ func main() {
 	})
 	colorSelect.SetSelected(defTextColor)
 
-	backLabel := widget.NewLabel("Background Palette")
+	backLabel := widget.NewLabel("Palette")
 	backLabel.TextStyle.Bold = true
 	backSelect := widget.NewSelect(ledgrid.PaletteNames, func(backName string) {
 		backAnim := ledgrid.NewPaletteFadeAnimation(palFader,
@@ -189,11 +189,24 @@ func main() {
 	})
 	backSelect.SetSelected(defPaletteName)
 
+    animLabel := widget.NewLabel("Animation")
+    animLabel.TextStyle.Bold = true
+    	animRadio := widget.NewRadioGroup([]string{"On", "Off"}, func(s string) {
+        if s == "On" {
+            ledgrid.AnimCtrl.Continue()
+        } else if s == "Off" {
+            	ledgrid.AnimCtrl.Suspend()
+        }
+    })
+    animRadio.SetSelected("On")
+    animRadio.Horizontal = true
+
 	animForm := container.New(
 		layout.NewFormLayout(),
 		txtLabel, txtEntry,
 		colorLabel, colorSelect,
 		backLabel, backSelect,
+        animLabel, animRadio,
 	)
 	animCard := widget.NewCard("Animations", "On this form, you specify which animation you want to run.", animForm)
 	animTab := container.NewVBox(
