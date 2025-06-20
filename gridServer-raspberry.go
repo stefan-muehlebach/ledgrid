@@ -211,6 +211,9 @@ const (
 	RedChain = iota
 	GreenChain
 	BlueChain
+	YellowChain
+	MagentaChain
+	CyanChain
 	TestRed
 	TestGreen
 	TestBlue
@@ -242,34 +245,23 @@ func (p *GridServer) ToggleTestPattern() bool {
 		colorValue = 0x00
 		for p.drawTestPattern {
 			switch colorMode {
-			case RedChain:
-				buffer[3*ledIdx+0] = 0xff
-				buffer[3*ledIdx+1] = 0x00
-				buffer[3*ledIdx+2] = 0x00
-				ledIdx++
-				if ledIdx >= numTestLeds {
-					for i := range testBufferSize {
-						buffer[i] = 0x00
-					}
-					ledIdx = 0
-					colorMode++
-				}
-			case GreenChain:
-				buffer[3*ledIdx+0] = 0x00
-				buffer[3*ledIdx+1] = 0xff
-				buffer[3*ledIdx+2] = 0x00
-				ledIdx++
-				if ledIdx >= numTestLeds {
-					for i := range testBufferSize {
-						buffer[i] = 0x00
-					}
-					ledIdx = 0
-					colorMode++
-				}
-			case BlueChain:
-				buffer[3*ledIdx+0] = 0x00
-				buffer[3*ledIdx+1] = 0x00
-				buffer[3*ledIdx+2] = 0xff
+			case RedChain, GreenChain, BlueChain, YellowChain, CyanChain, MagentaChain:
+                r, g, b := byte(0x00), byte(0x00), byte(0x00)
+                switch colorMode {
+                case RedChain, YellowChain, MagentaChain:
+                    r = 0xff
+                }
+                switch colorMode {
+                case GreenChain, YellowChain, CyanChain:
+                    g = 0xff
+                }
+                switch colorMode {
+                case BlueChain, CyanChain, MagentaChain:
+                    b = 0xff
+                }
+				buffer[3*ledIdx+0] = r
+				buffer[3*ledIdx+1] = g
+				buffer[3*ledIdx+2] = b
 				ledIdx++
 				if ledIdx >= numTestLeds {
 					for i := range testBufferSize {
@@ -334,7 +326,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
 			if colorMode < TestRed {
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(5 * time.Millisecond)
 			} else {
 				time.Sleep(300 * time.Millisecond)
 			}
