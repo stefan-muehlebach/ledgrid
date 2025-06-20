@@ -330,7 +330,7 @@ func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 
 	pal := ledgrid.PaletteMap[palName]
 	fader := ledgrid.NewPaletteFader(pal)
-	aPal := ledgrid.NewPaletteFadeAnimation(fader, pal, 2*time.Second)
+	aPal := ledgrid.NewPaletteFadeAnim(fader, pal, 2*time.Second)
 	aPal.ValFunc = ledgrid.SeqPalette()
 
 	txtLeave := ledgrid.NewFixedPosAnim(txt, ptEnd, time.Second)

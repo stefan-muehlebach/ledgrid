@@ -44,7 +44,7 @@ func (c LedColor) RGBA() (r, g, b, a uint32) {
 	return
 }
 
-// Dient dem schnelleren Zugriff auf das Trippel der drei Farbwerte.
+// Dient dem schnelleren Zugriff auf die drei Farbwerte.
 func (c LedColor) RGB() (r, g, b uint8) {
 	return c.R, c.G, c.B
 }
@@ -115,7 +115,8 @@ func (c1 LedColor) Interpolate(c2 LedColor, t float64) LedColor {
 // }
 
 // Retourniert eine neue Farbe, basierend auf c, jedoch mit dem hier
-// angegebenen Alpha-Wert (als Fliesskommazahl in [0, 1]).
+// angegebenen Alpha-Wert (als Fliesskommazahl in [0, 1], wobei 0 voll
+// transparent und 1 voll deckend bedeuten).
 func (c LedColor) Alpha(a float64) LedColor {
 	a = max(min(a, 1.0), 0.0)
 	return LedColor{c.R, c.G, c.B, uint8(255.0*a)}

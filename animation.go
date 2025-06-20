@@ -730,6 +730,29 @@ func (a *FadeAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
 }
 
+// type AlphaEmbed struct {
+// 	Alpha uint8
+// }
+
+// func (e *AlphaEmbed) AlphaPtr() *uint8 {
+// 	return &e.Alpha
+// }
+
+// type AlphaAnimation struct {
+// 	GenericAnimation[uint8]
+// }
+
+// func NewAlphaAnim(obj Fadable, fade FadeType, dur time.Duration) *AlphaAnimation {
+// 	a := &AlphaAnimation{}
+// 	a.InitAnim(obj.AlphaPtr(), uint8(fade), dur)
+// 	a.NormAnimationEmbed.Extend(a)
+// 	return a
+// }
+
+// func (a *AlphaAnimation) Tick(t float64) {
+// 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
+// }
+
 // ---------------------------------------------------------------------------
 
 type IntAnimation struct {
@@ -845,7 +868,7 @@ type PaletteFadeAnimation struct {
 	ValFunc PaletteFuncType
 }
 
-func NewPaletteFadeAnimation(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
+func NewPaletteFadeAnim(fader *PaletteFader, pal2 ColorSource, dur time.Duration) *PaletteFadeAnimation {
 	a := &PaletteFadeAnimation{}
 	a.NormAnimationEmbed.Extend(a)
 	a.SetDuration(dur)

@@ -121,21 +121,21 @@ func (p *GradientPalette) ColorStops() []ColorStop {
 }
 
 func intA(t float64) float64 {
-    return t
+	return t
 }
 
 func intB(t float64) float64 {
-    return 3.0*t*t - 2.0*t*t*t
+	return 3.0*t*t - 2.0*t*t*t
 }
 
 func intC(t float64) float64 {
-    a := 1.4
-    t1 := math.Pow(2, a-1.0)
-    if t <= 0.5 {
-        return t1 * math.Pow(t, a)
-    } else {
-        return 1.0 - t1 * math.Pow(1.0 - t, a)
-    }
+	a := 1.4
+	t1 := math.Pow(2, a-1.0)
+	if t <= 0.5 {
+		return t1 * math.Pow(t, a)
+	} else {
+		return 1.0 - t1*math.Pow(1.0-t, a)
+	}
 }
 
 // Hier nun spielt die Musik: aufgrund des Wertes t (muss im Intervall [0,1]
@@ -194,8 +194,8 @@ func (p *SlicePalette) Name() string {
 // existiert der Typ UniformPalette. Die Ueberlegungen dazu sind analog zum
 // Typ [image.Uniform].
 type UniformPalette struct {
-	color  colors.LedColor
-	name string
+	color colors.LedColor
+	name  string
 }
 
 // Erstellt eine neue einfarbige Farbquelle mit gegebenem namen.
@@ -233,8 +233,9 @@ func (p *UniformPalette) Set(x, y int, c colors.LedColor) {}
 // Mit diesem Typ kann ein fliessender Uebergang von einer Palette zu einer
 // anderen realisiert werden.
 type PaletteFader struct {
-	Pals [2]ColorSource
-	T    float64
+	Pals  [2]ColorSource
+	T     float64
+	alpha uint8
 }
 
 // Initialisiert wird der Fader mit der aktuell anzuzeigenden Palette. Der
@@ -244,6 +245,7 @@ func NewPaletteFader(pal ColorSource) *PaletteFader {
 	p.Pals[0] = pal
 	p.Pals[1] = nil
 	p.T = 0.0
+	p.alpha = 0xff
 	return p
 }
 
@@ -256,6 +258,7 @@ func (p *PaletteFader) Color(v float64) (c colors.LedColor) {
 		c2 := p.Pals[1].Color(v)
 		c = c.Interpolate(c2, p.T)
 	}
+	c.A = p.alpha
 	return c
 }
 
@@ -264,4 +267,8 @@ func (p *PaletteFader) Name() string {
 		return p.Pals[1].Name()
 	}
 	return p.Pals[0].Name()
+}
+
+func (p *PaletteFader) AlphaPtr() *uint8 {
+	return &p.alpha
 }

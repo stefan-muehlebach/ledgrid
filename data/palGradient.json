@@ -21,7 +21,8 @@
         "Title": "BackPinkBlue",
         "Colors": [
             "0xA60C5F",
-            "0x000080"
+            "0x000080",
+            "0xA60C5F"
         ]
     },
     {
@@ -29,7 +30,8 @@
         "Title": "BackYellowOrange",
         "Colors": [
             "0xA8A800",
-            "0xA11600"
+            "0xA11600",
+            "0xA8A800"
         ]
     },
     {
