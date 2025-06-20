@@ -270,7 +270,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 						buffer[i] = 0x00
 					}
 					ledIdx = 0
-					colorMode++
+					colorMode = (colorMode + 1) % NumColorModes
 				}
 				// case TestRed:
 				// 	for i := range numTestLeds {
