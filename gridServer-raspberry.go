@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/netip"
 	"net/rpc"
-	"time"
 
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
@@ -214,19 +213,20 @@ const (
 	YellowChain
 	MagentaChain
 	CyanChain
-	TestRed
-	TestGreen
-	TestBlue
-	TestYellow
-	TestMagenta
-	TestCyan
-	TestWhite
+	WhiteChain
+	// TestRed
+	// TestGreen
+	// TestBlue
+	// TestYellow
+	// TestMagenta
+	// TestCyan
+	// TestWhite
 	NumColorModes
 )
 
 func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
-	var colorValue byte
+	// var colorValue byte
 	var numTestLeds = p.Disp.NumLeds()
 	var ledIdx = 0
 	var testBufferSize = 3 * numTestLeds
@@ -242,23 +242,25 @@ func (p *GridServer) ToggleTestPattern() bool {
 	}
 
 	go func() {
-		colorValue = 0x00
+		// colorValue = 0x00
 		for p.drawTestPattern {
 			switch colorMode {
-			case RedChain, GreenChain, BlueChain, YellowChain, CyanChain, MagentaChain:
-                r, g, b := byte(0x00), byte(0x00), byte(0x00)
-                switch colorMode {
-                case RedChain, YellowChain, MagentaChain:
-                    r = 0xff
-                }
-                switch colorMode {
-                case GreenChain, YellowChain, CyanChain:
-                    g = 0xff
-                }
-                switch colorMode {
-                case BlueChain, CyanChain, MagentaChain:
-                    b = 0xff
-                }
+			case RedChain, GreenChain, BlueChain,
+				YellowChain, CyanChain, MagentaChain,
+				WhiteChain:
+				r, g, b := byte(0x00), byte(0x00), byte(0x00)
+				switch colorMode {
+				case RedChain, YellowChain, MagentaChain, WhiteChain:
+					r = 0xff
+				}
+				switch colorMode {
+				case GreenChain, YellowChain, CyanChain, WhiteChain:
+					g = 0xff
+				}
+				switch colorMode {
+				case BlueChain, CyanChain, MagentaChain, WhiteChain:
+					b = 0xff
+				}
 				buffer[3*ledIdx+0] = r
 				buffer[3*ledIdx+1] = g
 				buffer[3*ledIdx+2] = b
@@ -270,66 +272,66 @@ func (p *GridServer) ToggleTestPattern() bool {
 					ledIdx = 0
 					colorMode++
 				}
-			case TestRed:
-				for i := range numTestLeds {
-					buffer[3*i+0] = colorValue
-					buffer[3*i+1] = 0x00
-					buffer[3*i+2] = 0x00
-				}
-			case TestGreen:
-				for i := range numTestLeds {
-					buffer[3*i+0] = 0x00
-					buffer[3*i+1] = colorValue
-					buffer[3*i+2] = 0x00
-				}
-			case TestBlue:
-				for i := range numTestLeds {
-					buffer[3*i+0] = 0x00
-					buffer[3*i+1] = 0x00
-					buffer[3*i+2] = colorValue
-				}
-			case TestYellow:
-				for i := range numTestLeds {
-					buffer[3*i+0] = colorValue
-					buffer[3*i+1] = colorValue
-					buffer[3*i+2] = 0x00
-				}
-			case TestMagenta:
-				for i := range numTestLeds {
-					buffer[3*i+0] = colorValue
-					buffer[3*i+1] = 0x00
-					buffer[3*i+2] = colorValue
-				}
-			case TestCyan:
-				for i := range numTestLeds {
-					buffer[3*i+0] = 0x00
-					buffer[3*i+1] = colorValue
-					buffer[3*i+2] = colorValue
-				}
-			case TestWhite:
-				for i := range numTestLeds {
-					buffer[3*i+0] = colorValue
-					buffer[3*i+1] = colorValue
-					buffer[3*i+2] = colorValue
-				}
+				// case TestRed:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = colorValue
+				// 		buffer[3*i+1] = 0x00
+				// 		buffer[3*i+2] = 0x00
+				// 	}
+				// case TestGreen:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = 0x00
+				// 		buffer[3*i+1] = colorValue
+				// 		buffer[3*i+2] = 0x00
+				// 	}
+				// case TestBlue:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = 0x00
+				// 		buffer[3*i+1] = 0x00
+				// 		buffer[3*i+2] = colorValue
+				// 	}
+				// case TestYellow:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = colorValue
+				// 		buffer[3*i+1] = colorValue
+				// 		buffer[3*i+2] = 0x00
+				// 	}
+				// case TestMagenta:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = colorValue
+				// 		buffer[3*i+1] = 0x00
+				// 		buffer[3*i+2] = colorValue
+				// 	}
+				// case TestCyan:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = 0x00
+				// 		buffer[3*i+1] = colorValue
+				// 		buffer[3*i+2] = colorValue
+				// 	}
+				// case TestWhite:
+				// 	for i := range numTestLeds {
+				// 		buffer[3*i+0] = colorValue
+				// 		buffer[3*i+1] = colorValue
+				// 		buffer[3*i+2] = colorValue
+				// 	}
 			}
 
-			if colorMode >= TestRed && colorMode <= TestWhite {
-				if colorValue < 0xff {
-					colorValue = (colorValue << 1) | 1
-				} else {
-					colorValue = 0x00
-					colorMode = (colorMode + 1) % NumColorModes
-				}
-			}
+			// if colorMode >= TestRed && colorMode <= TestWhite {
+			// 	if colorValue < 0xff {
+			// 		colorValue = (colorValue << 1) | 1
+			// 	} else {
+			// 		colorValue = 0x00
+			// 		colorMode = (colorMode + 1) % NumColorModes
+			// 	}
+			// }
 			p.stopwatch.Start()
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
-			if colorMode < TestRed {
-				time.Sleep(5 * time.Millisecond)
-			} else {
-				time.Sleep(300 * time.Millisecond)
-			}
+			// if colorMode < TestRed {
+			// time.Sleep(5 * time.Millisecond)
+			// } else {
+			// 	time.Sleep(300 * time.Millisecond)
+			// }
 
 		}
 		for i := range testBufferSize {
