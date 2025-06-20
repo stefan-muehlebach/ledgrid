@@ -209,6 +209,8 @@ func (p *GridServer) SetPixelStatus(idx int, stat LedStatusType) {
 
 const (
 	RedChain = iota
+	GreenChain
+	BlueChain
 	TestRed
 	TestGreen
 	TestBlue
@@ -223,7 +225,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
 	var colorValue byte
 	var numTestLeds = p.Disp.NumLeds()
-    var ledIdx = 0
+	var ledIdx = 0
 	var testBufferSize = 3 * numTestLeds
 	var buffer []byte
 
@@ -241,13 +243,41 @@ func (p *GridServer) ToggleTestPattern() bool {
 		for p.drawTestPattern {
 			switch colorMode {
 			case RedChain:
-                buffer[3*ledIdx+0] = 0xff
-                buffer[3*ledIdx+1] = 0x00
-                buffer[3*ledIdx+2] = 0x00
-                ledIdx++
-                if ledIdx >= numTestLeds {
-                    colorMode++
-                }
+				buffer[3*ledIdx+0] = 0xff
+				buffer[3*ledIdx+1] = 0x00
+				buffer[3*ledIdx+2] = 0x00
+				ledIdx++
+				if ledIdx >= numTestLeds {
+					for i := range testBufferSize {
+						buffer[i] = 0x00
+					}
+					ledIdx = 0
+					colorMode++
+				}
+			case GreenChain:
+				buffer[3*ledIdx+0] = 0x00
+				buffer[3*ledIdx+1] = 0xff
+				buffer[3*ledIdx+2] = 0x00
+				ledIdx++
+				if ledIdx >= numTestLeds {
+					for i := range testBufferSize {
+						buffer[i] = 0x00
+					}
+					ledIdx = 0
+					colorMode++
+				}
+			case BlueChain:
+				buffer[3*ledIdx+0] = 0x00
+				buffer[3*ledIdx+1] = 0x00
+				buffer[3*ledIdx+2] = 0xff
+				ledIdx++
+				if ledIdx >= numTestLeds {
+					for i := range testBufferSize {
+						buffer[i] = 0x00
+					}
+					ledIdx = 0
+					colorMode++
+				}
 			case TestRed:
 				for i := range numTestLeds {
 					buffer[3*i+0] = colorValue
@@ -292,22 +322,22 @@ func (p *GridServer) ToggleTestPattern() bool {
 				}
 			}
 
-            if colorMode >= TestRed && colorMode <= TestWhite {
-        			if colorValue < 0xff {
-        				colorValue = (colorValue << 1) | 1
-        			} else {
-        				colorValue = 0x00
-        				colorMode = (colorMode + 1) % NumColorModes
-        			}
-            }
+			if colorMode >= TestRed && colorMode <= TestWhite {
+				if colorValue < 0xff {
+					colorValue = (colorValue << 1) | 1
+				} else {
+					colorValue = 0x00
+					colorMode = (colorMode + 1) % NumColorModes
+				}
+			}
 			p.stopwatch.Start()
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
-            if colorMode <= RedChain {
-			    time.Sleep(20 * time.Millisecond)
-            } else {
-			    time.Sleep(300 * time.Millisecond)
-            }
+			if colorMode <= RedChain {
+				time.Sleep(20 * time.Millisecond)
+			} else {
+				time.Sleep(300 * time.Millisecond)
+			}
 
 		}
 		for i := range testBufferSize {
