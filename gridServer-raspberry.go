@@ -328,7 +328,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
 			// if colorMode < TestRed {
-			time.Sleep(5 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 			// } else {
 			// 	time.Sleep(300 * time.Millisecond)
 			// }
