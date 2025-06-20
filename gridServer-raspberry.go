@@ -233,7 +233,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 		return false
 	} else {
 		p.drawTestPattern = true
-		colorMode = TestRed
+		colorMode = RedChain
 	}
 
 	go func() {
