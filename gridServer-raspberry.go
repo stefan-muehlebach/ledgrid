@@ -333,8 +333,8 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.stopwatch.Start()
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
-			if colorMode <= RedChain {
-				time.Sleep(20 * time.Millisecond)
+			if colorMode < TestRed {
+				time.Sleep(10 * time.Millisecond)
 			} else {
 				time.Sleep(300 * time.Millisecond)
 			}
