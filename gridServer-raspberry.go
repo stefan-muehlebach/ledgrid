@@ -209,25 +209,17 @@ func (p *GridServer) SetPixelStatus(idx int, stat LedStatusType) {
 
 const (
 	RedChain = iota
-	GreenChain
-	BlueChain
 	YellowChain
-	MagentaChain
+	GreenChain
 	CyanChain
+	BlueChain
+	MagentaChain
 	WhiteChain
-	// TestRed
-	// TestGreen
-	// TestBlue
-	// TestYellow
-	// TestMagenta
-	// TestCyan
-	// TestWhite
 	NumColorModes
 )
 
 func (p *GridServer) ToggleTestPattern() bool {
 	var colorMode int
-	// var colorValue byte
 	var numTestLeds = p.Disp.NumLeds()
 	var ledIdx = 0
 	var testBufferSize = 3 * numTestLeds
@@ -243,7 +235,6 @@ func (p *GridServer) ToggleTestPattern() bool {
 	}
 
 	go func() {
-		// colorValue = 0x00
 		for p.drawTestPattern {
 			switch colorMode {
 			case RedChain, GreenChain, BlueChain,
@@ -273,67 +264,13 @@ func (p *GridServer) ToggleTestPattern() bool {
 					ledIdx = 0
 					colorMode = (colorMode + 1) % NumColorModes
 				}
-				// case TestRed:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = colorValue
-				// 		buffer[3*i+1] = 0x00
-				// 		buffer[3*i+2] = 0x00
-				// 	}
-				// case TestGreen:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = 0x00
-				// 		buffer[3*i+1] = colorValue
-				// 		buffer[3*i+2] = 0x00
-				// 	}
-				// case TestBlue:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = 0x00
-				// 		buffer[3*i+1] = 0x00
-				// 		buffer[3*i+2] = colorValue
-				// 	}
-				// case TestYellow:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = colorValue
-				// 		buffer[3*i+1] = colorValue
-				// 		buffer[3*i+2] = 0x00
-				// 	}
-				// case TestMagenta:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = colorValue
-				// 		buffer[3*i+1] = 0x00
-				// 		buffer[3*i+2] = colorValue
-				// 	}
-				// case TestCyan:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = 0x00
-				// 		buffer[3*i+1] = colorValue
-				// 		buffer[3*i+2] = colorValue
-				// 	}
-				// case TestWhite:
-				// 	for i := range numTestLeds {
-				// 		buffer[3*i+0] = colorValue
-				// 		buffer[3*i+1] = colorValue
-				// 		buffer[3*i+2] = colorValue
-				// 	}
 			}
 
-			// if colorMode >= TestRed && colorMode <= TestWhite {
-			// 	if colorValue < 0xff {
-			// 		colorValue = (colorValue << 1) | 1
-			// 	} else {
-			// 		colorValue = 0x00
-			// 		colorMode = (colorMode + 1) % NumColorModes
-			// 	}
-			// }
 			p.stopwatch.Start()
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
-			// if colorMode < TestRed {
-			time.Sleep(10 * time.Millisecond)
-			// } else {
-			// 	time.Sleep(300 * time.Millisecond)
-			// }
 
+			time.Sleep(10 * time.Millisecond)
 		}
 		for i := range testBufferSize {
 			buffer[i] = 0x00

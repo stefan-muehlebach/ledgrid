@@ -85,16 +85,27 @@ func (e *Window) HandleEvents() {
 				return
 
 			case *sdl.KeyboardEvent:
+				if evt.Type != sdl.KEYDOWN {
+					continue
+				}
 				// fmt.Printf("    in KeyboardEvent\n")
+				// fmt.Printf("    %+v\n", evt)
 				switch evt.Keysym.Sym {
 				case sdl.K_ESCAPE, sdl.K_q:
 					return
 
+				case sdl.K_t:
+					ToggleTests()
+				case sdl.K_s:
+					PrintStatistics()
+
 				case sdl.K_h:
-					println("Key commands\n")
-					println("-----------------\n")
-					println("h     : This help\n")
-					println("q/ESC : Quit\n")
+					println("Key commands")
+					println("-----------------")
+					println("h     : This help")
+					println("t     : Run test programs")
+					println("s     : Show statistics")
+					println("q/ESC : Quit")
 				}
 
 			case *sdl.MouseMotionEvent:

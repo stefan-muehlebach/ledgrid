@@ -34,6 +34,15 @@ var (
 	message = "Stefan und Benedict haben sich entschieden"
 )
 
+// Hilfsfunktioenchen (sogar generisch!)
+func abs[T ~int | ~float64](i T) T {
+	if i < 0 {
+		return -i
+	} else {
+		return i
+	}
+}
+
 func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
     	dur := 3 * time.Second
@@ -100,11 +109,17 @@ func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 
 	min := geom.Point{0, 0}
 	max := geom.Point{float64(width / 2), float64(height)}
-	dp := geom.Point{20, 0}
+    sz := max.Sub(min)
+    t := sz.X
+    if sz.Y > t {
+        t = sz.Y
+    }
+    t += 2.5
+	dp := geom.Point{float64(width / 2), 0}
 	for i, pos := range posList {
 		pixSeq := ledgrid.NewSequence()
-		t1 := pos.Distance(min) / 22.5
-		t2 := pos.Distance(max) / 22.5
+		t1 := pos.Distance(min) / t
+		t2 := pos.Distance(max) / t
 		dest := posList[permList[i]].Add(dp)
 		dot := ledgrid.NewDot(pos, colors.LedColor{uint8(255 * t1 * t2), uint8(255 * (1 - t1)), uint8(255 * (1 - t2)), 0xFF})
 		c.Add(dot)

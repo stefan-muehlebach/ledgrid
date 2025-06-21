@@ -22,7 +22,7 @@ func ResetStatistics(gridServer *ledgrid.GridServer) {
 	gridServer.SentBytes = 0
 }
 
-func PrintStatistics(gridServer *ledgrid.GridServer) {
+func PrintStatistics() {
 	log.Printf("Emulator statistics:")
 	log.Printf("   %v", gridServer.Stopwatch())
 	log.Printf("   %d bytes received by the controller", gridServer.RecvBytes)
@@ -33,7 +33,7 @@ func PrintStatistics(gridServer *ledgrid.GridServer) {
 	log.Printf("Current settings for max values (brightness):")
 }
 
-func ToggleTests(gridServer *ledgrid.GridServer) {
+func ToggleTests() {
 	if gridServer.ToggleTestPattern() {
 		log.Printf("Drawing test pattern is ON now.")
 	} else {

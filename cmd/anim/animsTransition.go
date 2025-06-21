@@ -48,44 +48,31 @@ func FadeCanvases(ctx context.Context, c1 *ledgrid.Canvas) {
 }
 
 func WipeTrans(ctx context.Context, c1 *ledgrid.Canvas) {
-	c2, _ := ledGrid.NewCanvas()
+	// c2, _ := ledGrid.NewCanvas()
 
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
 	cam := NewCamera(pos, size)
-	c2.Add(cam)
+	c1.Add(cam)
 	cam.Start()
 
-	wiper1 := ledgrid.NewWipeTransition(c1, ledgrid.WipeL2R, ledgrid.WipeIn, 3*time.Second)
+	// img1 := ledgrid.NewImage(pos, "images/img02.png")
+	// c1.Add(img1)
+
+
+	wiper1 := ledgrid.NewWipeTransition(c1, ledgrid.WipeR2L, ledgrid.WipeIn, 3*time.Second)
 	wiper1.AutoReverse = true
-	wiper1.RepeatCount = 1
-	wiper2 := ledgrid.NewWipeTransition(c1, ledgrid.WipeL2R, ledgrid.WipeOut, 3*time.Second)
+	wiper2 := ledgrid.NewWipeTransition(c1, ledgrid.WipeL2R, ledgrid.WipeIn, 3*time.Second)
 	wiper2.AutoReverse = true
-	wiper2.RepeatCount = 1
-	wiper3 := ledgrid.NewWipeTransition(c1, ledgrid.WipeR2L, ledgrid.WipeIn, 3*time.Second)
-	wiper3.AutoReverse = true
-	wiper3.RepeatCount = 1
-	wiper4 := ledgrid.NewWipeTransition(c1, ledgrid.WipeR2L, ledgrid.WipeOut, 3*time.Second)
-	wiper4.AutoReverse = true
-	wiper4.RepeatCount = 1
-	wiper5 := ledgrid.NewWipeTransition(c1, ledgrid.WipeT2B, ledgrid.WipeIn, 3*time.Second)
-	wiper5.AutoReverse = true
-	wiper5.RepeatCount = 1
-	wiper6 := ledgrid.NewWipeTransition(c1, ledgrid.WipeT2B, ledgrid.WipeOut, 3*time.Second)
-	wiper6.AutoReverse = true
-	wiper6.RepeatCount = 1
-	wiper7 := ledgrid.NewWipeTransition(c1, ledgrid.WipeB2T, ledgrid.WipeIn, 3*time.Second)
-	wiper7.AutoReverse = true
-	wiper7.RepeatCount = 1
-	wiper8 := ledgrid.NewWipeTransition(c1, ledgrid.WipeB2T, ledgrid.WipeOut, 3*time.Second)
-	wiper8.AutoReverse = true
-	wiper8.RepeatCount = 1
+	// wiper5 := ledgrid.NewWipeTransition(c1, ledgrid.WipeT2B, ledgrid.WipeIn, 3*time.Second)
+	// wiper5.AutoReverse = true
+	// wiper7 := ledgrid.NewWipeTransition(c1, ledgrid.WipeB2T, ledgrid.WipeIn, 3*time.Second)
+	// wiper7.AutoReverse = true
 
-    seq := ledgrid.NewSequence(wiper1, wiper2, wiper3, wiper4, wiper5, wiper6, wiper7, wiper8)
+    seq := ledgrid.NewSequence(wiper1, wiper2) //, wiper3, wiper5, wiper7)
+    seq.RepeatCount = ledgrid.AnimationRepeatForever
 
-	img1 := ledgrid.NewImage(pos, "images/img02.png")
-	c1.Add(img1)
 
 	seq.Start()
 }
