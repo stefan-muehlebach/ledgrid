@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/stefan-muehlebach/gg/fonts"
 	"bufio"
 	"context"
+	"fmt"
 	"image"
 	"log"
 	"math"
@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/colors"
@@ -316,6 +317,9 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 			aColorPal.AutoReverse = true
 			aColorPal.Curve = ledgrid.AnimationLinear
 			aColorPal.Pos = rand.Float64() / 4.0
+            if y == 0 && x == 0 {
+				fmt.Printf("Pos: %f\n", aColorPal.Pos)
+			}
 
 			aColorSeq := ledgrid.NewSequence(aColorPal)
 			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever

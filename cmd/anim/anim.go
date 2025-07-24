@@ -43,11 +43,6 @@ func (pl *ProgramList) Add(name, group string, startFunc StartFunc) {
 	*pl = append(*pl, prog)
 }
 
-// func (pl *ProgramList) AddTitle(name string) {
-// 	title := NewTitle(name)
-// 	*pl = append(*pl, title)
-// }
-
 type LedGridProgram interface {
 	Name() string
 	Group() string
@@ -62,10 +57,6 @@ func NewProgram(name, group string, startFunc StartFunc) LedGridProgram {
 		startFunc: startFunc,
 	}
 }
-
-// func NewTitle(name string) LedGridProgram {
-// 	return &groupTitle{name: name}
-// }
 
 type simpleProgram struct {
 	name, group string
@@ -93,18 +84,6 @@ func (p *simpleProgram) Stop() {
 	fmt.Printf("Stop(): context is stopped\n")
 }
 
-// type groupTitle struct {
-// 	name string
-// }
-
-// func (g *groupTitle) Name() string {
-// 	return g.name
-// }
-
-// func (g *groupTitle) Start(ctx context.Context, c *ledgrid.Canvas) {}
-
-// func (g *groupTitle) Stop() {}
-
 // ---------------------------------------------------------------------------
 
 func SignalHandler(timeout time.Duration) {
@@ -131,6 +110,7 @@ func main() {
 	var dataPort, rpcPort uint
 	var useTCP bool
 	var network string
+	var progChar string
 	var input string
 	var ch byte
 	var progId, prevProgId int
@@ -162,16 +142,16 @@ func main() {
 	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
-	flag.StringVar(&input, "prog", input, "Play one single program"+progList)
+	flag.StringVar(&progChar, "prog", progChar, "Play one single program"+progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
 
 	StartProfiling()
 	defer StopProfiling()
 
-	if len(input) > 0 {
+	if len(progChar) > 0 {
 		runInteractive = false
-		ch = input[0]
+		ch = progChar[0]
 	} else {
 		runInteractive = true
 	}
@@ -295,8 +275,6 @@ func main() {
 			programList[progId].Start(context.Background(), canvas)
 		}
 		fmt.Printf("Quit by Ctrl-C\n")
-		fmt.Scanf("%s\n", &input)
-		fmt.Printf("Zu weit...\n")
 		SignalHandler(timeout)
 		programList[progId].Stop()
 	}
