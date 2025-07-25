@@ -22,7 +22,7 @@ func init() {
 	programList.Add("Clock Animation", "Text", ClockAnimation)
 	programList.Add("Countdown (Rectangle)", "Text", RectangleCountdown)
 	programList.Add("Countdown (Glowing)", "Text", GlowingCountdown)
-	// programList.Add("Zollweg Biel", "Text", ZollwegBiel)
+	programList.Add("Punktestand", "Text", BoredScores)
 }
 
 func f2f(x float64) fixed.Int26_6 {
@@ -193,37 +193,6 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 
 }
 
-// var (
-// 	wordList = []string{
-// 		"Stefan", "und", "Beni", "haben", "sich", "entschieden",
-// 	}
-// )
-
-// func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
-// 	wordIndex := 0
-// 	txt := ledgrid.NewText(geom.Point{float64(width)/2.0, float64(height)/2.0},
-//         wordList[wordIndex], colors.Crimson)
-// 	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
-// 	// txt.Angle = math.Pi
-
-// 	c.Add(txt)
-
-// 	angleAnim := ledgrid.NewAngleAnim(txt, -2*math.Pi, 5*time.Second)
-//     // angleAnim.Cont = false
-// 	angleAnim.Curve = ledgrid.AnimationLinear
-
-// 	animSeq := ledgrid.NewSequence(
-// 		angleAnim,
-// 		ledgrid.NewTask(func() {
-// 			wordIndex = (wordIndex + 1) % len(wordList)
-// 			txt.Text = wordList[wordIndex]
-// 		}),
-// 	)
-// 	animSeq.RepeatCount = ledgrid.AnimationRepeatForever
-
-// 	animSeq.Start()
-// }
-
 func MovingText(ctx context.Context, c *ledgrid.Canvas) {
 	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", colors.LightSeaGreen)
 	t1.SetAlign(ledgrid.AlignLeft)
@@ -347,4 +316,32 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	timeLine.RepeatCount = ledgrid.AnimationRepeatForever
 
 	timeLine.Start()
+}
+
+func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
+    var a, b int
+	var scoreA, scoreB *ledgrid.FixedText
+
+	posA := p2p(1.0, 9.0)
+    posB := p2p(31.0, 9.0)
+	scoreA = ledgrid.NewFixedText(posA, "0", colors.MediumSeaGreen)
+    scoreA.SetFont(ledgrid.Lightdot8x8)
+	scoreB = ledgrid.NewFixedText(posB, "0", colors.MediumSeaGreen)
+    scoreB.SetFont(ledgrid.Lightdot6x8)
+	c.Add(scoreA, scoreB)
+
+    a, b = 0, 0
+    	timeLine1 := ledgrid.NewTimeline(time.Second)
+	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
+	timeLine1.Add(0, ledgrid.NewTask(func() {
+		txtA := fmt.Sprintf("%d", a)
+        txtB := fmt.Sprintf("%d", b)
+		scoreA.SetText(txtA)
+		scoreB.SetText(txtB)
+        a, b = (a+1)%10, (b+1)%10
+	}))
+
+	timeLine1.Start()
+
+
 }

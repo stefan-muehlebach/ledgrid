@@ -114,9 +114,9 @@ func main() {
 	var input string
 	var ch byte
 	var progId, prevProgId int
-	var runInteractive bool
+	// var runInteractive bool
 	var progList string
-	var gR, gG, gB float64
+	// var gR, gG, gB float64
 	var modConf conf.ModuleConfig
 	var timeout time.Duration
 	var outFile string
@@ -142,19 +142,13 @@ func main() {
 	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
-	flag.StringVar(&progChar, "prog", progChar, "Play one single program"+progList)
+	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
 
 	StartProfiling()
 	defer StopProfiling()
 
-	if len(progChar) > 0 {
-		runInteractive = false
-		ch = progChar[0]
-	} else {
-		runInteractive = true
-	}
 	if useTCP {
 		network = "tcp"
 	} else {
@@ -168,7 +162,7 @@ func main() {
 	}
 	modConf = gridClient.ModuleConfig()
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
-	gR, gG, gB = ledGrid.Client.Gamma()
+	// gR, gG, gB = ledGrid.Client.Gamma()
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X
@@ -180,8 +174,12 @@ func main() {
 	ledGrid.StartRefresh()
 
 	progId, prevProgId = -1, -1
-	if runInteractive {
-		for {
+
+	for {
+		if len(progChar) > 0 {
+            time.Sleep(500 * time.Millisecond)
+			ch = progChar[0]
+		} else {
 			fmt.Printf("---------------------------------------------------------------------\n")
 			fmt.Printf("  Program\n")
 			fmt.Printf("---------------------------------------------------------------------\n")
@@ -203,60 +201,20 @@ func main() {
 				fmt.Printf("[%c] %s\n", id, prog.Name())
 			}
 			fmt.Printf("---------------------------------------------------------------------\n")
-			fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
-			fmt.Printf("   +/-: increase/decreases by 0.1\n")
-			fmt.Printf("---------------------------------------------------------------------\n")
+			// fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
+			// fmt.Printf("   +/-: increase/decreases by 0.1\n")
+			// fmt.Printf("---------------------------------------------------------------------\n")
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
 
 			fmt.Scanf("%s\n", &input)
 			ch = input[0]
-			if ch == '0' {
-				break
-			}
-
-			if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
-				id := -1
-				if ch >= 'a' {
-					id = int(ch - 'a')
-				} else {
-					id = int(ch - 'A' + 26)
-				}
-				if id < 0 || id >= len(programList) {
-					continue
-				}
-				progId = id
-
-				if prevProgId != -1 {
-					fmt.Printf("Program statistics:\n")
-					fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
-					fmt.Printf("  painting : %v\n", canvas.Stopwatch())
-					fmt.Printf("  sending  : %v\n", ledGrid.Client.Stopwatch())
-					programList[prevProgId].Stop()
-				}
-				ledGrid.Reset()
-				ledgrid.AnimCtrl.Stopwatch().Reset()
-				canvas.Stopwatch().Reset()
-				ledGrid.Client.Stopwatch().Reset()
-				programList[progId].Start(context.Background(), canvas)
-				prevProgId = progId
-			}
-			if ch == '+' {
-				gR += 0.1
-				gG += 0.1
-				gB += 0.1
-				ledGrid.Client.SetGamma(gR, gG, gB)
-			}
-			if ch == '-' {
-				if gR > 0.1 {
-					gR -= 0.1
-					gG -= 0.1
-					gB -= 0.1
-					ledGrid.Client.SetGamma(gR, gG, gB)
-				}
-			}
 		}
-	} else {
+
+		if ch == '0' {
+			break
+		}
+
 		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
 			id := -1
 			if ch >= 'a' {
@@ -265,18 +223,31 @@ func main() {
 				id = int(ch - 'A' + 26)
 			}
 			if id < 0 || id >= len(programList) {
-				return
+				break
 			}
 			progId = id
+
+			if prevProgId != -1 {
+				fmt.Printf("Program statistics:\n")
+				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
+				fmt.Printf("  painting : %v\n", canvas.Stopwatch())
+				fmt.Printf("  sending  : %v\n", ledGrid.Client.Stopwatch())
+				programList[prevProgId].Stop()
+			}
 			ledGrid.Reset()
 			ledgrid.AnimCtrl.Stopwatch().Reset()
 			canvas.Stopwatch().Reset()
 			ledGrid.Client.Stopwatch().Reset()
 			programList[progId].Start(context.Background(), canvas)
+			prevProgId = progId
+
+			if len(progChar) > 0 {
+				fmt.Printf("Quit by Ctrl-C\n")
+				SignalHandler(timeout)
+				programList[progId].Stop()
+				break
+			}
 		}
-		fmt.Printf("Quit by Ctrl-C\n")
-		SignalHandler(timeout)
-		programList[progId].Stop()
 	}
 
 	ledgrid.AnimCtrl.Suspend()

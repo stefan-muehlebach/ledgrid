@@ -18,31 +18,26 @@ const (
 	numGlyphs = 95
 )
 
-// In this slice, we specify what glyphs the fonts contains data for.
-// Currently both base fonts (Pico3x5 and Fixed5x7) have data for alle
-// printable characters in the ascii table, i.e. from 0x20 (' ') up to
-// 0x7e ('~').
-var glyphRangeFull = []basicfont.Range{
+var (
 	// ' ' ! " # $ % & ' ( ) * + , - . /  (16 Glyphs)
-	{'\u0020', '\u0030', 0},
+    // glyphRangeMarks1 = basicfont.Range{'\u0020', '\u0030', 0}
 	// '0'-'9'                            (10 Glyphs: the decimal digits)
-	{'\u0030', '\u003a', 16},
+	// glyphRangeDigits = basicfont.Range{'\u0030', '\u003a', 16}
 	// ':' ';' '<' '=' '>' '?' '@'        (7 Glyphs)
-	{'\u003a', '\u0041', 26},
+	// glyphRangeMarks2 = basicfont.Range{'\u003a', '\u0041', 26}
 	// 'A'-'Z'                            (26 Glyphs: lowercase characters)
-	{'\u0041', '\u005b', 33},
+	// glyphRangeUpper = basicfont.Range{'\u0041', '\u005b', 33}
 	// '[' '\' ']' '^' '_' '`'            (6 Glyphs)
-	{'\u005b', '\u0061', 59},
+	// glyphRangeMarks3 = basicfont.Range{'\u005b', '\u0061', 59}
 	// 'a'-'z'                            (26 Glyphs: uppercase characters)
-	{'\u0061', '\u007b', 65},
+	// glyphRangeLower = basicfont.Range{'\u0061', '\u007b', 65}
 	// '{' '|' '}' '~'                    (4 Glyphs)
-	{'\u007b', '\u007f', 91},
-}
+	// glyphRangeMarks4 = basicfont.Range{'\u007b', '\u007f', 91}
 
-var glyphRangeDigits = []basicfont.Range{
-	// '0'-'9'                            (10 Glyphs: the decimal digits)
-	{'\u0030', '\u003a', 0},
-}
+    glyphRangeFull = []basicfont.Range{
+        {'\u0020', '\u007f', 0},
+    }
+)
 
 // This function can be used to produce a new fixed font by scaling an existing
 // fixed font. Scaling factors can only be positive integers. The new font
