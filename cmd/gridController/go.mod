@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid/cmd/gridController
 
-go 1.24.4
+go 1.24.5
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 

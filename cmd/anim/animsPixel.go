@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"image"
 	"log"
 	"math"
@@ -46,7 +45,7 @@ func abs[T ~int | ~float64](i T) T {
 
 func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
-    	dur := 3 * time.Second
+	dur := 3 * time.Second
 	pal := ledgrid.PaletteMap["BackYellowBlue"]
 
 	wordList := strings.Split(message, " ")
@@ -70,13 +69,13 @@ func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
 		}
 	}
 
-	pt := geom.Point{float64(width)/2, float64(height)-1.0}
+	pt := geom.Point{float64(width) / 2, float64(height) - 1.0}
 	ptStart := pt.Add(geom.Point{float64(width), 0})
 	ptEnd := pt.Sub(geom.Point{float64(width), 0})
 
 	txt := ledgrid.NewText(pt, "", colors.FireBrick)
-    txt.SetFont(fonts.SeafordBold, 10.5)
-    txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignBottom)
+	txt.SetFont(fonts.SeafordBold, 10.5)
+	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignBottom)
 	c.Add(txt)
 
 	txtLeave := ledgrid.NewPositionAnim(txt, ptEnd, 2*time.Second)
@@ -85,12 +84,12 @@ func ZollwegBiel(ctx context.Context, c *ledgrid.Canvas) {
 	txtEnter.Curve = ledgrid.AnimationEaseOut
 	txtNewText := ledgrid.NewTask(func() {
 		txt.Text = wordList[wordIndex]
-    		wordIndex = (wordIndex + 1) % len(wordList)
+		wordIndex = (wordIndex + 1) % len(wordList)
 		txt.Pos = ptStart
 	})
-	txtChange := ledgrid.NewSequence(/*ledgrid.NewDelay(50 * time.Millisecond),*/
-        txtLeave, txtNewText, txtEnter)
-    txtChange.RepeatCount = ledgrid.AnimationRepeatForever
+	txtChange := ledgrid.NewSequence( /*ledgrid.NewDelay(50 * time.Millisecond),*/
+		txtLeave, txtNewText, txtEnter)
+	txtChange.RepeatCount = ledgrid.AnimationRepeatForever
 
 	txtChange.Start()
 	aGrpLedColor.Start()
@@ -110,12 +109,12 @@ func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 
 	min := geom.Point{0, 0}
 	max := geom.Point{float64(width / 2), float64(height)}
-    sz := max.Sub(min)
-    t := sz.X
-    if sz.Y > t {
-        t = sz.Y
-    }
-    t += 2.5
+	sz := max.Sub(min)
+	t := sz.X
+	if sz.Y > t {
+		t = sz.Y
+	}
+	t += 2.5
 	dp := geom.Point{float64(width / 2), 0}
 	for i, pos := range posList {
 		pixSeq := ledgrid.NewSequence()
@@ -303,8 +302,8 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 
 func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
-	dur := 3 * time.Second
-	pal := ledgrid.PaletteMap["Viridis"]
+	dur := 15 * time.Second
+	pal := ledgrid.PaletteMap["ParulaBig"]
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -316,11 +315,7 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
 			aColorPal.AutoReverse = true
 			aColorPal.Curve = ledgrid.AnimationLinear
-			aColorPal.Pos = rand.Float64() / 4.0
-            if y == 0 && x == 0 {
-				fmt.Printf("Pos: %f\n", aColorPal.Pos)
-			}
-
+			aColorPal.Pos = rand.Float64() / 6.0
 			aColorSeq := ledgrid.NewSequence(aColorPal)
 			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aGrpLedColor.Add(aColorSeq)
