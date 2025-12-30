@@ -1,3 +1,4 @@
+//go:build cameraOpenCV || cameraV4L2
 package main
 
 import (

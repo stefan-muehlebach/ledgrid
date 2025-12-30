@@ -69,14 +69,14 @@ var (
 )
 
 func init() {
-	axesFontFace = fonts.NewFace(AxesTextFont, AxesTextSize)
-	moduleFontFace = fonts.NewFace(ModuleTextFont, ModuleTextSize)
+	axesFontFace, _ = fonts.NewFace(AxesTextFont, AxesTextSize)
+	moduleFontFace, _ = fonts.NewFace(ModuleTextFont, ModuleTextSize)
 	size := LedTextSize
 	for i := range ledFontFaces {
 		if i >= 3 {
 			size *= sizeFact
 		}
-		ledFontFaces[i] = fonts.NewFace(LedTextFont, size)
+		ledFontFaces[i], _ = fonts.NewFace(LedTextFont, size)
 	}
 	pTL = geom.Point{-ModuleSize / 2.0, -ModuleSize / 2.0}
 	pTR = pTL.AddXY(ModuleSize, 0.0)

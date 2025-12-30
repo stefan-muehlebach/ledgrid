@@ -24,18 +24,31 @@ const (
 	KEY_CRIGHT    = 0x231 /* Ctrl-right arrow */
 	KEY_CUP       = 0x237 /* Ctrl-up arrow */
 	KEY_CDOWN     = 0x20e /* Ctrl-down arrow */
-	KEY_ALEFT     = 0x228 /* Alt-left arrow */
-	KEY_ARIGHT    = 0x237 /* Alt-right arrow */
-	KEY_AUP       = 0x23d /* Alt-up arrow */
-	KEY_ADOWN     = 0x214 /* Alt-down arrow */
-	KEY_AINS      = 0x223 /* Alt-Insert */
-	KEY_ADEL      = 0x20e /* Alt-Delete */
-	KEY_AHOME     = 0x21e /* Alt-Home */
-	KEY_AEND      = 0x219 /* Alt-End */
-	KEY_APAGEUP   = 0x232 /* Alt-PageUp */
-	KEY_APAGEDOWN = 0x22d /* Alt-PageDown */
+
+	KEY_ADOWN     = 0x20c /* Alt-down arrow */
+	KEY_AUP       = 0x235 /* Alt-up arrow */
+	KEY_ALEFT     = 0x220 /* Alt-left arrow */
+	KEY_ARIGHT    = 0x22f /* Alt-right arrow */
+	KEY_AINS      = 0x21b /* Alt-Insert */
+	KEY_ADEL      = 0x206 /* Alt-Delete */
+	KEY_AHOME     = 0x216 /* Alt-Home */
+	KEY_AEND      = 0x211 /* Alt-End */
+	KEY_APAGEUP   = 0x22a /* Alt-PageUp */
+	KEY_APAGEDOWN = 0x225 /* Alt-PageDown */
+
+	// KEY_ALEFT     = 0x228 /* Alt-left arrow */
+	// KEY_ARIGHT    = 0x237 /* Alt-right arrow */
+	// KEY_AUP       = 0x23d /* Alt-up arrow */
+	// KEY_ADOWN     = 0x214 /* Alt-down arrow */
+	// KEY_AINS      = 0x223 /* Alt-Insert */
+	// KEY_ADEL      = 0x20e /* Alt-Delete */
+	// KEY_AHOME     = 0x21e /* Alt-Home */
+	// KEY_AEND      = 0x219 /* Alt-End */
+	// KEY_APAGEUP   = 0x232 /* Alt-PageUp */
+	// KEY_APAGEDOWN = 0x22d /* Alt-PageDown */
 )
 
+//go:inline
 func Ctrl(x gc.Key) gc.Key {
 	return x & 0x1f
 }
@@ -45,6 +58,11 @@ func between(x, a, b int) bool {
 		a, b = b, a
 	}
 	return x >= a && x <= b
+}
+
+//go:inline
+func toM(v uint8) int16 {
+    return int16(float64(v) * 1000.0 / 255.0)
 }
 
 func LogMouseEvent(log *os.File, event *gc.MouseEvent) {
@@ -202,7 +220,6 @@ func main() {
 	// cyan := int16(6)
 	white := int16(7)
 
-	toM := func(v uint8) int16 { return int16(float64(v) * 1000.0 / 255.0) }
 
 	// Setup dark colors (R, G, B)
 	dark := func(colIdx int16) int16 { return 16 + colIdx }
@@ -295,12 +312,12 @@ func main() {
 	winHelp.MovePrintf(9, 2, "[Ctrl]-a        : Select all pixels")
 	winHelp.MovePrintf(10, 2, "[Ctrl]-c/x/v    : Copy/Cut/Paste selected pixels")
 	winHelp.MovePrintf(11, 2, "[Backspace]     : Clear selected pixels")
-	winHelp.MovePrintf(12, 2, "F               : Interpolate over selected range")
+	winHelp.MovePrintf(12, 2, "[Ctrl]-f        : Interpolate over selected range")
 	winHelp.MovePrintf(13, 2, "0-9a-f          : Enter new hex value for selected pixel")
 	winHelp.MovePrintf(14, 2, "g/G             : Decrease/increase gamma values by 0.1")
-	winHelp.MovePrintf(15, 2, "i               : Invert selected pixels")
+	winHelp.MovePrintf(15, 2, "[Ctrl]-i        : Invert selected pixels")
 	winHelp.MovePrintf(16, 2, "+/-             : Darken/Brighten selected pixels")
-	winHelp.MovePrintf(17, 2, "[Ctrl]-l/s      : Load/Save pixel data from/to file 'ledgrid.png'")
+	winHelp.MovePrintf(17, 2, "[Ctrl]-o/s      : Open/Save pixel data from/to file 'ledgrid.png'")
 	winHelp.MovePrintf(18, 2, "[Ctrl]-p        : Toggle palette mode on/off")
 	winHelp.MovePrintf(19, 2, "q               : Quit")
 
@@ -441,7 +458,10 @@ main:
 			rowOff, colOff := 3, 9
 
 			me := gc.GetMouse()
-			// LogMouseEvent(logFile, me)
+            if me == nil {
+                break
+            }
+			LogMouseEvent(logFile, me)
 			if me.State&gc.M_B1_CLICKED != 0 {
 				if !between(me.Y, gridYMin+rowOff, gridYMin+rowOff+10-1) ||
 					!between(me.X, gridXMin+colOff, gridXMin+colOff+40*7-2) {
@@ -465,7 +485,7 @@ main:
 			curRow, selRow = 0, 0
 			redrawGrid = true
 
-		case 'F':
+		case Ctrl('F'):
 			if selRect.Dy() > 2 {
 				col := selRect.Min.X
 				color0 := ledGrid.LedColorAt(col, selRect.Min.Y)
@@ -511,7 +531,7 @@ main:
 			ledGrid.Client.SetGamma(gammaValues[0], gammaValues[1], gammaValues[2])
 			ledGrid.Client.Send(ledGrid.Pix)
 
-		case 'i':
+		case Ctrl('i'):
 			for row := selRect.Min.Y; row < selRect.Max.Y; row++ {
 				for col := selRect.Min.X; col < selRect.Max.X; col++ {
 					c := ledGrid.LedColorAt(col, row)

@@ -14,7 +14,7 @@ import (
 // NeoPixeln mit WS2801 via SPI-Bus auf einem RaspberryPi ansteuert.
 type WS2801 struct {
 	DisplayEmbed
-	spi machine.SPI
+	spi *machine.SPI
 }
 
 // Erstellt eine neue Instanz. spiDev ist das Device-File des SPI-Buses, baud

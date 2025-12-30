@@ -9,17 +9,17 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 	"golang.org/x/image/math/fixed"
 )
 
 var (
-	colorList = [][]color.LedColor{
-		{color.NewLedColorHex(0xb9b90a), color.NewLedColorHex(0x0a5853)}, // Yellow to LightBlue
-		{color.NewLedColorHex(0xa60c5f), color.NewLedColorHex(0x000080)}, // DeepPink to DarkBlue
-		{color.NewLedColorHex(0x959500), color.NewLedColorHex(0x710e00)}, // Yellow to OrangeRed
-		{color.NewLedColorHex(0x007400), color.NewLedColorHex(0x9a2222)}, // DarkGreen to DarkRed
-		{color.NewLedColorHex(0x814124), color.NewLedColorHex(0x4c8baa)}, // Salmon to LightBlue
+	colorList = [][]colors.LedColor{
+		{colors.LedColor{R: 0xb9, G: 0xb9, B: 0x0a}, colors.LedColor{R: 0x0a, G: 0x58, B: 0x53}}, // Yellow to LightBlue
+		{colors.LedColor{R: 0xa6, G: 0x0c, B: 0x5f}, colors.LedColor{R: 0x00, G: 0x00, B: 0x80}}, // DeepPink to DarkBlue
+		{colors.LedColor{R: 0x95, G: 0x95, B: 0x00}, colors.LedColor{R: 0x71, G: 0x0e, B: 0x00}}, // Yellow to OrangeRed
+		{colors.LedColor{R: 0x00, G: 0x74, B: 0x00}, colors.LedColor{R: 0x9a, G: 0x22, B: 0x22}}, // DarkGreen to DarkRed
+		{colors.LedColor{R: 0x81, G: 0x41, B: 0x24}, colors.LedColor{R: 0x4c, G: 0x8b, B: 0xaa}}, // Salmon to LightBlue
 	}
 )
 
@@ -73,7 +73,7 @@ func GlowingPixels(c *ledgrid.Canvas) {
 		}
 	}
 
-	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), color.Black.Alpha(0.0), "")
+	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), colors.Black.Alpha(0.0), "")
 	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	txtNextWord := ledgrid.NewTask(func() {
 		if scanner.Scan() {
@@ -81,7 +81,7 @@ func GlowingPixels(c *ledgrid.Canvas) {
 		}
 	})
 	txtFadeIn := ledgrid.NewFadeAnim(txt, ledgrid.FadeIn, 3*time.Second)
-	txtColor := ledgrid.NewColorAnim(txt, color.White, 1*time.Second)
+	txtColor := ledgrid.NewColorAnim(txt, colors.White, 1*time.Second)
 	txtColor.AutoReverse = true
 	txtColor.Cont = false
 	txtFadeOut := ledgrid.NewFadeAnim(txt, ledgrid.FadeOut, 1*time.Second)

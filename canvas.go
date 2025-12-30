@@ -1,4 +1,4 @@
-//go:build !tinygo
+/* //go:build !tinygo */
 
 package ledgrid
 
@@ -584,7 +584,7 @@ func NewText(pos geom.Point, text string, col colors.LedColor) *Text {
 func (t *Text) SetFont(font *fonts.Font, size float64) {
 	t.font = font
 	t.fontSize = size
-	t.fontFace = fonts.NewFace(t.font, t.fontSize)
+	t.fontFace, _ = fonts.NewFace(t.font, t.fontSize)
 }
 
 func (t *Text) Draw(c *Canvas) {

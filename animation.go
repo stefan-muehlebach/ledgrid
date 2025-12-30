@@ -1099,7 +1099,7 @@ func (a *ColorShaderAnim) IsRunning() bool {
 }
 
 func (a *ColorShaderAnim) Update(t time.Time) bool {
-	*a.ValPtr = a.Fnc(0.6*t.Sub(a.start).Seconds(), a.X, a.Y, a.Z, a.Idx, a.NPix)
+	*a.ValPtr = a.Fnc(0.4*t.Sub(a.start).Seconds(), a.X, a.Y, a.Z, a.Idx, a.NPix)
 	return true
 }
 

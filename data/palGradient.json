@@ -1,7 +1,7 @@
 [
     {
         "ID": 1,
-        "Title": "BackYellowBlue",
+        "Title": "YellowBlueBack",
         "Colors": [
             "0xB9B90A",
             "0x0A5853",
@@ -10,7 +10,7 @@
     },
     {
         "ID": 2,
-        "Title": "DarkYellowBlue",
+        "Title": "YellowBlueDark",
         "Colors": [
             "0x595905",
             "0x063833"
@@ -18,7 +18,7 @@
     },
     {
         "ID": 3,
-        "Title": "BackPinkBlue",
+        "Title": "PinkBlueBack",
         "Colors": [
             "0xA60C5F",
             "0x000080",
@@ -27,7 +27,7 @@
     },
     {
         "ID": 4,
-        "Title": "BackYellowOrange",
+        "Title": "YellowOrangeBack",
         "Colors": [
             "0xA8A800",
             "0xA11600",
@@ -44,7 +44,7 @@
     },
     {
         "ID": 6,
-        "Title": "BackSalmonBlue",
+        "Title": "SalmonBlueBack",
         "Colors": [
             "0x814124",
             "0x4C8BAA"
@@ -219,7 +219,7 @@
     },
     {
         "ID": 41,
-        "Title": "ParulaBig",
+        "Title": "ParulaExtended",
         "Colors": [
             "0x828206",
             "0x816919",
@@ -303,7 +303,7 @@
             "0x277F8E",
             "0x365B8D",
             "0x46327F",
-            "0x440255"
+            "0x570255"
         ]
     },
     {
@@ -631,6 +631,17 @@
     },
     {
         "ID": 209,
+        "Title": "HipsterDark",
+        "Colors": [
+            "0x52083e",
+            "0x031e1e",
+            "0x004a4a",
+            "0x2D2605",
+            "0xcdad0a"
+        ]
+    },
+    {
+        "ID": 209,
         "Title": "Neon",
         "Colors": [
             "0xffffff",
@@ -656,7 +667,7 @@
     },
     {
         "ID": 211,
-        "Title": "DarkJungle",
+        "Title": "JungleDark",
         "Colors": [
             "0x184918",
             "0x406a3a",

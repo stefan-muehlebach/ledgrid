@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/color"
+	"github.com/stefan-muehlebach/ledgrid/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -68,7 +68,7 @@ func main() {
 	SignalHandler(timeout)
 
 	ledgrid.AnimCtrl.Suspend()
-	ledGrid.Clear(color.Black)
+	ledGrid.Clear(colors.Black)
 	ledGrid.Close()
 
 	fmt.Printf("Program statistics:\n")
