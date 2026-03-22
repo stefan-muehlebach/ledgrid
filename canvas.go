@@ -280,6 +280,7 @@ type Ellipse struct {
 	SizeEmbed
 	AngleEmbed
 	FilledColorEmbed
+    FadeEmbed
 	StrokeWidthEmbed
 	FillColorFnc string
 }
@@ -295,6 +296,7 @@ func NewEllipse(pos, size geom.Point, borderColor colors.LedColor) *Ellipse {
 	e.Color = borderColor
 	e.StrokeWidth = 1.0
 	e.CanvasObjectEmbed.Extend(e)
+    e.FadeEmbed.Init(&e.Color)
 	return e
 }
 
@@ -323,8 +325,9 @@ type Rectangle struct {
 	SizeEmbed
 	AngleEmbed
 	FilledColorEmbed
-	StrokeWidthEmbed
 	FillColorFnc string
+    FadeEmbed
+	StrokeWidthEmbed
 }
 
 func NewRectangle(pos, size geom.Point, borderColor colors.LedColor) *Rectangle {
@@ -335,6 +338,7 @@ func NewRectangle(pos, size geom.Point, borderColor colors.LedColor) *Rectangle 
 	r.Color = borderColor
 	r.FillColorFnc = "ApplyAlpha"
 	r.CanvasObjectEmbed.Extend(r)
+    r.FadeEmbed.Init(&r.Color)
 	return r
 }
 
@@ -362,8 +366,9 @@ type RegularPolygon struct {
 	SizeEmbed
 	AngleEmbed
 	FilledColorEmbed
-	StrokeWidthEmbed
 	FillColorFnc string
+    FadeEmbed
+	StrokeWidthEmbed
 	N            int
 }
 
@@ -380,6 +385,7 @@ func NewRegularPolygon(n int, pos, size geom.Point, borderColor colors.LedColor)
 	p.FillColorFnc = "ApplyAlpha"
 	p.N = n
 	p.CanvasObjectEmbed.Extend(p)
+    p.FadeEmbed.Init(&p.Color)
 	return p
 }
 
@@ -491,7 +497,7 @@ func (d *Dot) Draw(c *Canvas) {
 // beliebig skaliert oder mit FixedSize Pixel-Schriften
 var (
 	defFont     = fonts.GoMedium
-	defFontSize = 10.0
+	defFontSize = 8.0
 )
 
 // Die folgenden Typen, Structs (embeddable), Konstanten, etc. sind fuer

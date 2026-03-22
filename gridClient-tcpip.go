@@ -14,24 +14,35 @@ import (
 
 // Mit diesem Typ wird die klassische Verwendung auf zwei Nodes realisiert.
 type NetGridClient struct {
-	conn        net.Conn
+    conn net.Conn
+	// conn        *net.UDPConn
 	rpcDisabled bool
 	rpcClient   *rpc.Client
 	stopwatch   *Stopwatch
 }
 
-func NewNetGridClient(host string, network string, port, rpcPort uint) GridClient {
+func NewNetGridClient(host, network string, port, rpcPort uint) GridClient {
 	var hostPortData, hostPortRPC string
 	var err error
 
 	p := &NetGridClient{}
+
 	hostPortData = fmt.Sprintf("%s:%d", host, port)
-	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
 	p.conn, err = net.Dial(network, hostPortData)
 	if err != nil {
 		log.Fatalf("Error in Dial(dataPort): %v", err)
 	}
+	// hostPortData = fmt.Sprintf("%s:%d", host, port)
+ //    hostAddr, err := net.ResolveUDPAddr(network, hostPortData)
+ //    if err != nil {
+	// 	log.Fatalf("Error in ResolveUDPAddr(network, host): %v", err)
+ //    }
+	// p.conn, err = net.DialUDP(network, nil, hostAddr)
+	// if err != nil {
+	// 	log.Fatalf("Error in Dial(dataPort): %v", err)
+	// }
 
+	hostPortRPC = fmt.Sprintf("%s:%d", host, rpcPort)
 	if rpcPort != 0 {
 		p.rpcClient, err = rpc.DialHTTP("tcp", hostPortRPC)
 		if err != nil {
@@ -120,4 +131,8 @@ func (p *NetGridClient) Stopwatch() *Stopwatch {
 // Schliesst die Verbindung zum Controller.
 func (p *NetGridClient) Close() {
 	p.conn.Close()
+}
+
+func (p *NetGridClient) Address() string {
+    return p.conn.RemoteAddr().String()
 }

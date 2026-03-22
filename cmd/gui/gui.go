@@ -183,7 +183,7 @@ func main() {
 	backLabel := widget.NewLabel("Palette")
 	backLabel.TextStyle.Bold = true
 	backSelect := widget.NewSelect(ledgrid.PaletteNames, func(backName string) {
-		backAnim := ledgrid.NewPaletteFadeAnimation(palFader,
+		backAnim := ledgrid.NewPaletteFadeAnim(palFader,
 			ledgrid.PaletteMap[backName], animTime)
 		backAnim.Start()
 	})

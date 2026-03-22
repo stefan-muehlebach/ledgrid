@@ -27,7 +27,7 @@ var (
 	MarginTop    = 30.0 * scaleFactor
 	MarginBottom = 5.0 * scaleFactor
 
-	AxesTextFont   = fonts.GoRegular
+	AxesTextFont   = fonts.Go
 	AxesTextSize   = 12.0 * scaleFactor
 	AxesTextColor  = colors.Black
 	AxesTickSep    = 5.0 * scaleFactor
@@ -50,7 +50,7 @@ var (
 	LedFillColor      = colors.White.Alpha(0.7)
 	LedStartFillColor = colors.DarkGreen.Alpha(0.8)
 	LedEndFillColor   = colors.FireBrick.Alpha(0.8)
-	LedTextFont       = fonts.GoRegular
+	LedTextFont       = fonts.Go
 	LedTextSize       = 16.0 * scaleFactor
 	LedTextColor      = colors.Black
 	LedTextColorInv   = colors.White

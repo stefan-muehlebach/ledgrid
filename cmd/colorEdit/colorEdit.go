@@ -101,7 +101,7 @@ func main() {
 	var host string = "raspi-3"
 	var width, height int
 	var dataPort, rpcPort uint
-	var useTCP bool
+	//var useTCP bool
 	var network string
 
 	var logFile *os.File
@@ -136,16 +136,16 @@ func main() {
 	var modConf conf.ModuleConfig
 
 	flag.StringVar(&host, "host", host, "Controller hostname")
-	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
+//	flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.Parse()
 
-	if useTCP {
+//	if useTCP {
 		network = "tcp"
-	} else {
-		network = "udp"
-	}
+//	} else {
+//		network = "udp"
+//	}
 
 	gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
 	modConf = gridClient.ModuleConfig()

@@ -287,7 +287,7 @@ func RandColor(new bool) AnimValueFunc[colors.LedColor] {
 func RandGroupColor(group colors.ColorGroup, new bool) AnimValueFunc[colors.LedColor] {
 	return func() colors.LedColor {
 		if new {
-			randGroupColor = colors.RandGroupColor(group)
+			randGroupColor = colors.RandColorByGroup(group)
 		}
 		return randGroupColor
 	}
