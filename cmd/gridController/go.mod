@@ -4,7 +4,7 @@ go 1.26.1
 
 replace github.com/stefan-muehlebach/ledgrid => ../..
 
-replace github.com/stefan-muehlebach/gg => ../../../gg
+replace github.com/stefan-muehlebach/gg =>  ../../../gg
 
 require github.com/stefan-muehlebach/ledgrid v1.4.3
 
