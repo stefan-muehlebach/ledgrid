@@ -19,6 +19,7 @@ old_20240815/
 *.*_save
 *.*_old
 *._go
+*._mod
 *.exe
 *.cpuprof
 *.memprof
