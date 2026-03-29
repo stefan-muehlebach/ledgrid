@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/gg"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
-	"github.com/stefan-muehlebach/ledgrid/colors"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/f64"
@@ -32,7 +32,7 @@ const (
 // werden.
 type Canvas struct {
 	ObjList            *list.List
-	BackColor          colors.LedColor
+	BackColor          colors.RGBA
 	Rect               image.Rectangle
 	Img                draw.Image
 	GC                 *gg.Context
@@ -78,7 +78,7 @@ func (c *Canvas) Set(x, y int, col color.Color) {
 	c.Img.Set(x, y, col)
 }
 
-func (c *Canvas) Clear(col colors.LedColor) {
+func (c *Canvas) Clear(col colors.RGBA) {
 	draw.Draw(c.Img, c.Rect, image.NewUniform(col), image.Point{}, draw.Src)
 }
 
@@ -187,9 +187,9 @@ var (
 	fillAlpha = 0.4
 )
 
-type ColorFunc func(colors.LedColor) colors.LedColor
+type ColorFunc func(colors.RGBA) colors.RGBA
 
-func ApplyAlpha(c colors.LedColor) colors.LedColor {
+func ApplyAlpha(c colors.RGBA) colors.RGBA {
 	alpha := float64(c.A) / 255.0
 	return c.Alpha(alpha * fillAlpha)
 }
@@ -245,19 +245,19 @@ func (e *AngleEmbed) AnglePtr() *float64 {
 }
 
 type ColorEmbed struct {
-	Color colors.LedColor
+	Color colors.RGBA
 }
 
-func (e *ColorEmbed) ColorPtr() *colors.LedColor {
+func (e *ColorEmbed) ColorPtr() *colors.RGBA {
 	return &e.Color
 }
 
 type FilledColorEmbed struct {
 	ColorEmbed
-	FillColor colors.LedColor
+	FillColor colors.RGBA
 }
 
-func (e *FilledColorEmbed) FillColorPtr() *colors.LedColor {
+func (e *FilledColorEmbed) FillColorPtr() *colors.RGBA {
 	return &e.FillColor
 }
 
@@ -280,7 +280,7 @@ type Ellipse struct {
 	SizeEmbed
 	AngleEmbed
 	FilledColorEmbed
-    FadeEmbed
+	FadeEmbed
 	StrokeWidthEmbed
 	FillColorFnc string
 }
@@ -289,14 +289,14 @@ type Ellipse struct {
 // setzt die Fuellfarbe gleich Randfarbe mit Alpha-Wert von 0.3.
 // Will man die einzelnen Werte flexibler verwenden, empfiehlt sich die
 // Erzeugung mittels &Ellipse{...}.
-func NewEllipse(pos, size geom.Point, borderColor colors.LedColor) *Ellipse {
+func NewEllipse(pos, size geom.Point, borderColor colors.RGBA) *Ellipse {
 	e := &Ellipse{FillColorFnc: "ApplyAlpha"}
 	e.Pos = pos
 	e.Size = size
 	e.Color = borderColor
 	e.StrokeWidth = 1.0
 	e.CanvasObjectEmbed.Extend(e)
-    e.FadeEmbed.Init(&e.Color)
+	e.FadeEmbed.Init(&e.Color)
 	return e
 }
 
@@ -326,11 +326,11 @@ type Rectangle struct {
 	AngleEmbed
 	FilledColorEmbed
 	FillColorFnc string
-    FadeEmbed
+	FadeEmbed
 	StrokeWidthEmbed
 }
 
-func NewRectangle(pos, size geom.Point, borderColor colors.LedColor) *Rectangle {
+func NewRectangle(pos, size geom.Point, borderColor colors.RGBA) *Rectangle {
 	r := &Rectangle{}
 	r.Pos = pos
 	r.Size = size
@@ -338,7 +338,7 @@ func NewRectangle(pos, size geom.Point, borderColor colors.LedColor) *Rectangle 
 	r.Color = borderColor
 	r.FillColorFnc = "ApplyAlpha"
 	r.CanvasObjectEmbed.Extend(r)
-    r.FadeEmbed.Init(&r.Color)
+	r.FadeEmbed.Init(&r.Color)
 	return r
 }
 
@@ -367,16 +367,16 @@ type RegularPolygon struct {
 	AngleEmbed
 	FilledColorEmbed
 	FillColorFnc string
-    FadeEmbed
+	FadeEmbed
 	StrokeWidthEmbed
-	N            int
+	N int
 }
 
 // Erzeugt ein neues regelmaessiges Polygon mit n Ecken. Mit pos wird der
 // Mittelpunkt des Polygons bezeichnet und size enthaelt die Groesse
 // (d.h. Breite, bzw. Hoehe) des Polygons.
 // Bem: nur die X-Koordinate von size wird beruecksichtigt!
-func NewRegularPolygon(n int, pos, size geom.Point, borderColor colors.LedColor) *RegularPolygon {
+func NewRegularPolygon(n int, pos, size geom.Point, borderColor colors.RGBA) *RegularPolygon {
 	p := &RegularPolygon{}
 	p.Pos = pos
 	p.Size = size
@@ -385,7 +385,7 @@ func NewRegularPolygon(n int, pos, size geom.Point, borderColor colors.LedColor)
 	p.FillColorFnc = "ApplyAlpha"
 	p.N = n
 	p.CanvasObjectEmbed.Extend(p)
-    p.FadeEmbed.Init(&p.Color)
+	p.FadeEmbed.Init(&p.Color)
 	return p
 }
 
@@ -418,7 +418,7 @@ type Line struct {
 	FadeEmbed
 }
 
-func NewLine(pos geom.Point, len float64, col colors.LedColor) *Line {
+func NewLine(pos geom.Point, len float64, col colors.RGBA) *Line {
 	l := &Line{}
 	l.Pos = pos
 	l.Size = geom.Point{len, 0.0}
@@ -453,7 +453,7 @@ type Pixel struct {
 	FadeEmbed
 }
 
-func NewPixel(pos image.Point, col colors.LedColor) *Pixel {
+func NewPixel(pos image.Point, col colors.RGBA) *Pixel {
 	p := &Pixel{}
 	p.Pos = pos
 	p.Color = col
@@ -463,7 +463,7 @@ func NewPixel(pos image.Point, col colors.LedColor) *Pixel {
 }
 
 func (p *Pixel) Draw(c *Canvas) {
-	bgColor := colors.LedColorModel.Convert(c.Img.At(p.Pos.X, p.Pos.Y)).(colors.LedColor)
+	bgColor := colors.RGBAModel.Convert(c.Img.At(p.Pos.X, p.Pos.Y)).(colors.RGBA)
 	c.Img.Set(p.Pos.X, p.Pos.Y, p.Color.Mix(bgColor, colors.Blend))
 }
 
@@ -478,7 +478,7 @@ type Dot struct {
 	FadeEmbed
 }
 
-func NewDot(pos geom.Point, col colors.LedColor) *Dot {
+func NewDot(pos geom.Point, col colors.RGBA) *Dot {
 	d := &Dot{}
 	d.Pos = pos
 	d.Color = col
@@ -575,7 +575,7 @@ type Text struct {
 	fontFace font.Face
 }
 
-func NewText(pos geom.Point, text string, col colors.LedColor) *Text {
+func NewText(pos geom.Point, text string, col colors.RGBA) *Text {
 	t := &Text{}
 	t.Pos = pos
 	t.Color = col
@@ -623,7 +623,7 @@ type FixedText struct {
 	dp     fixed.Point26_6
 }
 
-func NewFixedText(pos fixed.Point26_6, text string, col colors.LedColor) *FixedText {
+func NewFixedText(pos fixed.Point26_6, text string, col colors.RGBA) *FixedText {
 	t := &FixedText{}
 	t.Pos = pos
 	t.Color = col
@@ -853,18 +853,18 @@ func (i *Sprite) Tick(t float64) {
 // ---------------------------------------------------------------------------
 
 var (
-	fireGradient = []ColorStop{
-		{0.00, colors.LedColor{0x00, 0x00, 0x00, 0x00}},
-		{0.10, colors.LedColor{0x5f, 0x08, 0x09, 0x00}},
-		{0.20, colors.LedColor{0x5f, 0x08, 0x09, 0x80}},
-		{0.30, colors.LedColor{0xbe, 0x10, 0x13, 0x80}},
-		{0.40, colors.LedColor{0xd2, 0x30, 0x08, 0x80}},
-		{0.50, colors.LedColor{0xe4, 0x53, 0x23, 0xcf}},
-		{0.60, colors.LedColor{0xee, 0x77, 0x1c, 0xcf}},
-		{0.70, colors.LedColor{0xf6, 0x96, 0x0e, 0xcf}},
-		{0.80, colors.LedColor{0xff, 0xcd, 0x06, 0xcf}},
-		{0.90, colors.LedColor{0xff, 0xdb, 0x5a, 0xef}},
-		{1.00, colors.LedColor{0xff, 0xe6, 0x68, 0xff}},
+	fireGradient = []colors.RGBA{
+			colors.RGBA{0x00, 0x00, 0x00, 0x00},
+			colors.RGBA{0x5f, 0x08, 0x09, 0x00},
+			colors.RGBA{0x5f, 0x08, 0x09, 0x80},
+			colors.RGBA{0xbe, 0x10, 0x13, 0x80},
+			colors.RGBA{0xd2, 0x30, 0x08, 0x80},
+			colors.RGBA{0xe4, 0x53, 0x23, 0xcf},
+			colors.RGBA{0xee, 0x77, 0x1c, 0xcf},
+			colors.RGBA{0xf6, 0x96, 0x0e, 0xcf},
+			colors.RGBA{0xff, 0xcd, 0x06, 0xcf},
+			colors.RGBA{0xff, 0xdb, 0x5a, 0xef},
+			colors.RGBA{0xff, 0xe6, 0x68, 0xff},
 	}
 
 	fireYScaling    = 10
@@ -892,7 +892,8 @@ func NewFire(pos, size image.Point) *Fire {
 	}
 	f.cooling = fireDefCooling
 	f.sparking = fireDefSparking
-	f.pal = NewGradientPalette("Fire", fireGradient...)
+	// f.pal = NewGradientPalette("Fire", fireGradient...)
+    f.pal = colors.NewPaletteByColors("Fire", fireGradient...)
 	// AnimCtrl.Add(0, f)
 	return f
 }
@@ -974,7 +975,7 @@ func (f *Fire) Draw(c *Canvas) {
 		for row := range f.Size.Y {
 			fireRow := fireYScaling * (f.Size.Y - row - 1)
 			heat := f.heat[col][fireRow]
-			bgColor := colors.LedColorModel.Convert(c.Img.At(col, row)).(colors.LedColor)
+			bgColor := colors.RGBAModel.Convert(c.Img.At(col, row)).(colors.RGBA)
 			fgColor := f.pal.Color(heat)
 			c.Img.Set(col, row, fgColor.Mix(bgColor, colors.Blend))
 		}

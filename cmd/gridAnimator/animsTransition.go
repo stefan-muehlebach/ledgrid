@@ -9,10 +9,10 @@ import (
 )
 
 func init() {
-    // programList.AddTitle("Transitions")
+	// programList.AddTitle("Transitions")
 	programList.Add("Fade between three canvases", "Transitions", FadeCanvases)
 	programList.Add("Show the different wipe transitions", "Transitions", WipeTrans)
-    programList.Add("Like at a theatre...", "Transitions", TheaterKulissen)
+	programList.Add("Like at a theatre...", "Transitions", TheaterKulissen)
 	programList.Add("Camera images with some nice fading effects", "Transitions", EffectFaderTest)
 }
 
@@ -60,7 +60,6 @@ func WipeTrans(ctx context.Context, c1 *ledgrid.Canvas) {
 	// img1 := ledgrid.NewImage(pos, "images/img02.png")
 	// c1.Add(img1)
 
-
 	wiper1 := ledgrid.NewWipeTransition(c1, ledgrid.WipeR2L, ledgrid.WipeIn, 3*time.Second)
 	wiper1.AutoReverse = true
 	wiper2 := ledgrid.NewWipeTransition(c1, ledgrid.WipeL2R, ledgrid.WipeIn, 3*time.Second)
@@ -70,9 +69,8 @@ func WipeTrans(ctx context.Context, c1 *ledgrid.Canvas) {
 	// wiper7 := ledgrid.NewWipeTransition(c1, ledgrid.WipeB2T, ledgrid.WipeIn, 3*time.Second)
 	// wiper7.AutoReverse = true
 
-    seq := ledgrid.NewSequence(wiper1, wiper2) //, wiper3, wiper5, wiper7)
-    seq.RepeatCount = ledgrid.AnimationRepeatForever
-
+	seq := ledgrid.NewSequence(wiper1, wiper2) //, wiper3, wiper5, wiper7)
+	seq.RepeatCount = ledgrid.AnimationRepeatForever
 
 	seq.Start()
 }
@@ -84,15 +82,14 @@ func TheaterKulissen(ctx context.Context, c1 *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
-    imgCurtain := ledgrid.NewImage(pos, "images/curtain.png")
-    c1.Add(imgCurtain)
+	imgCurtain := ledgrid.NewImage(pos, "images/curtain.png")
+	c1.Add(imgCurtain)
 
-    imgRocks := ledgrid.NewImage(pos, "images/floor.png")
-    c2.Add(imgRocks)
+	imgRocks := ledgrid.NewImage(pos, "images/floor.png")
+	c2.Add(imgRocks)
 
 	cam := NewCamera(pos, size)
 	c3.Add(cam)
 	cam.Start()
 
 }
-

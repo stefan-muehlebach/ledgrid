@@ -12,7 +12,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 
 	"gocv.io/x/gocv"
 	"golang.org/x/image/draw"
@@ -41,7 +41,7 @@ type HistCamera struct {
 	doneChan         chan bool
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int, col colors.LedColor) *HistCamera {
+func NewHistCamera(pos, size geom.Point, histLen int, col colors.RGBA) *HistCamera {
 	c := &HistCamera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
 	c.Color = ledgrid.NewUniformPalette("Uniform", col)

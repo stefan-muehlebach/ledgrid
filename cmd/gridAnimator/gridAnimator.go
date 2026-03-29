@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -151,16 +151,16 @@ func main() {
 	defer StopProfiling()
 
 	// if useTCP {
-		network = "tcp"
+	network = "tcp"
 	// } else {
-		// network = "udp"
+	// network = "udp"
 	// }
 
 	if outFile != "" {
 		gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
 	} else {
 		gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
-        hostName = gridClient.(*ledgrid.NetGridClient).Address()
+		hostName = gridClient.(*ledgrid.NetGridClient).Address()
 	}
 	modConf = gridClient.ModuleConfig()
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)

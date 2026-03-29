@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Dieses File wird automatisch durch gen.go erstellt!
 // Manuelle Aenderungen werden bei der naechsten Ausfuehrung
 // automatisch ueberschrieben.

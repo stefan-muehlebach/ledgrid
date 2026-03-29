@@ -13,7 +13,7 @@ import (
 	gc "github.com/gbin/goncurses"
 	// gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -114,7 +114,7 @@ func main() {
 	var err error
 	var gridClient ledgrid.GridClient
 	var ledGrid *ledgrid.LedGrid
-	var ledColor colors.LedColor
+	var ledColor colors.RGBA
 	var palMode bool
 	var palIdx int
 	var curColorChanged bool
@@ -132,7 +132,7 @@ func main() {
 	var gridSize image.Point
 	var selRect image.Rectangle
 	var clipRect image.Rectangle
-	var clipData []colors.LedColor
+	var clipData []colors.RGBA
 	var modConf conf.ModuleConfig
 
 	flag.StringVar(&host, "host", host, "Controller hostname")
@@ -571,7 +571,7 @@ main:
 
 		case Ctrl('c'), Ctrl('x'):
 			clipRect = selRect
-			clipData = make([]colors.LedColor, clipRect.Dx()*clipRect.Dy())
+			clipData = make([]colors.RGBA, clipRect.Dx()*clipRect.Dy())
 			for y := range clipRect.Dy() {
 				row := clipRect.Min.Y + y
 				for x := range clipRect.Dx() {

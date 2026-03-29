@@ -12,7 +12,7 @@ import (
 
 var (
 	cpuProfFile, memProfFile, traceFile string
-	fhCpu, fhTrace             *os.File
+	fhCpu, fhTrace                      *os.File
 )
 
 func init() {

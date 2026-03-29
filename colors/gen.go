@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/stefan-muehlebach/gg/colors"
-	ledcolors "github.com/stefan-muehlebach/ledgrid/colors"
+	ledcolors "github.com/stefan-muehlebach/gg/colors"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	fmt.Fprintf(fh, "package colors\n\n")
 	fmt.Fprintf(fh, "var (\n")
 	for _, name := range colors.Names {
-		ledColor := ledcolors.LedColorModel.Convert(colors.Map[name]).(ledcolors.LedColor)
+		ledColor := ledcolors.RGBAModel.Convert(colors.Map[name]).(ledcolors.RGBA)
 		fmt.Fprintf(fh, "    %-20s = LedColor%+v\n", name, ledColor)
 	}
 	fmt.Fprintf(fh, "\n    Map = map[string]LedColor {\n")

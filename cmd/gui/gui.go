@@ -18,7 +18,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 	"golang.org/x/image/math/fixed"
 )

@@ -12,7 +12,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/stefan-muehlebach/gg/geom"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 var (
@@ -272,11 +272,11 @@ func RandPalette() PaletteFuncType {
 }
 
 var (
-	randColor, randGroupColor colors.LedColor
+	randColor, randGroupColor colors.RGBA
 )
 
-func RandColor(new bool) AnimValueFunc[colors.LedColor] {
-	return func() colors.LedColor {
+func RandColor(new bool) AnimValueFunc[colors.RGBA] {
+	return func() colors.RGBA {
 		if new {
 			randColor = colors.RandColor()
 		}
@@ -284,8 +284,8 @@ func RandColor(new bool) AnimValueFunc[colors.LedColor] {
 	}
 }
 
-func RandGroupColor(group colors.ColorGroup, new bool) AnimValueFunc[colors.LedColor] {
-	return func() colors.LedColor {
+func RandGroupColor(group colors.ColorGroup, new bool) AnimValueFunc[colors.RGBA] {
+	return func() colors.RGBA {
 		if new {
 			randGroupColor = colors.RandColorByGroup(group)
 		}
@@ -633,7 +633,7 @@ type AnimPoints interface {
 }
 // AnimColors enthaelt bloss einen Datentyp fuer animierbare Farben.
 type AnimColors interface {
-	colors.LedColor
+	colors.RGBA
 }
 // AnimValue schliesslich ist der Zusammenschluss aller animierbaren Typen.
 type AnimValue interface {
@@ -705,10 +705,10 @@ type Fadable interface {
 }
 
 type FadeEmbed struct {
-	colPtr *colors.LedColor
+	colPtr *colors.RGBA
 }
 
-func (e *FadeEmbed) Init(c *colors.LedColor) {
+func (e *FadeEmbed) Init(c *colors.RGBA) {
 	e.colPtr = c
 }
 func (e *FadeEmbed) AlphaPtr() *uint8 {
@@ -803,31 +803,31 @@ func (a *FloatAnimation) Tick(t float64) {
 }
 
 type Colorable interface {
-	ColorPtr() *colors.LedColor
+	ColorPtr() *colors.RGBA
 }
 
 type ColorFillable interface {
 	Colorable
-	FillColorPtr() *colors.LedColor
+	FillColorPtr() *colors.RGBA
 }
 
 // type ColorStrokable interface {
-//     StrokeColorPtr() *colors.LedColor
+//     StrokeColorPtr() *colors.RGBA
 // }
 
 // Animation fuer einen Verlauf zwischen zwei Farben.
 type ColorAnimation struct {
-	GenericAnimation[colors.LedColor]
+	GenericAnimation[colors.RGBA]
 }
 
-func NewColorAnim(obj Colorable, val2 colors.LedColor, dur time.Duration) *ColorAnimation {
+func NewColorAnim(obj Colorable, val2 colors.RGBA, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
 	a.InitAnim(obj.ColorPtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
 	return a
 }
 
-func NewFillColorAnim(obj ColorFillable, val2 colors.LedColor, dur time.Duration) *ColorAnimation {
+func NewFillColorAnim(obj ColorFillable, val2 colors.RGBA, dur time.Duration) *ColorAnimation {
 	a := &ColorAnimation{}
 	a.InitAnim(obj.FillColorPtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
@@ -842,7 +842,7 @@ func (a *ColorAnimation) Tick(t float64) {
 
 // Animation fuer einen Farbverlauf ueber die Farben einer Palette.
 type PaletteAnimation struct {
-	GenericAnimation[colors.LedColor]
+	GenericAnimation[colors.RGBA]
 	pal ColorSource
 }
 
@@ -1032,10 +1032,10 @@ func (a *IntegerPosAnimation) Tick(t float64) {
 // Fuer den klassischen Shader wird pro Pixel folgende Animation gestartet.
 type Shader TimedAnimation
 
-type ColorShaderFunc func(t, x, y, z float64, idx, nPix int) colors.LedColor
+type ColorShaderFunc func(t, x, y, z float64, idx, nPix int) colors.RGBA
 
 type ColorShaderAnim struct {
-	ValPtr      *colors.LedColor
+	ValPtr      *colors.RGBA
 	X, Y, Z     float64
 	Idx, NPix   int
 	Fnc         ColorShaderFunc
@@ -1106,7 +1106,7 @@ func (a *ColorShaderAnim) Update(t time.Time) bool {
 type NormShaderFunc func(t, x, y float64) float64
 
 type ShaderAnimation struct {
-	ValPtr      *colors.LedColor
+	ValPtr      *colors.RGBA
 	Pal         ColorSource
 	X, Y        float64
 	Fnc         NormShaderFunc

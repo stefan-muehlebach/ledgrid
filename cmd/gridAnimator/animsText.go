@@ -13,14 +13,14 @@ import (
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
 	programList.Add("Rotating, Floating Words", "Text", MovingText)
 	programList.Add("All Named Colors", "Text", NamedColors)
 	programList.Add("Clock Animation", "Text", ClockAnimation)
-    programList.Add("Sample Info Text", "Text", ShowInfoText)
+	programList.Add("Sample Info Text", "Text", ShowInfoText)
 	programList.Add("Countdown (Rectangle)", "Text", RectangleCountdown)
 	programList.Add("Countdown (Glowing)", "Text", GlowingCountdown)
 	programList.Add("Punktestand", "Text", BoredScores)
@@ -66,21 +66,21 @@ func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 func ShowInfoText(ctx context.Context, c *ledgrid.Canvas) {
-    dist := 4.0 * float64(len(hostName))
+	dist := 4.0 * float64(len(hostName))
 	pos1 := p2p(40.0, 7.0)
-    pos2 := p2p(-dist, 7.0)
+	pos2 := p2p(-dist, 7.0)
 	txt := ledgrid.NewFixedText(pos1, hostName, colors.Red.Dark(0.5))
 	c.Add(txt)
 
-    posAnim := ledgrid.NewFixedPosAnim(txt, pos2, time.Duration(dist / 5.0) * time.Second)
-    posAnim.Cont = false
+	posAnim := ledgrid.NewFixedPosAnim(txt, pos2, time.Duration(dist/5.0)*time.Second)
+	posAnim.Cont = false
 	posAnim.Curve = ledgrid.AnimationLinear
 
-    animSeq := ledgrid.NewGroup(
-        posAnim,
-    )
-    animSeq.RepeatCount = ledgrid.AnimationRepeatForever
-    animSeq.Start()
+	animSeq := ledgrid.NewGroup(
+		posAnim,
+	)
+	animSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	animSeq.Start()
 }
 
 func RectangleCountdown(ctx context.Context, c *ledgrid.Canvas) {
@@ -92,7 +92,7 @@ func RectangleCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	rectSize := geom.Point{float64(width) - 1, float64(height) - 2}
 
 	textPos := p2p(3.0, 7.0)
-    pit := time.Now().Add(24 * time.Hour)
+	pit := time.Now().Add(24 * time.Hour)
 	// pit, _ := time.Parse("02.01.2006", "29.06.2025")
 
 	rect := ledgrid.NewRectangle(rectPos, rectSize, colors.Indigo)
@@ -128,7 +128,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	fadeOutPixels := ledgrid.NewGroup()
 	pulseDur := 2 * time.Second
-    fadeOutDur := 4 * time.Second
+	fadeOutDur := 4 * time.Second
 	textPos := p2p(3.0, 8.0)
 	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
 
@@ -138,7 +138,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	aTxtFade := ledgrid.NewColorAnim(clockText, colors.Yellow, 5*time.Second)
 	fadeOutText := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut, 5*time.Second)
 
-    pit := time.Now().Add(24 * time.Hour)
+	pit := time.Now().Add(24 * time.Hour)
 	// pit, _ := time.Parse("02.01.2006 15:04:05", "28.06.2025 10:30:00")
 	finalDurA := 6 * time.Second
 	finalDurB := 6 * time.Second
@@ -278,19 +278,19 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	rect.StrokeWidth = 0.0
 	rect.FillColor = colors.Black
 
-	txtPos1 := geom.Point{float64(width + 1), float64(height - 1)}
-	txtPos2 := geom.Point{1.5, float64(height - 1)}
-	txtPos3 := geom.Point{1.5, -3}
+	txtPos1 := geom.Point{1, -3}
+	txtPos2 := geom.Point{1, float64(height - 1)}
+	txtPos3 := geom.Point{float64(width + 1), float64(height - 1)}
 	txt := ledgrid.NewText(txtPos1, "", colors.Black)
 	txt.SetAlign(ledgrid.AlignLeft | ledgrid.AlignBottom)
-	txt.SetFont(fonts.GoBold, 10.0)
+	txt.SetFont(fonts.GoBold, 8.0)
 
 	c.Add(rect, txt)
 
-	posAnim1 := ledgrid.NewPositionAnim(txt, txtPos2, 3*time.Second/2)
+	posAnim1 := ledgrid.NewPositionAnim(txt, txtPos2, time.Second/2)
 	posAnim1.Cont = false
 	posAnim1.Curve = ledgrid.AnimationEaseOut
-	posAnim2 := ledgrid.NewPositionAnim(txt, txtPos3, time.Second/2)
+	posAnim2 := ledgrid.NewPositionAnim(txt, txtPos3, 3*time.Second/2)
 	posAnim2.Curve = ledgrid.AnimationEaseIn
 
 	fadeIn := ledgrid.NewFillColorAnim(rect, colors.Map[colName], 1*time.Second)
@@ -298,10 +298,11 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	fadeOut := ledgrid.NewFillColorAnim(rect, colors.Black, 1*time.Second)
 	fadeOut.Curve = ledgrid.AnimationEaseIn
 	txtTask := ledgrid.NewTask(func() {
-		var txtColor colors.LedColor
+		var txtColor colors.RGBA
 
 		col := colors.Map[colName]
-		h, s, l := col.HSL()
+        hsl := colors.HSLModel.Convert(col).(colors.HSL)
+		h, s, l := hsl.H, hsl.S, hsl.L
 		switch {
 		case s == 0:
 			txtColor = colors.Gray
@@ -330,39 +331,38 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 		fadeIn.Val2 = ledgrid.Const(newColor)
 	})
 
-	timeLine := ledgrid.NewTimeline(3 * time.Second)
+	timeLine := ledgrid.NewTimeline(3500 * time.Millisecond)
 	timeLine.Add(0*time.Second, txtTask, posAnim1, fadeIn)
 	timeLine.Add(1500*time.Millisecond, colTask)
-	timeLine.Add(2*time.Second, fadeOut, posAnim2)
+	timeLine.Add(2000*time.Millisecond, fadeOut, posAnim2)
 	timeLine.RepeatCount = ledgrid.AnimationRepeatForever
 
 	timeLine.Start()
 }
 
 func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
-    var a, b int
+	var a, b int
 	var scoreA, scoreB *ledgrid.FixedText
 
 	posA := p2p(1.0, 9.0)
-    posB := p2p(31.0, 9.0)
+	posB := p2p(31.0, 9.0)
 	scoreA = ledgrid.NewFixedText(posA, "0", colors.MediumSeaGreen)
-    scoreA.SetFont(ledgrid.Lightdot8x8)
+	scoreA.SetFont(ledgrid.Lightdot8x8)
 	scoreB = ledgrid.NewFixedText(posB, "0", colors.MediumSeaGreen)
-    scoreB.SetFont(ledgrid.Lightdot6x8)
+	scoreB.SetFont(ledgrid.Lightdot6x8)
 	c.Add(scoreA, scoreB)
 
-    a, b = 0, 0
-    	timeLine1 := ledgrid.NewTimeline(time.Second)
+	a, b = 0, 0
+	timeLine1 := ledgrid.NewTimeline(time.Second)
 	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
 	timeLine1.Add(0, ledgrid.NewTask(func() {
 		txtA := fmt.Sprintf("%d", a)
-        txtB := fmt.Sprintf("%d", b)
+		txtB := fmt.Sprintf("%d", b)
 		scoreA.SetText(txtA)
 		scoreB.SetText(txtB)
-        a, b = (a+1)%10, (b+1)%10
+		a, b = (a+1)%10, (b+1)%10
 	}))
 
 	timeLine1.Start()
-
 
 }

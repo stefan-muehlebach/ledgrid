@@ -7,11 +7,11 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
-    // programList.AddTitle("Path Animations")
+	// programList.AddTitle("Path Animations")
 	programList.Add("Path test", "Path", PathTest)
 	programList.Add("Polygon path test", "Path", PolygonPathTest)
 }

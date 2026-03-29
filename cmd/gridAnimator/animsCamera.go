@@ -1,4 +1,5 @@
 //go:build cameraOpenCV || cameraV4L2
+
 package main
 
 import (
@@ -6,11 +7,11 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
-    // programList.AddTitle("Camera Animations")
+	// programList.AddTitle("Camera Animations")
 	programList.Add("Ordinary camera", "Camera", OrdinaryCamera)
 	programList.Add("Differential camera", "Camera", DiffCamera)
 

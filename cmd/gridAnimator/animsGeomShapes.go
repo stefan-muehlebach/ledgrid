@@ -8,7 +8,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
@@ -30,9 +30,9 @@ func AsyncColorFade(ctx context.Context, c *ledgrid.Canvas) {
 	// var seqList []*ledgrid.Sequence
 	var numObjs int = 10
 
-	color1 := colors.LedColor{0x0e, 0x4f, 0x92, 0xff}
-	color2 := colors.LedColor{0xff, 0x00, 0xff, 0xff}
-	color3 := colors.LedColor{0xab, 0xff, 0x5e, 0xff}
+	color1 := colors.RGBA{0x0e, 0x4f, 0x92, 0xff}
+	color2 := colors.RGBA{0xff, 0x00, 0xff, 0xff}
+	color3 := colors.RGBA{0xab, 0xff, 0x5e, 0xff}
 
 	posList = make([]geom.Point, numObjs)
 	posList[0] = geom.Point{1.5, float64(height) / 2.0}
@@ -152,7 +152,7 @@ func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 
 	aGrp := ledgrid.NewGroup()
 
-	pal := ledgrid.NewGradientPaletteByList("Palette", true,
+	pal := colors.NewPaletteByColors("Palette",
 		colors.DeepSkyBlue,
 		colors.Lime,
 		colors.Teal,
@@ -379,9 +379,9 @@ func RectanglesJourney(ctx context.Context, c *ledgrid.Canvas) {
 	c.Add(dotList[2], dotList[1], dotList[0], rect)
 
 	fadeIn := ledgrid.NewFadeAnim(rect, ledgrid.FadeIn, 2*time.Second)
-    fadeIn.Curve = ledgrid.AnimationEaseIn
+	fadeIn.Curve = ledgrid.AnimationEaseIn
 	fadeOut := ledgrid.NewFadeAnim(rect, ledgrid.FadeOut, 4*time.Second)
-    fadeOut.Curve = ledgrid.AnimationEaseOut
+	fadeOut.Curve = ledgrid.AnimationEaseOut
 
 	flyToCenter := ledgrid.NewPositionAnim(rect, rectPos2, 1000*time.Millisecond)
 	flyToCenter.Curve = ledgrid.AnimationEaseIn

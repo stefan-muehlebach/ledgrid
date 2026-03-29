@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"math"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
@@ -41,9 +41,9 @@ func GroupTest(ctx context.Context, c *ledgrid.Canvas) {
 	aGroup := ledgrid.NewGroup(aPos, aSize, aColor, aAngle)
 	aGroup.RepeatCount = ledgrid.AnimationRepeatForever
 
-    fmt.Printf("About to start the group...\n")
+	fmt.Printf("About to start the group...\n")
 	aGroup.Start()
-    fmt.Printf("Group started\n")
+	fmt.Printf("Group started\n")
 }
 
 func SequenceTest(ctx context.Context, c *ledgrid.Canvas) {
@@ -54,7 +54,7 @@ func SequenceTest(ctx context.Context, c *ledgrid.Canvas) {
 		geom.NewPoint(5.0, 3.0),
 		geom.NewPoint(float64(gridSize.X-1), 3.0),
 	}
-	colorList := [4]colors.LedColor{
+	colorList := [4]colors.RGBA{
 		colors.SkyBlue,
 		colors.OrangeRed,
 		colors.Gold,

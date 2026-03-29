@@ -10,9 +10,9 @@ require (
 	github.com/korandiz/v4l v1.1.0
 	github.com/stefan-muehlebach/gg v1.4.1
 	github.com/stefan-muehlebach/ledgrid v1.4.3
-	github.com/vladimirvivien/go4vl v0.3.0
+	github.com/vladimirvivien/go4vl v0.5.0
 	gocv.io/x/gocv v0.43.0
-	golang.org/x/image v0.37.0
+	golang.org/x/image v0.38.0
 )
 
 require (

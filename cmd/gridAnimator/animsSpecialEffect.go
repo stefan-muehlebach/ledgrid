@@ -11,7 +11,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 // ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 			{Left2Right, Forward, ExitAway},
 			{Right2Left, Backward, ExitOver},
 		}
-		colorList := []colors.LedColor{
+		colorList := []colors.RGBA{
 			colors.OrangeRed,
 			colors.Crimson,
 			colors.FireBrick,

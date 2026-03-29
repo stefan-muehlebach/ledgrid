@@ -12,7 +12,7 @@ import (
 
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -66,7 +66,7 @@ func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 		t1 := pos.Distance(min) / t
 		t2 := pos.Distance(max) / t
 		dest := posList[permList[i]].Add(dp)
-		dot := ledgrid.NewDot(pos, colors.LedColor{uint8(255 * t1 * t2), uint8(255 * (1 - t1)), uint8(255 * (1 - t2)), 0xFF})
+		dot := ledgrid.NewDot(pos, colors.RGBA{uint8(255 * t1 * t2), uint8(255 * (1 - t1)), uint8(255 * (1 - t2)), 0xFF})
 		c.Add(dot)
 		posAnim1 := ledgrid.NewPositionAnim(dot, dest, time.Second+rand.N(time.Second))
 		posAnim2 := ledgrid.NewPositionAnim(dot, pos, time.Second+rand.N(time.Second))
@@ -87,7 +87,7 @@ func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 
 	// Je zwei gegenueberliegende Seiten des Rechtecks werden in einer Schleife
 	// erstellt. Als erstes die horizontalen, d.h. obere und untere Seite.
-	colorList := [][]colors.LedColor{
+	colorList := [][]colors.RGBA{
 		{colors.RandColorByGroup(colors.Blues).Dark(0.1),
 			colors.RandColorByGroup(colors.Greens).Dark(0.1)},
 		{colors.RandColorByGroup(colors.Reds).Dark(0.1),
@@ -162,12 +162,12 @@ func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 var (
-	colorList = [][]colors.LedColor{
-		{colors.LedColor{0xb9, 0xb9, 0x0a, 0xff}, colors.LedColor{0x0a, 0x58, 0x53, 0xff}}, // Yellow to LightBlue
-		{colors.LedColor{0xa6, 0x0c, 0x5f, 0xff}, colors.LedColor{0x00, 0x00, 0x80, 0xff}}, // DeepPink to DarkBlue
-		{colors.LedColor{0x95, 0x95, 0x00, 0xff}, colors.LedColor{0x71, 0x0e, 0x00, 0xff}}, // Yellow to OrangeRed
-		{colors.LedColor{0x00, 0x74, 0x00, 0xff}, colors.LedColor{0x9a, 0x22, 0x22, 0xff}}, // DarkGreen to DarkRed
-		{colors.LedColor{0x81, 0x41, 0x24, 0xff}, colors.LedColor{0x4c, 0x8b, 0xaa, 0xff}}, // Salmon to LightBlue
+	colorList = [][]colors.RGBA{
+		{colors.RGBA{0xb9, 0xb9, 0x0a, 0xff}, colors.RGBA{0x0a, 0x58, 0x53, 0xff}}, // Yellow to LightBlue
+		{colors.RGBA{0xa6, 0x0c, 0x5f, 0xff}, colors.RGBA{0x00, 0x00, 0x80, 0xff}}, // DeepPink to DarkBlue
+		{colors.RGBA{0x95, 0x95, 0x00, 0xff}, colors.RGBA{0x71, 0x0e, 0x00, 0xff}}, // Yellow to OrangeRed
+		{colors.RGBA{0x00, 0x74, 0x00, 0xff}, colors.RGBA{0x9a, 0x22, 0x22, 0xff}}, // DarkGreen to DarkRed
+		{colors.RGBA{0x81, 0x41, 0x24, 0xff}, colors.RGBA{0x4c, 0x8b, 0xaa, 0xff}}, // Salmon to LightBlue
 	}
 )
 
@@ -433,7 +433,7 @@ var (
 		QuasicrystalShader,
 	}
 
-	NyanCatShader = func(t, x, y, z float64, idx, nPix int) colors.LedColor {
+	NyanCatShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
 		z += myCos(x, 0, 1, 0, 0.3)
 		x += myCos(y+z, 0, 1.5, 0, 0.2)
@@ -473,13 +473,13 @@ var (
 		g = clamp(g*256.0, 0.0, 255.0)
 		b = clamp(b*256.0, 0.0, 255.0)
 
-		return colors.LedColor{uint8(r), uint8(g), uint8(b), 0xff}
+		return colors.RGBA{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
 	// Einer der Shader (oder dort: color functions) aus den Testprogrammen
 	// von OpenPixelController.
 
-	LavaLampShader = func(t, x, y, z float64, idx, nPix int) colors.LedColor {
+	LavaLampShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
 		y += myCos(x+0.2*z, 0, 1, 0, 0.6)
 		z += myCos(x, 0, 1, 0, 0.3)
 		x += myCos(y+z, 0, 1.5, 0, 0.2)
@@ -507,13 +507,13 @@ var (
 		g = clamp(g*256.0, 0.0, 255.0)
 		b = clamp(b*256.0, 0.0, 255.0)
 
-		return colors.LedColor{uint8(r), uint8(g), uint8(b), 0xff}
+		return colors.RGBA{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
 	BlinkPeriod = 11.5
 
-	RandomShader = func(t, x, y, z float64, idx, nPix int) colors.LedColor {
-		var col colors.LedColor
+	RandomShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
+		var col colors.RGBA
 
 		blinkTime := BlinkPeriod * randomList[idx]
 		relTime := math.Mod(t, BlinkPeriod)
@@ -586,14 +586,14 @@ var (
 		return math.Cos(p.X*dir.X + p.Y*dir.Y)
 	}
 
-	QuasicrystalShader = func(t, x, y, z float64, idx, nPix int) colors.LedColor {
+	QuasicrystalShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
 		p := geom.Point{x, y}.Mul(2.0)
 		bright := 0.0
 		for i := 1.0; i <= 11.0; i += 1.0 {
 			bright += wave(p, t/i)
 		}
 		bright = wrap(bright)
-		return colors.LedColor{uint8(255 * bright), uint8(255 * bright), uint8(255 * bright), 0xFF}
+		return colors.RGBA{uint8(255 * bright), uint8(255 * bright), uint8(255 * bright), 0xFF}
 	}
 )
 

@@ -9,7 +9,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 	"golang.org/x/image/draw"
 )
@@ -78,7 +78,7 @@ func (g *LedGrid) Close() {
 // for a call to draw.Draw() in order to compose the data from Canvas
 // objects before sending the picture to a GridClient.
 func (g *LedGrid) ColorModel() color.Model {
-	return colors.LedColorModel
+	return colors.RGBAModel
 }
 
 func (g *LedGrid) Bounds() image.Rectangle {
@@ -90,27 +90,27 @@ func (g *LedGrid) At(x, y int) color.Color {
 }
 
 func (g *LedGrid) Set(x, y int, c color.Color) {
-	c1 := colors.LedColorModel.Convert(c).(colors.LedColor)
+	c1 := colors.RGBAModel.Convert(c).(colors.RGBA)
 	g.SetLedColor(x, y, c1)
 }
 
 // Dient dem schnelleren Zugriff auf den Farbwert einer bestimmten Zelle, resp.
 // einer bestimmten LED. Analog zu At(), retourniert den Farbwert jedoch als
 // LedColor-Typ.
-func (g *LedGrid) LedColorAt(x, y int) colors.LedColor {
+func (g *LedGrid) LedColorAt(x, y int) colors.RGBA {
 	if !(image.Point{x, y}.In(g.Rect)) {
-		return colors.LedColor{}
+		return colors.RGBA{}
 	}
 	idx := g.PixOffset(x, y)
 	if idx < 0 {
 		return colors.Black
 	}
 	src := g.Pix[idx : idx+3 : idx+3]
-	return colors.LedColor{src[0], src[1], src[2], 0xff}
+	return colors.RGBA{src[0], src[1], src[2], 0xff}
 }
 
 // Analoge Methode zu Set(), jedoch ohne zeitaufwaendige Konvertierung.
-func (g *LedGrid) SetLedColor(x, y int, c colors.LedColor) {
+func (g *LedGrid) SetLedColor(x, y int, c colors.RGBA) {
 	if !(image.Point{x, y}.In(g.Rect)) {
 		return
 	}
@@ -135,7 +135,7 @@ func (g *LedGrid) PixOffset(x, y int) int {
 // Mit Clear kann das ganze Grid geloescht, resp. alle LEDs auf die gleiche
 // Farbe gebracht werden. Das Anzeigen, resp. der Refresh des Panel ist
 // Teil dieser Methode.
-func (g *LedGrid) Clear(c colors.LedColor) {
+func (g *LedGrid) Clear(c colors.RGBA) {
 	draw.Draw(g, g.Rect, image.NewUniform(c), image.Point{}, draw.Src)
 }
 

@@ -19,7 +19,7 @@ import (
 	// "github.com/korandiz/v4l/fmt/mjpeg"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"golang.org/x/image/draw"
 )
 
@@ -40,7 +40,7 @@ type HistCamera struct {
 	cancel           context.CancelFunc
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int, col colors.LedColor) *HistCamera {
+func NewHistCamera(pos, size geom.Point, histLen int, col colors.RGBA) *HistCamera {
 	var err error
 
 	c := &HistCamera{Pos: pos, Size: size}
@@ -213,4 +213,3 @@ func (c *HistCamera) captureThread() {
 		c.imgMutex[1].Unlock()
 	}
 }
-

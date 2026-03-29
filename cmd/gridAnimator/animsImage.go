@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-    // programList.AddTitle("Images and Sprites")
+	// programList.AddTitle("Images and Sprites")
 	programList.Add("Blinken animation", "Images", BlinkenAnimation)
 	programList.Add("Slide show (rotating images)", "Images", SlideShow)
 	programList.Add("Align this lonely image!", "Images", SingleImageAlign)
@@ -93,23 +93,23 @@ func SlideShow(ctx context.Context, c *ledgrid.Canvas) {
 		t0 := time.Duration(4*i+1) * time.Second
 		t1 := t0 + 300*time.Millisecond
 		t2 := t1 + 3300*time.Millisecond
-		aTimeline.Add(t0, ledgrid.NewTask(func () {
-            if img.IsVisible() {
-                img.Hide()
-            } else {
-                img.Show()
-            }
-        }))
-        angleAnim := ledgrid.NewAngleAnim(img, 4*math.Pi, 3*time.Second)
-        angleAnim.Cont = false
+		aTimeline.Add(t0, ledgrid.NewTask(func() {
+			if img.IsVisible() {
+				img.Hide()
+			} else {
+				img.Show()
+			}
+		}))
+		angleAnim := ledgrid.NewAngleAnim(img, 4*math.Pi, 3*time.Second)
+		angleAnim.Cont = false
 		aTimeline.Add(t1, angleAnim)
-		aTimeline.Add(t2, ledgrid.NewTask(func () {
-            if img.IsVisible() {
-                img.Hide()
-            } else {
-                img.Show()
-            }
-        }))
+		aTimeline.Add(t2, ledgrid.NewTask(func() {
+			if img.IsVisible() {
+				img.Hide()
+			} else {
+				img.Show()
+			}
+		}))
 		c.Add(img)
 	}
 	aTimeline.RepeatCount = ledgrid.AnimationRepeatForever
@@ -153,7 +153,7 @@ func SingleImageAlign(ctx context.Context, c *ledgrid.Canvas) {
 	)
 
 	aAngle := ledgrid.NewAngleAnim(img, 2*math.Pi, 4*time.Second)
-    aAngle.Cont = false
+	aAngle.Cont = false
 	aAngle.Curve = ledgrid.AnimationCubicInOut
 	aHoriSeq := ledgrid.NewSequence(
 		aAlignRight, aAngle,

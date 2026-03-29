@@ -1,4 +1,4 @@
-//go:build !tinygo
+//go:build ignore && !tinygo
 
 package ledgrid
 
@@ -9,7 +9,7 @@ import (
 	"log"
 	"path"
 
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 )
 
 //go:embed data/*.json
@@ -20,7 +20,7 @@ type JsonPalette struct {
 	Name     string `json:"Title"`
 	IsCyclic bool
 	IsSlice  bool
-	Colors   []colors.LedColor
+	Colors   []colors.RGBA
 	Stops    []ColorStop
 }
 

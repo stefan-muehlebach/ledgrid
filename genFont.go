@@ -1,6 +1,6 @@
 //go:build ignore
 
-package ledgrid
+package main
 
 import (
 	"github.com/stefan-muehlebach/ledgrid"

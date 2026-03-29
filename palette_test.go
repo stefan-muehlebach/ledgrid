@@ -1,6 +1,9 @@
 package ledgrid
 
 import (
+	"log"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/stefan-muehlebach/gg"
@@ -9,8 +12,9 @@ import (
 )
 
 const (
-	FieldWidth       = 500
+	FieldWidth       = 600
 	FieldHeight      = 100
+	TextHeight       = 30.0
 	TileRows         = 4
 	TileCols         = 256 / TileRows
 	TileWidth        = FieldWidth / TileCols
@@ -19,65 +23,60 @@ const (
 	Margin           = 10.0
 	ColorPaddingHori = 20.0
 	ColorPaddingVert = 20.0
-	FontSize         = 24.0
+	FontSize         = 18.0
+	FontSizeSmall    = 14.0
 )
 
 var (
-	NumCols         = 4
-	NumRows         = 20
-	Font            = fonts.GoBold
-	PaletteFileList = []string{
-		"palGradient.json",
-	}
+	NumCols  = 7
+	NumRows  = 0
+	NameFont = fonts.LucidaBrightDemibold
+	TypeFont = fonts.LucidaBrightItalic
 )
 
-func TestReadJsonData(t *testing.T) {
-	for _, fileName := range PaletteFileList {
-		t.Logf("Reading palette file '%s'", fileName)
-		ReadJsonData(fileName)
-	}
-}
+func TestPalette(t *testing.T) {
 
-func TestPaletteOverview(t *testing.T) {
-	NumRows = len(PaletteNames) / NumCols
-	if len(PaletteNames)%NumCols != 0 {
+	fh, err := os.Open(path.Join("data", "palNew.json"))
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	defer fh.Close()
+
+	palNames, palMap, err := colors.ReadPaletteData(fh)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	NumRows = len(palNames) / NumCols
+	if len(palNames)%NumCols != 0 {
 		NumRows += 1
 	}
-	face := fonts.NewFace(Font, FontSize)
-	gc := gg.NewContext(2*Margin+NumCols*(FieldWidth)+(NumCols-1)*ColorPaddingHori,
-		2*Margin+NumRows*FieldHeight+NumRows*(ColorPaddingVert+FontSize))
-	gc.SetFontFace(face)
+	nameFace, _ := fonts.NewFace(NameFont, FontSize)
+	typeFace, _ := fonts.NewFace(TypeFont, FontSizeSmall)
+	gc := gg.NewContext(NumCols*(FieldWidth)+(NumCols-1)*ColorPaddingHori,
+		NumRows*FieldHeight+NumRows*(ColorPaddingVert+TextHeight))
 	gc.SetTextColor(colors.Black)
 	gc.SetFillColor(colors.WhiteSmoke)
-	gc.SetStrokeWidth(0.0)
 	gc.Clear()
-	for i, name := range PaletteNames {
-		col, row := i%NumCols, i/NumCols
-		x := Margin + float64(col)*(FieldWidth+ColorPaddingHori)
-		y := Margin + float64(row)*(FieldHeight+ColorPaddingVert+FontSize)
-		switch pal := PaletteMap[name].(type) {
-		case *GradientPalette:
-			for n := range FieldWidth + 1 {
-				t := float64(n) / float64(FieldWidth)
-				x := x + float64(n)
-				gc.SetFillColor(pal.Color(t))
-				gc.DrawRectangle(x, y, 1.0, FieldHeight)
-				gc.Fill()
-			}
-
-		case *SlicePalette:
-			t.Logf("Slice palette...")
-			for j := range TileRows {
-				yNew := y + float64(j)*TileHeight
-				for k := range TileCols {
-					xNew := x + float64(k)*TileWidth
-					gc.SetFillColor(pal.Color(float64(j*TileCols + k)))
-					gc.DrawRectangle(xNew, yNew, TileWidth, TileHeight)
-					gc.Fill()
-				}
+	for i, name := range palNames {
+		col, row := i/NumRows, i%NumRows
+		x0 := col * (FieldWidth + ColorPaddingHori)
+		y0 := row * (FieldHeight + ColorPaddingVert + TextHeight)
+		pal := palMap[name]
+		for w := range FieldWidth + 1 {
+			t := float64(w) / float64(FieldWidth)
+			color := pal.Color(t)
+			x := x0 + w
+			for h := range FieldHeight {
+				y := y0 + h
+				gc.SetPixel(x, y, color)
 			}
 		}
-		gc.DrawStringAnchored(name, x, y+FieldHeight+FontSize, 0.0, 0.0)
+
+		gc.SetFontFace(nameFace)
+		gc.DrawStringAnchored(name, float64(x0), float64(y0)+FieldHeight+TextHeight, 0.0, 0.0)
+		gc.SetFontFace(typeFace)
+		gc.DrawStringAnchored(pal.Type().String(), float64(x0)+FieldWidth, float64(y0)+FieldHeight+TextHeight, 1.0, 0.0)
 	}
-	gc.SavePNG("data/Overview.png")
+	gc.SavePNG("data/palNew.png")
 }

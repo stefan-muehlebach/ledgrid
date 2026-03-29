@@ -27,9 +27,9 @@ type Camera struct {
 	imgMutex  [2]*sync.RWMutex
 	scaler    draw.Scaler
 	srcRect   image.Rectangle
-	doneChan chan bool
-	cancel   context.CancelFunc
-	running  bool
+	doneChan  chan bool
+	cancel    context.CancelFunc
+	running   bool
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
@@ -50,7 +50,7 @@ func NewCamera(pos, size geom.Point) *Camera {
 	c.imgMutex[0] = &sync.RWMutex{}
 	c.imgMutex[1] = &sync.RWMutex{}
 	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y),
-        c.srcRect.Dx(), c.srcRect.Dy())
+		c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
 	ledgrid.AnimCtrl.Add(c)
 	return c
@@ -159,4 +159,3 @@ ML:
 		}
 	}
 }
-

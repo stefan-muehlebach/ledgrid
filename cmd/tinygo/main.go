@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/ledgrid/colors"
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 

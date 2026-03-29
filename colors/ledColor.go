@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Das Package colors enthaelt einerseits einen eigenen Farbtyp fuer die
 // darstellbaren Farben eines eines LEDs (resp. NeoPixel). Im wesentlichen
 // ist dies eine Kopie von color.NRGBA mit zusaetzlichen Methoden um bspw.
