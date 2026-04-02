@@ -8,6 +8,7 @@ cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
 cmd/colorEdit/*.png
 cmd/gui/gui
+cmd/gridAnimator/gridAnimator
 cmd/gridController/gridController
 cmd/gridPlotter/gridPlotter
 cmd/gridEmulator/gridEmulator
