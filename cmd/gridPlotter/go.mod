@@ -1,4 +1,4 @@
-module ledgrid/gridController
+module ledgrid/gridPlotter
 
 go 1.26.2
 
@@ -9,6 +9,4 @@ require (
 	github.com/stefan-muehlebach/gg v1.4.1 // indirect
 	golang.org/x/image v0.34.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
-	periph.io/x/conn/v3 v3.7.2 // indirect
-	periph.io/x/host/v3 v3.8.5 // indirect
 )

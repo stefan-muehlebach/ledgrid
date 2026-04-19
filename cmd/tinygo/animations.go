@@ -73,7 +73,7 @@ func GlowingPixels(c *ledgrid.Canvas) {
 		}
 	}
 
-	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), colors.Black.Alpha(0.0), "")
+	txt := ledgrid.NewFixedText(fixed.P(width/2, height/2), "", colors.Black.Alpha(0.0))
 	txt.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
 	txtNextWord := ledgrid.NewTask(func() {
 		if scanner.Scan() {
