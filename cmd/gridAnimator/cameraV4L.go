@@ -5,31 +5,42 @@ package main
 import (
 	"context"
 	"image"
-	"image/jpeg"
 	"log"
 	"math"
-	"sync"
+	//"sync"
 	"time"
 
-	"github.com/korandiz/v4l"
-	"github.com/korandiz/v4l/fmt/mjpeg"
+    "github.com/vladimirvivien/go4vl/device"
+    "github.com/vladimirvivien/go4vl/v4l2"
+
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
 	"golang.org/x/image/draw"
 )
 
+const (
+	camDevName    = "/dev/video0"
+	camDevId      = 0
+	camWidth      = 320
+	camHeight     = 240
+	camFrameRate  = 30
+	camBufferSize = 1
+)
+
 type Camera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
-	dev       *v4l.Device
-	imgIdx    int
-	img       [2]image.Image
-	imgMutex  [2]*sync.RWMutex
+	dev       *device.Device
+	//imgIdx    int
+	//img       [2]image.Image
+	//imgMutex  [2]*sync.RWMutex
 	scaler    draw.Scaler
 	srcRect   image.Rectangle
 	doneChan  chan bool
+	ctx		  context.Context
 	cancel    context.CancelFunc
 	running   bool
+	imgOut    *image.RGBA
 }
 
 func NewCamera(pos, size geom.Point) *Camera {
@@ -46,12 +57,13 @@ func NewCamera(pos, size geom.Point) *Camera {
 		m := (camWidth - w) / 2.0
 		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
 	}
-	c.imgIdx = -1
-	c.imgMutex[0] = &sync.RWMutex{}
-	c.imgMutex[1] = &sync.RWMutex{}
+	//c.imgIdx = -1
+	//c.imgMutex[0] = &sync.RWMutex{}
+	//c.imgMutex[1] = &sync.RWMutex{}
 	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y),
 		c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
+	c.imgOut = image.NewRGBA(image.Rect(0, 0, camWidth, camHeight))
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -74,29 +86,33 @@ func (c *Camera) StartAt(t time.Time) {
 	if c.running {
 		return
 	}
-	c.dev, err = v4l.Open(camDevName)
+	c.dev, err = device.Open(
+		camDevName,
+		device.WithPixFormat(v4l2.PixFormat{
+			Width: uint32(camWidth),
+			Height: uint32(camHeight),
+			PixelFormat: v4l2.PixelFmtRGB24,
+		}),
+	)
 	if err != nil {
 		log.Fatalf("failed to open device: %v", err)
 	}
-	cfg, err := c.dev.GetConfig()
-	if err != nil {
-		log.Fatalf("failed to read configuration: %v", err)
-	}
-	cfg.Format = mjpeg.FourCC
-	cfg.Width = camWidth
-	cfg.Height = camHeight
-	cfg.FPS = v4l.Frac{uint32(camFrameRate), 1}
-	err = c.dev.SetConfig(cfg)
-	if err != nil {
-		log.Fatalf("failed to write configuration back: %v", err)
+    defer c.dev.Close()
+
+	//ctrl, err := c.dev.GetControl(v4l2.CtrlRotate)
+	//if err != nil {
+	//	log.Fatalf("failed to get control for rotation: %v", err)
+	//}
+	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlRotate, 2); err != nil {
+		log.Fatalf("failed to set rotation: %v", err)
 	}
 
-	err = c.dev.TurnOn()
-	if err != nil {
-		log.Fatalf("failed to turn on camera: %v", err)
+	c.ctx, c.cancel = context.WithCancel(context.TODO())
+	if err := c.dev.Start(c.ctx); err != nil {
+        log.Fatalf("failed to start stream: %s", err)
 	}
 
-	go c.captureThread(c.doneChan)
+	go c.captureThread()
 	c.running = true
 }
 
@@ -104,12 +120,21 @@ func (c *Camera) Suspend() {
 	if !c.running {
 		return
 	}
-	c.doneChan <- true
-	c.dev.TurnOff()
+	if err := c.dev.Stop(); err != nil {
+        log.Fatalf("failed to suspend stream: %s", err)
+	}
 	c.running = false
 }
 
-func (c *Camera) Continue() {}
+func (c *Camera) Continue() {
+	if c.running {
+		return
+	}
+	if err := c.dev.Start(c.ctx); err != nil {
+        log.Fatalf("failed to continue stream: %s", err)
+	}
+	c.running = true
+}
 
 func (c *Camera) IsRunning() bool {
 	return c.running
@@ -120,42 +145,28 @@ func (c *Camera) Update(pit time.Time) bool {
 }
 
 func (c *Camera) Draw(canv *ledgrid.Canvas) {
-	idx := c.imgIdx
-	if idx < 0 {
-		return
-	}
-	c.imgMutex[idx].RLock()
 	rect := geom.Rectangle{Max: c.Size}
 	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img[idx], c.srcRect,
+	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.imgOut, c.srcRect,
 		draw.Over, nil)
-	c.imgMutex[idx].RUnlock()
 }
 
-func (c *Camera) captureThread(done <-chan bool) {
-	var err error
-	var buf *v4l.Buffer
+func copyRGB(dst *image.RGBA, src []byte) {
+    numPixels := dst.Rect.Dx() * dst.Rect.Dy()
+    for pix := 0; pix < numPixels; pix++ {
+        idxSrc := 3 * pix
+        idxDst := 4 * pix
+        dst.Pix[idxDst+0] = src[idxSrc+0]
+        dst.Pix[idxDst+1] = src[idxSrc+1]
+        dst.Pix[idxDst+2] = src[idxSrc+2]
+        dst.Pix[idxDst+3] = 0xFF
+    }
+}
 
-	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
-ML:
-	for {
-		select {
-		case <-ticker.C:
-			buf, err = c.dev.Capture()
-			if err != nil {
-				log.Fatalf("failed to capture image data: %v", err)
-			}
-			idx := (c.imgIdx + 1) % 2
-			c.imgMutex[idx].Lock()
-			c.img[idx], err = jpeg.Decode(buf)
-			if err != nil {
-				log.Fatalf("failed to decode data: %v", err)
-			}
-			c.imgMutex[idx].Unlock()
-			c.imgIdx = idx
-
-		case <-done:
-			break ML
-		}
+func (c *Camera) captureThread() {
+	for frame := range c.dev.GetFrames() {
+		copyRGB(c.imgOut, frame.Data)
+		frame.Release()
 	}
+	log.Printf("captureThread() is terminating")
 }
