@@ -151,7 +151,7 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 	draw.Draw(mask, canv2.Rect, opaque, image.Point{}, draw.Src)
 	canv2.Mask = mask
 
-	cam := NewCamera(pos, size)
+	cam := NewCamera(ctx, pos, size)
 	canv2.Add(cam)
 	cam.Start()
 

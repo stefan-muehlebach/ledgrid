@@ -53,7 +53,7 @@ func WipeTrans(ctx context.Context, c1 *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
-	cam := NewCamera(pos, size)
+	cam := NewCamera(ctx, pos, size)
 	c1.Add(cam)
 	cam.Start()
 
@@ -88,7 +88,7 @@ func TheaterKulissen(ctx context.Context, c1 *ledgrid.Canvas) {
 	imgRocks := ledgrid.NewImage(pos, "images/floor.png")
 	c2.Add(imgRocks)
 
-	cam := NewCamera(pos, size)
+	cam := NewCamera(ctx, pos, size)
 	c3.Add(cam)
 	cam.Start()
 

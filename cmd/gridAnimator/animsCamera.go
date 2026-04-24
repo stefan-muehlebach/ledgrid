@@ -21,7 +21,7 @@ func OrdinaryCamera(ctx context.Context, canv *ledgrid.Canvas) {
 	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
 	size := geom.Point{float64(width), float64(height)}
 
-	cam := NewCamera(pos, size)
+	cam := NewCamera(ctx, pos, size)
 	canv.Add(cam)
 	cam.Start()
 }

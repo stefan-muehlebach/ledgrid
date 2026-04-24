@@ -22,19 +22,15 @@ type Camera struct {
 	ledgrid.CanvasObjectEmbed
 	Pos, Size geom.Point
 	dev       *device.Device
-	//imgIdx    int
-	//img       [2]image.Image
-	//imgMutex  [2]*sync.RWMutex
 	scaler    draw.Scaler
-	srcRect   image.Rectangle
+	srcRect, dstRect  image.Rectangle
 	doneChan  chan bool
 	ctx		  context.Context
-	cancel    context.CancelFunc
 	running   bool
 	imgOut    *image.RGBA
 }
 
-func NewCamera(pos, size geom.Point) *Camera {
+func NewCamera(ctx context.Context, pos, size geom.Point) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
 	dstRatio := size.X / size.Y
@@ -48,13 +44,15 @@ func NewCamera(pos, size geom.Point) *Camera {
 		m := (camWidth - w) / 2.0
 		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
 	}
-	//c.imgIdx = -1
-	//c.imgMutex[0] = &sync.RWMutex{}
-	//c.imgMutex[1] = &sync.RWMutex{}
-	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y),
+	rect := geom.Rectangle{Max: c.Size}
+	refPt := c.Pos.Sub(c.Size.Div(2.0))
+    c.dstRect = rect.Add(refPt).Int()
+
+	c.scaler = draw.CatmullRom.NewScaler(c.dstRect.Dx(), c.dstRect.Dy(),
 		c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
 	c.imgOut = image.NewRGBA(image.Rect(0, 0, camWidth, camHeight))
+	c.ctx = ctx
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -84,21 +82,25 @@ func (c *Camera) StartAt(t time.Time) {
 			Height: uint32(camHeight),
 			PixelFormat: v4l2.PixelFmtRGB24,
 		}),
+		device.WithFPS(uint32(camFrameRate)),
 	)
 	if err != nil {
 		log.Fatalf("failed to open device: %v", err)
 	}
-    defer c.dev.Close()
 
-	//ctrl, err := c.dev.GetControl(v4l2.CtrlRotate)
-	//if err != nil {
-	//	log.Fatalf("failed to get control for rotation: %v", err)
-	//}
-	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlRotate, 2); err != nil {
-		log.Fatalf("failed to set rotation: %v", err)
+	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlRotate, 180); err != nil {
+		log.Printf("failed to set rotation: %v", err)
+	}
+	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlColorFX, v4l2.CtrlValue(v4l2.ColorFXSkinWhiten)); err != nil {
+		log.Printf("failed to set color effect: %v", err)
+	}
+	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlCameraSceneMode, 8); err != nil {
+		log.Printf("failed to set scene mode: %v", err)
+	}
+	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlCameraIsoSensitivityAuto, 1); err != nil {
+		log.Printf("failed to set auto iso sensitivity mode: %v", err)
 	}
 
-	c.ctx, c.cancel = context.WithCancel(context.TODO())
 	if err := c.dev.Start(c.ctx); err != nil {
         log.Fatalf("failed to start stream: %s", err)
 	}
@@ -136,9 +138,7 @@ func (c *Camera) Update(pit time.Time) bool {
 }
 
 func (c *Camera) Draw(canv *ledgrid.Canvas) {
-	rect := geom.Rectangle{Max: c.Size}
-	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.imgOut, c.srcRect,
+	c.scaler.Scale(canv.Img, c.dstRect, c.imgOut, c.srcRect,
 		draw.Over, nil)
 }
 
