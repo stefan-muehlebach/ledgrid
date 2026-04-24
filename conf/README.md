@@ -8,7 +8,7 @@ organized in a square of 10 by 10 pixels is the smallest building block, I
 call it a _module_. In the picture below, you'll see how the 100 pixels are
 organized in such a module.
 
-![LR:000](plots/LR-000.png)
+![LR:000](doc/LR-000.png)
 
 This particular module is called **LR:000** (more on this name later).
 
@@ -22,18 +22,18 @@ side of the module and ends on the right side, this type of module is called
 The mirrored twin of a **LR** module is (of course) a **RL** module (shown in
 the picture below):
 
-![RL:000](plots/RL-000.png)
+![RL:000](doc/RL-000.png)
 
 Each of the two modules can be turned by 0, 90, 180 or 270 degrees, which
 gives a total of 8 modules
 
 | LR:000 | LR:090 | LR:180 | LR:270 |
 |--------|--------|--------|--------|
-|![LR:000](plots/LR-000.png)|![LR:090](plots/LR-090.png)|![LR:180](plots/LR-180.png)|![LR:270](plots/LR-270.png)|
+|![LR:000](doc/LR-000.png)|![LR:090](doc/LR-090.png)|![LR:180](doc/LR-180.png)|![LR:270](doc/LR-270.png)|
 
 | RL:000 | RL:090 | RL:180 | RL:270 |
 |--------|--------|--------|--------|
-|![RL:000](plots/RL-000.png)|![RL:090](plots/RL-090.png)|![RL:180](plots/RL-180.png)|![RL:270](plots/RL-270.png)|
+|![RL:000](doc/RL-000.png)|![RL:090](doc/RL-090.png)|![RL:180](doc/RL-180.png)|![RL:270](doc/RL-270.png)|
 
 ## Chaining the modules
 
@@ -52,7 +52,7 @@ The syntax of the configuration files will be explained right afterwards.
 
 The simplest configuration: just one module after the other.
 
-![](plots/sample01.png)
+![](doc/sample01.png)
 
     [
         {"Col": 0, "Row": 0, "Mod": "LR:0"  },
@@ -67,7 +67,7 @@ A configuration with a lot of space between the modules.
 Note that the _golden rule_ is still valid: red and green circles meet in one
 corner.
 
-![](plots/sample02.png)
+![](doc/sample02.png)
 
     [
         {"Col": 0, "Row": 1, "Mod": "LR:0"  },
@@ -80,7 +80,7 @@ corner.
 
 Same as above - but different ;-)
 
-![](plots/sample03.png)
+![](doc/sample03.png)
 
     [
         {"Col": 0, "Row": 0, "Mod": "RL:180"},
@@ -93,7 +93,7 @@ Same as above - but different ;-)
 
 You can event arrange the modules in a circle around a square hole.
 
-![](plots/sample04.png)
+![](doc/sample04.png)
 
     [
         {"Col": 1, "Row": 0, "Mod": "RL:180"},
@@ -115,17 +115,17 @@ The grids below are all automatically generated.
 
 400 pixels, the length of the wire from first to last led is 40m
 
-![](plots/default40x10.png)
+![](doc/default40x10.png)
 
 ### 40 x 40 pixels
 
 1600 pixels, the length of the wire from first to last led is 160m
 
-![](plots/default40x40.png)
+![](doc/default40x40.png)
 
 ### 80 x 60 pixels
 
 4800 pixels, the length of the wire from first to last led is 480m - and
 probably just a dream.
 
-![](plots/default80x60.png)
+![](doc/default80x60.png)
