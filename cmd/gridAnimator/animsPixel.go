@@ -323,30 +323,12 @@ func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 
 func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	var xMin, yMax float64
-	// var txt *ledgrid.FixedText
 	var palName string = ledgrid.PaletteNames[0]
-	// var ptStart, pt, ptEnd fixed.Point26_6
-
-	// pt = fixed.P(1, height-1)
-	// ptStart = pt.Add(fixed.P(width, 0))
-	// ptEnd = pt.Sub(fixed.P(width, 0))
-
-	// txt = ledgrid.NewFixedText(pt, palName, colors.Gold)
 
 	pal := ledgrid.PaletteMap[palName]
 	fader := ledgrid.NewPaletteFader(pal)
 	aPal := ledgrid.NewPaletteFadeAnim(fader, pal, 2*time.Second)
 	aPal.ValFunc = ledgrid.SeqPalette()
-
-	// txtLeave := ledgrid.NewFixedPosAnim(txt, ptEnd, time.Second)
-	// txtLeave.Curve = ledgrid.AnimationEaseIn
-	// txtEnter := ledgrid.NewFixedPosAnim(txt, pt, time.Second)
-	// txtEnter.Curve = ledgrid.AnimationEaseOut
-	// txtNewText := ledgrid.NewTask(func() {
-	// 	txt.SetText(fader.Name())
-	// 	txt.Pos = ptStart
-	// })
-	// txtChange := ledgrid.NewSequence(txtLeave, txtNewText, txtEnter)
 
 	aPalTl := ledgrid.NewTimeline(10 * time.Second)
 	aPalTl.Add(7*time.Second, aPal /*, txtChange */)
@@ -378,8 +360,6 @@ func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 		}
 		y -= dPix
 	}
-	// c.Add(txt)
-
 	aGrp.Start()
 	aPalTl.Start()
 }

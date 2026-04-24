@@ -307,6 +307,146 @@
     },
     {
 
+        "name": "Hipster",
+        "colors": [
+            "0x8d0e6b",
+            "0x053434",
+            "0x008080",
+            "0x4d4208",
+            "0xcdad0a"
+        ]
+    },
+    {
+
+        "name": "HipsterDark",
+        "colors": [
+            "0x52083e",
+            "0x031e1e",
+            "0x004a4a",
+            "0x2D2605",
+            "0xcdad0a"
+        ]
+    },
+    {
+
+        "name": "Neon",
+        "colors": [
+            "0xffffff",
+            "0x0099cc",
+            "0xff0099"
+        ]
+    },
+    {
+
+        "name": "HotFire",
+        "colors": [
+            "0xbe1013",
+            "0xd23008",
+            "0xe45323",
+            "0xee771c",
+            "0xf6960e",
+            "0xffcd06",
+            "0xf6960e",
+            "0xee771c",
+            "0xe45323",
+            "0xd23008"
+        ]
+    },
+    {
+
+        "name": "JungleDark",
+        "colors": [
+            "0x184918",
+            "0x406a3a",
+            "0xb1a658",
+            "0xa28d33",
+            "0x6a6232",
+            "0xa28d33",
+            "0xb1a658",
+            "0x406a3a"
+        ]
+    },
+    {
+
+        "name": "Kitty",
+        "colors": [
+            "0x9f456b",
+            "0x4f7a9a",
+            "0xe6c84c"
+        ]
+    },
+    {
+
+        "name": "Lantern",
+        "colors": [
+            "0x000000",
+            "0x0D9A0D",
+            "0xFFFFFF"
+        ]
+    },
+    {
+
+        "name": "Lemming",
+        "colors": [
+            "0x000000",
+            "0x0000ff",
+            "0x00ff00",
+            "0xffffff"
+        ]
+    },
+    {
+
+        "name": "LemmingInv",
+        "colors": [
+            "0xffffff",
+            "0xffff00",
+            "0xff00ff",
+            "0x000000"
+        ]
+    },
+    {
+
+        "name": "MiamiVice",
+        "colors": [
+            "0x1be3ff",
+            "0xff82dc",
+            "0xffffff"
+        ]
+    },
+    {
+
+        "name": "Nightspell",
+        "colors": [
+            "0xEDEEBA",
+            "0xFEA81C",
+            "0xB20152",
+            "0x4B0B44",
+            "0x240F37"
+        ]
+    },
+    {
+
+        "name": "Wayyou",
+        "colors": [
+            "0x1C2130",
+            "0x028F76",
+            "0xB3E099",
+            "0xFFEAAD",
+            "0xD14334"
+        ]
+    },
+    {
+
+        "name": "Weparted",
+        "colors": [
+            "0x027B7F",
+            "0xFFA588",
+            "0xD62957",
+            "0xBF1E62",
+            "0x572E4F"
+        ]
+    },
+    {
         "name": "B&W",
         "stops": [
             {
@@ -615,147 +755,6 @@
                 "pos": 1.00,
                 "color": "0xffcd06"
             }
-        ]
-    },
-    {
-
-        "name": "Hipster",
-        "colors": [
-            "0x8d0e6b",
-            "0x053434",
-            "0x008080",
-            "0x4d4208",
-            "0xcdad0a"
-        ]
-    },
-    {
-
-        "name": "HipsterDark",
-        "colors": [
-            "0x52083e",
-            "0x031e1e",
-            "0x004a4a",
-            "0x2D2605",
-            "0xcdad0a"
-        ]
-    },
-    {
-
-        "name": "Neon",
-        "colors": [
-            "0xffffff",
-            "0x0099cc",
-            "0xff0099"
-        ]
-    },
-    {
-
-        "name": "HotFire",
-        "colors": [
-            "0xbe1013",
-            "0xd23008",
-            "0xe45323",
-            "0xee771c",
-            "0xf6960e",
-            "0xffcd06",
-            "0xf6960e",
-            "0xee771c",
-            "0xe45323",
-            "0xd23008"
-        ]
-    },
-    {
-
-        "name": "JungleDark",
-        "colors": [
-            "0x184918",
-            "0x406a3a",
-            "0xb1a658",
-            "0xa28d33",
-            "0x6a6232",
-            "0xa28d33",
-            "0xb1a658",
-            "0x406a3a"
-        ]
-    },
-    {
-
-        "name": "Kitty",
-        "colors": [
-            "0x9f456b",
-            "0x4f7a9a",
-            "0xe6c84c"
-        ]
-    },
-    {
-
-        "name": "Lantern",
-        "colors": [
-            "0x000000",
-            "0x0D9A0D",
-            "0xFFFFFF"
-        ]
-    },
-    {
-
-        "name": "Lemming",
-        "colors": [
-            "0x000000",
-            "0x0000ff",
-            "0x00ff00",
-            "0xffffff"
-        ]
-    },
-    {
-
-        "name": "LemmingInv",
-        "colors": [
-            "0xffffff",
-            "0xffff00",
-            "0xff00ff",
-            "0x000000"
-        ]
-    },
-    {
-
-        "name": "MiamiVice",
-        "colors": [
-            "0x1be3ff",
-            "0xff82dc",
-            "0xffffff"
-        ]
-    },
-    {
-
-        "name": "Nightspell",
-        "colors": [
-            "0xEDEEBA",
-            "0xFEA81C",
-            "0xB20152",
-            "0x4B0B44",
-            "0x240F37"
-        ]
-    },
-    {
-
-        "name": "Wayyou",
-        "colors": [
-            "0x1C2130",
-            "0x028F76",
-            "0xB3E099",
-            "0xFFEAAD",
-            "0xD14334"
-        ]
-    },
-    {
-
-        "name": "Weparted",
-        "colors": [
-            "0x027B7F",
-            "0xFFA588",
-            "0xD62957",
-            "0xBF1E62",
-            "0x572E4F"
         ]
     }
 ]

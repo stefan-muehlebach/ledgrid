@@ -33,9 +33,6 @@ var (
 	// Namen abgelegt. Siehe auch Kommentar bei [PaletteList] betr.
 	// Nachfuehrung.
 	PaletteMap map[string]ColorSource
-
-	// ColorNames = []string{}
-	// ColorMap   = map[string]*UniformPalette{}
 )
 
 //go:embed data/*.json

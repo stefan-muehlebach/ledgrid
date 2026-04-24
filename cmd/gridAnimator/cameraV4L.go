@@ -95,7 +95,7 @@ func (c *Camera) StartAt(t time.Time) {
 	//	log.Fatalf("failed to get control for rotation: %v", err)
 	//}
 	if err := v4l2.SetControlValue(c.dev.Fd(), v4l2.CtrlRotate, 2); err != nil {
-		log.Fatalf("failed to set rotation: %v", err)
+		log.Printf("failed to set rotation: %v", err)
 	}
 
 	c.ctx, c.cancel = context.WithCancel(context.TODO())
