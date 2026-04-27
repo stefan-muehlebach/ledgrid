@@ -5,9 +5,9 @@ package main
 import (
 	"context"
 
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
@@ -18,19 +18,19 @@ func init() {
 }
 
 func OrdinaryCamera(ctx context.Context, canv *ledgrid.Canvas) {
-	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+	pos := geom.Point{}
 	size := geom.Point{float64(width), float64(height)}
 
-	cam := NewCamera(ctx, pos, size)
+	cam := NewCamera(pos, size, ctx)
 	canv.Add(cam)
 	cam.Start()
 }
 
-func DiffCamera(ctx context.Context, c *ledgrid.Canvas) {
-	pos := geom.Point{float64(width) / 2.0, float64(height) / 2.0}
+func DiffCamera(ctx context.Context, canv *ledgrid.Canvas) {
+	pos := geom.Point{}
 	size := geom.Point{float64(width), float64(height)}
 
-	cam := NewHistCamera(pos, size, 100, colors.SkyBlue)
-	c.Add(cam)
+	cam := NewHistCamera(pos, size, ctx, colors.GoTeal)
+	canv.Add(cam)
 	cam.Start()
 }

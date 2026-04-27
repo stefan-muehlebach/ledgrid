@@ -1,6 +1,5 @@
 .20240701/
 .20240815/
-*.bin
 cmd/colorEdit/colorEdit
 cmd/colorEdit/colorEdit.log
 cmd/colorEdit/*.png
@@ -11,12 +10,13 @@ cmd/gridPlotter/gridPlotter
 cmd/gui/gui
 cmd/paletteGui/paletteGui
 cmd/playground
-*.cpuprof
-*.exe
 genColorNew
 genFont
-*._go
+*.bin
+*.cpuprof
 *.memprof
+*.exe
+*._go
 *._mod
 *.mov
 nohup.out

@@ -9,9 +9,9 @@ import (
 	"math/rand/v2"
 	"time"
 
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/gg/colors"
 )
 
 // ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 	draw.Draw(mask, canv2.Rect, opaque, image.Point{}, draw.Src)
 	canv2.Mask = mask
 
-	cam := NewCamera(ctx, pos, size)
+	cam := NewCamera(pos, size, ctx)
 	canv2.Add(cam)
 	cam.Start()
 
