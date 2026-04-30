@@ -119,6 +119,7 @@ func (c *camera) Suspend() {
 	if err := c.dev.Stop(); err != nil {
 		log.Fatalf("failed to suspend stream: %s", err)
 	}
+	c.dev.Close()
 	c.running = false
 }
 
@@ -146,7 +147,6 @@ func (c *camera) captureThread() {
 		frame.Release()
 	}
 	log.Printf("captureThread() is terminating")
-	c.dev.Close()
 }
 
 // ---------------------------------------------------------------------------

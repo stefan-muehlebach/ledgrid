@@ -7,13 +7,14 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"log"
 	"math"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
@@ -209,7 +210,11 @@ func main() {
 
 			fmt.Printf("Enter a character (or '0' for quit): ")
 
-			fmt.Scanf("%s\n", &input)
+			n := 0
+			for n == 0 {
+				n, _ = fmt.Scanf("%s\n", &input)
+			}
+			log.Printf("n: %d", n)
 			ch = input[0]
 		}
 
