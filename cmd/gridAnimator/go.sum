@@ -2,8 +2,6 @@ github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 h1:DACJavvAHhabrF0
 github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0/go.mod h1:E/TSTwGwJL78qG/PmXZO1EjYhfJinVAhrmmHX6Z8B9k=
 github.com/jonboulle/clockwork v0.5.0 h1:Hyh9A8u51kptdkR+cqRpT1EebBwTn1oK9YfGYbdFz6I=
 github.com/jonboulle/clockwork v0.5.0/go.mod h1:3mZlmanh0g2NDKO5TWZVJAfofYk64M7XN3SzBPjZF60=
-github.com/korandiz/v4l v1.1.0 h1:VbzaWlhqNzVPfHEYEM+V8T7184ndiEzljJgDHSHc7pc=
-github.com/korandiz/v4l v1.1.0/go.mod h1:pftxPG7hkuUgepioAY6PAE81mShaVjzd95X/WF4Izus=
 github.com/stefan-muehlebach/gg v1.5.0 h1:mLh93/kb3YiA8V+A9ZspXwGjYZ9oIvi2Awt9/twwTZ4=
 github.com/stefan-muehlebach/gg v1.5.0/go.mod h1:XIPMRM6MkIWmxwetnXZGlx1PFIICiVfan8BPrKJZrFo=
 github.com/stefan-muehlebach/ledgrid v1.4.3 h1:pgsphlloxkCTFP94YQf3kETRIphSZhDVLVo+gTa4wms=

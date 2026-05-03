@@ -3,7 +3,6 @@ module ledgrid/gridAnimator
 go 1.26.2
 
 require (
-	github.com/korandiz/v4l v1.1.0
 	github.com/stefan-muehlebach/gg v1.5.0
 	github.com/stefan-muehlebach/ledgrid v1.4.3
 	github.com/vladimirvivien/go4vl v0.5.0

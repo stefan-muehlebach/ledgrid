@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"image"
 	"log"
 	"math"
@@ -16,6 +17,16 @@ import (
 	"golang.org/x/image/draw"
 )
 
+const (
+	camDevName    = "/dev/video2"
+	camDevId      = 0
+	camWidth      = 160
+	camHeight     = 120
+	camFrameRate  = 30
+	camBufferSize = 1
+)
+
+
 // Die zweite Kamera-Umsetzung verwendet OpenCV und kann/wird/sollte spaeter
 // auch dazu verwendet werden, wenn statt der Kamera-Bilder eine Interpretation
 // davon angezeigt werden soll.
@@ -24,7 +35,7 @@ type Camera struct {
 	Pos, Size geom.Point
 	dev       *gocv.VideoCapture
 	img       image.Image
-	srcRect   image.Rectangle
+	srcRect, dstRect  image.Rectangle
 	Mask      *image.Alpha
 	mat       [2]gocv.Mat
 	matMutex  [2]*sync.RWMutex
@@ -32,9 +43,10 @@ type Camera struct {
 	running   bool
 	scaler    draw.Scaler
 	doneChan  chan bool
+	ctx context.Context
 }
 
-func NewCamera(pos, size geom.Point) *Camera {
+func NewCamera(pos, size geom.Point, ctx context.Context) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
 	dstRatio := size.X / size.Y
@@ -42,12 +54,17 @@ func NewCamera(pos, size geom.Point) *Camera {
 	if dstRatio > srcRatio {
 		h := camWidth / dstRatio
 		m := (camHeight - h) / 2.0
-		c.srcRect = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+		c.srcRect = image.Rect(0, int(math.Round(m)),
+			camWidth, int(math.Round(m+h)))
 	} else {
 		w := camHeight * dstRatio
 		m := (camWidth - w) / 2.0
-		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
+		c.srcRect = image.Rect(int(math.Round(m)), 0,
+			int(math.Round(m+w)), camHeight)
 	}
+	c.dstRect = geom.Rectangle{Max: c.Size}.Add(c.Pos).Int()
+	c.scaler = draw.CatmullRom.NewScaler(c.dstRect.Dx(), c.dstRect.Dy(),
+		c.srcRect.Dx(), c.srcRect.Dy())
 	c.Mask = image.NewAlpha(image.Rectangle{Max: size.Int()})
 	for i := range c.Mask.Pix {
 		c.Mask.Pix[i] = 0xff
@@ -57,8 +74,8 @@ func NewCamera(pos, size geom.Point) *Camera {
 		c.matMutex[i] = &sync.RWMutex{}
 	}
 	c.matIdx = -1
-	c.scaler = draw.CatmullRom.NewScaler(int(size.X), int(size.Y), c.srcRect.Dx(), c.srcRect.Dy())
 	c.doneChan = make(chan bool)
+	c.ctx = ctx
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -69,13 +86,17 @@ func (c *Camera) Duration() time.Duration {
 
 func (c *Camera) SetDuration(dur time.Duration) {}
 
+func (c *Camera) Start() {
+	c.StartAt(time.Now())
+}
+
 func (c *Camera) StartAt(t time.Time) {
 	var err error
 
 	if c.running {
 		return
 	}
-	c.dev, err = gocv.VideoCaptureDevice(camDevId)
+ 	c.dev, err = gocv.VideoCaptureFile(camDevName)
 	if err != nil {
 		log.Fatalf("Couldn't open device: %v", err)
 	}
@@ -84,10 +105,6 @@ func (c *Camera) StartAt(t time.Time) {
 	c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
 	go c.captureThread(c.doneChan)
 	c.running = true
-}
-
-func (c *Camera) Start() {
-	c.StartAt(time.Now())
 }
 
 func (c *Camera) Suspend() {
@@ -106,6 +123,16 @@ func (c *Camera) Suspend() {
 	c.running = false
 }
 
+func (c *Camera) Continue() {}
+
+func (c *Camera) IsRunning() bool {
+	return c.running
+}
+
+func (c *Camera) Update(pit time.Time) bool {
+	return true
+}
+
 func (c *Camera) captureThread(done <-chan bool) {
 	ticker := time.NewTicker((camFrameRate + 10) * time.Millisecond)
 ML:
@@ -115,7 +142,9 @@ ML:
 			idx := (c.matIdx + 1) % 2
 			c.matMutex[idx].Lock()
 			if !c.dev.Read(&c.mat[idx]) {
-				log.Fatalf("Failed to grab and decode frames")
+				c.matMutex[idx].Unlock()
+				log.Println("Failed to grab and decode frames")
+				continue
 			}
 			gocv.Flip(c.mat[idx], &c.mat[idx], 1)
 			c.matMutex[idx].Unlock()
@@ -124,16 +153,6 @@ ML:
 			break ML
 		}
 	}
-}
-
-func (c *Camera) Continue() {}
-
-func (c *Camera) IsRunning() bool {
-	return c.running
-}
-
-func (c *Camera) Update(pit time.Time) bool {
-	return true
 }
 
 func (c *Camera) Get(prop gocv.VideoCaptureProperties) float64 {
@@ -156,8 +175,6 @@ func (c *Camera) Draw(canv *ledgrid.Canvas) {
 	if err != nil {
 		log.Fatalf("Couldn't convert image: %v", err)
 	}
-	rect := geom.Rectangle{Max: c.Size}
-	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.scaler.Scale(canv.Img, rect.Add(refPt).Int(), c.img, c.srcRect,
+	c.scaler.Scale(canv.Img, c.dstRect, c.img, c.srcRect,
 		draw.Over, &draw.Options{DstMask: c.Mask})
 }

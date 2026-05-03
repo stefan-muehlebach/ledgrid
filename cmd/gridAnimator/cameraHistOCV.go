@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"image"
 	"image/color"
 	"log"
@@ -33,15 +34,17 @@ type HistCamera struct {
 	srcMask, dstMask *image.Alpha
 	imgMutex         []*sync.RWMutex
 	scaler           draw.Scaler
-	srcRect          image.Rectangle
+	srcRect, dstRect image.Rectangle
 	running          bool
 	mat              [2]gocv.Mat
 	matMutex         [2]*sync.RWMutex
 	matIdx           int
 	doneChan         chan bool
+	ctx context.Context
 }
 
-func NewHistCamera(pos, size geom.Point, histLen int, col colors.RGBA) *HistCamera {
+func NewHistCamera(pos, size geom.Point, ctx context.Context, col colors.RGBA) *HistCamera {
+	histLen := 10
 	c := &HistCamera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
 	c.Color = ledgrid.NewUniformPalette("Uniform", col)
@@ -50,15 +53,15 @@ func NewHistCamera(pos, size geom.Point, histLen int, col colors.RGBA) *HistCame
 	if dstRatio > srcRatio {
 		h := camWidth / dstRatio
 		m := (camHeight - h) / 2.0
-		c.srcRect = image.Rect(0, int(math.Round(m)), camWidth, int(math.Round(m+h)))
+		c.srcRect = image.Rect(0, int(math.Round(m)),
+			camWidth, int(math.Round(m+h)))
 	} else {
 		w := camHeight * dstRatio
 		m := (camWidth - w) / 2.0
-		c.srcRect = image.Rect(int(math.Round(m)), 0, int(math.Round(m+w)), camHeight)
+		c.srcRect = image.Rect(int(math.Round(m)), 0,
+			int(math.Round(m+w)), camHeight)
 	}
-	rect := geom.Rectangle{Max: c.Size}
-	refPt := c.Pos.Sub(c.Size.Div(2.0))
-	c.Rect = rect.Add(refPt).Int()
+	c.dstRect = geom.Rectangle{Max: c.Size}.Add(c.Pos).Int()
 
 	c.imgIdx = -1
 	c.histLen = histLen
@@ -73,16 +76,16 @@ func NewHistCamera(pos, size geom.Point, histLen int, col colors.RGBA) *HistCame
 	}
 	c.srcMask = image.NewAlpha(imgRect)
 	c.dstMask = image.NewAlpha(c.Rect)
-	c.scaler = draw.CatmullRom.NewScaler(c.Rect.Dx(), c.Rect.Dy(), c.srcRect.Dx(), c.srcRect.Dy())
+	c.scaler = draw.CatmullRom.NewScaler(c.dstRect.Dx(), c.dstRect.Dy(),
+		c.srcRect.Dx(), c.srcRect.Dy())
 
 	for i := range 2 {
 		c.mat[i] = gocv.NewMatWithSize(camWidth, camHeight, gocv.MatTypeCV8UC3)
 		c.matMutex[i] = &sync.RWMutex{}
 	}
 	c.matIdx = -1
-
 	c.doneChan = make(chan bool)
-
+	c.ctx = ctx
 	ledgrid.AnimCtrl.Add(c)
 	return c
 }
@@ -93,13 +96,17 @@ func (c *HistCamera) Duration() time.Duration {
 
 func (c *HistCamera) SetDuration(dur time.Duration) {}
 
+func (c *HistCamera) Start() {
+	c.StartAt(time.Now())
+}
+
 func (c *HistCamera) StartAt(t time.Time) {
 	var err error
 
 	if c.running {
 		return
 	}
-	c.dev, err = gocv.VideoCaptureDevice(camDevId)
+	c.dev, err = gocv.VideoCaptureFile(camDevName)
 	if err != nil {
 		log.Fatalf("Couldn't open device: %v", err)
 	}
@@ -108,10 +115,6 @@ func (c *HistCamera) StartAt(t time.Time) {
 	c.dev.Set(gocv.VideoCaptureFPS, camFrameRate)
 	go c.captureThread(c.doneChan)
 	c.running = true
-}
-
-func (c *HistCamera) Start() {
-	c.StartAt(time.Now())
 }
 
 func (c *HistCamera) Suspend() {
@@ -127,6 +130,32 @@ func (c *HistCamera) Suspend() {
 	}
 	c.dev = nil
 	c.running = false
+}
+
+func (c *HistCamera) Continue() {}
+
+func (c *HistCamera) IsRunning() bool {
+	return c.running
+}
+
+// Mit der Methode Update wird das Graustufenbild der Kamera vom Bild mit den
+// aufkumulierten Bildern subtrahiert und das Resultat fuer die belegung
+// der Source-Mask verwendet.
+func (c *HistCamera) Update(pit time.Time) bool {
+	for i, val0 := range c.grayImg[0].Pix {
+		val1 := c.grayImg[1].Pix[i]
+		if val0 > val1 {
+			val0, val1 = val1, val0
+		}
+		v := val1 - val0
+		if v < 86 {
+			v = 3 * v
+		} else {
+			v = 0xff
+		}
+		c.srcMask.Pix[i] = v
+	}
+	return true
 }
 
 func (c *HistCamera) captureThread(done <-chan bool) {
@@ -172,32 +201,6 @@ ML:
 	}
 }
 
-func (c *HistCamera) Continue() {}
-
-func (c *HistCamera) IsRunning() bool {
-	return c.running
-}
-
-// Mit der Methode Update wird das Graustufenbild der Kamera vom Bild mit den
-// aufkumulierten Bildern subtrahiert und das Resultat fuer die belegung
-// der Source-Mask verwendet.
-func (c *HistCamera) Update(pit time.Time) bool {
-	for i, val0 := range c.grayImg[0].Pix {
-		val1 := c.grayImg[1].Pix[i]
-		if val0 > val1 {
-			val0, val1 = val1, val0
-		}
-		v := val1 - val0
-		if v < 86 {
-			v = 3 * v
-		} else {
-			v = 0xff
-		}
-		c.srcMask.Pix[i] = v
-	}
-	return true
-}
-
 func (c *HistCamera) Get(prop gocv.VideoCaptureProperties) float64 {
 	return c.dev.Get(prop)
 }
@@ -224,7 +227,7 @@ func (c *HistCamera) Draw(canv *ledgrid.Canvas) {
 
 	// Bewegungsbild, jedoch mit einfarbigem Hintergrund (sieht gespenstisch
 	// aus).
-	c.scaler.Scale(canv.Img, c.Rect, c.Color, c.srcRect,
+	c.scaler.Scale(canv.Img, c.dstRect, c.Color, c.srcRect,
 		draw.Over, &draw.Options{
 			SrcMask: c.srcMask,
 		})
