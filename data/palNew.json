@@ -1,6 +1,5 @@
 [
     {
-
         "name": "YellowBlueBack",
         "colors": [
             "0xB9B90A",
@@ -9,7 +8,6 @@
         ]
     },
     {
-
         "name": "YellowBlueDark",
         "colors": [
             "0x595905",
@@ -17,7 +15,6 @@
         ]
     },
     {
-
         "name": "PinkBlueBack",
         "colors": [
             "0xA60C5F",
@@ -26,7 +23,6 @@
         ]
     },
     {
-
         "name": "YellowOrangeBack",
         "colors": [
             "0xA8A800",
@@ -35,7 +31,6 @@
         ]
     },
     {
-
         "name": "BackDGreenDRed",
         "colors": [
             "0x007400",
@@ -43,7 +38,6 @@
         ]
     },
     {
-
         "name": "SalmonBlueBack",
         "colors": [
             "0x814124",
@@ -51,7 +45,6 @@
         ]
     },
     {
-
         "name": "RGB",
         "colors": [
             "0xFF0000",
@@ -63,7 +56,6 @@
         ]
     },
     {
-
         "name": "Accent",
         "colors": [
             "0x666666",
@@ -77,7 +69,6 @@
         ]
     },
     {
-
         "name": "CoolWarm",
         "colors": [
             "0xB10127",
@@ -91,7 +82,6 @@
         ]
     },
     {
-
         "name": "CoolWarmInv",
         "colors": [
             "0x4efed8",
@@ -105,7 +95,6 @@
         ]
     },
     {
-
         "name": "Chroma",
         "colors": [
             "0x8B0000",
@@ -119,7 +108,6 @@
         ]
     },
     {
-
         "name": "ChromaInv",
         "colors": [
             "0x74ffff",
@@ -133,7 +121,6 @@
         ]
     },
     {
-
         "name": "DarkSide",
         "colors": [
             "0x666666",
@@ -147,7 +134,6 @@
         ]
     },
     {
-
         "name": "MoreLand",
         "colors": [
             "0xB40426",
@@ -161,7 +147,6 @@
         ]
     },
     {
-
         "name": "Paired",
         "colors": [
             "0xFF7F00",
@@ -175,7 +160,6 @@
         ]
     },
     {
-
         "name": "PairedInv",
         "colors": [
             "0x0080ff",
@@ -189,7 +173,6 @@
         ]
     },
     {
-
         "name": "Parula",
         "colors": [
             "0xF9FB0E",
@@ -203,7 +186,6 @@
         ]
     },
     {
-
         "name": "ParulaInv",
         "colors": [
             "0x0604f1",
@@ -217,7 +199,6 @@
         ]
     },
     {
-
         "name": "ParulaExtended",
         "colors": [
             "0x828206",
@@ -236,7 +217,6 @@
         ]
     },
     {
-
         "name": "Plasma",
         "colors": [
             "0xF0F921",
@@ -250,7 +230,6 @@
         ]
     },
     {
-
         "name": "Set",
         "colors": [
             "0xF781BF",
@@ -264,7 +243,6 @@
         ]
     },
     {
-
         "name": "Spectral",
         "colors": [
             "0x3288BD",
@@ -278,7 +256,6 @@
         ]
     },
     {
-
         "name": "Turbo",
         "colors": [
             "0x7A0403",
@@ -292,7 +269,27 @@
         ]
     },
     {
-
+        "name": "Turbo2",
+        "colors": [
+            "0xC70705",
+            "0x7A0403",
+            "0xDB3A07",
+            "0x842304",
+            "0xFE9A2D",
+            "0xC56701",
+            "0xD1E935",
+            "0xA0B514",
+            "0x63FC6A",
+            "0x03AA0B",
+            "0x1CCED6",
+            "0x128489",
+            "0x4777EF",
+            "0x1040B9",
+            "0x753096",
+            "0x31143F"
+        ]
+    },
+    {
         "name": "Viridis",
         "colors": [
             "0xFDE725",
@@ -306,7 +303,6 @@
         ]
     },
     {
-
         "name": "Hipster",
         "colors": [
             "0x8d0e6b",
@@ -317,7 +313,6 @@
         ]
     },
     {
-
         "name": "HipsterDark",
         "colors": [
             "0x52083e",
@@ -328,7 +323,6 @@
         ]
     },
     {
-
         "name": "Neon",
         "colors": [
             "0xffffff",
@@ -337,7 +331,6 @@
         ]
     },
     {
-
         "name": "HotFire",
         "colors": [
             "0xbe1013",
@@ -353,7 +346,6 @@
         ]
     },
     {
-
         "name": "JungleDark",
         "colors": [
             "0x184918",
@@ -367,7 +359,6 @@
         ]
     },
     {
-
         "name": "Kitty",
         "colors": [
             "0x9f456b",
@@ -376,7 +367,6 @@
         ]
     },
     {
-
         "name": "Lantern",
         "colors": [
             "0x000000",
@@ -385,7 +375,6 @@
         ]
     },
     {
-
         "name": "Lemming",
         "colors": [
             "0x000000",
@@ -395,7 +384,6 @@
         ]
     },
     {
-
         "name": "LemmingInv",
         "colors": [
             "0xffffff",
@@ -405,7 +393,6 @@
         ]
     },
     {
-
         "name": "MiamiVice",
         "colors": [
             "0x1be3ff",
@@ -414,7 +401,6 @@
         ]
     },
     {
-
         "name": "Nightspell",
         "colors": [
             "0xEDEEBA",
@@ -425,7 +411,6 @@
         ]
     },
     {
-
         "name": "Wayyou",
         "colors": [
             "0x1C2130",
@@ -436,7 +421,6 @@
         ]
     },
     {
-
         "name": "Weparted",
         "colors": [
             "0x027B7F",
@@ -460,7 +444,6 @@
         ]
     },
     {
-
         "name": "B&G",
         "stops": [
             {
@@ -474,7 +457,6 @@
         ]
     },
     {
-
         "name": "Default",
         "stops": [
             {
@@ -492,7 +474,6 @@
         ]
     },
     {
-
         "name": "EarthAndSky",
         "stops": [
             {
@@ -522,7 +503,6 @@
         ]
     },
     {
-
         "name": "EarthAndSkyInv",
         "stops": [
             {
@@ -544,7 +524,6 @@
         ]
     },
     {
-
         "name": "Seashore",
         "stops": [
             {
@@ -578,7 +557,6 @@
         ]
     },
     {
-
         "name": "Pastell",
         "stops": [
             {
@@ -608,7 +586,6 @@
         ]
     },
     {
-
         "name": "PastellInv",
         "stops": [
             {
@@ -630,7 +607,6 @@
         ]
     },
     {
-
         "name": "Dark",
         "stops": [
             {
@@ -660,7 +636,6 @@
         ]
     },
     {
-
         "name": "Darker",
         "stops": [
             {
@@ -690,7 +665,6 @@
         ]
     },
     {
-
         "name": "HotAndCold",
         "stops": [
             {
@@ -716,7 +690,6 @@
         ]
     },
     {
-
         "name": "Fire",
         "stops": [
             {

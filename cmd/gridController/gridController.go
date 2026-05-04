@@ -58,7 +58,7 @@ func PlayFile(fileName string) {
 	var client ledgrid.GridClient
 	var buffer []byte
 
-	client = ledgrid.NewNetGridClient("localhost", "udp", dataPort, rpcPort)
+	client = ledgrid.NewNetGridClient("localhost", dataPort, rpcPort)
 	buffer = make([]byte, 3*client.NumLeds())
 
 	fh, err := os.Open(fileName)

@@ -1,5 +1,3 @@
-//go:build !tinygo
-
 package main
 
 import (
@@ -111,7 +109,7 @@ func main() {
 	var host string
 	var dataPort, rpcPort uint
 	// var useTCP bool
-	var network string
+	// var network string
 	var progChar string
 	var input string
 	var ch byte
@@ -141,7 +139,6 @@ func main() {
 	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	// flag.BoolVar(&useTCP, "tcp", false, "Use TCP for data")
 	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
@@ -151,16 +148,10 @@ func main() {
 	StartProfiling()
 	defer StopProfiling()
 
-	// if useTCP {
-	network = "tcp"
-	// } else {
-	// network = "udp"
-	// }
-
 	if outFile != "" {
 		gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
 	} else {
-		gridClient = ledgrid.NewNetGridClient(host, network, dataPort, rpcPort)
+		gridClient = ledgrid.NewNetGridClient(host, dataPort, rpcPort)
 		hostName = gridClient.(*ledgrid.NetGridClient).Address()
 	}
 	modConf = gridClient.ModuleConfig()

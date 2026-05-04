@@ -163,37 +163,3 @@ func (b *BlinkenFile) Decode(idx int) draw.Image {
 	}
 	return img
 }
-
-// func (b *BlinkenFile) Image(idx int) *Image {
-// 	var c color.Color
-
-// 	i := &Image{}
-// 	i.Img = image.NewRGBA(image.Rect(0, 0, b.Width, b.Height))
-// 	colorScale := uint8(255 / ((1 << b.Bits) - 1))
-// 	for row := range b.Height {
-// 		for col := range b.Width {
-// 			idxFrom := col * b.Channels
-// 			idxTo := idxFrom + b.Channels
-// 			src := b.Frames[idx].Values[row][idxFrom:idxTo:idxTo]
-// 			switch b.Channels {
-// 			case 1:
-// 				v := colorScale * src[0]
-// 				if v == 0 {
-// 					c = color.RGBA{0, 0, 0, 0}
-// 				} else {
-// 					c = color.RGBA{v, v, v, 0xff}
-// 				}
-// 			case 3:
-// 				r, g, b := colorScale*src[0], colorScale*src[1], colorScale*src[2]
-// 				if r == 0 && g == 0 && b == 0 {
-// 					c = color.RGBA{0, 0, 0, 0}
-// 				} else {
-// 					c = color.RGBA{r, g, b, 0xff}
-// 				}
-// 			}
-// 			i.Img.Set(col, row, c)
-// 		}
-// 	}
-// 	i.Size = ConvertSize(geom.NewPointIMG(i.Img.Bounds().Size()))
-// 	return i
-// }

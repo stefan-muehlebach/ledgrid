@@ -1,11 +1,8 @@
-// Diese Datei enthaelt zwei Pixel- resp. Bitmap-Schriften, die ich zum einen
-// der PICO-8 Umgebung entliehen habe oder auf Pinterest gefunden.
-
 package ledgrid
 
 import (
-	"golang.org/x/image/font/basicfont"
 	"image"
+	"golang.org/x/image/font/basicfont"
 )
 
 var Pico3x5 = &basicfont.Face{

@@ -13,9 +13,9 @@ import (
 
 func init() {
 	// programList.AddTitle("Geometric Shapes")
-	programList.Add("Circling circles", "Shapes", CirclingCircles)
+	programList.Add("Dancing Circles", "Shapes", CirclingCircles)
 	programList.Add("Chasing circles", "Shapes", ChasingCircles)
-	programList.Add("Circle animation", "Shapes", CircleAnimation)
+	programList.Add("Async Circle animation", "Shapes", CircleAnimation)
 	programList.Add("Pushing rectangles", "Shapes", PushingRectangles)
 	programList.Add("Regular polygons", "Shapes", RegularPolygon)
 	programList.Add("Rectangles journey", "Shapes", RectanglesJourney)
@@ -190,23 +190,23 @@ func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 func CircleAnimation(ctx context.Context, c *ledgrid.Canvas) {
-	c1Pos1 := geom.Point{2.0, float64(height) / 2.0}
-	c1Pos3 := geom.Point{float64(width) - 2.0, float64(height) / 2.0}
+	c1Pos1 := geom.Point{5.0, float64(height) / 2.0}
+	c1Pos3 := geom.Point{float64(width) - 5.0, float64(height) / 2.0}
 
 	c1Size1 := geom.Point{3.0, 3.0}
 	c1Size2 := geom.Point{9.0, 9.0}
 
 	c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, colors.OrangeRed)
 
-	c1pos := ledgrid.NewPositionAnim(c1, c1Pos3, 2*time.Second)
+	c1pos := ledgrid.NewPositionAnim(c1, c1Pos3, 1900*time.Millisecond)
 	c1pos.AutoReverse = true
 	c1pos.RepeatCount = ledgrid.AnimationRepeatForever
 
-	c1radius := ledgrid.NewSizeAnim(c1, c1Size2, time.Second)
+	c1radius := ledgrid.NewSizeAnim(c1, c1Size2, 1100*time.Millisecond)
 	c1radius.AutoReverse = true
 	c1radius.RepeatCount = ledgrid.AnimationRepeatForever
 
-	c1color := ledgrid.NewColorAnim(c1, colors.Gold, 4*time.Second)
+	c1color := ledgrid.NewColorAnim(c1, colors.Teal, 4100*time.Millisecond)
 	c1color.AutoReverse = true
 	c1color.RepeatCount = ledgrid.AnimationRepeatForever
 

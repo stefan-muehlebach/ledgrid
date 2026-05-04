@@ -10,9 +10,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/gg/colors"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -21,7 +21,8 @@ func init() {
 	programList.Add("Moving pixels", "Pixel", MovingPixels)
 	programList.Add("Pixel im Stau", "Pixel", CrowdedPixels)
 	programList.Add("Glowing pixels with changing text", "Pixel", GlowingPixels)
-	programList.Add("Waves of colors", "Pixel", ColorWaves)
+	programList.Add("Waves of colors (Gradient)", "Pixel", ColorWavesOnGradients)
+	programList.Add("Waves of colors (Palette)", "Pixel", ColorWavesOnPalettes)
 	programList.Add("Fireplace", "Pixel", Fireplace)
 	programList.Add("Shader using palettes", "Pixel", PaletteShader)
 	programList.Add("Shader using colors", "Pixel", ColorShader)
@@ -245,10 +246,10 @@ func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor.Start()
 }
 
-func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
+func ColorWavesOnGradients(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
-	dur := 5 * time.Second
-	numReps := 3
+	dur := 3 * time.Second
+	numReps := 5
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -291,29 +292,29 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor.Start()
 }
 
-// func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
-// 	aGrpLedColor := ledgrid.NewGroup()
-// 	dur := 30 * time.Second
-// 	pal := ledgrid.PaletteMap["Darker"]
+func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
+	aGrpLedColor := ledgrid.NewGroup()
+	dur := 40 * time.Second
+	pal := ledgrid.PaletteMap["Turbo2"]
 
-// 	for y := range c.Rect.Dy() {
-// 		for x := range c.Rect.Dx() {
-// 			pt := image.Point{x, y}
-// 			pix := ledgrid.NewPixel(pt, colorList[0][0])
+	for y := range c.Rect.Dy() {
+		for x := range c.Rect.Dx() {
+			pt := image.Point{x, y}
+			pix := ledgrid.NewPixel(pt, colorList[0][0])
 
-// 			c.Add(pix)
+			c.Add(pix)
 
-// 			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
-// 			aColorPal.AutoReverse = true
-// 			aColorPal.Curve = ledgrid.AnimationLinear
-// 			aColorPal.Pos = rand.Float64() / 8.0
-// 			aColorSeq := ledgrid.NewSequence(aColorPal)
-// 			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
-// 			aGrpLedColor.Add(aColorSeq)
-// 		}
-// 	}
-// 	aGrpLedColor.Start()
-// }
+			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
+			aColorPal.AutoReverse = true
+			aColorPal.Curve = ledgrid.AnimationLinear
+			aColorPal.Pos = float64(x)/float64(c.Rect.Dx())/16.0 + rand.Float64()/16.0
+			aColorSeq := ledgrid.NewSequence(aColorPal)
+			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			aGrpLedColor.Add(aColorSeq)
+		}
+	}
+	aGrpLedColor.Start()
+}
 
 func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 	fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})

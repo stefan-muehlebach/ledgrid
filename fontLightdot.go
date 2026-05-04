@@ -1,8 +1,8 @@
 package ledgrid
 
 import (
-	"golang.org/x/image/font/basicfont"
 	"image"
+	"golang.org/x/image/font/basicfont"
 )
 
 // Groesse: 8x8 Pixel
@@ -15,13 +15,13 @@ var Lightdot8x8 = &basicfont.Face{
 	Descent: 0,
 	Mask:    maskLightdot8x8,
 	Ranges:  []basicfont.Range{
-        {'\u0030', '\u003a', 0},
+        {rangeDigits.Low, rangeDigits.High, 0},
     },
 }
 
 var maskLightdot8x8 = &image.Alpha{
 	Stride: 8,
-	Rect:   image.Rectangle{Max: image.Point{8, 8 * 10}},
+	Rect:   image.Rectangle{Max: image.Point{8, 8 * numDigits}},
 	Pix: []byte{
 		// 0x30 '0'
 		0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
@@ -135,13 +135,13 @@ var Lightdot6x8 = &basicfont.Face{
 	Descent: 0,
 	Mask:    maskLightdot6x8,
 	Ranges:  []basicfont.Range{
-        {'\u0030', '\u003a', 0},
+        {rangeDigits.Low, rangeDigits.High, 0},
     },
 }
 
 var maskLightdot6x8 = &image.Alpha{
 	Stride: 6,
-	Rect:   image.Rectangle{Max: image.Point{6, 8 * 10}},
+	Rect:   image.Rectangle{Max: image.Point{6, 8 * numDigits}},
 	Pix: []byte{
 		// 0x30 '0'
 		0x00, 0xff, 0xff, 0xff, 0xff, 0x00,
