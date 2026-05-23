@@ -29,8 +29,7 @@ var (
 type HistCamera struct {
 	camera
 	color *image.Uniform
-	img   *image.RGBA
-	//imgRaw  *image.Gray
+	//img   *image.RGBA
 	imgIn   []*image.RGBA
 	imgMask *image.Alpha
 }
@@ -45,8 +44,7 @@ func NewHistCamera(pos, size geom.Point, ctx context.Context,
 	camRect := image.Rect(0, 0, camWidth, camHeight)
 
 	c.color = image.NewUniform(col)
-	c.img = image.NewRGBA(camRect)
-	//c.imgRaw = image.NewGray(camRect)
+	//c.img = image.NewRGBA(camRect)
 	c.imgIn = make([]*image.RGBA, 2)
 	for i := range 2 {
 		c.imgIn[i] = image.NewRGBA(camRect)
