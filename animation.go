@@ -673,6 +673,10 @@ type GenericAnimation[T AnimValue] struct {
 	val1, val2 T
 }
 
+// Mit [InitAnim] werden die Angaben aus der Parameterliste in der Animation
+// hinterlegt. Wird ueblicherweise nicht direkt, sondern aus einer
+// NewXXX Funktion aufgerufen. (Zu ueberlegen, ob das ueberhaupt exportiert
+// werden soll.)
 func (a *GenericAnimation[T]) InitAnim(valPtr *T, val2 T, dur time.Duration) {
 	a.ValPtr = valPtr
 	a.Val1 = Const(*valPtr)
@@ -681,6 +685,8 @@ func (a *GenericAnimation[T]) InitAnim(valPtr *T, val2 T, dur time.Duration) {
 	a.SetDuration(dur)
 }
 
+// [Init] dagegen wird bei jedem Start der Animation aufgerufen und ermittelt
+// Start- und Endwert des zu animierenden Parameters.
 func (a *GenericAnimation[T]) Init() {
 	if a.Cont {
 		a.Val1 = Const(*a.ValPtr)
@@ -691,6 +697,8 @@ func (a *GenericAnimation[T]) Init() {
 
 // ---------------------------------------------------------------------------
 
+// Mit der [FadeAnimation] lassen sich Objekte langsam aus- oder einblenden.
+// Realisiert wird dies durch Anpassung des Alpha-Wertes der Objektfarbe.
 type FadeType int
 
 const (
@@ -728,31 +736,10 @@ func (a *FadeAnimation) Tick(t float64) {
 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
 }
 
-// type AlphaEmbed struct {
-// 	Alpha uint8
-// }
-
-// func (e *AlphaEmbed) AlphaPtr() *uint8 {
-// 	return &e.Alpha
-// }
-
-// type AlphaAnimation struct {
-// 	GenericAnimation[uint8]
-// }
-
-// func NewAlphaAnim(obj Fadable, fade FadeType, dur time.Duration) *AlphaAnimation {
-// 	a := &AlphaAnimation{}
-// 	a.InitAnim(obj.AlphaPtr(), uint8(fade), dur)
-// 	a.NormAnimationEmbed.Extend(a)
-// 	return a
-// }
-
-// func (a *AlphaAnimation) Tick(t float64) {
-// 	*a.ValPtr = uint8((1.0-t)*float64(a.val1) + t*float64(a.val2))
-// }
-
 // ---------------------------------------------------------------------------
 
+// Mit der [IntAnimation] laesst sich ein Integer-Wert animieren. Dient eher
+// der Information - aktuell wird sie (noch) nirgends eingesetzt.
 type IntAnimation struct {
 	GenericAnimation[int]
 }
@@ -768,6 +755,8 @@ func (a *IntAnimation) Tick(t float64) {
 	*a.ValPtr = int(math.Round((1.0-t)*float64(a.val1) + t*float64(a.val2)))
 }
 
+// Die [FloatAnimation] ist die Basis der Animationen
+// der Information - aktuell wird sie (noch) nirgends eingesetzt.
 type Rotateable interface {
 	AnglePtr() *float64
 }
