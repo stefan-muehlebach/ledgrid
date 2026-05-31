@@ -45,14 +45,14 @@ type GridServer struct {
 	RecvBytes, SentBytes ByteCount
 	// udpAddr              *net.UDPAddr
 	// udpConn              *net.UDPConn
-	tcpAddr              *net.TCPAddr
-	tcpListener          *net.TCPListener
-	rpcAddr              *net.TCPAddr
-	rpcListener          *net.TCPListener
-	bufferSize           int
-	maxValue             [3]uint8
-	drawTestPattern      bool
-	stopwatch            *Stopwatch
+	tcpAddr         *net.TCPAddr
+	tcpListener     *net.TCPListener
+	rpcAddr         *net.TCPAddr
+	rpcListener     *net.TCPListener
+	bufferSize      int
+	maxValue        [3]uint8
+	drawTestPattern bool
+	stopwatch       *Stopwatch
 }
 
 // Damit wird eine neue Instanz eines GridServers erzeugt. Mit dataPort wird
@@ -88,7 +88,7 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 		log.Fatalf("Invalid address or port: %v", addrPort)
 	}
 	p.tcpAddr = net.TCPAddrFromAddrPort(addrPort)
-	p.tcpListener, err = net.ListenTCP("tcp", p.tcpAddr)
+	p.tcpListener, err = net.ListenTCP("tcp4", p.tcpAddr)
 	if err != nil {
 		log.Fatal("TCP listen error:", err)
 	}
@@ -98,7 +98,7 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 	rpc.HandleHTTP()
 	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(rpcPort))
 	p.rpcAddr = net.TCPAddrFromAddrPort(addrPort)
-	p.rpcListener, err = net.ListenTCP("tcp", p.rpcAddr)
+	p.rpcListener, err = net.ListenTCP("tcp4", p.rpcAddr)
 	if err != nil {
 		log.Fatal("RPC listen error:", err)
 	}
