@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	camDevName    = "/dev/video2"
+	camDevName    = "/dev/video0"
 	camDevId      = 0
 	camWidth      = 160
 	camHeight     = 120

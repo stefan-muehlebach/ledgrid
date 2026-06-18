@@ -756,7 +756,8 @@ func (a *IntAnimation) Tick(t float64) {
 }
 
 // Die [FloatAnimation] ist die Basis der Animationen
-// der Information - aktuell wird sie (noch) nirgends eingesetzt.
+// Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen. Kann fuer
+// verschiedene konkrete Animationen verwendet werden.
 type Rotateable interface {
 	AnglePtr() *float64
 }
@@ -765,8 +766,6 @@ type StrokeWidtheable interface {
 	StrokeWidthPtr() *float64
 }
 
-// Animation fuer einen Verlauf zwischen zwei Fliesskommazahlen. Kann fuer
-// verschiedene konkrete Animationen verwendet werden.
 type FloatAnimation struct {
 	GenericAnimation[float64]
 }
@@ -789,6 +788,9 @@ func (a *FloatAnimation) Tick(t float64) {
 	*a.ValPtr = (1-t)*a.val1 + t*a.val2
 }
 
+// Mit [ColorAnimation] kann eine Farb-Eigenschaft eines Objektes animiert
+// werden. Unterstuetzt wird aktuell ein Verlauf von der aktuellen Farbe zu
+// einer anderen.
 type Colorable interface {
 	ColorPtr() *colors.RGBA
 }
@@ -798,11 +800,6 @@ type ColorFillable interface {
 	FillColorPtr() *colors.RGBA
 }
 
-// type ColorStrokable interface {
-//     StrokeColorPtr() *colors.RGBA
-// }
-
-// Animation fuer einen Verlauf zwischen zwei Farben.
 type ColorAnimation struct {
 	GenericAnimation[colors.RGBA]
 }
@@ -827,7 +824,8 @@ func (a *ColorAnimation) Tick(t float64) {
 	(*a.ValPtr).A = alpha
 }
 
-// Animation fuer einen Farbverlauf ueber die Farben einer Palette.
+// Mit der [PaletteAnimation] kann ein Farbwert ueber saemtliche Farben einer
+// Palette animiert werden.
 type PaletteAnimation struct {
 	GenericAnimation[colors.RGBA]
 	pal ColorSource
@@ -846,8 +844,8 @@ func (a *PaletteAnimation) Tick(t float64) {
 	*a.ValPtr = a.pal.Color(t)
 }
 
-// Dies schliesslich ist eine Animation, bei welcher stufenlos von einer
-// Palette auf eine andere umgestellt wird.
+// Die [PaletteFadeAnimation] schliesslich ist eine Animation, bei welcher
+// stufenlos von einer Palette auf eine andere umgestellt wird.
 type PaletteFadeAnimation struct {
 	NormAnimationEmbed
 	Fader   *PaletteFader
@@ -882,8 +880,8 @@ func (a *PaletteFadeAnimation) Tick(t float64) {
 	}
 }
 
-// Animation fuer das Fahren entlang eines Pfades. Mit fnc kann eine konkrete,
-// Pfad-generierende Funktion angegeben werden. Siehe auch [PathFunction]
+// Mit der [PathAnimation] kann ein Objekt entlang eines Pfades bewegt werden.
+// Es stehen aktuell geometrische Pfade (Kreis, Gerade, Rechteck)
 type Positionable interface {
 	PosPtr() *geom.Point
 }

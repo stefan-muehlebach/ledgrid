@@ -1,0 +1,25 @@
+{
+    "Pos": {
+        "X": 5,
+        "Y": 5
+    },
+    "Size": {
+        "X": 9,
+        "Y": 9
+    },
+    "Angle": 0,
+    "Color": {
+        "R": 255,
+        "G": 215,
+        "B": 0,
+        "A": 255
+    },
+    "FillColor": {
+        "R": 0,
+        "G": 0,
+        "B": 0,
+        "A": 0
+    },
+    "StrokeWidth": 1,
+    "FillColorFnc": "ApplyAlpha"
+}

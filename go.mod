@@ -1,6 +1,6 @@
 module github.com/stefan-muehlebach/ledgrid
 
-go 1.26.2
+go 1.26.4
 
 require (
 	github.com/stefan-muehlebach/gg v1.5.0

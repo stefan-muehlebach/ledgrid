@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
+	"log"
 	"context"
+    "encoding/json"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -160,6 +163,17 @@ func ChasingCircles(ctx context.Context, c *ledgrid.Canvas) {
 	)
 
 	c1 := ledgrid.NewEllipse(c1Pos1, c1Size1, colors.Gold)
+
+    // Erste Versuche, diese Datenstrukturen als JSON zu speichern und
+    // ggf. via TCP/IP an einen anderen Rechner (gridController) zur
+    // Ausfuehrung senden.
+    data, err := json.MarshalIndent(c1, "", "    ")
+    if err != nil {
+        log.Fatalf("Couldn't encode object: %v", err)
+    }
+    fh, _ := os.Create("c1.json")
+    fh.Write(data)
+    fh.Close()
 
 	path := ledgrid.CirclePath.NewStart(0.25)
 
