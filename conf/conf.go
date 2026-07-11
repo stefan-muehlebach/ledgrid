@@ -353,11 +353,11 @@ func DefaultModuleConfig(size image.Point) ModuleConfig {
 var customFiles embed.FS
 
 func AllCustomFiles() (fileList []string) {
-    entryList, _ := customFiles.ReadDir("data")
-    for _, entry := range entryList {
-        fileList = append(fileList, entry.Name())
-    }
-    return fileList
+	entryList, _ := customFiles.ReadDir("data")
+	for _, entry := range entryList {
+		fileList = append(fileList, entry.Name())
+	}
+	return fileList
 }
 
 func Load(fileName string) ModuleConfig {

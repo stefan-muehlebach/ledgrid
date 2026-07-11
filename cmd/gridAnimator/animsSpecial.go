@@ -9,9 +9,9 @@ import (
 	"math/rand/v2"
 	"time"
 
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/gg/colors"
 	"golang.org/x/image/math/fixed"
 )
 

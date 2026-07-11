@@ -13,7 +13,8 @@ var (
 )
 
 // Ein Pfad ist im Grunde nichts anderes, als eine Funktion der Form
-//   [0,1] -> (x,y)
+//
+//	[0,1] -> (x,y)
 type Path interface {
 	Pos(t float64) geom.Point
 }

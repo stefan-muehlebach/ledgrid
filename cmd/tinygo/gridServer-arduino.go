@@ -134,7 +134,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 	var buffer []byte
 
 	buffer = make([]byte, p.bufferSize)
-    println("    >> start reading and processing data")
+	println("    >> start reading and processing data")
 	for {
 		bufferSize, err = conn.Read(buffer)
 		if err != nil {
@@ -149,7 +149,7 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 		p.SentBytes += ByteCount(bufferSize)
 		p.stopwatch.Stop()
 	}
-    println("    >> client has disconnected")
+	println("    >> client has disconnected")
 
 	// Vor dem Beenden des Programms werden alle LEDs Schwarz geschaltet
 	// damit das Panel dunkel wird.
@@ -166,9 +166,9 @@ func (p *GridServer) HandleTCP(lsnr net.Listener) {
 	var err error
 
 	for {
-        println(">> waiting for clients")
+		println(">> waiting for clients")
 		conn, err = lsnr.Accept()
-        println("  >> client has connected")
+		println("  >> client has connected")
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				break
@@ -176,7 +176,7 @@ func (p *GridServer) HandleTCP(lsnr net.Listener) {
 			log.Fatalf("Failed TCP Accept(): %v", err)
 		}
 		p.HandleMessage(conn)
-        conn.Close()
+		conn.Close()
 	}
 }
 

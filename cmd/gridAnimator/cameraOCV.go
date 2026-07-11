@@ -26,24 +26,23 @@ const (
 	camBufferSize = 1
 )
 
-
 // Die zweite Kamera-Umsetzung verwendet OpenCV und kann/wird/sollte spaeter
 // auch dazu verwendet werden, wenn statt der Kamera-Bilder eine Interpretation
 // davon angezeigt werden soll.
 type Camera struct {
 	ledgrid.CanvasObjectEmbed
-	Pos, Size geom.Point
-	dev       *gocv.VideoCapture
-	img       image.Image
-	srcRect, dstRect  image.Rectangle
-	Mask      *image.Alpha
-	mat       [2]gocv.Mat
-	matMutex  [2]*sync.RWMutex
-	matIdx    int
-	running   bool
-	scaler    draw.Scaler
-	doneChan  chan bool
-	ctx context.Context
+	Pos, Size        geom.Point
+	dev              *gocv.VideoCapture
+	img              image.Image
+	srcRect, dstRect image.Rectangle
+	Mask             *image.Alpha
+	mat              [2]gocv.Mat
+	matMutex         [2]*sync.RWMutex
+	matIdx           int
+	running          bool
+	scaler           draw.Scaler
+	doneChan         chan bool
+	ctx              context.Context
 }
 
 func NewCamera(pos, size geom.Point, ctx context.Context) *Camera {
@@ -96,7 +95,7 @@ func (c *Camera) StartAt(t time.Time) {
 	if c.running {
 		return
 	}
- 	c.dev, err = gocv.VideoCaptureFile(camDevName)
+	c.dev, err = gocv.VideoCaptureFile(camDevName)
 	if err != nil {
 		log.Fatalf("Couldn't open device: %v", err)
 	}

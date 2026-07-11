@@ -18,8 +18,8 @@ import (
 // For the graphical output of the wiring diagram, many constants are used to
 // configure the visual appearance.
 var (
-    // scaleFactor can be used to scale the whole plot. Use it, when tiny
-    // detail are not visible anymore.
+	// scaleFactor can be used to scale the whole plot. Use it, when tiny
+	// detail are not visible anymore.
 	scaleFactor = 1.0
 
 	MarginLeft   = 30.0 * scaleFactor
@@ -86,10 +86,10 @@ func init() {
 // the cabeling and the mapping between pixel coordinates and index on the
 // LED chain.
 func (conf ModuleConfig) Plot(fileName string) {
-    err := conf.Verify()
+	err := conf.Verify()
 	if err != nil {
-        log.Fatalf("Cannot plot configuration: %v", err)
-    }
+		log.Fatalf("Cannot plot configuration: %v", err)
+	}
 
 	size := conf.Size()
 	gc := gg.NewContext(size.X*int(LedFieldSize)+int(MarginLeft+MarginRight),
@@ -109,7 +109,7 @@ func (conf ModuleConfig) Plot(fileName string) {
 // image into the graphical context, provided by the parameter gc.
 func (conf ModuleConfig) Draw(gc *gg.Context) {
 
-    conf.DrawAxes(gc)
+	conf.DrawAxes(gc)
 
 	// And then draw the individual modules
 	p0 := geom.Point{MarginLeft, MarginTop}.AddXY(ModuleSize/2.0, ModuleSize/2.0)
@@ -128,7 +128,7 @@ func (conf ModuleConfig) DrawAxes(gc *gg.Context) {
 	// Label the columns and rows of the LEDs over the whole panel.
 	p0 := geom.Point{MarginLeft, MarginTop}
 	gc.SetStrokeWidth(AxesTickWidth)
-    gc.SetStrokeColor(AxesTickColor)
+	gc.SetStrokeColor(AxesTickColor)
 	gc.SetTextColor(AxesTextColor)
 	gc.SetFontFace(axesFontFace)
 
@@ -272,7 +272,7 @@ func (mod Module) Draw(gc *gg.Context, idxMod int) {
 		mp = mp.Add(dp)
 	}
 
-    mod.DrawBorder(gc)
+	mod.DrawBorder(gc)
 }
 
 func (mod Module) DrawTrace(gc *gg.Context) {
@@ -324,10 +324,9 @@ func (mod Module) DrawTrace(gc *gg.Context) {
 }
 
 func (mod Module) DrawBorder(gc *gg.Context) {
-    	// Draw the border of the module.
+	// Draw the border of the module.
 	gc.DrawRectangle(pTL.X, pTL.Y, ModuleSize, ModuleSize)
 	gc.SetStrokeWidth(ModuleBorderWidth)
 	gc.SetStrokeColor(ModuleBorderColor)
 	gc.Stroke()
 }
-

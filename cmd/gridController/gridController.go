@@ -74,7 +74,7 @@ func PlayFile(fileName string) {
 		client.Send(buffer)
 	}
 	fh.Close()
-    client.Close()
+	client.Close()
 }
 
 var (

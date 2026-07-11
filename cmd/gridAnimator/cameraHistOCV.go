@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/gg/colors"
 
 	"gocv.io/x/gocv"
 	"golang.org/x/image/draw"
@@ -40,7 +40,7 @@ type HistCamera struct {
 	matMutex         [2]*sync.RWMutex
 	matIdx           int
 	doneChan         chan bool
-	ctx context.Context
+	ctx              context.Context
 }
 
 func NewHistCamera(pos, size geom.Point, ctx context.Context, col colors.RGBA) *HistCamera {

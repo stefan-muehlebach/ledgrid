@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/ledgrid"
 	"golang.org/x/image/math/fixed"
 )
 

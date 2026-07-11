@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	defWidth           = 40
-	defHeight          = 10
-	defPixelSize       = 40.0
+	defWidth     = 40
+	defHeight    = 10
+	defPixelSize = 40.0
 )
 
 func ResetStatistics(gridServer *ledgrid.GridServer) {
@@ -42,7 +42,7 @@ func ToggleTests() {
 }
 
 var (
-    gridServer *ledgrid.GridServer
+	gridServer *ledgrid.GridServer
 )
 
 func main() {
@@ -62,8 +62,8 @@ func main() {
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.Parse()
 
-    StartProfiling()
-    defer StopProfiling()
+	StartProfiling()
+	defer StopProfiling()
 
 	if customConfName != "" {
 		modConf = conf.Load("data/" + customConfName + ".json")
@@ -74,11 +74,11 @@ func main() {
 		modConf = conf.DefaultModuleConfig(gridSize)
 	}
 
-    title := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", gridSize.X, gridSize.Y, dataPort)
+	title := fmt.Sprintf("LEDGrid Emulator (Size: %d x %d; Port: %d)", gridSize.X, gridSize.Y, dataPort)
 
 	gridWindow = NewWindow(title, pixelSize, modConf)
 	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, gridWindow)
 
-    gridServer.HandleEvents()
-    gridWindow.HandleEvents()
+	gridServer.HandleEvents()
+	gridWindow.HandleEvents()
 }

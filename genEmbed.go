@@ -11,12 +11,6 @@ import (
 	"text/template"
 )
 
-
-
-
-
-
-
 const embedTemplate = `
 // {{ .Name }} supports binding a {{ .Type }} value.
 type {{ .Name }} interface {
@@ -121,8 +115,6 @@ type SizeEmbed struct {
 func (e *SizeEmbed) SizePtr() *geom.Point {
 	return &e.Size
 }
-
-
 
 type embedValues struct {
 	Name, Type, Interface string

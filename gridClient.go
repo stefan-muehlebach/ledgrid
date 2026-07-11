@@ -191,7 +191,6 @@ func (c *DirectGridClient) Close() {
 	c.Disp.Close()
 }
 
-
 // Dieser Client-Typ schreibt alle Bilddaten in eine Datei, welche im
 // Anschluss auf ein System mit echter Hardware transferiert und dort
 // wie ein Film abgespielt wird.

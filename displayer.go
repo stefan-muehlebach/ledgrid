@@ -36,7 +36,7 @@ type Displayer interface {
 	// Display is used by a Server to show the image data in buffer. The bytes
 	// in buffer must already be in a suitable order for this specific device.
 	// The order of RGB has to be in device order as well but the data hasn't
-    // to be gamma corrected.
+	// to be gamma corrected.
 	Display(buffer []byte)
 	// Send is called by Display and must not be called from other parts of
 	// the software
@@ -55,9 +55,9 @@ const (
 	// LedOK is the default state of a NeoPixel.
 	LedOK LedStatusType = iota
 	// NeoPixels with status LedDefect will be blacked out. This means that
-    // the sent color data for this pixel will always be (0,0,0), i.e. black.
+	// the sent color data for this pixel will always be (0,0,0), i.e. black.
 	// This status can be used if a NeoPixel propagates data as expected
-    // but is not able to correctly display its own color.
+	// but is not able to correctly display its own color.
 	LedDefect
 	// LedMissing can be used, if a NeoPixel does not even propagate data
 	// to NeoPixels further down the chain. Such a pixel has to be cut out

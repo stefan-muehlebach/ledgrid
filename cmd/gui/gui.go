@@ -17,8 +17,8 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 	"golang.org/x/image/math/fixed"
 )
@@ -189,24 +189,24 @@ func main() {
 	})
 	backSelect.SetSelected(defPaletteName)
 
-    animLabel := widget.NewLabel("Animation")
-    animLabel.TextStyle.Bold = true
-    	animRadio := widget.NewRadioGroup([]string{"On", "Off"}, func(s string) {
-        if s == "On" {
-            ledgrid.AnimCtrl.Continue()
-        } else if s == "Off" {
-            	ledgrid.AnimCtrl.Suspend()
-        }
-    })
-    animRadio.SetSelected("On")
-    animRadio.Horizontal = true
+	animLabel := widget.NewLabel("Animation")
+	animLabel.TextStyle.Bold = true
+	animRadio := widget.NewRadioGroup([]string{"On", "Off"}, func(s string) {
+		if s == "On" {
+			ledgrid.AnimCtrl.Continue()
+		} else if s == "Off" {
+			ledgrid.AnimCtrl.Suspend()
+		}
+	})
+	animRadio.SetSelected("On")
+	animRadio.Horizontal = true
 
 	animForm := container.New(
 		layout.NewFormLayout(),
 		txtLabel, txtEntry,
 		colorLabel, colorSelect,
 		backLabel, backSelect,
-        animLabel, animRadio,
+		animLabel, animRadio,
 	)
 	animCard := widget.NewCard("Animations", "On this form, you specify which animation you want to run.", animForm)
 	animTab := container.NewVBox(

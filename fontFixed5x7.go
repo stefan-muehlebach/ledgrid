@@ -1,10 +1,11 @@
 package ledgrid
 
 import (
-	"image"
 	"golang.org/x/image/font/basicfont"
+	"image"
 )
 
+// Fixed5x7 --
 var Fixed5x7 = &basicfont.Face{
 	Advance: 6,
 	Width:   5, // Dies ist die Breite eines Buchstabens gem. Maske

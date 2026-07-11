@@ -43,10 +43,10 @@ var dataFS embed.FS
 // Datei "palNew.json", welche die bisherigen Paletten in einem JSON-Format
 // fuehrt.
 func init() {
-    var palMap map[string]colors.Palette
-    var err error
+	var palMap map[string]colors.Palette
+	var err error
 
-    PaletteMap = make(map[string]ColorSource)
+	PaletteMap = make(map[string]ColorSource)
 
 	fh, err := dataFS.Open(path.Join("data", "palNew.json"))
 	if err != nil {

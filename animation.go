@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/image/math/fixed"
 
-	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/gg/geom"
 )
 
 var (
@@ -625,18 +625,22 @@ func (a *Delay) Tick(t float64) {}
 type AnimNumbers interface {
 	~float64 | ~uint8 | ~int
 }
+
 // AnimPoints sind die animierbaren 2D-Vektoren von denen es 3 Typen gibt.
 type AnimPoints interface {
 	geom.Point | image.Point | fixed.Point26_6
 }
+
 // AnimColors enthaelt bloss einen Datentyp fuer animierbare Farben.
 type AnimColors interface {
 	colors.RGBA
 }
+
 // AnimValue schliesslich ist der Zusammenschluss aller animierbaren Typen.
 type AnimValue interface {
 	AnimNumbers | AnimPoints | AnimColors
 }
+
 // Die eigentliche Arbeit erbringen Funktionen vom Typ AnimValueFunc, welche
 // ohne Parameter aufgerufen werden und als Rueckgabewert einen Wert des
 // Typs AnimValue haben.
@@ -658,9 +662,9 @@ type GenericAnimation[T AnimValue] struct {
 	// Continue() nur einmal implementieren zu muessen.
 	NormAnimationEmbed
 	// ValPtr zeigt auf jenes Feld eines Objektes, welches durch diese
-    // Animation veraendert werden soll. Die Animation kennt also den
-    // Grund-Typ (Rectangle, Circle, Pixel, etc) nicht, sondern nur die zu
-    // animierende Eigenschaft.
+	// Animation veraendert werden soll. Die Animation kennt also den
+	// Grund-Typ (Rectangle, Circle, Pixel, etc) nicht, sondern nur die zu
+	// animierende Eigenschaft.
 	ValPtr *T
 	// Val1 und Val2 enthalten Funktionen, mit welchen der Start-, resp. End-
 	// wert einer Animation zum Startzeitpunkt ermittelt werden. Damit lassen

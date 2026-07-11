@@ -12,18 +12,18 @@ import (
 
 	gc "github.com/gbin/goncurses"
 	// gc "github.com/rthornton128/goncurses"
-	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
 const (
-	KEY_SUP       = 0x151 /* Shifted up arrow */
-	KEY_SDOWN     = 0x150 /* Shifted down arrow */
-	KEY_CLEFT     = 0x222 /* Ctrl-left arrow */
-	KEY_CRIGHT    = 0x231 /* Ctrl-right arrow */
-	KEY_CUP       = 0x237 /* Ctrl-up arrow */
-	KEY_CDOWN     = 0x20e /* Ctrl-down arrow */
+	KEY_SUP    = 0x151 /* Shifted up arrow */
+	KEY_SDOWN  = 0x150 /* Shifted down arrow */
+	KEY_CLEFT  = 0x222 /* Ctrl-left arrow */
+	KEY_CRIGHT = 0x231 /* Ctrl-right arrow */
+	KEY_CUP    = 0x237 /* Ctrl-up arrow */
+	KEY_CDOWN  = 0x20e /* Ctrl-down arrow */
 
 	KEY_ADOWN     = 0x20c /* Alt-down arrow */
 	KEY_AUP       = 0x235 /* Alt-up arrow */
@@ -62,7 +62,7 @@ func between(x, a, b int) bool {
 
 //go:inline
 func toM(v uint8) int16 {
-    return int16(float64(v) * 1000.0 / 255.0)
+	return int16(float64(v) * 1000.0 / 255.0)
 }
 
 func LogMouseEvent(log *os.File, event *gc.MouseEvent) {
@@ -210,7 +210,6 @@ func main() {
 	// magenta := int16(5)
 	// cyan := int16(6)
 	white := int16(7)
-
 
 	// Setup dark colors (R, G, B)
 	dark := func(colIdx int16) int16 { return 16 + colIdx }
@@ -449,9 +448,9 @@ main:
 			rowOff, colOff := 3, 9
 
 			me := gc.GetMouse()
-            if me == nil {
-                break
-            }
+			if me == nil {
+				break
+			}
 			LogMouseEvent(logFile, me)
 			if me.State&gc.M_B1_CLICKED != 0 {
 				if !between(me.Y, gridYMin+rowOff, gridYMin+rowOff+10-1) ||

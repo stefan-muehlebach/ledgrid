@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	"github.com/stefan-muehlebach/gg/geom"
@@ -15,7 +16,7 @@ type Camera struct {
 	running   bool
 }
 
-func NewCamera(pos, size geom.Point) *Camera {
+func NewCamera(pos, size geom.Point, ctx context.Context) *Camera {
 	c := &Camera{Pos: pos, Size: size}
 	c.CanvasObjectEmbed.Extend(c)
 	ledgrid.AnimCtrl.Add(c)

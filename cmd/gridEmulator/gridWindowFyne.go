@@ -120,10 +120,10 @@ func (e *Window) HandleEvents() {
 			fmt.Printf("  q   Quit the program\n")
 			fmt.Printf(" ESC  Same as 'q'\n")
 		case fyne.KeyS:
-		 	PrintStatistics(gridServer)
-		 	ResetStatistics(gridServer)
+			PrintStatistics(gridServer)
+			ResetStatistics(gridServer)
 		case fyne.KeyT:
-		  	ToggleTests(gridServer)
+			ToggleTests(gridServer)
 		case fyne.KeyEscape, fyne.KeyQ:
 			e.App.Quit()
 		}

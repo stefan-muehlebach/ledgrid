@@ -10,10 +10,10 @@ import (
 
 	"golang.org/x/image/math/fixed"
 
+	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/fonts"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
-	"github.com/stefan-muehlebach/gg/colors"
 )
 
 func init() {
@@ -301,7 +301,7 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 		var txtColor colors.RGBA
 
 		col := colors.Map[colName]
-        hsl := colors.HSLModel.Convert(col).(colors.HSL)
+		hsl := colors.HSLModel.Convert(col).(colors.HSL)
 		h, s, l := hsl.H, hsl.S, hsl.L
 		switch {
 		case s == 0:
@@ -341,26 +341,34 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
-	var a, b int
-	var scoreA, scoreB *ledgrid.FixedText
+	var score int
+	var scoreA, scoreB, scoreC, scoreD *ledgrid.FixedText
 
 	posA := p2p(1.0, 9.0)
-	posB := p2p(31.0, 9.0)
+	posB := p2p(11.0, 9.0)
+	posC := p2p(21.0, 9.0)
+	posD := p2p(31.0, 9.0)
 	scoreA = ledgrid.NewFixedText(posA, "0", colors.MediumSeaGreen)
 	scoreA.SetFont(ledgrid.Lightdot8x8)
-	scoreB = ledgrid.NewFixedText(posB, "0", colors.MediumSeaGreen)
-	scoreB.SetFont(ledgrid.Lightdot6x8)
-	c.Add(scoreA, scoreB)
+	scoreB = ledgrid.NewFixedText(posB, "0", colors.Lime)
+	scoreB.SetFont(ledgrid.ChuckChillout)
+	scoreC = ledgrid.NewFixedText(posC, "0", colors.DeepPink)
+	scoreC.SetFont(ledgrid.Lightdot6x8)
+	scoreD = ledgrid.NewFixedText(posD, "0", colors.OrangeRed)
+	scoreD.SetFont(ledgrid.BlackBlock)
 
-	a, b = 0, 0
+	c.Add(scoreA, scoreB, scoreC, scoreD)
+
+	score = 0
 	timeLine1 := ledgrid.NewTimeline(time.Second)
-	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
+	timeLine1.RepeatCount = 10
 	timeLine1.Add(0, ledgrid.NewTask(func() {
-		txtA := fmt.Sprintf("%d", a)
-		txtB := fmt.Sprintf("%d", b)
-		scoreA.SetText(txtA)
-		scoreB.SetText(txtB)
-		a, b = (a+1)%10, (b+1)%10
+		scoreTxt := fmt.Sprintf("%d", score)
+		scoreA.SetText(scoreTxt)
+		scoreB.SetText(scoreTxt)
+		scoreC.SetText(scoreTxt)
+		scoreD.SetText(scoreTxt)
+		score = (score + 1) % 10
 	}))
 
 	timeLine1.Start()

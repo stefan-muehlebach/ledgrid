@@ -54,11 +54,11 @@ func main() {
 
 	// Establish the connection to the WiFi-Module and open it using Ssid and
 	// Passphrase
-    println("Here we go...")
-    println("Probe network driver")
+	println("Here we go...")
+	println("Probe network driver")
 	link, _ := probe.Probe()
 
-    println("Connect to WiFi")
+	println("Connect to WiFi")
 	err := link.NetConnect(&netlink.ConnectParams{
 		Ssid:       Ssid,
 		Passphrase: Passphrase,
@@ -77,10 +77,10 @@ func main() {
 		modConf = conf.DefaultModuleConfig(gridSize)
 	}
 
-    println("Setup connection to WS2891 by SPI bus")
+	println("Setup connection to WS2891 by SPI bus")
 	ws2801 = ledgrid.NewWS2801(modConf)
 
-    println("Initialize Server")
+	println("Initialize Server")
 	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
@@ -103,8 +103,8 @@ func main() {
 		}
 	}
 
-    println("Start receiving data from the network")
+	println("Start receiving data from the network")
 	gridServer.HandleEvents()
 
-    println("Server has been terminated")
+	println("Server has been terminated")
 }

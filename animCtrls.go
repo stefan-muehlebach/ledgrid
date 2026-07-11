@@ -76,9 +76,9 @@ func (a *Group) Suspend() {
 	}
 	a.stop = AnimCtrl.Now()
 	for _, task := range a.Tasks {
-        if anim, ok := task.(Animation); ok {
-            anim.Suspend()
-        }
+		if anim, ok := task.(Animation); ok {
+			anim.Suspend()
+		}
 	}
 	a.running = false
 }
@@ -92,9 +92,9 @@ func (a *Group) Continue() {
 	a.start = a.start.Add(dt)
 	a.end = a.end.Add(dt)
 	for _, task := range a.Tasks {
-        if anim, ok := task.(Animation); ok {
-            anim.Continue()
-        }
+		if anim, ok := task.(Animation); ok {
+			anim.Continue()
+		}
 	}
 	a.running = true
 }
@@ -205,9 +205,9 @@ func (a *Sequence) Suspend() {
 	}
 	a.stop = AnimCtrl.Now()
 	for _, task := range a.Tasks {
-        if anim, ok := task.(Animation); ok {
-            anim.Suspend()
-        }
+		if anim, ok := task.(Animation); ok {
+			anim.Suspend()
+		}
 	}
 	a.running = false
 }
@@ -221,9 +221,9 @@ func (a *Sequence) Continue() {
 	a.start = a.start.Add(dt)
 	a.end = a.end.Add(dt)
 	for _, task := range a.Tasks {
-        if anim, ok := task.(Animation); ok {
-            anim.Continue()
-        }
+		if anim, ok := task.(Animation); ok {
+			anim.Continue()
+		}
 	}
 	a.running = true
 }

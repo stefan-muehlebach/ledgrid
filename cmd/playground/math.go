@@ -9,11 +9,11 @@ package main
 import "unsafe"
 
 const (
-	Pi  = 3.14159265358979323846264338327950288419716939937510582097494459 // https://oeis.org/A000796
+	Pi = 3.14159265358979323846264338327950288419716939937510582097494459 // https://oeis.org/A000796
 )
 
 const (
-	MaxFloat32             = 0x1p127 * (1 + (1 - 0x1p-23)) // 3.40282346638528859811704183484516925440e+38
+	MaxFloat32 = 0x1p127 * (1 + (1 - 0x1p-23)) // 3.40282346638528859811704183484516925440e+38
 )
 
 const (
@@ -30,7 +30,7 @@ func IsNaN(f float32) bool {
 }
 
 func IsInf(f float32, sign int) bool {
-    return sign >= 0 && f > MaxFloat32 || sign <= 0 && f < -MaxFloat32
+	return sign >= 0 && f > MaxFloat32 || sign <= 0 && f < -MaxFloat32
 }
 
 // Float32bits returns the IEEE 754 binary representation of f,
@@ -45,7 +45,7 @@ func Float32bits(f float32) uint32 { return *(*uint32)(unsafe.Pointer(&f)) }
 func Float32frombits(b uint32) float32 { return *(*float32)(unsafe.Pointer(&b)) }
 
 func Abs(x float32) float32 {
-    return Float32frombits(Float32bits(x) &^ (1 << 31))
+	return Float32frombits(Float32bits(x) &^ (1 << 31))
 }
 
 func Modf(f float32) (int float32, frac float32) {

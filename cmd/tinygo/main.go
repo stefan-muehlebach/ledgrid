@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/gg/colors"
+	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
 )
 
