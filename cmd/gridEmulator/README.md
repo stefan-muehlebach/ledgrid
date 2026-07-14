@@ -21,8 +21,8 @@ Supported flags are:
         Diameter of one LED in the enumlation window in pixels. With a smaller
         number, even large grids fit onto your screen. The size of the
         emulator window is fixed.
-    -data=5333
-        Specify the UDP port where the emulator listens for incoming data
+    -tcp=5333
+        Specify the TCP port where the emulator listens for incoming data
         packages.
     -rpc=5332
         Specifiy the TCP port, where RPC calls will be received

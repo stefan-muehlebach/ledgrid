@@ -197,6 +197,14 @@ func AnimationLinear(t float64) float64 {
 	return t
 }
 
+func AnimationStep(t float64) float64 {
+	if t <= 0.5 {
+		return 0.0
+	} else {
+		return 1.0
+	}
+}
+
 // Die folgenden Funktionen dienen als Basis fuer eine ganze Schar von
 // Animationskurven. Es sind im Grunde parametrisierbare Parabeln; mit dem
 // Parameter (einem Fliesskommawert in [0,8]) wird der Exponent bestimmt.

@@ -30,7 +30,6 @@ func PrintStatistics() {
 	log.Printf("Current gamma values:")
 	r, g, b := gridServer.Gamma()
 	log.Printf("   R: %.1f, G: %.1f, B: %.1f", r, g, b)
-	log.Printf("Current settings for max values (brightness):")
 }
 
 func ToggleTests() {
@@ -56,7 +55,7 @@ func main() {
 
 	flag.IntVar(&width, "width", defWidth, "Width of panel")
 	flag.IntVar(&height, "height", defHeight, "Height of panel")
-	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port")
+	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.Float64Var(&pixelSize, "size", defPixelSize, "Diameter of one LED in pixels")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
