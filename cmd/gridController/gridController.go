@@ -102,7 +102,7 @@ func main() {
 	flag.IntVar(&height, "height", 0, "Height of panel")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 
-	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data port (UPD as well as TCP)")
+	flag.UintVar(&dataPort, "data", ledgrid.DefTCPPort, "Data port (UPD as well as TCP)")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")

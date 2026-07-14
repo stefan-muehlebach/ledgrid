@@ -159,10 +159,6 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 		var src, dst geom.Point
 
 		effectList := []EffectType{
-			// {In2Outside, Backward, ExitOver},
-			// {In2Outside, Forward, ExitOver},
-			// {In2Outside, Backward, ExitAway},
-			// {In2Outside, Forward, ExitAway},
 			{Top2Bottom, Alternate, ExitOver},
 			{Top2Bottom, Forward, ExitOver},
 			{Bottom2Top, Backward, ExitAway},
@@ -189,6 +185,9 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 				for _, pts := range EffectFader(effect, canv1.Rect.Size()) {
 					for _, pp := range pts {
 						p0, p1 := pp.Src, pp.Dst
+						if ! modConf.Contains(p0) {
+							continue
+						}
 						src = geom.NewPointIMG(p0)
 						dst = geom.NewPointIMG(p1)
 						pixAway := ledgrid.NewDot(src, colorList[i].Alpha(0.0))

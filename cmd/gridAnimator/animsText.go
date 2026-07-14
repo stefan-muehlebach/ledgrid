@@ -351,11 +351,11 @@ func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
 	scoreA = ledgrid.NewFixedText(posA, "0", colors.MediumSeaGreen)
 	scoreA.SetFont(ledgrid.Lightdot8x8)
 	scoreB = ledgrid.NewFixedText(posB, "0", colors.Lime)
-	scoreB.SetFont(ledgrid.ChuckChillout)
+	scoreB.SetFont(ledgrid.ChuckChillout5x6)
 	scoreC = ledgrid.NewFixedText(posC, "0", colors.DeepPink)
 	scoreC.SetFont(ledgrid.Lightdot6x8)
 	scoreD = ledgrid.NewFixedText(posD, "0", colors.OrangeRed)
-	scoreD.SetFont(ledgrid.BlackBlock)
+	scoreD.SetFont(ledgrid.BlackBlock4x5)
 
 	c.Add(scoreA, scoreB, scoreC, scoreD)
 

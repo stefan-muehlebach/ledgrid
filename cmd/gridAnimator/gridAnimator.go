@@ -103,6 +103,7 @@ func SignalHandler(timeout time.Duration) {
 
 var (
 	programList ProgramList = make([]LedGridProgram, 0)
+	modConf conf.ModuleConfig
 )
 
 func main() {
@@ -117,7 +118,6 @@ func main() {
 	// var runInteractive bool
 	var progList string
 	// var gR, gG, gB float64
-	var modConf conf.ModuleConfig
 	var timeout time.Duration
 	var outFile string
 
@@ -139,7 +139,7 @@ func main() {
 	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
+	flag.UintVar(&dataPort, "data", ledgrid.DefTCPPort, "Data Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")

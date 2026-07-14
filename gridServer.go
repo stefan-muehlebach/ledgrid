@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	DefDataPort = 5333
-	DefRPCPort  = 5332
+	DefTCPPort = 5333
+	DefRPCPort = 5332
 )
 
 // Der Datentyp ByteCount kann zum Zaehlen von Bytes verwendet werden (bspw.
@@ -43,8 +43,6 @@ func (b ByteCount) String() string {
 type GridServer struct {
 	Disp                 Displayer
 	RecvBytes, SentBytes ByteCount
-	// udpAddr              *net.UDPAddr
-	// udpConn              *net.UDPConn
 	tcpAddr         *net.TCPAddr
 	tcpListener     *net.TCPListener
 	rpcAddr         *net.TCPAddr
@@ -59,7 +57,7 @@ type GridServer struct {
 // der Port sowohl fuer die UDP-, als auch fuer die TCP-Verbindung angegeben
 // mit mit rpcPort der Port fuer die RPC-Calls. Mit disp wird dem Server
 // ein konkretes, anzeigefaehiges Geraet (sog. Displayer) mitgegeben.
-func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
+func NewGridServer(tcpPort, rpcPort uint, disp Displayer) *GridServer {
 	var err error
 	var addrPort netip.AddrPort
 
@@ -69,21 +67,9 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 
 	p.stopwatch = NewStopwatch()
 
-	// Jetzt wird der UDP-Port geoeffnet, resp. eine lesende Verbindung
-	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
-	// addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
-	// if !addrPort.IsValid() {
-	// 	log.Fatalf("Invalid address or port: %v", addrPort)
-	// }
-	// p.udpAddr = net.UDPAddrFromAddrPort(addrPort)
-	// p.udpConn, err = net.ListenUDP("udp", p.udpAddr)
-	// if err != nil {
-	// 	log.Fatal("UDP listen error:", err)
-	// }
-
 	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
-	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(dataPort))
+	addrPort = netip.AddrPortFrom(netip.IPv4Unspecified(), uint16(tcpPort))
 	if !addrPort.IsValid() {
 		log.Fatalf("Invalid address or port: %v", addrPort)
 	}
@@ -107,14 +93,12 @@ func NewGridServer(dataPort, rpcPort uint, disp Displayer) *GridServer {
 }
 
 func (p *GridServer) HandleEvents() {
-	// go p.HandleMessage(p.udpConn)
 	go p.HandleTCP(p.tcpListener)
 	go http.Serve(p.rpcListener, nil)
 }
 
 // Schliesst die diversen Verbindungen.
 func (p *GridServer) Close() {
-	// p.udpConn.Close()
 	p.tcpListener.Close()
 	p.rpcListener.Close()
 	p.Disp.Close()
