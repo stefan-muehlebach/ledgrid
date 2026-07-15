@@ -91,7 +91,7 @@ func RectangleCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	rectPos := geom.Point{float64(width) / 2, float64(height)/2 - 0.5}
 	rectSize := geom.Point{float64(width) - 1, float64(height) - 2}
 
-	textPos := p2p(3.0, 7.0)
+	textPos := p2p(3.0, float64(height)/2.0 + 3.0)
 	pit := time.Now().Add(24 * time.Hour)
 	// pit, _ := time.Parse("02.01.2006", "29.06.2025")
 
@@ -129,7 +129,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	fadeOutPixels := ledgrid.NewGroup()
 	pulseDur := 2 * time.Second
 	fadeOutDur := 4 * time.Second
-	textPos := p2p(3.0, 8.0)
+	textPos := p2p(3.0, float64(height)/2.0 + 3.0)
 	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
 
 	backPal := ledgrid.PaletteMap["YellowBlueBack"]
@@ -154,13 +154,16 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 
 			aPal := ledgrid.NewPaletteAnim(pix, palFader, pulseDur)
 			aPal.Pos = rand.Float64()
+			aPal.RepeatCount = ledgrid.AnimationRepeatForever
+			aGrpLedColor.Add(aPal)
 
 			aFade := ledgrid.NewFadeAnim(pix, ledgrid.FadeOut, fadeOutDur)
 			fadeOutPixels.Add(aFade)
 
-			aColorSeq := ledgrid.NewSequence(aPal)
-			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
-			aGrpLedColor.Add(aColorSeq)
+
+	//		aColorSeq := ledgrid.NewSequence(aPal)
+	//		aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+	//		aGrpLedColor.Add(aColorSeq)
 		}
 	}
 

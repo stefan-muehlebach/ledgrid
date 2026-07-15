@@ -49,26 +49,6 @@ func (s *Stopwatch) Reset() {
 	s.Num = 0
 }
 
-// Retourniert die Anzahl Messungen.
-// func (s *Stopwatch) Num() int {
-// 	return s.Num
-// }
-
-// Retourniert die totale Messdauer.
-// func (s *Stopwatch) Total() time.Duration {
-// 	return s.Total
-// }
-
-// Retourniert die totale Messdauer.
-// func (s *Stopwatch) Min() time.Duration {
-// 	return s.Min
-// }
-
-// Retourniert die totale Messdauer.
-// func (s *Stopwatch) Max() time.Duration {
-// 	return s.Max
-// }
-
 // Berechnet die durchschnittliche Messdauer (also den Quotienten von
 // Total() / Num()).
 func (s *Stopwatch) Avg() time.Duration {
@@ -78,11 +58,7 @@ func (s *Stopwatch) Avg() time.Duration {
 	return s.Total / time.Duration(s.Num)
 }
 
-// func (s *Stopwatch) Stats() (int, time.Duration, time.Duration) {
-// 	return s.Num, s.Total, s.Avg()
-// }
-
 func (s *Stopwatch) String() string {
-	return fmt.Sprintf("%d calls; %v in total; %v per call, min: %v, max: %v",
+	return fmt.Sprintf("%d calls; %v in total; %v (avg), %v (min), %v (max)",
 		s.Num, s.Total, s.Avg(), s.Min, s.Max)
 }

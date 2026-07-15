@@ -35,8 +35,12 @@ func NewWS2801(spiDev string, baud int, modConf conf.ModuleConfig) *WS2801 {
 		log.Fatal(err)
 	}
 
-	spiFs, _ := sysfs.NewSPI(0, 0)
+	spiFs, err := sysfs.NewSPI(0, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
 	p.maxTxSize = spiFs.MaxTxSize()
+	log.Printf("SPI bus has a max transport size of %d bytes", p.maxTxSize)
 	spiFs.Close()
 
 	p.spiPort, err = spireg.Open(spiDev)
@@ -78,5 +82,5 @@ func (p *WS2801) Send(buffer []byte) {
 			log.Fatalf("Couldn't send data: %v", err)
 		}
 	}
-	time.Sleep(20 * time.Microsecond)
+	time.Sleep(500 * time.Microsecond)
 }
