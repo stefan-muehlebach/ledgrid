@@ -20,6 +20,8 @@ const (
 	defHost   = "raspi-3"
 	defWidth  = 40
 	defHeight = 10
+	defClientType = 0
+	defBaud = 1_000_000
 )
 
 var (
@@ -109,17 +111,21 @@ var (
 func main() {
 	var host string
 	var dataPort, rpcPort uint
+	var clientType int
+	var customConfName string
 	// var useTCP bool
 	// var network string
 	var progChar string
 	var input string
 	var ch byte
 	var progId, prevProgId int
-	// var runInteractive bool
+	var spiDevFile string = "/dev/spidev0.0"
+	var baud int
 	var progList string
 	// var gR, gG, gB float64
 	var timeout time.Duration
 	var outFile string
+	var ws2801 ledgrid.Displayer
 
 	for i, prog := range programList {
 		var id byte
@@ -133,14 +139,20 @@ func main() {
 			progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 		}
 	}
+	flag.IntVar(&clientType, "type", defClientType, "Type of client (0: TCP; 1: File; 2: Direct)")
 
+	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
 	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
-	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 
 	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&dataPort, "data", ledgrid.DefTCPPort, "Data Port")
+	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
+
+	flag.StringVar(&outFile, "out", "", "Send all data to this file")
+
+	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
+
 	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.Parse()
@@ -148,13 +160,24 @@ func main() {
 	StartProfiling()
 	defer StopProfiling()
 
-	if outFile != "" {
-		gridClient = ledgrid.NewFileSaveClient(outFile, conf.DefaultModuleConfig(image.Point{width, height}))
-	} else {
+	switch clientType {
+	case 0:
 		gridClient = ledgrid.NewNetGridClient(host, dataPort, rpcPort)
 		hostName = gridClient.(*ledgrid.NetGridClient).Address()
+		modConf = gridClient.ModuleConfig()
+	case 1:
+		if outFile == "" {
+			log.Fatalf("Must specify 'out' when using File client type")
+		}
+		modConf = conf.DefaultModuleConfig(image.Point{width, height})
+		gridClient = ledgrid.NewFileSaveClient(outFile, modConf)
+	case 2:
+		modConf = conf.DefaultModuleConfig(image.Point{width, height})
+		ws2801 = ledgrid.NewWS2801(spiDevFile, baud, modConf)
+		gridClient = ledgrid.NewDirectGridClient(ws2801)
+	default:
+		log.Fatalf("Client type %d not defined (expected 0..2)")
 	}
-	modConf = gridClient.ModuleConfig()
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 	// gR, gG, gB = ledGrid.Client.Gamma()
 

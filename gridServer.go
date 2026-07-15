@@ -123,6 +123,9 @@ func (p *GridServer) HandleMessage(conn net.Conn) {
 			}
 			log.Fatalf("Failed Read(): %v", err)
 		}
+		if bufferSize != p.bufferSize {
+			log.Fatalf("Expected %d bytes, got only %d", p.bufferSize, bufferSize)
+		}
 		p.RecvBytes += ByteCount(bufferSize)
 		p.stopwatch.Start()
 		p.Disp.Display(buffer)
