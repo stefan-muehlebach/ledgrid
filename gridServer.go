@@ -43,14 +43,14 @@ func (b ByteCount) String() string {
 type GridServer struct {
 	Disp                 Displayer
 	RecvBytes, SentBytes ByteCount
-	tcpAddr         *net.TCPAddr
-	tcpListener     *net.TCPListener
-	rpcAddr         *net.TCPAddr
-	rpcListener     *net.TCPListener
-	bufferSize      int
-	maxValue        [3]uint8
-	drawTestPattern bool
-	stopwatch       *Stopwatch
+	tcpAddr              *net.TCPAddr
+	tcpListener          *net.TCPListener
+	rpcAddr              *net.TCPAddr
+	rpcListener          *net.TCPListener
+	bufferSize           int
+	maxValue             [3]uint8
+	drawTestPattern      bool
+	stopwatch            *Stopwatch
 }
 
 // Damit wird eine neue Instanz eines GridServers erzeugt. Mit dataPort wird
@@ -241,7 +241,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
 
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 		for i := range testBufferSize {
 			buffer[i] = 0x00

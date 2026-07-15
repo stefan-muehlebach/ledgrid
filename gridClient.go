@@ -15,11 +15,11 @@ import (
 // GridClient als Interface definiert. Aktuell stehen zwei Implementationen
 // am Start:
 //
-//   NetGridClient  - Verbindet sich via TCP und RPC mit einem externen
-//		              gridController.
-//	 FileSaveClient - Schreibt die Bilddaten in ein File, welches dann auf das
-//	                  System mit dem Grid-Controller kopiert und dort direkt
-//	                  abgespielt werden kann.
+//	  NetGridClient  - Verbindet sich via TCP und RPC mit einem externen
+//			              gridController.
+//		 FileSaveClient - Schreibt die Bilddaten in ein File, welches dann auf das
+//		                  System mit dem Grid-Controller kopiert und dort direkt
+//		                  abgespielt werden kann.
 type GridClient interface {
 	Send(buffer []byte)
 	NumLeds() int

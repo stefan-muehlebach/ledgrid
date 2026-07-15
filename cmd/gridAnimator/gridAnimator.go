@@ -103,7 +103,7 @@ func SignalHandler(timeout time.Duration) {
 
 var (
 	programList ProgramList = make([]LedGridProgram, 0)
-	modConf conf.ModuleConfig
+	modConf     conf.ModuleConfig
 )
 
 func main() {
