@@ -185,7 +185,7 @@ func EffectFaderTest(ctx context.Context, canv1 *ledgrid.Canvas) {
 				for _, pts := range EffectFader(effect, canv1.Rect.Size()) {
 					for _, pp := range pts {
 						p0, p1 := pp.Src, pp.Dst
-						if ! modConf.Contains(p0) {
+						if !modConf.Contains(p0) {
 							continue
 						}
 						src = geom.NewPointIMG(p0)

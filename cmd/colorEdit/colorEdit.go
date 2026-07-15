@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	gc "github.com/gbin/goncurses"
-	// gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"
@@ -134,7 +133,7 @@ func main() {
 	var modConf conf.ModuleConfig
 
 	flag.StringVar(&host, "host", host, "Controller hostname")
-	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
+	flag.UintVar(&dataPort, "data", ledgrid.DefTCPPort, "TCP Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.Parse()
 

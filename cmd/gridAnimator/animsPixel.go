@@ -307,7 +307,7 @@ func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
 			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
 			aColorPal.AutoReverse = true
 			aColorPal.Curve = ledgrid.AnimationLinear
-			aColorPal.Pos = float64(x)/float64(c.Rect.Dx())/16.0 + rand.Float64()/16.0
+			aColorPal.Pos = float64(y)/float64(c.Rect.Dy())/16.0 + rand.Float64()/16.0
 			aColorSeq := ledgrid.NewSequence(aColorPal)
 			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aGrpLedColor.Add(aColorSeq)
