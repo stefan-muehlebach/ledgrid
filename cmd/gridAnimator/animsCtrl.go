@@ -139,14 +139,14 @@ func TimelineTest(ctx context.Context, c *ledgrid.Canvas) {
 
 	aColor7 := ledgrid.NewColorAnim(r2, colors.Cornsilk, 500*time.Millisecond)
 	aColor7.AutoReverse = true
-	aBorder1 := ledgrid.NewStrokeWidthAnim(r2, 2.0, 500*time.Millisecond)
+	aBorder1 := ledgrid.NewLineWidthAnim(r2, 2.0, 500*time.Millisecond)
 	aBorder1.AutoReverse = true
 	aSize2 := ledgrid.NewSizeAnim(r2, r2Size2, 500*time.Millisecond)
 	aSize2.AutoReverse = true
 
 	aColor8 := ledgrid.NewColorAnim(r4, colors.Cornsilk, 500*time.Millisecond)
 	aColor8.AutoReverse = true
-	aBorder2 := ledgrid.NewStrokeWidthAnim(r4, 2.0, 500*time.Millisecond)
+	aBorder2 := ledgrid.NewLineWidthAnim(r4, 2.0, 500*time.Millisecond)
 	aBorder2.AutoReverse = true
 	aSize4 := ledgrid.NewSizeAnim(r4, r4Size2, 500*time.Millisecond)
 	aSize4.AutoReverse = true

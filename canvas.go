@@ -273,12 +273,12 @@ func (e *FilledColorEmbed) FillColorPtr() *colors.RGBA {
 }
 
 // Fuer die Rahmenbreite schliesslich steht dieses Embeddable bereit.
-type StrokeWidthEmbed struct {
-	StrokeWidth float64
+type LineWidthEmbed struct {
+	LineWidth float64
 }
 
-func (e *StrokeWidthEmbed) StrokeWidthPtr() *float64 {
-	return &e.StrokeWidth
+func (e *LineWidthEmbed) LineWidthPtr() *float64 {
+	return &e.LineWidth
 }
 
 // Mit Ellipse sind alle kreisartigen Objekte abgedeckt. Pos bezeichnet die
@@ -293,7 +293,7 @@ type Ellipse struct {
 	AngleEmbed
 	FilledColorEmbed
 	FadeEmbed
-	StrokeWidthEmbed
+	LineWidthEmbed
 	FillColorFnc string
 }
 
@@ -306,7 +306,7 @@ func NewEllipse(pos, size geom.Point, borderColor colors.RGBA) *Ellipse {
 	e.Pos = pos
 	e.Size = size
 	e.Color = borderColor
-	e.StrokeWidth = 1.0
+	e.LineWidth = 1.0
 	e.CanvasObjectEmbed.Extend(e)
 	e.FadeEmbed.Init(&e.Color)
 	return e
@@ -319,8 +319,8 @@ func (e *Ellipse) Draw(c *Canvas) {
 		defer c.GC.Pop()
 	}
 	c.GC.DrawEllipse(e.Pos.X, e.Pos.Y, e.Size.X/2, e.Size.Y/2)
-	c.GC.SetStrokeWidth(e.StrokeWidth)
-	c.GC.SetStrokeColor(e.Color)
+	c.GC.SetLineWidth(e.LineWidth)
+	c.GC.SetLineColor(e.Color)
 	if e.FillColor == colors.Transparent && e.FillColorFnc != "" {
 		c.GC.SetFillColor(colorFncMap[e.FillColorFnc](e.Color))
 	} else {
@@ -339,14 +339,14 @@ type Rectangle struct {
 	FilledColorEmbed
 	FillColorFnc string
 	FadeEmbed
-	StrokeWidthEmbed
+	LineWidthEmbed
 }
 
 func NewRectangle(pos, size geom.Point, borderColor colors.RGBA) *Rectangle {
 	r := &Rectangle{}
 	r.Pos = pos
 	r.Size = size
-	r.StrokeWidth = 1.0
+	r.LineWidth = 1.0
 	r.Color = borderColor
 	r.FillColorFnc = "ApplyAlpha"
 	r.CanvasObjectEmbed.Extend(r)
@@ -361,8 +361,8 @@ func (r *Rectangle) Draw(c *Canvas) {
 		defer c.GC.Pop()
 	}
 	c.GC.DrawRectangle(r.Pos.X-r.Size.X/2, r.Pos.Y-r.Size.Y/2, r.Size.X, r.Size.Y)
-	c.GC.SetStrokeWidth(r.StrokeWidth)
-	c.GC.SetStrokeColor(r.Color)
+	c.GC.SetLineWidth(r.LineWidth)
+	c.GC.SetLineColor(r.Color)
 	if r.FillColor == colors.Transparent && r.FillColorFnc != "" {
 		c.GC.SetFillColor(colorFncMap[r.FillColorFnc](r.Color))
 	} else {
@@ -380,7 +380,7 @@ type RegularPolygon struct {
 	FilledColorEmbed
 	FillColorFnc string
 	FadeEmbed
-	StrokeWidthEmbed
+	LineWidthEmbed
 	N int
 }
 
@@ -392,7 +392,7 @@ func NewRegularPolygon(n int, pos, size geom.Point, borderColor colors.RGBA) *Re
 	p := &RegularPolygon{}
 	p.Pos = pos
 	p.Size = size
-	p.StrokeWidth = 1.0
+	p.LineWidth = 1.0
 	p.Color = borderColor
 	p.FillColorFnc = "ApplyAlpha"
 	p.N = n
@@ -403,8 +403,8 @@ func NewRegularPolygon(n int, pos, size geom.Point, borderColor colors.RGBA) *Re
 
 func (p *RegularPolygon) Draw(c *Canvas) {
 	c.GC.DrawRegularPolygon(p.N, p.Pos.X, p.Pos.Y, p.Size.X/2.0, p.Angle)
-	c.GC.SetStrokeWidth(p.StrokeWidth)
-	c.GC.SetStrokeColor(p.Color)
+	c.GC.SetLineWidth(p.LineWidth)
+	c.GC.SetLineColor(p.Color)
 	if p.FillColor == colors.Transparent && p.FillColorFnc != "" {
 		c.GC.SetFillColor(colorFncMap[p.FillColorFnc](p.Color))
 	} else {
@@ -426,7 +426,7 @@ type Line struct {
 	SizeEmbed
 	AngleEmbed
 	ColorEmbed
-	StrokeWidthEmbed
+	LineWidthEmbed
 	FadeEmbed
 }
 
@@ -436,7 +436,7 @@ func NewLine(pos geom.Point, len float64, col colors.RGBA) *Line {
 	l.Size = geom.Point{len, 0.0}
 	l.Angle = 0.0
 	l.Color = col
-	l.StrokeWidth = 1.0
+	l.LineWidth = 1.0
 	l.CanvasObjectEmbed.Extend(l)
 	l.FadeEmbed.Init(&l.Color)
 	return l
@@ -446,8 +446,8 @@ func (l *Line) Draw(c *Canvas) {
 	dp := geom.Point{math.Cos(l.Angle) * l.Size.X / 2.0, math.Sin(l.Angle) * l.Size.X / 2.0}
 	p1 := l.Pos.Add(dp)
 	p2 := l.Pos.Sub(dp)
-	c.GC.SetStrokeWidth(l.StrokeWidth)
-	c.GC.SetStrokeColor(l.Color)
+	c.GC.SetLineWidth(l.LineWidth)
+	c.GC.SetLineColor(l.Color)
 	c.GC.DrawLine(p1.X, p1.Y, p2.X, p2.Y)
 	c.GC.Stroke()
 }

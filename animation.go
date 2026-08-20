@@ -774,8 +774,8 @@ type Rotateable interface {
 	AnglePtr() *float64
 }
 
-type StrokeWidtheable interface {
-	StrokeWidthPtr() *float64
+type LineWidtheable interface {
+	LineWidthPtr() *float64
 }
 
 type FloatAnimation struct {
@@ -789,9 +789,9 @@ func NewAngleAnim(obj Rotateable, val2 float64, dur time.Duration) *FloatAnimati
 	return a
 }
 
-func NewStrokeWidthAnim(obj StrokeWidtheable, val2 float64, dur time.Duration) *FloatAnimation {
+func NewLineWidthAnim(obj LineWidtheable, val2 float64, dur time.Duration) *FloatAnimation {
 	a := &FloatAnimation{}
-	a.InitAnim(obj.StrokeWidthPtr(), val2, dur)
+	a.InitAnim(obj.LineWidthPtr(), val2, dur)
 	a.NormAnimationEmbed.Extend(a)
 	return a
 }

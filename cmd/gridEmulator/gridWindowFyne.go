@@ -94,8 +94,8 @@ func NewWindow(title string, pixelSize float64, modConf conf.ModuleConfig) *Wind
 		led := canvas.NewCircle(color.RGBA{200, 200, 200, 255})
 		led.Resize(ledSize)
 		led.Move(ledPos)
-		led.StrokeWidth = 0.0
-		// led.StrokeColor = color.Black
+		led.LineWidth = 0.0
+		// led.LineColor = color.Black
 		e.field[col][row] = led
 		e.Grid.Add(led)
 	}

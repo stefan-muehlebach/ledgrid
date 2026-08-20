@@ -127,8 +127,8 @@ func (conf ModuleConfig) Draw(gc *gg.Context) {
 func (conf ModuleConfig) DrawAxes(gc *gg.Context) {
 	// Label the columns and rows of the LEDs over the whole panel.
 	p0 := geom.Point{MarginLeft, MarginTop}
-	gc.SetStrokeWidth(AxesTickWidth)
-	gc.SetStrokeColor(AxesTickColor)
+	gc.SetLineWidth(AxesTickWidth)
+	gc.SetLineColor(AxesTickColor)
 	gc.SetTextColor(AxesTextColor)
 	gc.SetFontFace(axesFontFace)
 
@@ -243,8 +243,8 @@ func (mod Module) Draw(gc *gg.Context, idxMod int) {
 
 		// Draw the LED (or table tennis ball) as a filled circle.
 		gc.DrawCircle(mp.X, mp.Y, LedSize/2.0)
-		gc.SetStrokeWidth(LedBorderWidth)
-		gc.SetStrokeColor(LedBorderColor)
+		gc.SetLineWidth(LedBorderWidth)
+		gc.SetLineColor(LedBorderColor)
 		if idx == 0 {
 			gc.SetFillColor(LedStartFillColor)
 		} else if idx == ModuleDim.X*ModuleDim.Y-1 {
@@ -293,8 +293,8 @@ func (mod Module) DrawTrace(gc *gg.Context) {
 
 	mpA = mp0.Add(dy.Div(2))
 	mpB = mpA.Add(dy.Mul(8))
-	gc.SetStrokeWidth(TraceWidth)
-	gc.SetStrokeColor(TraceColor)
+	gc.SetLineWidth(TraceWidth)
+	gc.SetLineColor(TraceColor)
 	gc.MoveTo(mp0.AsCoord())
 	gc.LineTo(mpA.AsCoord())
 	for i := range 10 {
@@ -326,7 +326,7 @@ func (mod Module) DrawTrace(gc *gg.Context) {
 func (mod Module) DrawBorder(gc *gg.Context) {
 	// Draw the border of the module.
 	gc.DrawRectangle(pTL.X, pTL.Y, ModuleSize, ModuleSize)
-	gc.SetStrokeWidth(ModuleBorderWidth)
-	gc.SetStrokeColor(ModuleBorderColor)
+	gc.SetLineWidth(ModuleBorderWidth)
+	gc.SetLineColor(ModuleBorderColor)
 	gc.Stroke()
 }

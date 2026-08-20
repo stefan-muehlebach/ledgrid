@@ -286,7 +286,7 @@ func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	rectSize := geom.Point{float64(width), float64(height)}
 
 	rect := ledgrid.NewRectangle(rectPos, rectSize, colors.Black)
-	rect.StrokeWidth = 0.0
+	rect.LineWidth = 0.0
 	rect.FillColor = colors.Black
 
 	txtPos1 := geom.Point{1, -3}

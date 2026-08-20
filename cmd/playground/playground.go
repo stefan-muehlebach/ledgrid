@@ -316,8 +316,8 @@ func main() {
 		Speed:       1.0,
 		Radius:      []float64{0.0, 75.0},
 		FillColor:   []colors.Color{colors.Transparent, colors.Transparent},
-		StrokeColor: []colors.Color{colors.Crimson, colors.LemonChiffon},
-		StrokeWidth: []float64{10.0, 10.0},
+		LineColor: []colors.Color{colors.Crimson, colors.LemonChiffon},
+		LineWidth: []float64{10.0, 10.0},
 		GlowPeriod:  10 * time.Second,
 	}
 	// obj6 := &ledgrid.GlowingCircle{
@@ -326,8 +326,8 @@ func main() {
 	// 	Speed:       1.0,
 	// 	Radius:      []float64{10.0, 15.0},
 	// 	FillColor:   []colors.Color{colors.GreenYellow, colors.Aquamarine},
-	// 	StrokeColor: []colors.Color{colors.Crimson, colors.Black},
-	// 	StrokeWidth: []float64{5.0, 0.0},
+	// 	LineColor: []colors.Color{colors.Crimson, colors.Black},
+	// 	LineWidth: []float64{5.0, 0.0},
 	// 	GlowPeriod:  3 * time.Second,
 	// }
 	objAnim.AddObjects( /*obj1, obj2, obj3, obj4, */ obj5)
