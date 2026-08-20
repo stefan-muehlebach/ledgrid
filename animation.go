@@ -20,8 +20,8 @@ var (
 )
 
 const (
-	// Fuer Animationen, die endlos wiederholt weren sollen, kann diese Konstante
-	// fuer die Anzahl Wiederholungen verwendet werden.
+	// Fuer Animationen, die endlos wiederholt weren sollen, kann diese
+	// Konstante fuer die Anzahl Wiederholungen verwendet werden.
 	AnimationRepeatForever = -1
 	// Mit refreshRate wird die Zeit in Millisekunden angegeben, die zwischen
 	// den einzelnen Aktualisierungen gewartet wird.

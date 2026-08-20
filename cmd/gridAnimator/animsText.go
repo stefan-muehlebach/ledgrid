@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	programList.Add("Rotating, Floating Words", "Text", MovingText)
+	programList.Add("Rotating words", "Text", MovingText)
 	programList.Add("All Named Colors", "Text", NamedColors)
 	programList.Add("Clock Animation", "Text", ClockAnimation)
 	programList.Add("Sample Info Text", "Text", ShowInfoText)
@@ -32,6 +32,63 @@ func f2f(x float64) fixed.Int26_6 {
 func p2p(x, y float64) fixed.Point26_6 {
 	return fixed.Point26_6{f2f(x), f2f(y)}
 }
+
+//-----------------------------------------------------------------------------
+
+func MovingText(ctx context.Context, c *ledgrid.Canvas) {
+	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0},
+		"Liebe", colors.Lime)
+	t1.SetAlign(ledgrid.AlignLeft)
+	t1.SetFont(fonts.GoRegular, 8.0)
+	t1.Angle = -math.Pi
+
+	t2 := ledgrid.NewText(geom.Point{float64(width), float64(height) / 2.0},
+		"Studis", colors.SeaGreen)
+	t2.SetAlign(ledgrid.AlignRight)
+	t2.SetFont(fonts.GoRegular, 8.0)
+	t2.Angle = -math.Pi
+
+/*
+	t3 := ledgrid.NewText(geom.Point{float64(width)/2.0, float64(height)/2.0},
+		"Stefan", colors.Gold.Alpha(0.0))
+	t3.SetAlign(ledgrid.AlignCenter | ledgrid.AlignMiddle)
+	t3.SetFont(fonts.LucidaCalligraphy, 9.0)
+*/
+
+	c.Add(t1, t2)
+
+	aAngle1 := ledgrid.NewAngleAnim(t1, -3*math.Pi, 3*time.Second)
+	aAngle1.Curve = ledgrid.AnimationLinear
+	aAngle1.Cont = false
+
+	aAngle2 := ledgrid.NewAngleAnim(t2, -3*math.Pi, 3*time.Second)
+	aAngle2.Curve = ledgrid.AnimationLinear
+	aAngle2.Cont = false
+
+/*
+	aFadeIn := ledgrid.NewFadeAnim(t3, ledgrid.FadeIn, 1*time.Second)
+	aFadeOut := ledgrid.NewFadeAnim(t3, ledgrid.FadeOut, 3*time.Second)
+*/
+
+	wordList := []string{"Liebe", "Studis", "alles", "Gute", "für", "eure", "Zukunft"}
+	wordIdx := 0
+
+	seq1 := ledgrid.NewSequence(
+		ledgrid.NewTask(func() {
+			t1.Text = wordList[wordIdx]
+			wordIdx = (wordIdx + 1) % len(wordList)
+			t2.Text = wordList[wordIdx]
+			wordIdx = (wordIdx + 1) % len(wordList)
+		}),
+		aAngle1,
+		aAngle2,
+	)
+	seq1.RepeatCount = ledgrid.AnimationRepeatForever
+
+	seq1.Start()
+}
+
+//-----------------------------------------------------------------------------
 
 func ClockAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	var clockText *ledgrid.FixedText
@@ -88,10 +145,10 @@ func RectangleCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	dur2 := 7 * time.Second
 	pal1 := ledgrid.PaletteMap["PinkBlueBack"]
 	pal2 := ledgrid.PaletteMap["YellowBlueBack"]
-	rectPos := geom.Point{float64(width) / 2, float64(height)/2 - 0.5}
-	rectSize := geom.Point{float64(width) - 1, float64(height) - 2}
+	rectPos := geom.Point{float64(width) / 2, float64(height)/2}
+	rectSize := geom.Point{float64(width) - 1, float64(height) - 1}
 
-	textPos := p2p(3.0, float64(height)/2.0+3.0)
+	textPos := p2p(3.0, float64(height)/2.0+2.0)
 	pit := time.Now().Add(24 * time.Hour)
 	// pit, _ := time.Parse("02.01.2006", "29.06.2025")
 
@@ -129,7 +186,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	fadeOutPixels := ledgrid.NewGroup()
 	pulseDur := 2 * time.Second
 	fadeOutDur := 4 * time.Second
-	textPos := p2p(3.0, float64(height)/2.0+3.0)
+	textPos := p2p(3.0, float64(height)/2.0+2.0)
 	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
 
 	backPal := ledgrid.PaletteMap["YellowBlueBack"]
@@ -216,54 +273,6 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 
 }
 
-func MovingText(ctx context.Context, c *ledgrid.Canvas) {
-	t1 := ledgrid.NewText(geom.Point{0, float64(height) / 2.0}, "Stefan", colors.LightSeaGreen)
-	t1.SetAlign(ledgrid.AlignLeft)
-	t2 := ledgrid.NewText(geom.Point{float64(width), float64(height) / 2.0}, "Beni", colors.YellowGreen)
-	t2.SetAlign(ledgrid.AlignRight)
-
-	t4 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "werden", colors.Gold)
-	t5 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "immer", colors.Gold)
-	t6 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "im", colors.Gold)
-	t7 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "Lochbach", colors.Gold)
-	t8 := ledgrid.NewText(geom.Point{float64(width) / 2.0, float64(height) * 1.5}, "wohnen", colors.Gold)
-
-	c.Add(t1, t2, t4, t5, t6, t7, t8)
-
-	aAngle1 := ledgrid.NewAngleAnim(t1, -2*math.Pi, 7*time.Second)
-	aAngle1.Curve = ledgrid.AnimationLinear
-	aAngle1.RepeatCount = ledgrid.AnimationRepeatForever
-
-	aAngle2 := ledgrid.NewAngleAnim(t2, -2*math.Pi, 8*time.Second)
-	aAngle2.Curve = ledgrid.AnimationLinear
-	aAngle2.RepeatCount = ledgrid.AnimationRepeatForever
-
-	aPos4 := ledgrid.NewPositionAnim(t4, geom.Point{float64(width) / 2.0, -float64(height) / 2.0}, 4*time.Second)
-	aPos4.Curve = ledgrid.AnimationLinear
-	aPos5 := ledgrid.NewPositionAnim(t5, geom.Point{float64(width) / 2.0, -float64(height) / 2.0}, 4*time.Second)
-	aPos5.Curve = ledgrid.AnimationLinear
-	aPos6 := ledgrid.NewPositionAnim(t6, geom.Point{float64(width) / 2.0, -float64(height) / 2.0}, 4*time.Second)
-	aPos6.Curve = ledgrid.AnimationLinear
-	aPos7 := ledgrid.NewPositionAnim(t7, geom.Point{float64(width) / 2.0, -float64(height) / 2.0}, 4*time.Second)
-	aPos7.Curve = ledgrid.AnimationLinear
-	aPos8 := ledgrid.NewPositionAnim(t8, geom.Point{float64(width) / 2.0, -float64(height) / 2.0}, 4*time.Second)
-	aPos8.Curve = ledgrid.AnimationLinear
-
-	aPosSeq := ledgrid.NewSequence(
-		ledgrid.NewDelay(4*time.Second),
-		aPos4,
-		aPos5,
-		aPos6,
-		aPos7,
-		aPos8,
-	)
-	aPosSeq.RepeatCount = ledgrid.AnimationRepeatForever
-
-	aAngle1.Start()
-	aAngle2.Start()
-	aPosSeq.Start()
-}
-
 func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
 	var colName string
 	var nameList []string
@@ -347,9 +356,9 @@ func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
 	var scoreA, scoreB, scoreC, scoreD *ledgrid.FixedText
 
 	posA := p2p(1.0, 9.0)
-	posB := p2p(11.0, 9.0)
-	posC := p2p(21.0, 9.0)
-	posD := p2p(31.0, 9.0)
+	posB := p2p(12.0, 9.0)
+	posC := p2p(2.0, 19.0)
+	posD := p2p(13.0, 19.0)
 	scoreA = ledgrid.NewFixedText(posA, "0", colors.MediumSeaGreen)
 	scoreA.SetFont(ledgrid.Lightdot8x8)
 	scoreB = ledgrid.NewFixedText(posB, "0", colors.Lime)
@@ -363,7 +372,7 @@ func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
 
 	score = 0
 	timeLine1 := ledgrid.NewTimeline(time.Second)
-	timeLine1.RepeatCount = 10
+	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
 	timeLine1.Add(0, ledgrid.NewTask(func() {
 		scoreTxt := fmt.Sprintf("%d", score)
 		scoreA.SetText(scoreTxt)

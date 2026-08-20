@@ -53,21 +53,21 @@ func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 	}
 	permList := rand.Perm(len(posList))
 
-	min := geom.Point{0, 0}
-	max := geom.Point{float64(width / 2), float64(height)}
-	sz := max.Sub(min)
-	t := sz.X
-	if sz.Y > t {
-		t = sz.Y
-	}
-	t += 2.5
-	dp := geom.Point{float64(width / 2), 0}
+	minPt := geom.Point{0, 0}
+	maxPt := geom.Point{float64(width / 2), float64(height)}
+	//sz := maxPt.Sub(minPt)
+	t := maxPt.Distance(minPt)
+	dp := geom.Point{float64(width) / 2.0, 0.0}
 	for i, pos := range posList {
 		pixSeq := ledgrid.NewSequence()
-		t1 := pos.Distance(min) / t
-		t2 := pos.Distance(max) / t
+		t1 := pos.Distance(minPt) / t
+		t2 := pos.Distance(maxPt) / t
 		dest := posList[permList[i]].Add(dp)
-		dot := ledgrid.NewDot(pos, colors.RGBA{uint8(255 * t1 * t2), uint8(255 * (1 - t1)), uint8(255 * (1 - t2)), 0xFF})
+		dot := ledgrid.NewDot(pos, colors.RGBA{
+			uint8(255 * t1 * t2),
+			uint8(255 * (1.0 - t1)),
+			uint8(255 * (1.0 - t2)),
+			0xFF})
 		c.Add(dot)
 		posAnim1 := ledgrid.NewPositionAnim(dot, dest, time.Second+rand.N(time.Second))
 		posAnim2 := ledgrid.NewPositionAnim(dot, pos, time.Second+rand.N(time.Second))
@@ -329,7 +329,7 @@ func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	pal := ledgrid.PaletteMap[palName]
 	fader := ledgrid.NewPaletteFader(pal)
 	aPal := ledgrid.NewPaletteFadeAnim(fader, pal, 2*time.Second)
-	aPal.ValFunc = ledgrid.SeqPalette()
+	aPal.ValFunc = ledgrid.RandPalette()
 
 	aPalTl := ledgrid.NewTimeline(10 * time.Second)
 	aPalTl.Add(7*time.Second, aPal /*, txtChange */)
@@ -534,7 +534,7 @@ var (
 		return
 	}
 
-	// ---------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 
 	f1 = func(t, x, y, p1 float64) float64 {
 		return math.Sin(x*p1 + t)
@@ -557,6 +557,8 @@ var (
 		v := (v1+v2+v3)/6.0 + 0.5
 		return v
 	}
+
+//----------------------------------------------------------------------------
 
 	wrap = func(x float64) float64 {
 		return math.Abs(math.Mod(x, 2.0) - 1.0)
