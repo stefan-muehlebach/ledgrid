@@ -341,7 +341,7 @@ func FlyingRectangle(ctx context.Context, c *ledgrid.Canvas) {
 	aPos1 := ledgrid.NewPositionAnim(r1, r1Pos2, 1000*time.Millisecond)
 	aPos1.AutoReverse = true
 
-	aBorder1 := ledgrid.NewStrokeWidthAnim(r2, 2.0, 300*time.Millisecond)
+	aBorder1 := ledgrid.NewLineWidthAnim(r2, 2.0, 300*time.Millisecond)
 	aBorder1.AutoReverse = true
 	aSize2 := ledgrid.NewSizeAnim(r2, r2Size2, 300*time.Millisecond)
 	// aSize3 := ledgrid.NewSizeAnim(r2, r2Size1, 300*time.Millisecond)
@@ -350,7 +350,7 @@ func FlyingRectangle(ctx context.Context, c *ledgrid.Canvas) {
 
 	// aColor8 := ledgrid.NewColorAnim(r4, colors.Cornsilk, 500*time.Millisecond)
 	// aColor8.AutoReverse = true
-	aBorder2 := ledgrid.NewStrokeWidthAnim(r4, 2.0, 300*time.Millisecond)
+	aBorder2 := ledgrid.NewLineWidthAnim(r4, 2.0, 300*time.Millisecond)
 	aBorder2.AutoReverse = true
 	aSize4 := ledgrid.NewSizeAnim(r4, r4Size2, 300*time.Millisecond)
 	// aSize5 := ledgrid.NewSizeAnim(r4, r4Size1, 300*time.Millisecond)

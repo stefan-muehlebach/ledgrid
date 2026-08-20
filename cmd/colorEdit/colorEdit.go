@@ -100,7 +100,7 @@ func LogMouseEvent(log *os.File, event *gc.MouseEvent) {
 func main() {
 	var host string = "raspi-3"
 	var width, height int
-	var dataPort, rpcPort uint
+	var tcpPort, rpcPort uint
 
 	var logFile *os.File
 	var stdscr *gc.Window
@@ -134,11 +134,11 @@ func main() {
 	var modConf conf.ModuleConfig
 
 	flag.StringVar(&host, "host", host, "Controller hostname")
-	flag.UintVar(&dataPort, "data", ledgrid.DefDataPort, "Data Port")
+	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
 	flag.Parse()
 
-	gridClient = ledgrid.NewNetGridClient(host, dataPort, rpcPort)
+	gridClient = ledgrid.NewNetGridClient(host, tcpPort, rpcPort)
 	modConf = gridClient.ModuleConfig()
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 
