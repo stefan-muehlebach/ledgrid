@@ -1,0 +1,6 @@
+Liebe Klasse
+
+Heute lernen wir die linearen Gleichungs- systeme kennen (LGS). Die einzelne Gleichung wird einfacher, aber sie kommt dafuer im Rudel. Es gibt in der Technik praktisch keinen Bereich, in dem nicht mit LGS gerechnet wird. Viele KI Loesungen bauen darauf auf. Egal ob die neuronalen Netze aus den 2000er oder ChatGPT von heute.
+
+In diesen Bereich werden wir nicht vordringen - mit dem Einfachen beginnt die Reise.
+

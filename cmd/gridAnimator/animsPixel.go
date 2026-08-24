@@ -20,8 +20,10 @@ func init() {
 	// programList.AddTitle("Pixel Animations")
 	programList.Add("Moving pixels", "Pixel", MovingPixels)
 	programList.Add("Pixel im Stau", "Pixel", CrowdedPixels)
-	programList.Add("Glowing pixels with changing text", "Pixel", GlowingPixels)
-	programList.Add("Waves of colors (Gradient)", "Pixel", ColorWavesOnGradients)
+	programList.Add("Wort fuer Wort Anzeige vor gluehenden Pixeln",
+		"Pixel", GlowingWords)
+	programList.Add("Waves of colors (Gradient)", "Pixel",
+		ColorWavesOnGradients)
 	programList.Add("Waves of colors (Palette)", "Pixel", ColorWavesOnPalettes)
 	programList.Add("Fireplace", "Pixel", Fireplace)
 	programList.Add("Shader using palettes", "Pixel", PaletteShader)
@@ -40,6 +42,8 @@ func abs[T ~int | ~float64](i T) T {
 		return i
 	}
 }
+
+//----------------------------------------------------------------------------
 
 func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 	mainSeq := ledgrid.NewSequence()
@@ -172,12 +176,12 @@ var (
 	}
 )
 
-func GlowingPixels(ctx context.Context, c *ledgrid.Canvas) {
+func GlowingWords(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 3 * time.Second
 	numReps := 3
 
-	f, err := os.Open("Faust.txt")
+	f, err := os.Open(wordFile)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -22,6 +22,7 @@ const (
 	defHeight = 10
 	defClientType = 0
 	defBaud = 1_000_000
+	defWordFile = "Faust.txt"
 )
 
 var (
@@ -32,6 +33,7 @@ var (
 	animCtrl      *ledgrid.AnimationController
 	canvas        *ledgrid.Canvas
 	hostName      string
+	wordFile      string
 )
 
 //----------------------------------------------------------------------------
@@ -139,22 +141,22 @@ func main() {
 			progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 		}
 	}
-	flag.IntVar(&clientType, "type", defClientType, "Type of client (0: TCP; 1: File; 2: Direct)")
-
-	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
-	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
-	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
-
-	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
-	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
-
-	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
-
+	flag.StringVar(&customConfName, "custom", "", "Use a non standard" +
+		" module configuration")
+	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
+	flag.StringVar(&host, "host", defHost, "Controller hostname")
+	flag.StringVar(&outFile, "out", "", "Send all data to this file")
 	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
+	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
+	flag.IntVar(&clientType, "type", defClientType, "Type of client" +
+		"(0: TCP; 1: File; 2: Direct)")
+	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
+	flag.StringVar(&wordFile, "words", defWordFile, "File with space" +
+		"separated words")
 	flag.Parse()
 
 	StartProfiling()
