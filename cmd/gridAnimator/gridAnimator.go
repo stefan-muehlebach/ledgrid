@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -17,11 +18,12 @@ import (
 )
 
 const (
-	defHost   = "raspi-3"
-	defWidth  = 40
-	defHeight = 10
-	defClientType = 0
-	defBaud = 1_000_000
+	defHost       = "raspi-3"
+	defWidth      = 40
+	defHeight     = 20
+	defClientType = NetClient
+	defBaud       = 2_000_000
+	spiDevFile    = "/dev/spidev0.0"
 	defWordFile = "Faust.txt"
 )
 
@@ -105,6 +107,43 @@ func SignalHandler(timeout time.Duration) {
 
 //----------------------------------------------------------------------------
 
+type ClientType byte
+
+const (
+	NetClient ClientType = iota
+	FileClient
+	DirectClient
+)
+
+func (c ClientType) String() string {
+	switch c {
+	case NetClient:
+		return "Net"
+	case FileClient:
+		return "File"
+	case DirectClient:
+		return "Direct"
+	default:
+		return ""
+	}
+}
+
+func (c *ClientType) Set(s string) error {
+	switch s {
+	case "Net", "net":
+		*c = NetClient
+	case "File", "file":
+		*c = FileClient
+	case "Direct", "direct":
+		*c = DirectClient
+	default:
+		return errors.New("Unknown client type")
+	}
+	return nil
+}
+
+//----------------------------------------------------------------------------
+
 var (
 	programList ProgramList = make([]LedGridProgram, 0)
 	modConf     conf.ModuleConfig
@@ -113,7 +152,7 @@ var (
 func main() {
 	var host string
 	var dataPort, rpcPort uint
-	var clientType int
+	var clientType ClientType = defClientType
 	var customConfName string
 	// var useTCP bool
 	// var network string
@@ -121,13 +160,13 @@ func main() {
 	var input string
 	var ch byte
 	var progId, prevProgId int
-	var spiDevFile string = "/dev/spidev0.0"
 	var baud int
 	var progList string
 	// var gR, gG, gB float64
 	var timeout time.Duration
 	var outFile string
 	var ws2801 ledgrid.Displayer
+	var err error
 
 	for i, prog := range programList {
 		var id byte
@@ -141,20 +180,17 @@ func main() {
 			progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
 		}
 	}
-
-	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
-	flag.StringVar(&customConfName, "custom", "", "Use a non standard" +
-		" module configuration")
-	flag.IntVar(&height, "height", defHeight, "Height (for 'out' option only)")
-	flag.StringVar(&host, "host", defHost, "Controller hostname")
-	flag.StringVar(&outFile, "out", "", "Send all data to this file")
+	flag.Var(&clientType, "type", "Type of client; 'net' (default), 'file' or 'direct'")
+	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration (Types: 1/2)")
+	flag.IntVar(&width, "width", defWidth, "Width (Types: 1/2)")
+	flag.IntVar(&height, "height", defHeight, "Height (Types: 1/2)")
+	flag.StringVar(&host, "host", defHost, "Controller hostname (Type: 0)")
+	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port (Type: 0)")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port (Type: 0)")
+	flag.StringVar(&outFile, "out", "", "Send all data to this file (Type: 1)")
+	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz (Type: 2)")
 	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
-	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port")
-	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port")
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
-	flag.IntVar(&clientType, "type", defClientType, "Type of client" +
-		"(0: TCP; 1: File; 2: Direct)")
-	flag.IntVar(&width, "width", defWidth, "Width (for 'out' option only)")
 	flag.StringVar(&wordFile, "words", defWordFile, "File with space" +
 		"separated words")
 	flag.Parse()
@@ -163,25 +199,34 @@ func main() {
 	defer StopProfiling()
 
 	switch clientType {
-	case 0:
+	case NetClient:
 		gridClient = ledgrid.NewNetGridClient(host, dataPort, rpcPort)
 		hostName = gridClient.(*ledgrid.NetGridClient).Address()
 		modConf = gridClient.ModuleConfig()
-	case 1:
+	case FileClient:
 		if outFile == "" {
 			log.Fatalf("Must specify 'out' when using File client type")
 		}
 		modConf = conf.DefaultModuleConfig(image.Point{width, height})
 		gridClient = ledgrid.NewFileSaveClient(outFile, modConf)
-	case 2:
+	case DirectClient:
 		modConf = conf.DefaultModuleConfig(image.Point{width, height})
 		ws2801 = ledgrid.NewWS2801(spiDevFile, baud, modConf)
 		gridClient = ledgrid.NewDirectGridClient(ws2801)
 	default:
 		log.Fatalf("Client type %d not defined (expected 0..2)")
 	}
+	log.Printf("Module configuration:")
+	log.Printf("  size: %v", modConf.Size())
+	log.Printf("  modules by index:")
+	for i, modPos := range modConf {
+		log.Printf("  [%d] %v", i, modPos.Mod)
+	}
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
-	// gR, gG, gB = ledGrid.Client.Gamma()
+
+	//log.Printf("Clear LEDGrid")
+	//ledGrid.Clear(colors.SlateGray)
+	//ledGrid.Show()
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X
@@ -228,9 +273,13 @@ func main() {
 
 			n := 0
 			for n == 0 {
-				n, _ = fmt.Scanf("%s\n", &input)
+				//n, _ = fmt.Scanf("%s\n", &input)
+				n, err = fmt.Scanln(&input)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
-			log.Printf("n: %d", n)
+			//log.Printf("n: %d", n)
 			ch = input[0]
 		}
 
@@ -261,7 +310,9 @@ func main() {
 			ledgrid.AnimCtrl.Stopwatch().Reset()
 			canvas.Stopwatch().Reset()
 			ledGrid.Client.Stopwatch().Reset()
+			//log.Print("Before calling 'start'")
 			programList[progId].Start(context.Background(), canvas)
+			//log.Print("After calling 'start'")
 			prevProgId = progId
 
 			if len(progChar) > 0 {

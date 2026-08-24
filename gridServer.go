@@ -244,8 +244,9 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
 
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 		}
+		time.Sleep(2 * time.Second)
 		for i := range testBufferSize {
 			buffer[i] = 0x00
 		}

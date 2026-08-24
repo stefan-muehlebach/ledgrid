@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	gc "github.com/gbin/goncurses"
-	// gc "github.com/rthornton128/goncurses"
 	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/ledgrid"
 	"github.com/stefan-muehlebach/ledgrid/conf"

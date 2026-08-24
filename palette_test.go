@@ -56,7 +56,7 @@ func TestPalette(t *testing.T) {
 			log.Fatal("NumCols and NumRows can't be both zero!")
 		}
 		NumCols = len(palNames) / NumRows
-		if len(palNames) % NumRows != 0 {
+		if len(palNames)%NumRows != 0 {
 			NumCols += 1
 		}
 	} else {
@@ -66,6 +66,7 @@ func TestPalette(t *testing.T) {
 				NumRows += 1
 			}
 		}
+	}
 	nameFace, _ := fonts.NewFace(NameFont, FontSize)
 	typeFace, _ := fonts.NewFace(TypeFont, FontSizeSmall)
 	gc := gg.NewContext(NumCols*(ColorBoxWidth)+(NumCols-1)*ColorPaddingHori,
