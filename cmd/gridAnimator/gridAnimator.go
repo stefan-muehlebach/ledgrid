@@ -216,12 +216,12 @@ func main() {
 	default:
 		log.Fatalf("Client type %d not defined (expected 0..2)")
 	}
-	log.Printf("Module configuration:")
-	log.Printf("  size: %v", modConf.Size())
-	log.Printf("  modules by index:")
-	for i, modPos := range modConf {
-		log.Printf("  [%d] %v", i, modPos.Mod)
-	}
+	//log.Printf("Module configuration:")
+	//log.Printf("  size: %v", modConf.Size())
+	//log.Printf("  modules by index:")
+	//for i, modPos := range modConf {
+	//	log.Printf("  [%d] %v", i, modPos.Mod)
+	//}
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
 
 	//log.Printf("Clear LEDGrid")

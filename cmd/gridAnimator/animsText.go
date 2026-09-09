@@ -187,20 +187,21 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	pulseDur := 2 * time.Second
 	fadeOutDur := 4 * time.Second
 	textPos := p2p(3.0, float64(height)/2.0+2.0)
-	clockText := ledgrid.NewFixedText(textPos, "0", colors.FireBrick)
+	clockText := ledgrid.NewFixedText(textPos, "0", colors.Red)
 
 	backPal := ledgrid.PaletteMap["YellowBlueBack"]
 	palFader := ledgrid.NewPaletteFader(backPal)
-	aPalFade := ledgrid.NewPaletteFadeAnim(palFader, ledgrid.PaletteMap["PinkBlueBack"], 5*time.Second)
+	aPalFade := ledgrid.NewPaletteFadeAnim(palFader,
+		ledgrid.PaletteMap["PinkBlueBack"], 5*time.Second)
 	aTxtFade := ledgrid.NewColorAnim(clockText, colors.Yellow, 5*time.Second)
-	fadeOutText := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut, 5*time.Second)
+	fadeOutText := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut,
+		5*time.Second)
 
-	pit := time.Now().Add(24 * time.Hour)
-	// pit, _ := time.Parse("02.01.2006 15:04:05", "28.06.2025 10:30:00")
+	pit := time.Now().Add(15 * time.Second)
+	//pit, _ := time.Parse("02.01.2006 15:04:05", "01.09.2026 00:00:00")
 	finalDurA := 6 * time.Second
 	finalDurB := 6 * time.Second
 	finalDur := finalDurA + finalDurB
-	// pit := time.Now().Add(finalDur + 5*time.Second)
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
@@ -216,14 +217,10 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 
 			aFade := ledgrid.NewFadeAnim(pix, ledgrid.FadeOut, fadeOutDur)
 			fadeOutPixels.Add(aFade)
-
-			//		aColorSeq := ledgrid.NewSequence(aPal)
-			//		aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
-			//		aGrpLedColor.Add(aColorSeq)
 		}
 	}
 
-	c.Add(clockText /*, alertText*/)
+	c.Add(clockText)
 
 	updateCounter := ledgrid.NewTimeline(10 * time.Millisecond)
 	updateCounter.RepeatCount = ledgrid.AnimationRepeatForever
@@ -242,7 +239,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 		aTxtFade.Start()
 	}))
 	finalizeCounter.Add(finalDur-finalDurA, ledgrid.NewTask(func() {
-		aPalFade.Val2 = ledgrid.PaletteMap["BackYellowOrange"]
+		aPalFade.Val2 = ledgrid.PaletteMap["YellowOrangeBack"]
 		aPalFade.Start()
 		aTxtFade.Val2 = ledgrid.Const(colors.WhiteSmoke)
 		aTxtFade.Start()
@@ -269,8 +266,6 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	updateCounter.Start()
 	checkFinale.Start()
 	aGrpLedColor.Start()
-	// fadeSeq.Start()
-
 }
 
 func NamedColors(ctx context.Context, c *ledgrid.Canvas) {
@@ -383,5 +378,4 @@ func BoredScores(ctx context.Context, c *ledgrid.Canvas) {
 	}))
 
 	timeLine1.Start()
-
 }
