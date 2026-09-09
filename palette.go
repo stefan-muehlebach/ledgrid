@@ -40,7 +40,7 @@ var dataFS embed.FS
 
 // Mit der Initialisierung des ledgrid-Packages werden u.a. auch alle Paletten
 // aus dem embedded Verzeichnis 'data' eingelesen. Aktuell ist dies bloss die
-// Datei "palNew.json", welche die bisherigen Paletten in einem JSON-Format
+// Datei "palettes.json", welche die bisherigen Paletten in einem JSON-Format
 // fuehrt.
 func init() {
 	var palMap map[string]colors.Palette
@@ -48,7 +48,7 @@ func init() {
 
 	PaletteMap = make(map[string]ColorSource)
 
-	fh, err := dataFS.Open(path.Join("data", "palNew.json"))
+	fh, err := dataFS.Open(path.Join("data", "palettes.json"))
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}

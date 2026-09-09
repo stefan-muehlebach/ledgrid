@@ -22,10 +22,10 @@ const (
 	//Margin           = 10.0
 	ColorPaddingHori = 20.0
 	ColorPaddingVert = 20.0
-	FontSize         = 18.0
-	FontSizeSmall    = 14.0
-	JSONFileName     = "data/palNew.json"
-	PNGFileName      = "data/palNew.png"
+	FontSize         = 2.0*TextBoxHeight/3.0
+	FontSizeSmall    = TextBoxHeight/2.0
+	JSONFileName     = "data/palettes.json"
+	PNGFileName      = "data/palettes.png"
 )
 
 var (
