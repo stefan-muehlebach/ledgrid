@@ -12,7 +12,7 @@ import (
 
 const (
 	defWidth     = 40
-	defHeight    = 10
+	defHeight    = 20
 	defPixelSize = 40.0
 )
 
