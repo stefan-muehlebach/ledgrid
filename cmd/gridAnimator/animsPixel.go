@@ -300,7 +300,7 @@ func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 40 * time.Second
 	//pal := ledgrid.PaletteMap["ParulaExtended"]
-	pal := ledgrid.PaletteMap["Turbo2"]
+	pal := ledgrid.PaletteMap["TurboDark"]
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
