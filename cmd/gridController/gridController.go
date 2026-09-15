@@ -58,7 +58,7 @@ func PlayFile(fileName string) {
 	var client ledgrid.GridClient
 	var buffer []byte
 
-	client = ledgrid.NewNetGridClient("localhost", dataPort, rpcPort)
+	client = ledgrid.NewNetGridClient("localhost", tcpPort, rpcPort)
 	buffer = make([]byte, 3*client.NumLeds())
 
 	fh, err := os.Open(fileName)
@@ -78,7 +78,7 @@ func PlayFile(fileName string) {
 }
 
 var (
-	dataPort, rpcPort uint
+	tcpPort, rpcPort uint
 )
 
 func main() {
@@ -102,7 +102,7 @@ func main() {
 	flag.IntVar(&height, "height", 0, "Height of panel")
 	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration")
 
-	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP port")
+	flag.UintVar(&tcpPort, "tcp", ledgrid.DefTCPPort, "TCP port")
 	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC port")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz")
 	flag.StringVar(&missingIDs, "missing", defMissingIDs, "Comma separated list with IDs of missing LEDs (they will be skipped)")
@@ -127,7 +127,7 @@ func main() {
 	}
 
 	ws2801 = ledgrid.NewWS2801(spiDevFile, baud, modConf)
-	gridServer = ledgrid.NewGridServer(dataPort, rpcPort, ws2801)
+	gridServer = ledgrid.NewGridServer(tcpPort, rpcPort, ws2801)
 
 	if len(missingIDs) > 0 {
 		for _, str := range strings.Split(missingIDs, ",") {

@@ -110,26 +110,33 @@ func (p *GridServer) Close() {
 // Konfiguration des LED-Grids (Anordnung der Lichterketten) ist dem
 // GridServer nicht bekannt.
 func (p *GridServer) HandleMessage(conn net.Conn) {
-	var bufferSize int
+	var size, n int
 	var err error
 	var buffer []byte
 
 	buffer = make([]byte, p.bufferSize)
+LOOP:
 	for {
-		bufferSize, err = conn.Read(buffer)
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) || errors.Is(err, io.EOF) {
-				break
+		size = 0
+		for size < p.bufferSize {
+			n, err = conn.Read(buffer[size:])
+			if err != nil {
+				if errors.Is(err, net.ErrClosed) || errors.Is(err, io.EOF) {
+					break LOOP
+				}
+				log.Fatalf("Failed Read(): %v", err)
 			}
-			log.Fatalf("Failed Read(): %v", err)
+			size += n
 		}
+/*
 		if bufferSize != p.bufferSize {
 			log.Fatalf("Expected %d bytes, got only %d", p.bufferSize, bufferSize)
 		}
-		p.RecvBytes += ByteCount(bufferSize)
+*/
+		p.RecvBytes += ByteCount(size)
 		p.stopwatch.Start()
 		p.Disp.Display(buffer)
-		p.SentBytes += ByteCount(bufferSize)
+		p.SentBytes += ByteCount(size)
 		p.stopwatch.Stop()
 	}
 
