@@ -272,7 +272,6 @@ type Timeline struct {
 	DurationEmbed
 	// Gibt an, wie oft diese Timeline wiederholt werden soll.
 	RepeatCount int
-
 	Slots            []*TimelineSlot
 	nextSlot         int
 	start, stop, end time.Time

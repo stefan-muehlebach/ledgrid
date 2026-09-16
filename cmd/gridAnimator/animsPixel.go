@@ -178,8 +178,8 @@ var (
 
 func GlowingWords(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
-	dur := 3 * time.Second
-	numReps := 3
+	//dur := 3 * time.Second
+	//numReps := 3
 
 	f, err := os.Open(wordFile)
 	if err != nil {
@@ -188,43 +188,74 @@ func GlowingWords(ctx context.Context, c *ledgrid.Canvas) {
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanWords)
 
+	pal1 := ledgrid.PaletteMap["YellowBlueBack"]	
+	pal2 := ledgrid.PaletteMap["PinkBlueBack"]	
+	pal3 := ledgrid.PaletteMap["YellowOrangeBack"]	
+
+	pulseDur := 2 * time.Second
+	palFader := ledgrid.NewPaletteFader(pal1)
+	palAnim2 := ledgrid.NewPaletteFadeAnim(palFader, pal2, 6 * time.Second)
+	palAnim3 := ledgrid.NewPaletteFadeAnim(palFader, pal3, 5 * time.Second)
+	palAnim1 := ledgrid.NewPaletteFadeAnim(palFader, pal1, 4 * time.Second)
+
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
-			// tx := float64(x) / float64(c.Rect.Dx()-1)
 			pt := image.Point{x, y}
 			pix := ledgrid.NewPixel(pt, colorList[0][0])
 
 			c.Add(pix)
 
-			aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], dur)
-			aColorCyc.AutoReverse = true
-			aColorCyc.RepeatCount = numReps
-			aColorCyc.Curve = ledgrid.AnimationLinear
+			aPal := ledgrid.NewPaletteAnim(pix, palFader, pulseDur)
+			aPal.AutoReverse = true
+			aPal.RepeatCount = ledgrid.AnimationRepeatForever
+			aPal.Pos = rand.Float64()
+
+			palFader := ledgrid.NewTimeline(36 * time.Second)
+			palFader.RepeatCount = ledgrid.AnimationRepeatForever
+			palFader.Add(8 * time.Second, ledgrid.NewTask(func() {
+				palAnim2.Start()
+			}))
+			palFader.Add(21 * time.Second, ledgrid.NewTask(func() {
+				palAnim3.Start()
+			}))
+			palFader.Add(32 * time.Second, ledgrid.NewTask(func() {
+				palAnim1.Start()
+			}))
+
+			aGrpPixColor := ledgrid.NewGroup()
+			aGrpPixColor.Add(aPal, palFader)
+
+			aGrpLedColor.Add(aGrpPixColor)
+
+			//aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], dur)
+			//aColorCyc.AutoReverse = true
+			//aColorCyc.RepeatCount = numReps
+			//aColorCyc.Curve = ledgrid.AnimationLinear
 			// aColorCyc.Pos = tx/2.0
-			aColorCyc.Pos = rand.Float64() / 2.0
+			//aColorCyc.Pos = rand.Float64() / 2.0
 
-			aColorSeq := ledgrid.NewSequence(aColorCyc)
+			//aColorSeq := ledgrid.NewSequence(aColorCyc)
 
-			for _, colPair := range colorList[1:] {
+			//for _, colPair := range colorList[1:] {
 
-				aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], dur)
-				aColorTrans.Curve = ledgrid.AnimationLinear
+			//	aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], dur)
+			//	aColorTrans.Curve = ledgrid.AnimationLinear
 
-				aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], dur)
-				aColorCyc.AutoReverse = true
-				aColorCyc.RepeatCount = numReps
-				aColorCyc.Curve = ledgrid.AnimationLinear
+			//	aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], dur)
+			//	aColorCyc.AutoReverse = true
+			//	aColorCyc.RepeatCount = numReps
+			//	aColorCyc.Curve = ledgrid.AnimationLinear
 
-				aColorSeq.Add(aColorTrans, aColorCyc)
-			}
+			//	aColorSeq.Add(aColorTrans, aColorCyc)
+			//}
 
-			aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], dur)
-			aColorTrans.Curve = ledgrid.AnimationLinear
+			//aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], dur)
+			//aColorTrans.Curve = ledgrid.AnimationLinear
 
-			aColorSeq.Add(aColorTrans)
-			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			//aColorSeq.Add(aColorTrans)
+			//aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 
-			aGrpLedColor.Add(aColorSeq)
+			//aGrpLedColor.Add(aColorSeq)
 		}
 	}
 
