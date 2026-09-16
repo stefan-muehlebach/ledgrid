@@ -157,9 +157,6 @@ func main() {
 	var customConfName string
 	var progNum int
 	var input int
-	//var progChar string
-	//var input string
-	//var ch byte
 	var progId, prevProgId int
 	var baud int
 	var progList string
@@ -169,14 +166,8 @@ func main() {
 	var err error
 
 	for i, prog := range programList {
-		//var id byte
 		switch prog.(type) {
 		case *simpleProgram:
-			//if i < 26 {
-			//	id = byte('a' + i)
-			//} else {
-			//	id = byte('A' + (i - 26))
-			//}
 			progList += fmt.Sprintf("\n%02d - %s", i+1, prog.Name())
 		}
 	}
@@ -192,7 +183,6 @@ func main() {
 	flag.StringVar(&outFile, "out", "", "Send all data to this file (Type: 'file')")
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz (Type: 'direct')")
 	flag.IntVar(&progNum, "prog", 0, "Play one single program" + progList)
-	//flag.StringVar(&progChar, "prog", "", "Play one single program" + progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
 	flag.StringVar(&wordFile, "words", defWordFile, "File with space " +
 		"separated words")
@@ -219,17 +209,7 @@ func main() {
 	default:
 		log.Fatalf("Client type %d not defined (expected 0..2)")
 	}
-	//log.Printf("Module configuration:")
-	//log.Printf("  size: %v", modConf.Size())
-	//log.Printf("  modules by index:")
-	//for i, modPos := range modConf {
-	//	log.Printf("  [%d] %v", i, modPos.Mod)
-	//}
 	ledGrid = ledgrid.NewLedGrid(gridClient, modConf)
-
-	//log.Printf("Clear LEDGrid")
-	//ledGrid.Clear(colors.SlateGray)
-	//ledGrid.Show()
 
 	gridSize = ledGrid.Rect.Size()
 	width = gridSize.X
@@ -246,17 +226,9 @@ func main() {
 		if progNum >= 1 && progNum <= len(programList) {
 			time.Sleep(500 * time.Millisecond)
 			input = progNum
-		//if len(progChar) > 0 {
-		//	time.Sleep(500 * time.Millisecond)
-		//	ch = progChar[0]
 		} else {
-			//fmt.Println(asciLine)
-			//fmt.Println("Programs")
-			//fmt.Println(asciLine)
 			groupName := ""
 			for i, prog := range programList {
-				//var id byte
-
 				if groupName != prog.Group() {
 					groupName = prog.Group()
 					fmt.Printf("%.*s %s\n", len(asciLine)-len(groupName)-1, asciLine, groupName)
@@ -266,60 +238,22 @@ func main() {
 				} else {
 					fmt.Printf("  ")
 				}
-
-				//if i < 26 {
-				//	id = byte('a' + i)
-				//} else {
-				//	id = byte('A' + (i - 26))
-				//}
-
 				fmt.Printf("[%02d] %s\n", i+1, prog.Name())
-				//fmt.Printf("[%c] %s\n", id, prog.Name())
 			}
 			fmt.Println(asciLine)
-			// fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
-			// fmt.Printf("   +/-: increase/decreases by 0.1\n")
-			// fmt.Printf("---------------------------------------------------------------------\n")
-
 			fmt.Printf("Enter a number (or '0' for quit): ")
-			//fmt.Printf("Enter a character (or '0' for quit): ")
 
 			_, err = fmt.Scanf("%d", &input)
 			if err != nil {
 				log.Fatal(err)
 			}
-			//n := 0
-			//for n == 0 {
-			//	n, err = fmt.Scanln(&input)
-			//	if err != nil {
-			//		log.Fatal(err)
-			//	}
-			//}
-			//log.Printf("n: %d", n)
-			//ch = input[0]
 		}
 
 		if input == 0 {
 			break
 		}
-		//if ch == '0' {
-		//	break
-		//}
-
 		if input >= 1 && input <= len(programList) {
 			progId = input - 1
-		//if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
-		//	id := -1
-		//	if ch >= 'a' {
-		//		id = int(ch - 'a')
-		//	} else {
-		//		id = int(ch - 'A' + 26)
-		//	}
-		//	if id < 0 || id >= len(programList) {
-		//		break
-		//	}
-		//	progId = id
-
 			if prevProgId != -1 {
 				fmt.Printf("Program statistics:\n")
 				fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
@@ -331,13 +265,10 @@ func main() {
 			ledgrid.AnimCtrl.Stopwatch().Reset()
 			canvas.Stopwatch().Reset()
 			ledGrid.Client.Stopwatch().Reset()
-			//log.Print("Before calling 'start'")
 			programList[progId].Start(context.Background(), canvas)
-			//log.Print("After calling 'start'")
 			prevProgId = progId
 
 			if progNum >= 1 && progNum <= len(programList) {
-			//if len(progChar) > 0 {
 				fmt.Printf("Quit by Ctrl-C\n")
 				SignalHandler(timeout)
 				programList[progId].Stop()
