@@ -24,7 +24,8 @@ const (
 	defClientType = NetClient
 	defBaud       = 2_000_000
 	spiDevFile    = "/dev/spidev0.0"
-	defWordFile = "Faust.txt"
+	defWordFile   = "Faust.txt"
+	asciLine      = "---------------------------------------------------------------------"
 )
 
 var (
@@ -154,44 +155,46 @@ func main() {
 	var dataPort, rpcPort uint
 	var clientType ClientType = defClientType
 	var customConfName string
-	// var useTCP bool
-	// var network string
-	var progChar string
-	var input string
-	var ch byte
+	var progNum int
+	var input int
+	//var progChar string
+	//var input string
+	//var ch byte
 	var progId, prevProgId int
 	var baud int
 	var progList string
-	// var gR, gG, gB float64
 	var timeout time.Duration
 	var outFile string
 	var ws2801 ledgrid.Displayer
 	var err error
 
 	for i, prog := range programList {
-		var id byte
+		//var id byte
 		switch prog.(type) {
 		case *simpleProgram:
-			if i < 26 {
-				id = byte('a' + i)
-			} else {
-				id = byte('A' + (i - 26))
-			}
-			progList += fmt.Sprintf("\n%c - %s", id, prog.Name())
+			//if i < 26 {
+			//	id = byte('a' + i)
+			//} else {
+			//	id = byte('A' + (i - 26))
+			//}
+			progList += fmt.Sprintf("\n%02d - %s", i+1, prog.Name())
 		}
 	}
-	flag.Var(&clientType, "type", "Type of client; 'net' (default), 'file' or 'direct'")
-	flag.StringVar(&customConfName, "custom", "", "Use a non standard module configuration (Types: 1/2)")
-	flag.IntVar(&width, "width", defWidth, "Width (Types: 1/2)")
-	flag.IntVar(&height, "height", defHeight, "Height (Types: 1/2)")
-	flag.StringVar(&host, "host", defHost, "Controller hostname (Type: 0)")
-	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port (Type: 0)")
-	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port (Type: 0)")
-	flag.StringVar(&outFile, "out", "", "Send all data to this file (Type: 1)")
-	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz (Type: 2)")
-	flag.StringVar(&progChar, "prog", "", "Play one single program"+progList)
+	flag.Var(&clientType, "type", "Type of client; 'net' (default), 'file' or " +
+		"'direct'")
+	flag.StringVar(&customConfName, "custom", "", "Use a non standard module " +
+		"configuration (Type: 'file' or 'direct')")
+	flag.IntVar(&width, "width", defWidth, "Width (Type: 'file' or 'direct')")
+	flag.IntVar(&height, "height", defHeight, "Height (Type: 'file' or 'direct')")
+	flag.StringVar(&host, "host", defHost, "Controller hostname (Type: 'net')")
+	flag.UintVar(&dataPort, "tcp", ledgrid.DefTCPPort, "TCP Port (Type: 'net')")
+	flag.UintVar(&rpcPort, "rpc", ledgrid.DefRPCPort, "RPC Port (Type: 'net')")
+	flag.StringVar(&outFile, "out", "", "Send all data to this file (Type: 'file')")
+	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz (Type: 'direct')")
+	flag.IntVar(&progNum, "prog", 0, "Play one single program" + progList)
+	//flag.StringVar(&progChar, "prog", "", "Play one single program" + progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
-	flag.StringVar(&wordFile, "words", defWordFile, "File with space" +
+	flag.StringVar(&wordFile, "words", defWordFile, "File with space " +
 		"separated words")
 	flag.Parse()
 
@@ -240,64 +243,82 @@ func main() {
 	progId, prevProgId = -1, -1
 
 	for {
-		if len(progChar) > 0 {
+		if progNum >= 1 && progNum <= len(programList) {
 			time.Sleep(500 * time.Millisecond)
-			ch = progChar[0]
+			input = progNum
+		//if len(progChar) > 0 {
+		//	time.Sleep(500 * time.Millisecond)
+		//	ch = progChar[0]
 		} else {
-			fmt.Printf("---------------------------------------------------------------------\n")
-			fmt.Printf("  Program\n")
-			fmt.Printf("---------------------------------------------------------------------\n")
+			//fmt.Println(asciLine)
+			//fmt.Println("Programs")
+			//fmt.Println(asciLine)
+			groupName := ""
 			for i, prog := range programList {
-				var id byte
+				//var id byte
 
+				if groupName != prog.Group() {
+					groupName = prog.Group()
+					fmt.Printf("%.*s %s\n", len(asciLine)-len(groupName)-1, asciLine, groupName)
+				}
 				if i == progId {
 					fmt.Printf("> ")
 				} else {
 					fmt.Printf("  ")
 				}
 
-				if i < 26 {
-					id = byte('a' + i)
-				} else {
-					id = byte('A' + (i - 26))
-				}
+				//if i < 26 {
+				//	id = byte('a' + i)
+				//} else {
+				//	id = byte('A' + (i - 26))
+				//}
 
-				fmt.Printf("[%c] %s\n", id, prog.Name())
+				fmt.Printf("[%02d] %s\n", i+1, prog.Name())
+				//fmt.Printf("[%c] %s\n", id, prog.Name())
 			}
-			fmt.Printf("---------------------------------------------------------------------\n")
+			fmt.Println(asciLine)
 			// fmt.Printf("  Gamma values: %.1f, %.1f, %.1f\n", gR, gG, gB)
 			// fmt.Printf("   +/-: increase/decreases by 0.1\n")
 			// fmt.Printf("---------------------------------------------------------------------\n")
 
-			fmt.Printf("Enter a character (or '0' for quit): ")
+			fmt.Printf("Enter a number (or '0' for quit): ")
+			//fmt.Printf("Enter a character (or '0' for quit): ")
 
-			n := 0
-			for n == 0 {
-				//n, _ = fmt.Scanf("%s\n", &input)
-				n, err = fmt.Scanln(&input)
-				if err != nil {
-					log.Fatal(err)
-				}
+			_, err = fmt.Scanf("%d", &input)
+			if err != nil {
+				log.Fatal(err)
 			}
+			//n := 0
+			//for n == 0 {
+			//	n, err = fmt.Scanln(&input)
+			//	if err != nil {
+			//		log.Fatal(err)
+			//	}
+			//}
 			//log.Printf("n: %d", n)
-			ch = input[0]
+			//ch = input[0]
 		}
 
-		if ch == '0' {
+		if input == 0 {
 			break
 		}
+		//if ch == '0' {
+		//	break
+		//}
 
-		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
-			id := -1
-			if ch >= 'a' {
-				id = int(ch - 'a')
-			} else {
-				id = int(ch - 'A' + 26)
-			}
-			if id < 0 || id >= len(programList) {
-				break
-			}
-			progId = id
+		if input >= 1 && input <= len(programList) {
+			progId = input - 1
+		//if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+		//	id := -1
+		//	if ch >= 'a' {
+		//		id = int(ch - 'a')
+		//	} else {
+		//		id = int(ch - 'A' + 26)
+		//	}
+		//	if id < 0 || id >= len(programList) {
+		//		break
+		//	}
+		//	progId = id
 
 			if prevProgId != -1 {
 				fmt.Printf("Program statistics:\n")
@@ -315,7 +336,8 @@ func main() {
 			//log.Print("After calling 'start'")
 			prevProgId = progId
 
-			if len(progChar) > 0 {
+			if progNum >= 1 && progNum <= len(programList) {
+			//if len(progChar) > 0 {
 				fmt.Printf("Quit by Ctrl-C\n")
 				SignalHandler(timeout)
 				programList[progId].Stop()

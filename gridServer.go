@@ -128,11 +128,7 @@ LOOP:
 			}
 			size += n
 		}
-/*
-		if bufferSize != p.bufferSize {
-			log.Fatalf("Expected %d bytes, got only %d", p.bufferSize, bufferSize)
-		}
-*/
+
 		p.RecvBytes += ByteCount(size)
 		p.stopwatch.Start()
 		p.Disp.Display(buffer)
@@ -205,22 +201,28 @@ func (p *GridServer) ToggleTestPattern() bool {
 	var ledIdx = 0
 	var testBufferSize = 3 * numTestLeds
 	var buffer []byte
+	var delay time.Duration
 
-	buffer = make([]byte, p.bufferSize)
 	if p.drawTestPattern {
 		p.drawTestPattern = false
 		return false
-	} else {
-		p.drawTestPattern = true
-		colorMode = RedChain
 	}
+	p.drawTestPattern = true
+	colorMode = RedChain
+	buffer = make([]byte, p.bufferSize)
 
 	go func() {
 		for p.drawTestPattern {
+			if ledIdx >= numTestLeds {
+				for i := range testBufferSize {
+					buffer[i] = 0x00
+				}
+				ledIdx = 0
+				colorMode = (colorMode + 1) % NumColorModes
+			}
 			switch colorMode {
-			case RedChain, GreenChain, BlueChain,
-				YellowChain, CyanChain, MagentaChain,
-				WhiteChain:
+			case RedChain, GreenChain, BlueChain, YellowChain, CyanChain,
+				MagentaChain, WhiteChain:
 				r, g, b := byte(0x00), byte(0x00), byte(0x00)
 				switch colorMode {
 				case RedChain, YellowChain, MagentaChain, WhiteChain:
@@ -239,11 +241,9 @@ func (p *GridServer) ToggleTestPattern() bool {
 				buffer[3*ledIdx+2] = b
 				ledIdx++
 				if ledIdx >= numTestLeds {
-					for i := range testBufferSize {
-						buffer[i] = 0x00
-					}
-					ledIdx = 0
-					colorMode = (colorMode + 1) % NumColorModes
+					delay = 1 * time.Second
+				} else {
+					delay = 30 * time.Millisecond
 				}
 			}
 
@@ -251,7 +251,7 @@ func (p *GridServer) ToggleTestPattern() bool {
 			p.Disp.Send(buffer)
 			p.stopwatch.Stop()
 
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(delay)
 		}
 		time.Sleep(2 * time.Second)
 		for i := range testBufferSize {
