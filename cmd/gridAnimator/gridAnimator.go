@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"math"
+	//"math"
 	"os"
 	"os/signal"
 	"time"
@@ -37,6 +37,7 @@ var (
 	canvas        *ledgrid.Canvas
 	hostName      string
 	wordFile      string
+	countdown	  time.Duration
 )
 
 //----------------------------------------------------------------------------
@@ -94,12 +95,16 @@ func (p *simpleProgram) Stop() {
 // ---------------------------------------------------------------------------
 
 func SignalHandler(timeout time.Duration) {
+	var timer *time.Timer
+
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
 	if timeout == 0 {
-		timeout = time.Duration(math.MaxInt64)
+		timer = time.NewTimer(5 * time.Second)
+		timer.Stop()
+	} else {
+		timer = time.NewTimer(timeout)
 	}
-	timer := time.NewTimer(timeout)
 	select {
 	case <-sigChan:
 	case <-timer.C:
@@ -184,6 +189,7 @@ func main() {
 	flag.IntVar(&baud, "baud", defBaud, "SPI baudrate in Hz (Type: 'direct')")
 	flag.IntVar(&progNum, "prog", 0, "Play one single program" + progList)
 	flag.DurationVar(&timeout, "timeout", 0, "Timeout in non interactive mode")
+	flag.DurationVar(&countdown, "countdown", 30 * time.Second, "Duration used for Countdown")
 	flag.StringVar(&wordFile, "words", defWordFile, "File with space " +
 		"separated words")
 	flag.Parse()

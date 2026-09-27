@@ -21,7 +21,6 @@ func init() {
 	programList.Add("All Named Colors", "Text", NamedColors)
 	programList.Add("Clock Animation", "Text", ClockAnimation)
 	programList.Add("Sample Info Text", "Text", ShowInfoText)
-	programList.Add("Countdown (Rectangle)", "Text", RectangleCountdown)
 	programList.Add("Countdown (Glowing)", "Text", GlowingCountdown)
 	programList.Add("Punktestand", "Text", BoredScores)
 }
@@ -140,47 +139,6 @@ func ShowInfoText(ctx context.Context, c *ledgrid.Canvas) {
 	animSeq.Start()
 }
 
-func RectangleCountdown(ctx context.Context, c *ledgrid.Canvas) {
-	dur1 := 10 * time.Second
-	dur2 := 7 * time.Second
-	pal1 := ledgrid.PaletteMap["PinkBlueBack"]
-	pal2 := ledgrid.PaletteMap["YellowBlueBack"]
-	rectPos := geom.Point{float64(width) / 2, float64(height)/2}
-	rectSize := geom.Point{float64(width) - 1, float64(height) - 1}
-
-	textPos := p2p(3.0, float64(height)/2.0+2.0)
-	pit := time.Now().Add(24 * time.Hour)
-	// pit, _ := time.Parse("02.01.2006", "29.06.2025")
-
-	rect := ledgrid.NewRectangle(rectPos, rectSize, colors.Indigo)
-	clockText := ledgrid.NewFixedText(textPos, "0", colors.Indigo)
-	c.Add(rect, clockText)
-
-	pal1Anim := ledgrid.NewPaletteAnim(rect, pal1, dur1)
-	pal1Anim.AutoReverse = true
-	pal1Anim.Curve = ledgrid.AnimationLinear
-	pal1Seq := ledgrid.NewSequence(pal1Anim)
-	pal1Seq.RepeatCount = ledgrid.AnimationRepeatForever
-
-	pal2Anim := ledgrid.NewPaletteAnim(clockText, pal2, dur2)
-	pal2Anim.AutoReverse = true
-	pal2Anim.Curve = ledgrid.AnimationLinear
-	pal2Seq := ledgrid.NewSequence(pal2Anim)
-	pal2Seq.RepeatCount = ledgrid.AnimationRepeatForever
-
-	timeLine1 := ledgrid.NewTimeline(10 * time.Millisecond)
-	timeLine1.RepeatCount = ledgrid.AnimationRepeatForever
-	timeLine1.Add(0, ledgrid.NewTask(func() {
-		duration := time.Until(pit)
-		txt := fmt.Sprintf("%9.1f", duration.Seconds())
-		clockText.SetText(txt)
-	}))
-
-	pal1Seq.Start()
-	pal2Seq.Start()
-	timeLine1.Start()
-}
-
 func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	fadeOutPixels := ledgrid.NewGroup()
@@ -197,7 +155,7 @@ func GlowingCountdown(ctx context.Context, c *ledgrid.Canvas) {
 	fadeOutText := ledgrid.NewFadeAnim(clockText, ledgrid.FadeOut,
 		5*time.Second)
 
-	pit := time.Now().Add(15 * time.Second)
+	pit := time.Now().Add(countdown)
 	//pit, _ := time.Parse("02.01.2006 15:04:05", "01.09.2026 00:00:00")
 	finalDurA := 6 * time.Second
 	finalDurB := 6 * time.Second

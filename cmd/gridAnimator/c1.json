@@ -20,6 +20,6 @@
         "B": 0,
         "A": 0
     },
-    "StrokeWidth": 1,
+    "LineWidth": 1,
     "FillColorFnc": "ApplyAlpha"
 }

@@ -19,8 +19,8 @@ func init() {
 func BlinkenAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	posFlame1 := geom.Point{4.5, float64(height)}
 	posFlame2 := geom.Point{float64(width) - 4.5, float64(height)}
-	pos1Mario := geom.Point{5.0, float64(height)}
-	pos2Mario := geom.Point{float64(width) - 5.0, float64(height)}
+	pos1Mario := geom.Point{-8.0, float64(height)}
+	pos2Mario := geom.Point{float64(width) + 8.0, float64(height)}
 	// pos3Mario := geom.Point{-5.0, float64(height) / 2.0}
 	// pos4Mario := geom.Point{float64(width) + 5.0, float64(height) / 2.0}
 
@@ -46,7 +46,7 @@ func BlinkenAnimation(ctx context.Context, c *ledgrid.Canvas) {
 	mario.SetAlign(ledgrid.AlignCenter | ledgrid.AlignBottom)
 	mario.AddBlinkenLight(bmlMario)
 	mario.RepeatCount = ledgrid.AnimationRepeatForever
-	mario.Size = geom.Point{10.0, 10.0}
+	mario.Size = geom.Point{17.0, 17.0}
 
 	aPos1 := ledgrid.NewPositionAnim(mario, pos2Mario, 4*time.Second)
 	aPos1.Curve = ledgrid.AnimationLinear
