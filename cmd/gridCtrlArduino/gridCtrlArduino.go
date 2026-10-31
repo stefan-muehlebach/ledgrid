@@ -25,8 +25,8 @@ const (
 	DataPort       = ledgrid.DefDataPort
 	MissingIDs     = ""
 	DefectIDs      = ""
-	Ssid           = "Indernett"
-	Passphrase     = "0000000000"
+	Ssid           = "HoehenWG"
+	Passphrase     = "ypmbkbbd5b2u"
 )
 
 var (

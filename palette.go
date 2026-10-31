@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"log"
 	"math"
+	//"math/rand/v2"
 	"path"
 
 	"github.com/stefan-muehlebach/gg/colors"
@@ -24,6 +25,8 @@ type ColorSource interface {
 	Name() string
 }
 
+//type ColorSource colors.Palette
+
 var (
 	// Alle vorhandenen Paletten sind in diesem Slice aufgefuehrt. Falls
 	// applikatorisch weitere Paletten erzeugt werden, ist es Aufgabe der
@@ -37,6 +40,11 @@ var (
 
 //go:embed data/*.json
 var dataFS embed.FS
+
+//var (
+//	randName = "Randomizer"
+//	randSize = 75
+//)
 
 // Mit der Initialisierung des ledgrid-Packages werden u.a. auch alle Paletten
 // aus dem embedded Verzeichnis 'data' eingelesen. Aktuell ist dies bloss die
@@ -58,6 +66,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("error reading palette data: %v", err.Error())
 	}
+
 	for _, name := range PaletteNames {
 		PaletteMap[name] = palMap[name]
 	}

@@ -10,35 +10,30 @@ import (
 	"github.com/stefan-muehlebach/gg/fonts"
 )
 
-const (
-	ColorBoxWidth  = 600
-	ColorBoxHeight = 100
-	TextBoxHeight  = 30.0
-	//TileRows         = 4
-	//TileCols         = 256 / TileRows
-	//TileWidth        = ColorBoxWidth / TileCols
-	//TileHeight       = ColorBoxHeight / TileRows
-	//CornerRadius     = 20
-	//Margin           = 10.0
-	ColorPaddingHori = 20.0
-	ColorPaddingVert = 20.0
-	FontSize         = 2.0*TextBoxHeight/3.0
-	FontSizeSmall    = TextBoxHeight/2.0
-	JSONFileName     = "data/palettes.json"
-	PNGFileName      = "data/palettes.png"
-)
-
 var (
 	// Von den beiden Variablen NumCols und NumRows kann eine Null sein, dann
 	// wird sie aufgrund der anderen Variable (die nicht Null sein darf)
 	// berechnet.
 	NumCols  = 4
 	NumRows  = 0
+	ColorBoxWidth  = 600
+	ColorBoxHeight = 100
+	TextBoxHeight  = 30.0
+	ColorPaddingHori = 20.0
+	ColorPaddingVert = 20.0
 	NameFont = fonts.LucidaBrightDemibold
 	TypeFont = fonts.LucidaBrightItalic
+	FontSize         = 2.0*TextBoxHeight/3.0
+	FontSizeSmall    = TextBoxHeight/2.0
+	JSONFileName     = "palettes.json"
+	PNGFileName      = "palettes.png"
+
 )
 
 func TestPalette(t *testing.T) {
+	var palNames []string
+	var palMap map[string]colors.Palette
+	var err error
 
 	fh, err := os.Open(JSONFileName)
 	if err != nil {
@@ -46,10 +41,24 @@ func TestPalette(t *testing.T) {
 	}
 	defer fh.Close()
 
-	palNames, palMap, err := colors.ReadPaletteData(fh)
+	palNames, palMap, err = colors.ReadPaletteData(fh)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
+
+	// Baue eine randomisierte Palette zusammen
+    randPal := colors.NewLinearPalette(randName)
+    var col, oldCol colors.RGBA
+    for i:=0; i<randSize; i++ {
+        col = colors.RandColor()
+        for i > 0 && colorDist(col, oldCol) < 128 {
+           col = colors.RandColor()
+        }
+        randPal.AddColor(col.Dark(0.3))
+        oldCol = col
+    }
+    palNames = append(palNames, randName)
+    palMap[randName] = randPal
 
 	if NumCols == 0 {
 		if NumRows == 0 {

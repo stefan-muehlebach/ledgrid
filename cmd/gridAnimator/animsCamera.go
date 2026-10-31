@@ -5,6 +5,8 @@ package main
 import (
 	"context"
 
+	"gocv.io/x/gocv"
+
 	"github.com/stefan-muehlebach/gg/colors"
 	"github.com/stefan-muehlebach/gg/geom"
 	"github.com/stefan-muehlebach/ledgrid"
@@ -24,6 +26,8 @@ func OrdinaryCamera(ctx context.Context, canv *ledgrid.Canvas) {
 	cam := NewCamera(pos, size, ctx)
 	canv.Add(cam)
 	cam.Start()
+	cam.Set(gocv.VideoCaptureAutoWB, 0)
+	cam.Set(gocv.VideoCaptureWBTemperature, 3200)
 }
 
 func DiffCamera(ctx context.Context, canv *ledgrid.Canvas) {

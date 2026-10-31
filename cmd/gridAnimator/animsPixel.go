@@ -32,6 +32,8 @@ func init() {
 
 var (
 	message = "Stefan und Benedict haben sich entschieden"
+	randPalName = "Randomizer"
+	randPalSize = 100
 )
 
 // Hilfsfunktioenchen (sogar generisch!)
@@ -329,13 +331,30 @@ func ColorWavesOnGradients(ctx context.Context, c *ledgrid.Canvas) {
 
 func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
-	dur := 40 * time.Second
+	dur := 120 * time.Second
 	//pal := ledgrid.PaletteMap["ParulaExtended"]
-	pal := ledgrid.PaletteMap["TurboDark"]
+	//pal := ledgrid.PaletteMap["Randomizer"]
+
+    // Baue eine randomisierte Palette zusammen
+    pal := colors.NewLinearPalette(randPalName)
+    var col, oldCol colors.RGBA
+    for i:=0; i<randPalSize; i++ {
+        col = colors.RandColor()
+        for i > 0 && col.Dist(oldCol) < 128 {
+           col = colors.RandColor()
+        }
+        pal.AddColor(col.Dark(0.5 + 0.2*rand.Float64()))
+        oldCol = col
+    }
+
+	mp := c.Rect.Min.Add(c.Rect.Max).Div(2)
 
 	for y := range c.Rect.Dy() {
 		for x := range c.Rect.Dx() {
 			pt := image.Point{x, y}
+			v := pt.Sub(mp)
+			dist := math.Hypot(float64(v.X), float64(v.Y))
+
 			pix := ledgrid.NewPixel(pt, colorList[0][0])
 
 			c.Add(pix)
@@ -343,7 +362,7 @@ func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
 			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
 			aColorPal.AutoReverse = true
 			aColorPal.Curve = ledgrid.AnimationLinear
-			aColorPal.Pos = float64(y)/float64(c.Rect.Dy())/16.0 + rand.Float64()/16.0
+			aColorPal.Pos = ((25.0-dist)/25.0 + rand.Float64())/128.0
 			aColorSeq := ledgrid.NewSequence(aColorPal)
 			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aGrpLedColor.Add(aColorSeq)

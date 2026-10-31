@@ -18,11 +18,13 @@ import (
 )
 
 const (
-	camDevName    = "/dev/video0"
+	// /dev/video0 - Laptop-Cam
+	// /dev/video2 - Logitec Webcam
+	camDevName    = "/dev/video2"
 	camDevId      = 0
-	camWidth      = 160
-	camHeight     = 120
-	camFrameRate  = 30
+	camWidth      = 320
+	camHeight     = 160
+	camFrameRate  = 15
 	camBufferSize = 1
 )
 
@@ -142,7 +144,7 @@ ML:
 			c.matMutex[idx].Lock()
 			if !c.dev.Read(&c.mat[idx]) {
 				c.matMutex[idx].Unlock()
-				log.Println("Failed to grab and decode frames")
+				// log.Println("Failed to grab and decode frames")
 				continue
 			}
 			gocv.Flip(c.mat[idx], &c.mat[idx], 1)
