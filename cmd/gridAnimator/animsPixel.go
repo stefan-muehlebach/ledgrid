@@ -22,9 +22,7 @@ func init() {
 	programList.Add("Pixel im Stau", "Pixel", CrowdedPixels)
 	programList.Add("Wort fuer Wort Anzeige vor gluehenden Pixeln",
 		"Pixel", GlowingWords)
-	programList.Add("Waves of colors (Gradient)", "Pixel",
-		ColorWavesOnGradients)
-	programList.Add("Waves of colors (Palette)", "Pixel", ColorWavesOnPalettes)
+	programList.Add("Waves of colors", "Pixel", ColorWaves)
 	programList.Add("Fireplace", "Pixel", Fireplace)
 	programList.Add("Shader using palettes", "Pixel", PaletteShader)
 	programList.Add("Shader using colors", "Pixel", ColorShader)
@@ -283,53 +281,7 @@ func GlowingWords(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor.Start()
 }
 
-func ColorWavesOnGradients(ctx context.Context, c *ledgrid.Canvas) {
-	aGrpLedColor := ledgrid.NewGroup()
-	dur := 3 * time.Second
-	numReps := 5
-
-	for y := range c.Rect.Dy() {
-		for x := range c.Rect.Dx() {
-			pt := image.Point{x, y}
-			pix := ledgrid.NewPixel(pt, colorList[0][0])
-
-			c.Add(pix)
-
-			aColorCyc := ledgrid.NewColorAnim(pix, colorList[0][1], dur)
-			aColorCyc.AutoReverse = true
-			aColorCyc.RepeatCount = numReps
-			aColorCyc.Curve = ledgrid.AnimationLinear
-			aColorCyc.Pos = rand.Float64() / 2.0
-
-			aColorSeq := ledgrid.NewSequence(aColorCyc)
-
-			for _, colPair := range colorList[1:] {
-
-				aColorTrans := ledgrid.NewColorAnim(pix, colPair[0], dur)
-				aColorTrans.Curve = ledgrid.AnimationLinear
-
-				aColorCyc := ledgrid.NewColorAnim(pix, colPair[1], dur)
-				aColorCyc.AutoReverse = true
-				aColorCyc.RepeatCount = numReps
-				aColorCyc.Curve = ledgrid.AnimationLinear
-
-				aColorSeq.Add(aColorTrans, aColorCyc)
-			}
-
-			aColorTrans := ledgrid.NewColorAnim(pix, colorList[0][0], dur)
-			aColorTrans.Curve = ledgrid.AnimationLinear
-
-			aColorSeq.Add(aColorTrans)
-			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
-
-			aGrpLedColor.Add(aColorSeq)
-		}
-	}
-
-	aGrpLedColor.Start()
-}
-
-func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
+func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
 	dur := 120 * time.Second
 	//pal := ledgrid.PaletteMap["ParulaExtended"]
@@ -361,11 +313,12 @@ func ColorWavesOnPalettes(ctx context.Context, c *ledgrid.Canvas) {
 
 			aColorPal := ledgrid.NewPaletteAnim(pix, pal, dur)
 			aColorPal.AutoReverse = true
+			aColorPal.RepeatCount = ledgrid.AnimationRepeatForever
 			aColorPal.Curve = ledgrid.AnimationLinear
 			aColorPal.Pos = ((25.0-dist)/25.0 + rand.Float64())/128.0
-			aColorSeq := ledgrid.NewSequence(aColorPal)
-			aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
-			aGrpLedColor.Add(aColorSeq)
+			//aColorSeq := ledgrid.NewSequence(aColorPal)
+			//aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
+			aGrpLedColor.Add(aColorPal)
 		}
 	}
 	aGrpLedColor.Start()

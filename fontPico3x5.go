@@ -8,9 +8,9 @@ import (
 // Pico3x5 --
 var Pico3x5 = &basicfont.Face{
 	Advance: 4,
-	Width:   3,
+	Width:   3,		// muss mit dem 'stride' von Mask korrespondieren
 	Height:  8,
-	Ascent:  5,
+	Ascent:  5,		// muss mit der Hoehe eines Zeichens in Mask korresp.
 	Descent: 0,
 	Mask:    maskPico3x5,
 	Ranges:  glyphRangeFull,
