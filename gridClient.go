@@ -58,7 +58,7 @@ func NewNetGridClient(host string, port, rpcPort uint) GridClient {
 		}
 	}
 
-	p.stopwatch = NewStopwatch()
+	p.stopwatch = NewStopwatch("Client")
 
 	return p
 }
@@ -159,7 +159,7 @@ func NewDirectGridClient(Disp Displayer) GridClient {
 	c := &DirectGridClient{}
 
 	c.Disp = Disp
-	c.stopwatch = NewStopwatch()
+	c.stopwatch = NewStopwatch("Client")
 	return c
 }
 
@@ -210,7 +210,7 @@ func NewFileSaveClient(fileName string, modConf conf.ModuleConfig) GridClient {
 		log.Fatalf("Couldn't create file: %v", err)
 	}
 	p.modConf = modConf
-	p.stopwatch = NewStopwatch()
+	p.stopwatch = NewStopwatch("Client")
 
 	return p
 }

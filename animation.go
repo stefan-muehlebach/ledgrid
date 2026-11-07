@@ -57,7 +57,7 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 	a.AnimList = make([]Animation, 0)
 	a.animMutex = &sync.RWMutex{}
 	a.ticker = time.NewTicker(refreshRate)
-	a.stopwatch = NewStopwatch()
+	a.stopwatch = NewStopwatch("Animator")
 	// a.numThreads = 1
 	a.numThreads = runtime.NumCPU()
 	log.Printf("Running with %d Threads\n", a.numThreads)

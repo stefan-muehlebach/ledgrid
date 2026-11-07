@@ -48,7 +48,7 @@ func NewCanvas(size image.Point) *Canvas {
 	c.GC = gg.NewContextForRGBA(c.Img.(*image.RGBA))
 	c.Mask = image.NewUniform(color.Alpha{0xff})
 	c.objMutex = &sync.RWMutex{}
-	c.stopwatch = NewStopwatch()
+	c.stopwatch = NewStopwatch("Painter")
 	return c
 }
 

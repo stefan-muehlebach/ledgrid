@@ -288,8 +288,19 @@ func main() {
 	ledGrid.Show()
 	ledGrid.Close()
 
-	fmt.Printf("Program statistics:\n")
-	fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
-	fmt.Printf("  painting : %v\n", canvas.Stopwatch())
-	fmt.Printf("  sending  : %v\n", ledGrid.Client.Stopwatch())
+	fmt.Printf("Timing statistics:\n")
+    for _, watch := range []*ledgrid.Stopwatch{
+        ledgrid.AnimCtrl.Stopwatch(),
+        canvas.Stopwatch(),
+        ledGrid.Client.Stopwatch(),
+    } {
+        name := watch.Name
+        aver := watch.Avg(0)
+        mini := watch.Min(0)
+        maxi := watch.Max(0)
+        log.Printf("- %-13s: %v  (%v .. %v)", name, aver, mini, maxi)
+    }
+	// fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
+	// fmt.Printf("  painting : %v\n", canvas.Stopwatch())
+	// fmt.Printf("  sending  : %v\n", ledGrid.Client.Stopwatch())
 }

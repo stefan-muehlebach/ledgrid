@@ -65,7 +65,7 @@ func NewGridServer(tcpPort, rpcPort uint, disp Displayer) *GridServer {
 	p.bufferSize = 3 * disp.NumLeds()
 	p.maxValue = [3]uint8{255, 255, 255}
 
-	p.stopwatch = NewStopwatch()
+	p.stopwatch = NewStopwatch("Server")
 
 	// Jetzt wird der TCP-Port geoeffnet, resp. eine lesende Verbindung
 	// dafuer erstellt und der entsprechende Handler dafuer gestartet.
