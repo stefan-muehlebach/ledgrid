@@ -195,9 +195,9 @@ func GlowingWords(ctx context.Context, c *ledgrid.Canvas) {
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanWords)
 
-	pal1 := ledgrid.PaletteMap["YellowBlueBack"]	
-	pal2 := ledgrid.PaletteMap["PinkBlueBack"]	
-	pal3 := ledgrid.PaletteMap["YellowOrangeBack"]	
+	pal1 := ledgrid.PaletteMap["YellowBlueBack"]
+	pal2 := ledgrid.PaletteMap["PinkBlueBack"]
+	pal3 := ledgrid.PaletteMap["YellowOrangeBack"]
 
 	pulseDur := 2 * time.Second
 	palFader := ledgrid.NewPaletteFader(pal1)
@@ -326,7 +326,8 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 			aColorPal.AutoReverse = true
 			aColorPal.RepeatCount = ledgrid.AnimationRepeatForever
 			aColorPal.Curve = ledgrid.AnimationLinear
-			aColorPal.Pos = ((25.0-dist)/25.0 + rand.Float64())/128.0
+            aColorPal.Pos = (25.0-dist)/25.0/128.0
+			// aColorPal.Pos = ((25.0-dist)/25.0 + rand.Float64())/128.0
 			aGrpLedColor.Add(aColorPal)
 		}
 	}

@@ -2,8 +2,10 @@ package ledgrid
 
 import (
 	"image"
+	"log"
 	"math"
 	"math/rand/v2"
+	"runtime"
 	"sync"
 	"time"
 
@@ -56,7 +58,9 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 	a.animMutex = &sync.RWMutex{}
 	a.ticker = time.NewTicker(refreshRate)
 	a.stopwatch = NewStopwatch()
-	a.numThreads = 1
+	// a.numThreads = 1
+	a.numThreads = runtime.NumCPU()
+	log.Printf("Running with %d Threads\n", a.numThreads)
 	a.delay = time.Duration(0)
 	a.syncChan = syncChan
 
@@ -143,6 +147,8 @@ func (a *AnimationController) IsRunning() bool {
 // vorgenommen werden. Davon ist in jedem Programm nur eine Instanz vorhanden
 // AnimationController's koennte es grundsaetzlich mehrere geben.
 func (a *AnimationController) backgroundThread() {
+	var wg sync.WaitGroup
+
 	for pit := range a.ticker.C {
 		if a.quit {
 			break
@@ -150,7 +156,10 @@ func (a *AnimationController) backgroundThread() {
 		a.animPit = pit.Add(-a.delay)
 
 		a.stopwatch.Start()
-		a.animationUpdater(0)
+		for i := range a.numThreads {
+			wg.Go(func() { a.animationUpdater(i) })
+		}
+		wg.Wait()
 		a.stopwatch.Stop()
 
 		a.syncChan <- true
@@ -163,13 +172,14 @@ func (a *AnimationController) backgroundThread() {
 // Aktualisierung ihrer Animationen.
 func (a *AnimationController) animationUpdater(id int) {
 	a.animMutex.RLock()
-	for id, anim := range a.AnimList {
+	for idx := id; idx < len(a.AnimList); idx += a.numThreads {
+		anim := a.AnimList[idx]
 		if anim == nil || !anim.IsRunning() {
 			continue
 		}
 		a.animMutex.RUnlock()
 		if !anim.Update(a.animPit) {
-			a.AnimList[id] = nil
+			a.AnimList[idx] = nil
 		}
 		a.animMutex.RLock()
 	}
