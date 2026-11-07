@@ -606,7 +606,7 @@ main:
 			}
 			fh.Close()
 
-		case Ctrl('l'):
+		case Ctrl('o'):
 			fh, err := os.Open("ledgrid.png")
 			if err != nil {
 				log.Fatalf("Couldn't open file: %v", err)

@@ -30,8 +30,6 @@ func init() {
 
 var (
 	message = "Stefan und Benedict haben sich entschieden"
-	randPalName = "Randomizer"
-	randPalSize = 100
 )
 
 // Hilfsfunktioenchen (sogar generisch!)
@@ -82,6 +80,8 @@ func CrowdedPixels(ctx context.Context, c *ledgrid.Canvas) {
 	mainSeq.RepeatCount = ledgrid.AnimationRepeatForever
 	mainSeq.Start()
 }
+
+//----------------------------------------------------------------------------
 
 func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	mainSeq := ledgrid.NewSequence()
@@ -166,13 +166,20 @@ func MovingPixels(ctx context.Context, c *ledgrid.Canvas) {
 	mainSeq.Start()
 }
 
+//----------------------------------------------------------------------------
+
 var (
 	colorList = [][]colors.RGBA{
-		{colors.RGBA{0xb9, 0xb9, 0x0a, 0xff}, colors.RGBA{0x0a, 0x58, 0x53, 0xff}}, // Yellow to LightBlue
-		{colors.RGBA{0xa6, 0x0c, 0x5f, 0xff}, colors.RGBA{0x00, 0x00, 0x80, 0xff}}, // DeepPink to DarkBlue
-		{colors.RGBA{0x95, 0x95, 0x00, 0xff}, colors.RGBA{0x71, 0x0e, 0x00, 0xff}}, // Yellow to OrangeRed
-		{colors.RGBA{0x00, 0x74, 0x00, 0xff}, colors.RGBA{0x9a, 0x22, 0x22, 0xff}}, // DarkGreen to DarkRed
-		{colors.RGBA{0x81, 0x41, 0x24, 0xff}, colors.RGBA{0x4c, 0x8b, 0xaa, 0xff}}, // Salmon to LightBlue
+		{colors.RGBA{0xb9, 0xb9, 0x0a, 0xff},
+			colors.RGBA{0x0a, 0x58, 0x53, 0xff}}, // Yellow to LightBlue
+		{colors.RGBA{0xa6, 0x0c, 0x5f, 0xff},
+			colors.RGBA{0x00, 0x00, 0x80, 0xff}}, // DeepPink to DarkBlue
+		{colors.RGBA{0x95, 0x95, 0x00, 0xff},
+			colors.RGBA{0x71, 0x0e, 0x00, 0xff}}, // Yellow to OrangeRed
+		{colors.RGBA{0x00, 0x74, 0x00, 0xff},
+			colors.RGBA{0x9a, 0x22, 0x22, 0xff}}, // DarkGreen to DarkRed
+		{colors.RGBA{0x81, 0x41, 0x24, 0xff},
+			colors.RGBA{0x4c, 0x8b, 0xaa, 0xff}}, // Salmon to LightBlue
 	}
 )
 
@@ -281,13 +288,17 @@ func GlowingWords(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor.Start()
 }
 
+//----------------------------------------------------------------------------
+
+const (
+	randPalName = "Randomizer"
+	randPalSize = 100
+	randDarkness = 0.1
+)
+
 func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 	aGrpLedColor := ledgrid.NewGroup()
-	dur := 120 * time.Second
-	//pal := ledgrid.PaletteMap["ParulaExtended"]
-	//pal := ledgrid.PaletteMap["Randomizer"]
-
-    // Baue eine randomisierte Palette zusammen
+	dur := randPalSize * time.Second
     pal := colors.NewLinearPalette(randPalName)
     var col, oldCol colors.RGBA
     for i:=0; i<randPalSize; i++ {
@@ -295,7 +306,7 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
         for i > 0 && col.Dist(oldCol) < 128 {
            col = colors.RandColor()
         }
-        pal.AddColor(col.Dark(0.5 + 0.2*rand.Float64()))
+        pal.AddColor(col)
         oldCol = col
     }
 
@@ -316,19 +327,21 @@ func ColorWaves(ctx context.Context, c *ledgrid.Canvas) {
 			aColorPal.RepeatCount = ledgrid.AnimationRepeatForever
 			aColorPal.Curve = ledgrid.AnimationLinear
 			aColorPal.Pos = ((25.0-dist)/25.0 + rand.Float64())/128.0
-			//aColorSeq := ledgrid.NewSequence(aColorPal)
-			//aColorSeq.RepeatCount = ledgrid.AnimationRepeatForever
 			aGrpLedColor.Add(aColorPal)
 		}
 	}
 	aGrpLedColor.Start()
 }
 
+//----------------------------------------------------------------------------
+
 func Fireplace(ctx context.Context, c *ledgrid.Canvas) {
 	fire := ledgrid.NewFire(image.Point{}, image.Point{width, height})
 	c.Add(fire)
 	fire.Start()
 }
+
+//----------------------------------------------------------------------------
 
 func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	var xMin, yMax float64
@@ -372,6 +385,8 @@ func PaletteShader(ctx context.Context, c *ledgrid.Canvas) {
 	aGrp.Start()
 	aPalTl.Start()
 }
+
+//----------------------------------------------------------------------------
 
 // A color shader - the new thing people are talking about.
 func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
@@ -588,90 +603,3 @@ var (
 	}
 )
 
-/*
-// Quasicristal
-
-precision mediump float;
-
-varying vec2 position;
-uniform float time;
-
-float wave(vec2 p, float angle) {
-  vec2 direction = vec2(cos(angle), sin(angle));
-  return cos(dot(p, direction));
-}
-
-float wrap(float x) {
-  return abs(mod(x, 2.)-1.);
-}
-
-void main() {
-  vec2 p = (position - 0.5) * 50.;
-
-  float brightness = 0.;
-  for (float i = 1.; i <= 11.; i++) {
-    brightness += wave(p, time / i);
-  }
-
-  brightness = wrap(brightness);
-
-  gl_FragColor.rgb = vec3(brightness);
-  gl_FragColor.a = 1.;
-}
-
-*/
-
-/*
-// Noise
-
-precision mediump float;
-
-varying vec2 position;
-uniform float time;
-
-float random(float p) {
-  return fract(sin(p)*10000.);
-}
-
-float noise(vec2 p) {
-  return random(p.x + p.y*10000.);
-}
-
-vec2 sw(vec2 p) {return vec2( floor(p.x) , floor(p.y) );}
-vec2 se(vec2 p) {return vec2( ceil(p.x)  , floor(p.y) );}
-vec2 nw(vec2 p) {return vec2( floor(p.x) , ceil(p.y)  );}
-vec2 ne(vec2 p) {return vec2( ceil(p.x)  , ceil(p.y)  );}
-
-float smoothNoise(vec2 p) {
-  vec2 inter = smoothstep(0., 1., fract(p));
-  float s = mix(noise(sw(p)), noise(se(p)), inter.x);
-  float n = mix(noise(nw(p)), noise(ne(p)), inter.x);
-  return mix(s, n, inter.y);
-  return noise(nw(p));
-}
-
-float movingNoise(vec2 p) {
-  float total = 0.0;
-  total += smoothNoise(p     - time);
-  total += smoothNoise(p*2.  + time) / 2.;
-  total += smoothNoise(p*4.  - time) / 4.;
-  total += smoothNoise(p*8.  + time) / 8.;
-  total += smoothNoise(p*16. - time) / 16.;
-  total /= 1. + 1./2. + 1./4. + 1./8. + 1./16.;
-  return total;
-}
-
-float nestedNoise(vec2 p) {
-  float x = movingNoise(p);
-  float y = movingNoise(p + 100.);
-  return movingNoise(p + vec2(x, y));
-}
-
-void main() {
-  vec2 p = position * 6.;
-  float brightness = nestedNoise(p);
-  gl_FragColor.rgb = vec3(brightness);
-  gl_FragColor.a = 1.;
-}
-
-*/
