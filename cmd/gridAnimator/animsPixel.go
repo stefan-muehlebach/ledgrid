@@ -404,7 +404,7 @@ func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
 	yMax = h / 2
 	dx = (xMax - xMin) / float64(width)
 	dy = (yMax - yMin) / float64(height)
-	i := 3 // rand.IntN(len(ColorShaderList))
+	i := 3
 
 	aGrp := ledgrid.NewGroup()
 	nPix := c.Rect.Dx() * c.Rect.Dy()
@@ -426,10 +426,34 @@ func ColorShader(ctx context.Context, c *ledgrid.Canvas) {
 }
 
 var (
+
+    //----------------------------------------------------------------------------
+
+	PlasmaShaderFunc = func(t, x, y float64) float64 {
+		v1 := f1(t, x, y, 5.0)           // old param: 1.2
+		v2 := f2(t, x, y, 6.0, 2.0, 3.0) // old param: 1.6, 3.0, 1.5
+		v3 := f3(t, x, y, 5.0, 5.0)      // old param: 5.0, 5.0
+		v := (v1+v2+v3)/6.0 + 0.5
+		return v
+	}
+
+	f1 = func(t, x, y, p1 float64) float64 {
+		return math.Sin(x*p1 + t)
+	}
+
+	f2 = func(t, x, y, p1, p2, p3 float64) float64 {
+		return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
+	}
+
+	f3 = func(t, x, y, p1, p2 float64) float64 {
+		cx := 0.125*x + 0.5*math.Sin(t/p1)
+		cy := 0.125*y + 0.5*math.Cos(t/p2)
+		return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
+	}
+
 	randomList []float64
 
-	// Einer der Shader (oder dort: color functions) aus den Testprogrammen
-	// von OpenPixelController.
+    //----------------------------------------------------------------------------
 
 	ColorShaderList = []ledgrid.ColorShaderFunc{
 		NyanCatShader,
@@ -515,6 +539,17 @@ var (
 		return colors.RGBA{uint8(r), uint8(g), uint8(b), 0xff}
 	}
 
+	QuasicrystalShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
+		p := geom.Point{x, y}.Mul(1.0)
+		bright := 0.0
+		for i := 1.0; i <= 11.0; i += 1.0 {
+			bright += wave(p, t/i)
+		}
+		bright = wrap(bright)
+
+		return colors.RGBA{uint8(255 * bright), uint8(255 * bright), uint8(255 * bright), 0xFF}
+	}
+
 	BlinkPeriod = 11.5
 
 	RandomShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
@@ -558,32 +593,6 @@ var (
 		return
 	}
 
-//----------------------------------------------------------------------------
-
-	f1 = func(t, x, y, p1 float64) float64 {
-		return math.Sin(x*p1 + t)
-	}
-
-	f2 = func(t, x, y, p1, p2, p3 float64) float64 {
-		return math.Sin(p1*(x*math.Sin(t/p2)+y*math.Cos(t/p3)) + t)
-	}
-
-	f3 = func(t, x, y, p1, p2 float64) float64 {
-		cx := 0.125*x + 0.5*math.Sin(t/p1)
-		cy := 0.125*y + 0.5*math.Cos(t/p2)
-		return math.Sin(math.Sqrt(100.0*(cx*cx+cy*cy)+1.0) + t)
-	}
-
-	PlasmaShaderFunc = func(t, x, y float64) float64 {
-		v1 := f1(t, x, y, 5.0)           // old param: 1.2
-		v2 := f2(t, x, y, 6.0, 2.0, 3.0) // old param: 1.6, 3.0, 1.5
-		v3 := f3(t, x, y, 5.0, 5.0)      // old param: 5.0, 5.0
-		v := (v1+v2+v3)/6.0 + 0.5
-		return v
-	}
-
-//----------------------------------------------------------------------------
-
 	wrap = func(x float64) float64 {
 		return math.Abs(math.Mod(x, 2.0) - 1.0)
 	}
@@ -592,15 +601,4 @@ var (
 		dir := geom.Point{math.Cos(angle), math.Sin(angle)}
 		return math.Cos(p.X*dir.X + p.Y*dir.Y)
 	}
-
-	QuasicrystalShader = func(t, x, y, z float64, idx, nPix int) colors.RGBA {
-		p := geom.Point{x, y}.Mul(2.0)
-		bright := 0.0
-		for i := 1.0; i <= 11.0; i += 1.0 {
-			bright += wave(p, t/i)
-		}
-		bright = wrap(bright)
-		return colors.RGBA{uint8(255 * bright), uint8(255 * bright), uint8(255 * bright), 0xFF}
-	}
 )
-

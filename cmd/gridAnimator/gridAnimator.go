@@ -298,7 +298,7 @@ func main() {
         aver := watch.Avg(0)
         mini := watch.Min(0)
         maxi := watch.Max(0)
-        log.Printf("- %-13s: %v  (%v .. %v)", name, aver, mini, maxi)
+        log.Printf("- %-10s: %v  (%v .. %v)", name, aver, mini, maxi)
     }
 	// fmt.Printf("  animation: %v\n", ledgrid.AnimCtrl.Stopwatch())
 	// fmt.Printf("  painting : %v\n", canvas.Stopwatch())

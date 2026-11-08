@@ -2,7 +2,6 @@ package ledgrid
 
 import (
 	"image"
-	"log"
 	"math"
 	"math/rand/v2"
 	"runtime"
@@ -58,9 +57,7 @@ func NewAnimationController(syncChan chan bool) *AnimationController {
 	a.animMutex = &sync.RWMutex{}
 	a.ticker = time.NewTicker(refreshRate)
 	a.stopwatch = NewStopwatch("Animator")
-	// a.numThreads = 1
 	a.numThreads = runtime.NumCPU()
-	log.Printf("Running with %d Threads\n", a.numThreads)
 	a.delay = time.Duration(0)
 	a.syncChan = syncChan
 
@@ -592,16 +589,15 @@ func (a *NormAnimationEmbed) Update(t time.Time) bool {
 		if !a.reverse {
 			if a.repeatsLeft == 0 {
 				a.running = false
-				// fmt.Printf("zweiter ausstieg...\n  %+v\n", a)
 				return false
 			}
 			if a.repeatsLeft > 0 {
 				a.repeatsLeft--
 			}
 		}
-		a.start = a.end
+		a.start = t
+		// a.start = a.end
 		a.end = a.start.Add(a.duration)
-		// a.wrapper.Init()
 	} else {
 		delta := t.Sub(a.start).Seconds()
 		val := delta / a.total
